@@ -1,0 +1,7 @@
+image: mopemope/java:jdk8
+test:
+  script:
+    - ./gradlew clean test jar
+  artifacts:
+    paths:
+      - build/libs/meghanada.jar

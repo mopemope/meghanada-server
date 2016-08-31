@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<Configuration status="off">
+    <Appenders>
+        <Console name="STDOUT">
+            <PatternLayout pattern="[%d][%-5.-5p][%-14.-14c{1}:%4L] %-22.-22M - %m%n"/>
+        </Console>
+    </Appenders>
+    <Loggers>
+        <Logger name="org.gradle.tooling" level="info"/>
+        <Logger name="org.eclipse.aether" level="info"/>
+        <Logger name="log4j.logger.org.apache.http" level="info"/>
+        <Root level="info" includeLocation="true">
+            <AppenderRef ref="STDOUT"/>
+        </Root>
+    </Loggers>
+</Configuration>
