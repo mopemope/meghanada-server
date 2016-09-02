@@ -13,10 +13,7 @@ import com.github.javaparser.ast.type.ReferenceType;
 import com.github.javaparser.ast.type.Type;
 import com.github.javaparser.ast.visitor.VoidVisitorAdapter;
 import com.google.common.base.Strings;
-import meghanada.reflect.FieldDescriptor;
-import meghanada.reflect.MemberDescriptor;
-import meghanada.reflect.MethodDescriptor;
-import meghanada.reflect.MethodParameter;
+import meghanada.reflect.*;
 import meghanada.reflect.asm.CachedASMReflector;
 import meghanada.utils.ClassNameUtils;
 import org.apache.logging.log4j.LogManager;
@@ -517,22 +514,14 @@ class JavaSymbolAnalyzeVisitor extends VoidVisitorAdapter<JavaSource> {
             optional = Optional.of(expr);
         }
 
-        final String methodSig = typeAnalyzer.getMethodSignature(src, bs, methodName, args).orElse("");
-
         final Optional<MethodCallSymbol> result = optional.flatMap(scopeExpr -> {
             final String scopeString = scopeExpr.toString();
 
             return this.typeAnalyzer.analyzeExprClass(scopeExpr, bs, src)
                     .flatMap(declaringClass -> {
-                        final Optional<MemberDescriptor> callingMethod = typeAnalyzer.getCallingMethod(src, declaringClass, methodName, args.size(), methodSig);
-
-                        String maybeReturn = null;
-                        if (callingMethod.isPresent()) {
-                            maybeReturn = callingMethod.get().getReturnType();
-                            maybeReturn = this.fqcnResolver.resolveFQCN(maybeReturn, src).orElse(maybeReturn);
-                        }
-                        log.trace("callingMethod:{} return:{}", callingMethod, maybeReturn);
-
+                        final String maybeReturn = this.typeAnalyzer.
+                                getReturnType(src, bs, declaringClass, methodName, args).
+                                orElse(null);
                         return this.createMethodCallSymbol(node
                                 , scopeString
                                 , declaringClass
@@ -586,10 +575,9 @@ class JavaSymbolAnalyzeVisitor extends VoidVisitorAdapter<JavaSource> {
         final boolean isLocal = scope.equals("this") || scope.equals("super");
 
         // 1. normal field access instanceA.name
-        final Optional<FieldAccessSymbol> fas = typeAnalyzer.getReturnFromReflect(name, declaringClass, isLocal, true, source)
+        final Optional<FieldAccessSymbol> fas = this.typeAnalyzer.getReturnFromReflect(name, declaringClass, isLocal, true, source)
                 .map(type -> {
-                    final String returnFQCN = this.toFQCN(type, source);
-                    symbol.returnType = returnFQCN;
+                    symbol.returnType = this.toFQCN(type, source);
                     return symbol;
                 });
         if (fas.isPresent()) {
@@ -680,7 +668,6 @@ class JavaSymbolAnalyzeVisitor extends VoidVisitorAdapter<JavaSource> {
             });
 
         }
-        // super.visit(node, source);
         log.traceExit(entryMessage);
     }
 
@@ -698,12 +685,12 @@ class JavaSymbolAnalyzeVisitor extends VoidVisitorAdapter<JavaSource> {
     private void constructorCall(final String createClass, final ObjectCreationExpr node, final JavaSource src, final BlockScope bs) {
         final List<Expression> args = node.getArgs();
         if (args != null) {
-            final String sig = typeAnalyzer.getMethodSignature(src, bs, createClass, args).orElse("");
-            final Optional<MemberDescriptor> ctor = this.typeAnalyzer.getConstructor(src, createClass, args.size(), sig);
-            String maybeReturn = null;
-            if (ctor.isPresent()) {
-                maybeReturn = ctor.get().getReturnType();
-            }
+            final Optional<TypeAnalyzer.MethodSignature> sig = typeAnalyzer.getMethodSignature(src, bs, createClass, args);
+
+            final String maybeReturn = sig.flatMap(ms ->
+                    this.typeAnalyzer.getConstructor(src, createClass, args.size(), ms.signature).
+                            map(CandidateUnit::getReturnType)).orElse(null);
+
             final String clazz = ClassNameUtils.getSimpleName(createClass);
 
             final MethodCallSymbol mcs = new MethodCallSymbol("",

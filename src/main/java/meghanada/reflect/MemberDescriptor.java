@@ -10,7 +10,7 @@ import java.util.regex.Pattern;
 
 public abstract class MemberDescriptor implements CandidateUnit {
 
-    private static final Pattern TRIM_RE = Pattern.compile("<[\\w \\?,]+>");
+    protected static final Pattern TRIM_RE = Pattern.compile("<[\\w \\?,]+>");
     public String declaringClass;
     public String name;
     public MemberType memberType;
@@ -21,6 +21,8 @@ public abstract class MemberDescriptor implements CandidateUnit {
     public Map<String, String> typeParameterMap;
 
     public abstract List<String> getParameters();
+
+    public abstract String getSig();
 
     public abstract String getRawReturnType();
 
@@ -54,27 +56,7 @@ public abstract class MemberDescriptor implements CandidateUnit {
         return this.typeParameters != null && this.typeParameters.size() > 0;
     }
 
-    protected String renderTypeParameters(final String str) {
-        String temp = str;
-        if (this.typeParameterMap.size() > 0) {
-            for (Map.Entry<String, String> entry : this.typeParameterMap.entrySet()) {
-                final String k = entry.getKey();
-                final String v = entry.getValue();
-                temp = ClassNameUtils.replace(temp, ClassNameUtils.CLASS_TYPE_VARIABLE_MARK + k, v);
-            }
-        } else {
-            for (String entry : this.typeParameters) {
-                temp = ClassNameUtils.replace(temp, ClassNameUtils.CLASS_TYPE_VARIABLE_MARK + entry, ClassNameUtils.OBJECT_CLASS);
-            }
-
-            if (!this.modifier.contains("static ")) {
-                temp = TRIM_RE.matcher(temp).replaceAll("");
-            }
-        }
-        return ClassNameUtils.replace(temp, ClassNameUtils.FORMAL_TYPE_VARIABLE_MARK, "").trim();
-    }
-
-    String renderTypeParameters(final String str, boolean formalType) {
+    protected String renderTypeParameters(final String str, boolean formalType) {
         String temp = str;
         if (this.typeParameterMap.size() > 0) {
             for (Map.Entry<String, String> entry : this.typeParameterMap.entrySet()) {

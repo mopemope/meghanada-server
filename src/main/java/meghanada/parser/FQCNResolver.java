@@ -42,10 +42,11 @@ class FQCNResolver {
         return fqcnResolver;
     }
 
-    private Optional<String> tryClassToFQCN(String ownPkg, String name, BiMap<String, String> classes) {
+    private Optional<String> tryClassToFQCN(final String ownPkg, final String name, final BiMap<String, String> classes) {
+        final EntryMessage entryMessage = log.traceEntry("ownPkg={} name={} classes={}", ownPkg, name, classes);
         final ClassName className = new ClassName(name);
         final Optional<String> result = Optional.ofNullable(className.toFQCN(ownPkg, classes));
-        return log.traceExit(result);
+        return log.traceExit(entryMessage, result);
     }
 
     Optional<String> resolveThisScope(final String name, final JavaSource source) {

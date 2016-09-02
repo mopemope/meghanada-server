@@ -1,5 +1,6 @@
 package meghanada.utils;
 
+import com.google.common.base.MoreObjects;
 import com.google.common.collect.BiMap;
 import meghanada.reflect.asm.CachedASMReflector;
 import org.apache.logging.log4j.LogManager;
@@ -72,4 +73,10 @@ public final class ClassName {
         return name;
     }
 
+    @Override
+    public String toString() {
+        return MoreObjects.toStringHelper(this)
+                .add("rawName", rawName)
+                .toString();
+    }
 }

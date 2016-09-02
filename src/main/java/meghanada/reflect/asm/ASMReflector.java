@@ -121,7 +121,7 @@ class ASMReflector {
     }
 
     static boolean ignorePackage(final String target) {
-        for (String p : ASMReflector.filterPackage) {
+        for (final String p : ASMReflector.filterPackage) {
             if (target.startsWith(p)) {
                 return true;
             }
@@ -140,7 +140,7 @@ class ASMReflector {
                     return;
                 }
                 final String className = ClassNameUtils.replaceSlash(entryName.substring(0, entryName.length() - 6));
-                if (ignorePackage(className)) {
+                if (ASMReflector.ignorePackage(className)) {
                     return;
                 }
                 try (final InputStream in = jarFile.getInputStream(jarEntry)) {
@@ -154,7 +154,7 @@ class ASMReflector {
                 return indexes;
             }
             final String className = ClassNameUtils.replaceSlash(entryName.substring(0, entryName.length() - 6));
-            if (ignorePackage(className)) {
+            if (ASMReflector.ignorePackage(className)) {
                 return indexes;
             }
             try (final InputStream in = new FileInputStream(file)) {
@@ -167,7 +167,7 @@ class ASMReflector {
                     return;
                 }
                 final String className = ClassNameUtils.replaceSlash(entryName.substring(0, entryName.length() - 6));
-                if (ignorePackage(className)) {
+                if (ASMReflector.ignorePackage(className)) {
                     return;
                 }
                 try (InputStream in = new FileInputStream(classFile)) {
@@ -260,7 +260,7 @@ class ASMReflector {
                     continue;
                 }
                 final String className = ClassNameUtils.replaceSlash(entryName.substring(0, entryName.length() - 6));
-                if (this.ignorePackage(className)) {
+                if (ASMReflector.ignorePackage(className)) {
                     continue;
                 }
                 final Iterator<String> classIterator = targetClasses.iterator();
@@ -382,7 +382,7 @@ class ASMReflector {
                             return new ArrayList<MemberDescriptor>(0);
                         }
                         String className = ClassNameUtils.replaceSlash(entryName.substring(0, entryName.length() - 6));
-                        if (this.ignorePackage(className)) {
+                        if (ASMReflector.ignorePackage(className)) {
                             return new ArrayList<MemberDescriptor>(0);
                         }
                         if (className.equals(nameWithoutTP)) {

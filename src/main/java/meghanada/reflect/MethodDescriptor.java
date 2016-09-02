@@ -3,6 +3,9 @@ package meghanada.reflect;
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Objects;
 import meghanada.utils.ClassNameUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.message.EntryMessage;
 
 import java.io.Serializable;
 import java.util.HashMap;
@@ -14,6 +17,7 @@ import java.util.stream.Collectors;
 public class MethodDescriptor extends MemberDescriptor implements Serializable {
 
     private static final long serialVersionUID = -8041709346815449477L;
+    private static final Logger log = LogManager.getLogger(MethodDescriptor.class);
 
     public List<MethodParameter> parameters;
     public String[] exceptions;
@@ -160,11 +164,43 @@ public class MethodDescriptor extends MemberDescriptor implements Serializable {
         if (this.returnType != null) {
             final String rt = ClassNameUtils.replaceInnerMark(this.returnType);
             if (this.hasTypeParameters()) {
-                return renderTypeParameters(rt, formalType != null);
+                return this.renderTypeParameters(rt, formalType != null);
             }
             return rt;
         }
         return null;
+    }
+
+    @Override
+    protected String renderTypeParameters(final String template, boolean formalType) {
+        final EntryMessage entryMessage = log.traceEntry("template={}, formalType={} typeParameterMap={} typeParameters={}", template, formalType, typeParameterMap, typeParameters);
+        String temp = template;
+        if (this.typeParameterMap.size() > 0) {
+            for (Map.Entry<String, String> entry : this.typeParameterMap.entrySet()) {
+                final String k = entry.getKey();
+                final String v = entry.getValue();
+                temp = ClassNameUtils.replace(temp, ClassNameUtils.CLASS_TYPE_VARIABLE_MARK + k, v);
+                if (formalType) {
+                    // follow intellij
+                    temp = ClassNameUtils.replace(temp, ClassNameUtils.FORMAL_TYPE_VARIABLE_MARK + k, v);
+                }
+            }
+        } else {
+
+            for (String entry : this.typeParameters) {
+                temp = ClassNameUtils.replace(temp, ClassNameUtils.CLASS_TYPE_VARIABLE_MARK + entry, ClassNameUtils.OBJECT_CLASS);
+                if (formalType) {
+                    // follow intellij
+                    temp = ClassNameUtils.replace(temp, ClassNameUtils.FORMAL_TYPE_VARIABLE_MARK + entry, ClassNameUtils.OBJECT_CLASS);
+                }
+            }
+
+            if (!this.modifier.contains("static ")) {
+                temp = TRIM_RE.matcher(temp).replaceAll("");
+            }
+        }
+        final String rendered = ClassNameUtils.replace(temp, ClassNameUtils.FORMAL_TYPE_VARIABLE_MARK, "").trim();
+        return log.traceExit(entryMessage, rendered);
     }
 
     @Override
@@ -197,6 +233,16 @@ public class MethodDescriptor extends MemberDescriptor implements Serializable {
                 .stream()
                 .map(p -> renderTypeParameters(p.type, formalType != null))
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public String getSig() {
+        final List<String> plist = this.parameters
+                .stream()
+                .map(p -> ClassNameUtils.removeTypeParameter(p.type))
+                .collect(Collectors.toList());
+
+        return this.name + "::" + plist;
     }
 
     @Override
@@ -240,6 +286,22 @@ public class MethodDescriptor extends MemberDescriptor implements Serializable {
         }
         sb.append(this.name).append('(');
         return appendParameterTypes(sb).append(')').toString();
+    }
+
+    public String rawDeclaration() {
+        if (this.memberType.equals(MemberType.CONSTRUCTOR)) {
+            String s = this.getConstructorDeclaration();
+            if (this.hasTypeParameters()) {
+                return s;
+            }
+            return s;
+        } else {
+            String s = this.getMethodDeclaration();
+            if (this.hasTypeParameters()) {
+                return s;
+            }
+            return s;
+        }
     }
 
 }

@@ -89,5 +89,8 @@ public class FieldDescriptor extends MemberDescriptor implements Serializable {
         return null;
     }
 
-
+    @Override
+    public String getSig() {
+        return ClassNameUtils.removeTypeParameter(this.returnType);
+    }
 }

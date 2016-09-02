@@ -6,7 +6,6 @@ import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.pool.KryoCallback;
 import com.esotericsoftware.kryo.pool.KryoPool;
 import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheStats;
 import com.google.common.cache.LoadingCache;
 import com.google.common.util.concurrent.UncheckedExecutionException;
 import meghanada.config.Config;
@@ -58,7 +57,6 @@ public class CachedASMReflector {
         this.memberCache = CacheBuilder.newBuilder()
                 .initialCapacity(256)
                 .expireAfterAccess(30, TimeUnit.MINUTES)
-                .recordStats()
                 .build(new MemberCacheLoader(this.classFileMap, reflectIndex));
 
         this.kryoPool = new KryoPool.Builder(() -> {
@@ -244,10 +242,6 @@ public class CachedASMReflector {
         List<MemberDescriptor> members;
         try {
             members = this.memberCache.get(classWithoutTP);
-            if (log.isDebugEnabled()) {
-                final CacheStats stats = this.memberCache.stats();
-                log.info("Reflector Stats load:{} miss:{} eviction:{}", stats.loadCount(), stats.missCount(), stats.evictionCount());
-            }
         } catch (ExecutionException e) {
             throw new UncheckedExecutionException(e);
         }
@@ -454,7 +448,8 @@ public class CachedASMReflector {
                     if (mName.equals(name) &&
                             m.matchType(CandidateUnit.MemberType.METHOD) &&
                             parameters.size() == argLen) {
-                        final String mdSig = mName + "::" + parameters.toString();
+                        final String mdSig = m.getSig();
+                        log.trace("compare sig sig={} mdSig={}", sig, mdSig);
                         return sig.equals(mdSig);
                     }
                     return false;

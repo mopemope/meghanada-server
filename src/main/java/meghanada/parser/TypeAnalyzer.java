@@ -8,9 +8,9 @@ import com.github.javaparser.ast.stmt.ExpressionStmt;
 import com.github.javaparser.ast.stmt.Statement;
 import com.google.common.base.Strings;
 import meghanada.reflect.CandidateUnit;
-import meghanada.reflect.ClassIndex;
 import meghanada.reflect.MemberDescriptor;
 import meghanada.reflect.MethodDescriptor;
+import meghanada.reflect.MethodParameter;
 import meghanada.reflect.asm.CachedASMReflector;
 import meghanada.utils.ClassNameUtils;
 import org.apache.logging.log4j.LogManager;
@@ -23,6 +23,8 @@ import java.util.stream.Collectors;
 
 import static com.leacox.motif.MatchesExact.eq;
 import static com.leacox.motif.Motif.match;
+import static meghanada.utils.ClassNameUtils.CLASS_TYPE_VARIABLE_MARK;
+import static meghanada.utils.ClassNameUtils.FORMAL_TYPE_VARIABLE_MARK;
 
 class TypeAnalyzer {
 
@@ -38,21 +40,23 @@ class TypeAnalyzer {
         this.returnTypeFunctions = this.getReturnTypeAnalyzeFunctions();
     }
 
-    Optional<String> getMethodSignature(final JavaSource src, final BlockScope bs, final String methodName, final List<Expression> args) {
+    Optional<MethodSignature> getMethodSignature(final JavaSource src, final BlockScope bs, final String methodName, final List<Expression> args) {
+        final MethodSignature methodSignature = new MethodSignature();
         final List<String> argTypes = args.stream()
                 .map(expr -> {
                     final Optional<String> result = this.analyzeExprClass(expr, bs, src);
-                    if (result.isPresent()) {
-                        return result.get();
-                    }
-                    return null;
+                    return result.map(paramType -> {
+                        methodSignature.parameter.add(paramType);
+                        return ClassNameUtils.removeTypeParameter(paramType);
+                    }).orElse(null);
                 })
                 .filter(s -> s != null)
                 .collect(Collectors.toList());
         if (args.size() != argTypes.size()) {
             return Optional.empty();
         }
-        return Optional.of(methodName + "::" + argTypes.toString());
+        methodSignature.signature = methodName + "::" + argTypes.toString();
+        return Optional.of(methodSignature);
     }
 
     private boolean isFunctionalInterface(final String className) {
@@ -111,65 +115,6 @@ class TypeAnalyzer {
         return memberDescriptor;
     }
 
-    Optional<String> inferenceReturnType(final String methodName, final String declaringClass, final List<Expression> args, final BlockScope blockScope, final JavaSource source) {
-        final CachedASMReflector reflector = CachedASMReflector.getInstance();
-
-        final String sig = this.getMethodSignature(source, blockScope, methodName, args).orElse("");
-
-        final Optional<MemberDescriptor> methodInfo = reflector.reflectMethodStream(declaringClass, methodName, args.size(), sig)
-                .findFirst();
-
-        return methodInfo.map(md -> {
-            if (md.hasTypeParameters()) {
-
-                // 1st stage
-                return this.inferenceReturnFromHint(source, md)
-                        .orElseGet(() -> {
-                            // 2nd stage
-                            final String resolveClass = this.getGenericsReturnType(args, blockScope, source, md);
-                            if (resolveClass != null) {
-                                log.trace("return resolveC;ass:{}", resolveClass);
-                                return resolveClass;
-                            }
-                            return null;
-                        });
-            }
-            return null;
-        });
-    }
-
-    private String getGenericsReturnType(List<Expression> args, BlockScope blockScope, JavaSource source, MemberDescriptor md) {
-        MethodDescriptor method = (MethodDescriptor) md;
-
-        if (method.formalType == null) {
-            return null;
-        }
-
-        final String returnType = md.returnType();
-        final List<String> params = md.getParameters();
-
-        for (int i = 0; i < params.size(); i++) {
-            final String p = params.get(i);
-
-            // TODO refactoring
-            log.trace("AnalyzeReturnType p:{} returnType:{}", p, returnType);
-            final String rt = ClassNameUtils.replace(returnType, ClassNameUtils.FORMAL_TYPE_VARIABLE_MARK, "");
-            //  A appendTo(A, OtherClass);
-            //
-            if (!p.contains(".") && rt.equals(p)) {
-                Expression expression = args.get(i);
-                log.trace("AnalyzeReturnTypeMATCH P:{} ReturnType:{}", p, returnType);
-
-                final Optional<String> resolveClass = this.analyzeExprClass(expression, blockScope, source);
-
-                if (resolveClass.isPresent()) {
-                    return resolveClass.get();
-                }
-            }
-        }
-        return null;
-    }
-
     private String getLambdaReturnType(JavaSource source, MemberDescriptor callMethod) {
         return source.typeHint.getLambdaReturnType();
     }
@@ -198,41 +143,6 @@ class TypeAnalyzer {
         callMethod.putTypeParameter(replaceTypeKey, returnType);
     }
 
-    private String replaceDeclaringClass(String lambdaReturnType, MemberDescriptor lambdaMethod, String returnTypeParameter) {
-        final String declaringClass = lambdaMethod.getDeclaringClass();
-        final String newDeclaringClass = declaringClass.replace("extends " + returnTypeParameter, "extends " + lambdaReturnType);
-        lambdaMethod.setDeclaringClass(newDeclaringClass);
-        return newDeclaringClass;
-    }
-
-    private void narrowingHint(final JavaSource source, final String exprClass) {
-        if (source.typeHint.hasHintDescriptors()) {
-            final TypeHint typeHint = source.typeHint;
-            if (!source.typeHint.maybeResolved()) {
-                final CachedASMReflector reflector = CachedASMReflector.getInstance();
-                final Map<String, ClassIndex> globalClassIndex = reflector.getGlobalClassIndex();
-                final Iterator<MemberDescriptor> it = typeHint.hintDescriptors.iterator();
-                while (it.hasNext()) {
-                    final MemberDescriptor md = it.next();
-                    final List<String> parameters = md.getParameters();
-
-                    if (parameters.size() > typeHint.narrowingHintIndex) {
-                        final String param = md.getParameters().get(typeHint.narrowingHintIndex);
-                        final ClassIndex paramInfo = globalClassIndex.get(param);
-                        if (paramInfo != null && exprClass != null) {
-                            final ClassIndex actual = globalClassIndex.get(ClassNameUtils.removeTypeParameter(exprClass));
-                            if (actual == null || !actual.isImplements(param)) {
-                                it.remove();
-                            }
-                        }
-                    }
-                }
-                typeHint.narrowingHintIndex++;
-            }
-            typeHint.parameterHintIndex++;
-        }
-    }
-
     Optional<String> analyzeExprClass(final Expression expression, final BlockScope blockScope, final JavaSource source) {
         final EntryMessage entryMessage = log.traceEntry("expr={} range={}", expression.getClass(), expression.getRange());
         final Class scopeExprClass = expression.getClass();
@@ -241,9 +151,17 @@ class TypeAnalyzer {
                 .when(eq(BooleanLiteralExpr.class)).get(() -> Optional.of("java.lang.Boolean"))
                 .when(eq(LongLiteralExpr.class)).get(() -> Optional.of("java.lang.Long"))
                 .when(eq(CharLiteralExpr.class)).get(() -> Optional.of("java.lang.Character"))
-                .when(eq(ClassExpr.class)).get(() -> Optional.of("java.lang.Class"))
+                .when(eq(ClassExpr.class)).get(() -> {
+                    final ClassExpr clsExpr = (ClassExpr) expression;
+                    final String type = clsExpr.getType().toString();
+                    final String resolvedClass = this.fqcnResolver.resolveFQCN(type, source).orElse("java.lang.Class");
+                    if (!resolvedClass.equals("java.lang.Class") && !resolvedClass.equals("java.lang.Object")) {
+                        return Optional.of("java.lang.Class<" + resolvedClass + ">");
+                    }
+                    return Optional.of(resolvedClass);
+                })
                 .when(eq(BinaryExpr.class)).get(() -> {
-                    BinaryExpr x = (BinaryExpr) expression;
+                    final BinaryExpr x = (BinaryExpr) expression;
                     final BinaryExpr.Operator op = x.getOperator();
                     if (op == BinaryExpr.Operator.and ||
                             op == BinaryExpr.Operator.or ||
@@ -528,43 +446,6 @@ class TypeAnalyzer {
         });
     }
 
-    private Optional<Map<String, Variable>> getLambdaParameterSymbols(JavaSource source, MemberDescriptor lambdaMethod, LambdaExpr expr) {
-
-        final Iterator<String> lambdaIt = lambdaMethod.getParameters().iterator();
-        final List<Parameter> parameters = expr.getParameters();
-        final Map<String, Variable> nsMap = new HashMap<>(8);
-        if (parameters == null || parameters.size() == 0) {
-            return Optional.of(nsMap);
-        }
-
-        for (Parameter p : parameters) {
-            if (lambdaIt.hasNext()) {
-                final String fqcn = lambdaIt.next();
-                log.trace("Parameter Type:{} FQCN:{} Range:{}", p.getType(), fqcn, p.getRange());
-                final String name = p.getId().getName();
-                final String type = p.getType().toString();
-                // unknown?
-                if (type.isEmpty()) {
-                    // is Lambda or Method Ref
-
-                    String paramFQCN = ClassNameUtils.removeCapture(fqcn);
-                    final String normalType = ClassNameUtils.removeTypeParameter(paramFQCN);
-                    if (!normalType.contains(".")) {
-                        // resolve FQCN
-                        paramFQCN = fqcnResolver.resolveFQCN(paramFQCN, source).orElse(paramFQCN);
-                    }
-
-                    // this is lambda parameter
-                    final Variable variable = new Variable("", name, p.getRange(), paramFQCN);
-                    nsMap.put(name, variable);
-                }
-            }
-        }
-        // log.info("inferenceType:{} ns:{}", inferenceType, nsMap);
-
-        return Optional.of(nsMap);
-    }
-
     private Optional<Map<String, Variable>> analyzeLambdaParameterTypes(JavaSource source, LambdaExpr x) {
         final List<Parameter> parameters = x.getParameters();
         if (parameters == null || parameters.size() == 0) {
@@ -603,6 +484,39 @@ class TypeAnalyzer {
             }
             // log.info("inferenceType:{} ns:{}", inferenceType, nsMap);
             return nsMap;
+        });
+    }
+
+    Optional<String> getReturnType(final JavaSource src, final BlockScope bs, final String declaringClass, final String methodName, final List<Expression> args) {
+        final Optional<TypeAnalyzer.MethodSignature> methodSig = this.getMethodSignature(src, bs, methodName, args);
+        return methodSig.flatMap(ms -> {
+            final Optional<MemberDescriptor> callingMethod = this.getCallingMethod(src, declaringClass, methodName, args.size(), ms.signature);
+            return callingMethod.map(md -> {
+                final MethodDescriptor method = (MethodDescriptor) md;
+                final Iterator<String> realIterator = ms.parameter.iterator();
+                for (final MethodParameter parameter : method.parameters) {
+                    final String sp = parameter.getType();
+                    final String p = realIterator.next();
+
+                    final List<String> sigTypes = ClassNameUtils.parseTypeParameter(sp);
+                    final List<String> realTypes = ClassNameUtils.parseTypeParameter(p);
+
+                    if (sigTypes.size() == realTypes.size()) {
+                        final Iterator<String> realTypeIterator = realTypes.iterator();
+                        for (final String sig : sigTypes) {
+                            final String real = realTypeIterator.next();
+                            if (sig.startsWith(FORMAL_TYPE_VARIABLE_MARK) || sig.startsWith(CLASS_TYPE_VARIABLE_MARK)) {
+                                final String typeVal = ClassNameUtils.removeTypeMark(sig);
+                                log.trace("methodTypeMap type={} real={}", typeVal, real);
+                                method.typeParameterMap.put(typeVal, real);
+                            }
+                        }
+                    }
+                }
+                final String returnType = method.getReturnType();
+                log.trace("returnType={}", returnType);
+                return returnType;
+            });
         });
     }
 
@@ -700,12 +614,9 @@ class TypeAnalyzer {
     public Optional<String> getReturnFromReflect(final String name, String declaringClass, final boolean isLocal, final boolean isField, final JavaSource source) {
         final EntryMessage entryMessage = log.traceEntry("name={} declaringClass={} isLocal={} isField={}", name, declaringClass, isLocal, isField);
 
-        CachedASMReflector reflector = CachedASMReflector.getInstance();
-
-        // TODO check array access or class array type
+        final CachedASMReflector reflector = CachedASMReflector.getInstance();
         if (ClassNameUtils.isClassArray(declaringClass)) {
             // class array ?
-            // TODO check access expr
             if (isField && name.equals("length")) {
                 // is Class<?>[]
                 final Optional<String> optional = Optional.of("int");
@@ -740,6 +651,11 @@ class TypeAnalyzer {
         final String result = reflector.reflectStream(declaringClass2)
                 .filter(md -> this.returnTypeFilter(name, isField, onlyPublic, md))
                 .map(md -> {
+                    if (isField) {
+                        return md.getReturnType();
+                    }
+                    MethodDescriptor method = (MethodDescriptor) md;
+                    log.trace("found:{} declaringClass:{}", method.rawDeclaration(), declaringClass2);
                     final String type = md.getRawReturnType();
                     return fqcnResolver.resolveFQCN(type, source).orElse(type);
                 })
@@ -753,7 +669,9 @@ class TypeAnalyzer {
                                 .filter(md -> this.returnTypeFilter(name, isField, onlyPublic, md))
                                 .map(md -> {
                                     final String type = md.getRawReturnType();
-                                    return fqcnResolver.resolveFQCN(type, source).orElse(type);
+                                    final String s = fqcnResolver.resolveFQCN(type, source).orElse(type);
+                                    log.trace("found:{}", s);
+                                    return s;
                                 })
                                 .findFirst();
                         if (ret.isPresent()) {
@@ -783,4 +701,8 @@ class TypeAnalyzer {
         return false;
     }
 
+    static class MethodSignature {
+        String signature;
+        List<String> parameter = new ArrayList<>(2);
+    }
 }

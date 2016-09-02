@@ -1,6 +1,5 @@
 package meghanada.parser;
 
-import com.google.common.base.Stopwatch;
 import meghanada.GradleTestBase;
 import meghanada.reflect.asm.CachedASMReflector;
 import org.junit.After;
@@ -9,6 +8,7 @@ import org.junit.Test;
 
 import java.io.File;
 
+import static meghanada.config.Config.timeIt;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
@@ -35,11 +35,7 @@ public class FQCNResolverTest extends GradleTestBase {
     public void resolveFQCN1() throws Exception {
         JavaParser parser = new JavaParser();
         assertNotNull(parser);
-        // Config.load().setDebug();
-        final Stopwatch stopwatch = Stopwatch.createStarted();
-        final JavaSource source = parser.parse(new File("./src/main/java/meghanada/reflect/asm/ASMReflector.java"));
-        System.out.println("parse elapsed:" + stopwatch.stop());
-
+        final JavaSource source = timeIt(() -> parser.parse(new File("./src/main/java/meghanada/reflect/asm/ASMReflector.java")));
         FQCNResolver resolver = FQCNResolver.getInstance();
         {
             String fqcn = resolver.resolveFQCN("log", source).get();

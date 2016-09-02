@@ -42,7 +42,7 @@ class MethodAnalyzeVisitor extends MethodVisitor {
     private TypeInfo returnType;
     private Map<String, String> typeMap;
 
-    MethodAnalyzeVisitor(ClassAnalyzeVisitor classAnalyzeVisitor, int access, String name, String desc, String signature, String[] exceptions) {
+    MethodAnalyzeVisitor(final ClassAnalyzeVisitor classAnalyzeVisitor, final int access, final String name, final String desc, final String signature, final String[] exceptions) {
         super(Opcodes.ASM5);
         log.traceEntry("classAnalyzeVisitor={} access={} name={} desc={} signature={} exceptions={}", classAnalyzeVisitor, access, name, desc, signature, exceptions);
         this.classAnalyzeVisitor = classAnalyzeVisitor;
@@ -93,9 +93,9 @@ class MethodAnalyzeVisitor extends MethodVisitor {
     }
 
     MethodAnalyzeVisitor parseSignature() {
-        log.traceEntry("name={}", this.name);
-        boolean isStatic = (Opcodes.ACC_STATIC & this.access) > 0;
-        SignatureReader signatureReader = new SignatureReader(this.methodSignature);
+        final EntryMessage entryMessage = log.traceEntry("name={} methodSignature={}", this.name, this.methodSignature);
+        final boolean isStatic = (Opcodes.ACC_STATIC & this.access) > 0;
+        final SignatureReader signatureReader = new SignatureReader(this.methodSignature);
         MethodSignatureVisitor visitor;
         if (isStatic) {
             visitor = new MethodSignatureVisitor(this.name, new ArrayList<>(4));
@@ -112,7 +112,8 @@ class MethodAnalyzeVisitor extends MethodVisitor {
         this.parameterTypes = visitor.getParameterTypes();
         this.typeParameters = visitor.getTypeParameters();
         this.returnType = visitor.getReturnType();
-        return log.traceExit(this);
+        log.traceExit(entryMessage);
+        return this;
     }
 
     @Override

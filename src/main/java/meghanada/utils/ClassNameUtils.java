@@ -20,6 +20,7 @@ public class ClassNameUtils {
     private static final String SLASH = "/";
     private static final String DOT_SEPARATOR = ".";
     private static final Map<String, String> removeCaptureMap;
+    private static final Map<String, String> removeTypeValMap;
     private static final Logger log = LogManager.getLogger(ClassNameUtils.class);
     private static final String[] primitives = new String[]{
             "byte",
@@ -46,17 +47,19 @@ public class ClassNameUtils {
 
     private static Map<String, String> boxMap = new HashMap<>(16);
 
+
     static {
         for (int i = 0; i < primitives.length; i++) {
             boxMap.put(primitives[i], box[i]);
         }
-    }
-
-    static {
-        removeCaptureMap = new HashMap<>(4);
+        removeCaptureMap = new HashMap<>(3);
         removeCaptureMap.put(CAPTURE_OF + "? super ", "");
         removeCaptureMap.put(CAPTURE_OF + "? extends ", "");
         removeCaptureMap.put("  ", " ");
+
+        removeTypeValMap = new HashMap<>(2);
+        removeTypeValMap.put(CLASS_TYPE_VARIABLE_MARK, "");
+        removeTypeValMap.put(FORMAL_TYPE_VARIABLE_MARK, "");
     }
 
     private ClassNameUtils() {
@@ -139,6 +142,10 @@ public class ClassNameUtils {
             sb.replace(start, end, value);
             start = sb.indexOf(key, nextSearchStart);
         }
+    }
+
+    public static String removeTypeMark(final String val) {
+        return replaceFromMap(val, removeTypeValMap);
     }
 
     public static Optional<String> toInnerClassName(final String name) {
