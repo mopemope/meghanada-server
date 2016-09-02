@@ -238,6 +238,9 @@ public class ClassNameUtils {
     }
 
     public static List<String> parseTypeParameter(final String str) {
+        if (str == null || str.isEmpty()) {
+            return Collections.emptyList();
+        }
         List<String> result = new ArrayList<>(4);
 
         final int idx = str.indexOf("<");

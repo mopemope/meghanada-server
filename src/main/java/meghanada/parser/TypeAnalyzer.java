@@ -493,6 +493,10 @@ class TypeAnalyzer {
             final Optional<MemberDescriptor> callingMethod = this.getCallingMethod(src, declaringClass, methodName, args.size(), ms.signature);
             return callingMethod.map(md -> {
                 final MethodDescriptor method = (MethodDescriptor) md;
+                final HashSet<String> formalTypes = new HashSet<>(ClassNameUtils.parseTypeParameter(method.formalType));
+                if (formalTypes.size() == 0) {
+                    return method.getReturnType();
+                }
                 final Iterator<String> realIterator = ms.parameter.iterator();
                 for (final MethodParameter parameter : method.parameters) {
                     final String sp = parameter.getType();
@@ -508,11 +512,14 @@ class TypeAnalyzer {
                             if (sig.startsWith(FORMAL_TYPE_VARIABLE_MARK) || sig.startsWith(CLASS_TYPE_VARIABLE_MARK)) {
                                 final String typeVal = ClassNameUtils.removeTypeMark(sig);
                                 log.trace("methodTypeMap type={} real={}", typeVal, real);
-                                method.typeParameterMap.put(typeVal, real);
+                                if (formalTypes.contains(typeVal)) {
+                                    method.typeParameterMap.put(typeVal, real);
+                                }
                             }
                         }
                     }
                 }
+
                 final String returnType = method.getReturnType();
                 log.trace("returnType={}", returnType);
                 return returnType;
