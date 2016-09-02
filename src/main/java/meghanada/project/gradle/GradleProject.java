@@ -1,6 +1,7 @@
 package meghanada.project.gradle;
 
 import com.google.common.base.Joiner;
+import meghanada.config.Config;
 import meghanada.project.Project;
 import meghanada.project.ProjectDependency;
 import meghanada.project.ProjectParseException;
@@ -107,7 +108,17 @@ public class GradleProject extends Project {
     }
 
     private ProjectConnection getProjectConnection() {
-        return GradleConnector.newConnector().forProjectDirectory(this.projectRoot).connect();
+        final String gradleVersion = Config.load().getGradleVersion();
+        if (gradleVersion.isEmpty()) {
+            return GradleConnector.newConnector()
+                    .forProjectDirectory(this.projectRoot)
+                    .connect();
+        }
+        log.debug("use gradle version:'{}'", gradleVersion);
+        return GradleConnector.newConnector()
+                .useGradleVersion(gradleVersion)
+                .forProjectDirectory(this.projectRoot)
+                .connect();
     }
 
     @Override

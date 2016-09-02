@@ -26,22 +26,44 @@ Meghanada-Server support only emacs client (meghanada-mode)
 
 * JDK 8
 
-### Build jar 
+### Build jar
 
 ```
 ./gradlew clean shadowJar
 ```
 
+## Usage Server
+
+see help.
+
+```
+java -jar path/to/meghanada.jar --help
+```
+
+```
+usage: meghanada server
+    --gradle-version <arg>   set use gradle version
+ -h,--help                   show help
+    --output <arg>           output format (sexp, csv, json). default:
+                             sexp
+ -p,--port <arg>             set server port. default: 55555
+ -r,--project <arg>          set project root path. default: current path
+ -v,--verbose                show verbose message (DEBUG)
+    --version                show version information
+ -vv,--traceVerbose          show verbose message (TRACE)
+```
+
+
 ## Run Server
 
 ```
-java -jar meghanada.jar
+java -jar path/to/meghanada.jar
 ```
 
 Recommend settings jvm args
 
 ```
-java -XX:+UseConcMarkSweepGC -XX:SoftRefLRUPolicyMSPerMB=50 -Xverify:none -Xms256m -Dfile.encoding=UTF-8 -jar meghanada.jar
+java -XX:+UseConcMarkSweepGC -XX:SoftRefLRUPolicyMSPerMB=50 -Xverify:none -Xms256m -Dfile.encoding=UTF-8 -jar path/to/meghanada.jar
 ```
 
 ## Project

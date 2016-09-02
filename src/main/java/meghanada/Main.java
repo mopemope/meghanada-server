@@ -41,7 +41,7 @@ public class Main {
             loggerConfig.setLevel(Level.DEBUG);
             context.updateLoggers();
             System.setProperty("log-level", "DEBUG");
-            log.debug("set verbose flag");
+            log.debug("set verbose flag(DEBUG)");
         }
         if (cmd.hasOption("vv")) {
             final LoggerContext context = (LoggerContext) LogManager.getContext(false);
@@ -51,6 +51,12 @@ public class Main {
             context.updateLoggers();
             System.setProperty("log-level", "TRACE");
             log.debug("set verbose flag(TRACE)");
+        }
+        if (cmd.hasOption("gradle-version")) {
+            final String version = cmd.getOptionValue("gradle-version", "");
+            if (!version.isEmpty()) {
+                System.setProperty("gradle-version", version);
+            }
         }
 
         String port = "55555";
@@ -87,12 +93,14 @@ public class Main {
         options.addOption(port);
         final Option project = new Option("r", "project", true, "set project root path. default: current path ");
         options.addOption(project);
-        final Option verbose = new Option("v", "verbose", false, "show verbose message");
+        final Option verbose = new Option("v", "verbose", false, "show verbose message (DEBUG)");
         options.addOption(verbose);
         final Option traceVerbose = new Option("vv", "traceVerbose", false, "show verbose message (TRACE)");
         options.addOption(traceVerbose);
         final Option out = new Option(null, "output", true, "output format (sexp, csv, json). default: sexp");
         options.addOption(out);
+        final Option gradleVersion = new Option(null, "gradle-version", true, "set use gradle version");
+        options.addOption(gradleVersion);
         return options;
     }
 }

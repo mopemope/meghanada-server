@@ -175,6 +175,10 @@ public class Config {
         return debug;
     }
 
+    public String getGradleVersion() {
+        return c.getString("gradle-version");
+    }
+
     @FunctionalInterface
     public interface SimpleSupplier<R> {
 
