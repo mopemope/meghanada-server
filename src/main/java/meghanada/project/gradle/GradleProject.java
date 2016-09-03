@@ -8,6 +8,7 @@ import meghanada.project.ProjectParseException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.gradle.tooling.*;
+import org.gradle.tooling.internal.consumer.DefaultGradleConnector;
 import org.gradle.tooling.model.GradleModuleVersion;
 import org.gradle.tooling.model.UnsupportedMethodException;
 import org.gradle.tooling.model.idea.*;
@@ -109,16 +110,23 @@ public class GradleProject extends Project {
 
     private ProjectConnection getProjectConnection() {
         final String gradleVersion = Config.load().getGradleVersion();
+        GradleConnector connector;
+
         if (gradleVersion.isEmpty()) {
-            return GradleConnector.newConnector()
-                    .forProjectDirectory(this.projectRoot)
-                    .connect();
+            connector = GradleConnector.newConnector()
+                    .forProjectDirectory(this.projectRoot);
+        } else {
+            log.debug("use gradle version:'{}'", gradleVersion);
+            connector = GradleConnector.newConnector()
+                    .useGradleVersion(gradleVersion)
+                    .forProjectDirectory(this.projectRoot);
         }
-        log.debug("use gradle version:'{}'", gradleVersion);
-        return GradleConnector.newConnector()
-                .useGradleVersion(gradleVersion)
-                .forProjectDirectory(this.projectRoot)
-                .connect();
+
+        if (connector instanceof DefaultGradleConnector) {
+            ((DefaultGradleConnector) connector).embedded(true);
+        }
+        return connector.connect();
+
     }
 
     @Override
