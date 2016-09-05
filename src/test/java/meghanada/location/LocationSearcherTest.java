@@ -50,10 +50,10 @@ public class LocationSearcherTest extends GradleTestBase {
         {
             Location result = timeIt(() -> {
                 // return new Session(project);
-                return locationSearcher.searchDeclaration(f, 79, 29, "project");
+                return locationSearcher.searchDeclaration(f, 80, 29, "project");
             });
             assertNotNull(result);
-            assertEquals(75, result.getLine());
+            assertEquals(76, result.getLine());
             assertEquals(23, result.getColumn());
         }
     }
@@ -64,9 +64,9 @@ public class LocationSearcherTest extends GradleTestBase {
         LocationSearcher locationSearcher = getSearcher();
         {
             //     private static Project findProject(File dir) throws IOException
-            Location result = locationSearcher.searchDeclaration(f, 97, 37, "dir");
+            Location result = locationSearcher.searchDeclaration(f, 98, 37, "dir");
             assertNotNull(result);
-            assertEquals(82, result.getLine());
+            assertEquals(83, result.getLine());
             assertEquals(45, result.getColumn());
         }
     }
@@ -77,9 +77,9 @@ public class LocationSearcherTest extends GradleTestBase {
         LocationSearcher locationSearcher = getSearcher();
         {
             // Set<File> sources = this.currentProject.getSourceDirectories();
-            Location result = locationSearcher.searchDeclaration(f, 211, 35, "currentProject");
+            Location result = locationSearcher.searchDeclaration(f, 212, 35, "currentProject");
             assertNotNull(result);
-            assertEquals(49, result.getLine());
+            assertEquals(50, result.getLine());
             assertEquals(27, result.getColumn());
         }
     }
@@ -89,11 +89,11 @@ public class LocationSearcherTest extends GradleTestBase {
         File f = new File("./src/main/java/meghanada/session/Session.java");
         LocationSearcher locationSearcher = getSearcher();
         Location result = timeIt(() -> {
-            return locationSearcher.searchDeclaration(f, 270, 39, "parseJavaSource");
+            return locationSearcher.searchDeclaration(f, 271, 39, "parseJavaSource");
         });
 
         assertNotNull(result);
-        assertEquals(301, result.getLine());
+        assertEquals(302, result.getLine());
         assertEquals(24, result.getColumn());
     }
 
@@ -103,7 +103,7 @@ public class LocationSearcherTest extends GradleTestBase {
         LocationSearcher locationSearcher = getSearcher();
         {
             // return source.searchMissingImport();
-            Location result = locationSearcher.searchDeclaration(f, 294, 24, "searchMissingImport");
+            Location result = locationSearcher.searchDeclaration(f, 295, 24, "searchMissingImport");
             assertNotNull(result);
             assertTrue(result.getPath().contains("JavaSource.java"));
             assertEquals(326, result.getLine());

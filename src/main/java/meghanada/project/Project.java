@@ -344,7 +344,7 @@ public abstract class Project {
         return this.runProcess(cmd);
     }
 
-    protected void mergeFromProjectConfig() {
+    public Project mergeFromProjectConfig() {
         final File configFile = new File(this.projectRoot, Config.MEGHANADA_CONF_FILE);
         if (configFile.exists()) {
             final com.typesafe.config.Config config = ConfigFactory.parseFile(configFile);
@@ -445,7 +445,8 @@ public abstract class Project {
                 mainConfig.setExcludeList(list);
             }
         }
-        log.debug("Project:{}", this);
+        log.debug("Merged Project:{}", this);
+        return this;
     }
 
     public String getId() {

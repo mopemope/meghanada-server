@@ -17,6 +17,7 @@ import meghanada.project.Project;
 import meghanada.project.ProjectDependency;
 import meghanada.project.gradle.GradleProject;
 import meghanada.project.maven.MavenProject;
+import meghanada.project.meghanada.MeghanadaProject;
 import meghanada.reflect.CandidateUnit;
 import meghanada.utils.ClassNameUtils;
 import meghanada.utils.FileUtils;
@@ -125,11 +126,11 @@ public class Session {
             final File projectCache = new File(projectSettingDir, PROJECT_CACHE);
 
             if (projectCache.exists()) {
-                final Project temp = Session.readProjectCache(projectCache);
-                if (temp != null && temp.getId().equals(id)) {
-                    temp.setId(id);
-                    log.debug("load from cache project={}", temp);
-                    return temp;
+                final Project tempProject = Session.readProjectCache(projectCache);
+                if (tempProject != null && tempProject.getId().equals(id)) {
+                    tempProject.setId(id);
+                    log.debug("load from cache project={}", tempProject);
+                    return tempProject.mergeFromProjectConfig();
                 }
             }
         }
@@ -140,16 +141,16 @@ public class Session {
         } else if (targetFile.equals(mvnProjectFile)) {
             project = new MavenProject(projectRoot);
         } else {
-            project = new MavenProject(projectRoot);
+            project = new MeghanadaProject(projectRoot);
         }
         project.setId(id);
 
         final Project parsed = project.parseProject();
         if (config.UseFastBoot()) {
             final File projectCache = new File(projectSettingDir, PROJECT_CACHE);
-            Session.writeProjectCache(project, projectCache);
+            Session.writeProjectCache(parsed, projectCache);
         }
-        return parsed;
+        return parsed.mergeFromProjectConfig();
     }
 
     public static Collection<File> getSystemJars() throws IOException {

@@ -19,7 +19,6 @@ public class MeghanadaProject extends Project {
 
     @Override
     public Project parseProject() throws ProjectParseException {
-        super.mergeFromProjectConfig();
         return this;
     }
 

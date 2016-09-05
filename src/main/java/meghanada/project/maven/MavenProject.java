@@ -77,7 +77,6 @@ public class MavenProject extends Project {
         for (ProjectDependency projectDependency : this.getDependencies()) {
             log.debug("dependency {}", projectDependency.getId());
         }
-        super.mergeFromProjectConfig();
         return this;
     }
 

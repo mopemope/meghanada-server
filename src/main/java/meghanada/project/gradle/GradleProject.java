@@ -102,7 +102,6 @@ public class GradleProject extends Project {
                 log.debug("dependency {}", projectDependency);
             }
 
-            super.mergeFromProjectConfig();
             return this;
         } catch (IOException e) {
             throw new ProjectParseException(e);
