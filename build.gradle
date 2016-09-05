@@ -5,18 +5,30 @@ plugins {
     id 'com.github.johnrengelman.shadow' version '1.2.3'
     id 'com.github.ben-manes.versions' version '0.13.0'
     id 'com.jfrog.bintray' version '1.7.1'
+    id 'org.ajoberstar.grgit' version '1.5.1'
 }
 
 ext {
     group = 'meghanada'
-    version = '0.1.0'
+    serverVersion = '0.1.0'
+
+    longVersion = "$serverVersion-${grgit.head().abbreviatedId}"
+    date = new Date().format("yyyy-MM-dd'T'HH:mm:ssZ")
     sourceCompatibility = 1.8
 
     gradleVersion = 3.0
-    log4jVersion = "2.6.2"
+    log4jVersion = '2.6.2'
 }
 
 mainClassName = "meghanada.Main"
+
+jar {
+    manifest {
+        attributes 'Date': "$date"
+        attributes 'Version': "$longVersion"
+    }
+}
+
 shadowJar {
     archiveName = 'meghanada.jar'
 }
@@ -43,13 +55,18 @@ bintray {
     pkg {
         repo = 'meghanada'
         name = 'meghanada'
+        vcsUrl = 'https://github.com/mopemope/meghanada-server.git'
+        licenses = ['GPL-3.0']
+        githubRepo = 'mopemope/meghanada-server'
+        githubReleaseNotesFile = 'README.md'
+        labels = ['java', 'emacs']
+
         version {
-            name = '0.1.0'
-            desc = 'Meghanada Server 0.1.0'
+            name = "$serverVersion"
+            desc = "Meghanada Server $longVersion"
             released  = new Date()
         }
     }
-
 }
 
 dependencies {
@@ -96,7 +113,7 @@ task wrapper(type: Wrapper) {
 }
 
 task appVersion << {
-    print version
+    print longVersion
 }
 
 task jar(type: Copy, overwrite: true) {

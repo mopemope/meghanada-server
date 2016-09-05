@@ -11,14 +11,29 @@ import org.apache.logging.log4j.core.config.Configuration;
 import org.apache.logging.log4j.core.config.LoggerConfig;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
+import java.net.URLClassLoader;
+import java.util.Collection;
+import java.util.Map;
+import java.util.jar.Attributes;
+import java.util.jar.Manifest;
 
 public class Main {
 
-    private static final String VERSION = "0.1.0";
-
     private static Logger log = LogManager.getLogger(Main.class);
 
+    public static String getVersion() throws IOException {
+        final Manifest manifest = new Manifest();
+        manifest.read(Thread.currentThread().getContextClassLoader().getResourceAsStream("META-INF/MANIFEST.MF"));
+        final Attributes mainAttributes = manifest.getMainAttributes();
+        return mainAttributes.getValue("Version");
+    }
+
     public static void main(String args[]) throws ParseException, IOException {
+        final String version = getVersion();
+        System.setProperty("meghanada-server.version", version);
+
         final Options options = buildOptions();
 
         final CommandLineParser parser = new DefaultParser();
@@ -30,7 +45,7 @@ public class Main {
             return;
         }
         if (cmd.hasOption("version")) {
-            System.out.println(VERSION);
+            System.out.println(version);
             return;
         }
 
@@ -53,9 +68,9 @@ public class Main {
             log.debug("set verbose flag(TRACE)");
         }
         if (cmd.hasOption("gradle-version")) {
-            final String version = cmd.getOptionValue("gradle-version", "");
+            final String gradleVersion = cmd.getOptionValue("gradle-version", "");
             if (!version.isEmpty()) {
-                System.setProperty("gradle-version", version);
+                System.setProperty("gradle-version", gradleVersion);
             }
         }
 
@@ -75,6 +90,7 @@ public class Main {
         log.debug("set port:{}, projectRoot:{}, output:{}", port, projectRoot, fmt);
         final int portInt = Integer.parseInt(port);
 
+        log.info("Meghanada-Server Version:{}", version);
         final Server server = createServer("127.0.0.1", portInt, projectRoot, fmt);
         server.startServer();
     }
