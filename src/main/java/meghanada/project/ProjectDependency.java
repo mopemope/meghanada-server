@@ -1,18 +1,20 @@
 package meghanada.project;
 
+import com.esotericsoftware.kryo.DefaultSerializer;
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Objects;
 
 import java.io.File;
 
+@DefaultSerializer(ProjectDependencySerializer.class)
 public class ProjectDependency {
 
-    private String id;
-    private String scope;
-    private String version;
-    private File file;
+    private final String id;
+    private final String scope;
+    private final String version;
+    private final File file;
 
-    public ProjectDependency(String id, String scope, String version, File file) {
+    public ProjectDependency(final String id, final String scope, final String version, final File file) {
         this.id = id;
         this.scope = scope.toUpperCase();
         this.version = version;

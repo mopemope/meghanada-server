@@ -3,8 +3,10 @@ package meghanada.utils;
 import meghanada.config.Config;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.message.EntryMessage;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.FileVisitResult;
@@ -22,7 +24,7 @@ public class FileUtils {
     private static final Logger log = LogManager.getLogger(FileUtils.class);
 
     public static String md5sum(final File file) throws IOException {
-        log.traceEntry("file={}", file);
+        final EntryMessage entryMessage = log.traceEntry("file={}", file);
         MessageDigest md;
         try {
             md = MessageDigest.getInstance("MD5");
@@ -40,7 +42,7 @@ public class FileUtils {
                 sb.append(Character.forDigit(b >> 4 & 0xF, 16));
                 sb.append(Character.forDigit(b & 0xF, 16));
             }
-            return log.traceExit(sb.toString());
+            return log.traceExit(entryMessage, sb.toString());
         }
     }
 
@@ -86,6 +88,44 @@ public class FileUtils {
             return true;
         }
         return true;
+    }
+
+    public static String findProjectID(final File root, final String target) throws IOException {
+        MessageDigest md;
+        try {
+            md = MessageDigest.getInstance("MD5");
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException(e);
+        }
+
+        Files.walkFileTree(root.toPath(), new SimpleFileVisitor<Path>() {
+            @Override
+            public FileVisitResult visitFile(Path path, BasicFileAttributes attrs) throws IOException {
+                final File file = path.toFile();
+                if (file.getName().equals(target)) {
+                    byte[] buf = new byte[8192];
+                    int readByte;
+                    try (FileInputStream in = new FileInputStream(file)) {
+                        while ((readByte = in.read(buf)) != -1) {
+                            md.update(buf, 0, readByte);
+                        }
+                    }
+                }
+                return FileVisitResult.SKIP_SUBTREE;
+            }
+
+            @Override
+            public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
+                return FileVisitResult.CONTINUE;
+            }
+        });
+        byte[] digest = md.digest();
+        StringBuilder sb = new StringBuilder();
+        for (final int b : digest) {
+            sb.append(Character.forDigit(b >> 4 & 0xF, 16));
+            sb.append(Character.forDigit(b & 0xF, 16));
+        }
+        return sb.toString();
     }
 
 }

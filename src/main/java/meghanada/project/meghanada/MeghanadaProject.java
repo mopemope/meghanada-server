@@ -1,13 +1,16 @@
 package meghanada.project.meghanada;
 
+import com.esotericsoftware.kryo.DefaultSerializer;
 import meghanada.project.Project;
 import meghanada.project.ProjectParseException;
+import meghanada.project.ProjectSerializer;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 
+@DefaultSerializer(ProjectSerializer.class)
 public class MeghanadaProject extends Project {
 
     public MeghanadaProject(File projectRoot) throws IOException {

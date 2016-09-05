@@ -1,5 +1,6 @@
 package meghanada.project;
 
+import com.esotericsoftware.kryo.DefaultSerializer;
 import com.google.common.base.MoreObjects;
 import com.typesafe.config.ConfigFactory;
 import meghanada.compiler.CompileResult;
@@ -19,6 +20,7 @@ import java.nio.file.Path;
 import java.util.*;
 import java.util.stream.Collectors;
 
+@DefaultSerializer(ProjectSerializer.class)
 public abstract class Project {
 
     public static final String DEFAULT_PATH = File.separator + "src" + File.separator + "main" + File.separator;
@@ -45,6 +47,7 @@ public abstract class Project {
     protected File testOutput;
     protected String compileSource = "1.8";
     protected String compileTarget = "1.8";
+    protected String id;
 
     private SimpleJavaCompiler javaCompiler;
     private String cachedClasspath;
@@ -72,7 +75,7 @@ public abstract class Project {
         return this.sources;
     }
 
-    private Set<File> getResourceDirectories() {
+    Set<File> getResourceDirectories() {
         return this.resources;
     }
 
@@ -84,7 +87,7 @@ public abstract class Project {
         return this.testSources;
     }
 
-    private Set<File> getTestResourceDirectories() {
+    Set<File> getTestResourceDirectories() {
         return this.testResources;
     }
 
@@ -278,6 +281,7 @@ public abstract class Project {
     public String toString() {
         return MoreObjects.toStringHelper(this)
                 .add("projectRoot", projectRoot)
+                .add("dependencies", dependencies.size())
                 .add("sources", sources)
                 .add("resources", resources)
                 .add("output", output)
@@ -440,10 +444,15 @@ public abstract class Project {
                 final List<String> list = config.getStringList("exclude-file");
                 mainConfig.setExcludeList(list);
             }
-
         }
-
         log.debug("Project:{}", this);
+    }
 
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
     }
 }

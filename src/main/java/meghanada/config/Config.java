@@ -60,7 +60,7 @@ public class Config {
         return config;
     }
 
-    public static <T> T timeIt(SimpleSupplier<T> supplier) {
+    public static <T> T timeIt(final SimpleSupplier<T> supplier) {
         Stopwatch stopwatch = Stopwatch.createStarted();
         try {
             return supplier.get();
@@ -68,6 +68,17 @@ public class Config {
             throw new RuntimeException(e);
         } finally {
             log.info("elapsed:{}", stopwatch.stop());
+        }
+    }
+
+    public static <T> T timeItF(final String format, final SimpleSupplier<T> supplier) {
+        Stopwatch stopwatch = Stopwatch.createStarted();
+        try {
+            return supplier.get();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        } finally {
+            log.info(format, stopwatch.stop());
         }
     }
 
@@ -177,6 +188,10 @@ public class Config {
 
     public String getGradleVersion() {
         return c.getString("gradle-version");
+    }
+
+    public boolean UseFastBoot() {
+        return c.getBoolean("fast-boot");
     }
 
     @FunctionalInterface

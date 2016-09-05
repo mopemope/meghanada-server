@@ -1,9 +1,11 @@
 package meghanada.project.maven;
 
+import com.esotericsoftware.kryo.DefaultSerializer;
 import com.google.common.annotations.Beta;
 import meghanada.project.Project;
 import meghanada.project.ProjectDependency;
 import meghanada.project.ProjectParseException;
+import meghanada.project.ProjectSerializer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -14,6 +16,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Beta
+@DefaultSerializer(ProjectSerializer.class)
 public class MavenProject extends Project {
 
     private static Logger log = LogManager.getLogger(MavenProject.class);

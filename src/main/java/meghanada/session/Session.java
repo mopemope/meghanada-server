@@ -1,5 +1,8 @@
 package meghanada.session;
 
+import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.io.Input;
+import com.esotericsoftware.kryo.io.Output;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.LoadingCache;
 import meghanada.compiler.CompileResult;
@@ -14,16 +17,14 @@ import meghanada.project.Project;
 import meghanada.project.ProjectDependency;
 import meghanada.project.gradle.GradleProject;
 import meghanada.project.maven.MavenProject;
-import meghanada.project.meghanada.MeghanadaProject;
 import meghanada.reflect.CandidateUnit;
 import meghanada.utils.ClassNameUtils;
 import meghanada.utils.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.objenesis.strategy.StdInstantiatorStrategy;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -36,11 +37,15 @@ import java.util.stream.Collectors;
 
 public class Session {
 
+    private static final String PROJECT_CACHE = "project.dat";
     private static final String mvnProjectFile = "pom.xml";
     private static final String gradleProjectFile = "build.gradle";
+
     private static final Logger log = LogManager.getLogger(Session.class);
+
     private static final Pattern SWITCH_TEST_RE = Pattern.compile("Test.java", Pattern.LITERAL);
     private static final Pattern SWITCH_JAVA_RE = Pattern.compile(".java", Pattern.LITERAL);
+
     private final Project currentProject;
     private final LoadingCache<File, JavaSource> sourceCache;
     private final SessionEventBus sessionEventBus;
@@ -71,7 +76,6 @@ public class Session {
         if (project == null) {
             throw new IllegalArgumentException("Project Not Found");
         }
-        project.parseProject();
         return new Session(project);
     }
 
@@ -90,13 +94,13 @@ public class Session {
 
             if (gradle.exists()) {
                 log.debug("find gradle project {}", gradle);
-                return new GradleProject(dir);
+                return loadProject(dir, gradleProjectFile);
             } else if (mvn.exists()) {
                 log.debug("find mvn project {}", mvn);
-                return new MavenProject(dir);
+                return loadProject(dir, mvnProjectFile);
             } else if (meghanada.exists()) {
-                log.debug("find meghanada project {}", mvn);
-                return new MeghanadaProject(dir);
+                log.debug("find meghanada project {}", meghanada);
+                return loadProject(dir, Config.MEGHANADA_CONF_FILE);
             }
 
             File parent = dir.getParentFile();
@@ -105,6 +109,47 @@ public class Session {
             }
             dir = dir.getParentFile();
         }
+    }
+
+    private static Project loadProject(final File projectRoot, final String targetFile) throws IOException {
+
+        System.setProperty("project.root", projectRoot.getCanonicalPath());
+
+        final Config config = Config.load();
+        final String projectSettingDir = config.getProjectSettingDir();
+        final String id = FileUtils.findProjectID(projectRoot, targetFile);
+
+        log.debug("project ID={}", id);
+        if (config.UseFastBoot()) {
+
+            final File projectCache = new File(projectSettingDir, PROJECT_CACHE);
+
+            if (projectCache.exists()) {
+                final Project temp = Session.readProjectCache(projectCache);
+                if (temp != null && temp.getId().equals(id)) {
+                    temp.setId(id);
+                    log.debug("load from cache project={}", temp);
+                    return temp;
+                }
+            }
+        }
+
+        Project project;
+        if (targetFile.equals(gradleProjectFile)) {
+            project = new GradleProject(projectRoot);
+        } else if (targetFile.equals(mvnProjectFile)) {
+            project = new MavenProject(projectRoot);
+        } else {
+            project = new MavenProject(projectRoot);
+        }
+        project.setId(id);
+
+        final Project parsed = project.parseProject();
+        if (config.UseFastBoot()) {
+            final File projectCache = new File(projectSettingDir, PROJECT_CACHE);
+            Session.writeProjectCache(project, projectCache);
+        }
+        return parsed;
     }
 
     public static Collection<File> getSystemJars() throws IOException {
@@ -121,6 +166,31 @@ public class Session {
         log.debug("clear cache projectCacheDir:{}", projectSettingDir);
         FileUtils.deleteFile(new File(projectSettingDir));
         return true;
+    }
+
+    private static void writeProjectCache(final Project project, final File cacheFile) {
+        final Kryo kryo = new Kryo();
+        try (final Output out = new Output(new FileOutputStream(cacheFile))) {
+            kryo.writeClassAndObject(out, project);
+        } catch (FileNotFoundException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    private static Project readProjectCache(final File cacheFile) {
+        final Kryo kryo = new Kryo();
+        kryo.setInstantiatorStrategy(new StdInstantiatorStrategy());
+
+        try (final Input input = new Input(new FileInputStream(cacheFile))) {
+            final Object o = kryo.readClassAndObject(input);
+            log.debug("load project={}", o);
+            if (o != null) {
+                return (Project) o;
+            }
+            return null;
+        } catch (FileNotFoundException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 
     private void setupSubscribes() throws IOException {
@@ -437,4 +507,5 @@ public class Session {
     public InputStream runTask(List<String> args) throws Exception {
         return currentProject.runTask(args);
     }
+
 }
