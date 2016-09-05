@@ -21,6 +21,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static meghanada.config.Config.timeItF;
 import static meghanada.utils.FunctionUtils.wrapIO;
 
 public class CacheEventSubscriber extends AbstractSubscriber {
@@ -40,25 +41,24 @@ public class CacheEventSubscriber extends AbstractSubscriber {
         final Project project = session.getCurrentProject();
         final CachedASMReflector reflector = CachedASMReflector.getInstance();
 
-        final Stopwatch stopwatch = Stopwatch.createStarted();
-        try {
-            project.compileJava(false);
-            project.compileTestJava(false);
-        } catch (Exception e) {
-            log.catching(e);
-        }
-
-        log.info("project compiled elapsed:{}", stopwatch.stop());
+        boolean result = timeItF("project compiled elapsed:{}", () -> {
+            try {
+                project.compileJava(false);
+                project.compileTestJava(false);
+            } catch (Exception e) {
+                log.catching(e);
+            }
+            return true;
+        });
 
         reflector.addJars(Session.getSystemJars());
         reflector.addJars(session.getDependentJars());
         reflector.addDirectory(project.getOutputDirectory());
         reflector.addDirectory(project.getTestOutputDirectory());
 
-        stopwatch.reset();
-        stopwatch.start();
+        final Stopwatch stopwatch = Stopwatch.createStarted();
         reflector.createClassIndexes();
-        log.debug("done index size:{} elapsed:{}", reflector.getGlobalClassIndex().size(), stopwatch.stop());
+        log.info("done index size:{} elapsed:{}", reflector.getGlobalClassIndex().size(), stopwatch.stop());
         stopwatch.reset();
 
         stopwatch.start();
@@ -89,7 +89,7 @@ public class CacheEventSubscriber extends AbstractSubscriber {
             } catch (IOException | ExecutionException e) {
                 log.catching(e);
             } finally {
-                log.info("analyze ...  [ {} / {}]", this.parsedCount, fileList.size());
+                log.info("analyze {} / {}", this.parsedCount, fileList.size());
             }
         });
 

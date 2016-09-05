@@ -59,7 +59,7 @@ public class Session {
     private Session(final Project currentProject) {
         this.currentProject = currentProject;
         this.sourceCache = CacheBuilder.newBuilder()
-                .expireAfterAccess(10, TimeUnit.MINUTES)
+                .expireAfterAccess(15, TimeUnit.MINUTES)
                 .build(new JavaSourceLoader());
 
         this.sessionEventBus = new SessionEventBus(this);

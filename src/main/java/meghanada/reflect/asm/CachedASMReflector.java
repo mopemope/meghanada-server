@@ -35,18 +35,18 @@ import static meghanada.utils.FunctionUtils.wrapIOConsumer;
 
 public class CachedASMReflector {
 
-    public static final int CACHE_SIZE = 1024 * 2;
+    public static final int CACHE_SIZE = 1024 * 4;
     private static final Logger log = LogManager.getLogger(CachedASMReflector.class);
 
     private static final Pattern PACKAGE_RE = Pattern.compile("\\.\\*");
     private static CachedASMReflector cachedASMReflector;
 
-    private final Map<String, ClassIndex> globalClassIndex = new ConcurrentHashMap<>(CACHE_SIZE * 4);
+    private final Map<String, ClassIndex> globalClassIndex = new ConcurrentHashMap<>(CACHE_SIZE * 8);
 
     // Key:FQCN Val:JarFile
-    private final Map<String, File> classFileMap = new ConcurrentHashMap<>(CACHE_SIZE * 4);
+    private final Map<String, File> classFileMap = new ConcurrentHashMap<>(CACHE_SIZE * 8);
 
-    private final Map<ClassIndex, File> reflectIndex = new ConcurrentHashMap<>(CACHE_SIZE * 4);
+    private final Map<ClassIndex, File> reflectIndex = new ConcurrentHashMap<>(CACHE_SIZE * 8);
 
     private final List<File> jars = new ArrayList<>(32);
     private final List<File> directories = new ArrayList<>(4);
@@ -55,7 +55,7 @@ public class CachedASMReflector {
 
     private CachedASMReflector() {
         this.memberCache = CacheBuilder.newBuilder()
-                .initialCapacity(256)
+                .initialCapacity(1024)
                 .expireAfterAccess(30, TimeUnit.MINUTES)
                 .build(new MemberCacheLoader(this.classFileMap, reflectIndex));
 
