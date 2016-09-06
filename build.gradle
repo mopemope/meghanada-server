@@ -30,7 +30,9 @@ jar {
 }
 
 shadowJar {
-    archiveName = 'meghanada.jar'
+    baseName = 'meghanada'
+    classifier = null
+    version = serverVersion
 }
 
 repositories {
@@ -116,10 +118,13 @@ task appVersion << {
     print longVersion
 }
 
-task jar(type: Copy, overwrite: true) {
+task installHome(type: Copy) {
     def home = System.properties['user.home']
-    from 'build/libs/meghanada.jar'
+    from "build/libs/meghanada-${serverVersion}.jar"
     into "$home/.meghanada/"
+    rename { String fileName ->
+        'meghanada.jar'
+    }
 }
 
-jar.dependsOn(shadowJar)
+installHome.dependsOn(shadowJar)
