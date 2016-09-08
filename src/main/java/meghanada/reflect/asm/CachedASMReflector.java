@@ -15,6 +15,7 @@ import meghanada.reflect.MemberDescriptor;
 import meghanada.reflect.names.MethodParameterNames;
 import meghanada.utils.ClassName;
 import meghanada.utils.ClassNameUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -54,6 +55,8 @@ public class CachedASMReflector {
     private final KryoPool kryoPool;
 
     private CachedASMReflector() {
+        String a = new String();
+
         this.memberCache = CacheBuilder.newBuilder()
                 .initialCapacity(1024)
                 .expireAfterAccess(30, TimeUnit.MINUTES)
@@ -205,6 +208,17 @@ public class CachedASMReflector {
                 .filter(ci -> ci.getPackage().equals(pkg))
                 .forEach(ci -> result.putIfAbsent(ci.getName(), ci.getRawDeclaration()));
         return result;
+    }
+
+    public Collection<? extends CandidateUnit> fuzzySearchClasses(final String keyword) {
+        final int length = keyword.length()+1;
+        return this.globalClassIndex.values().parallelStream()
+                .filter(classIndex -> {
+                    final String name = classIndex.getName();
+                    final int score = StringUtils.getFuzzyDistance(name, keyword, Locale.ENGLISH);
+                    return score >= length;
+                })
+                .collect(Collectors.toList());
     }
 
     public Collection<? extends CandidateUnit> searchClasses(final String keyword) {

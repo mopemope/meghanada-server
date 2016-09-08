@@ -1,6 +1,7 @@
 package meghanada.completion;
 
 import com.google.common.cache.LoadingCache;
+import meghanada.config.Config;
 import meghanada.parser.AccessSymbol;
 import meghanada.parser.JavaSource;
 import meghanada.parser.TypeScope;
@@ -64,6 +65,7 @@ public class JavaCompletion {
     private Collection<? extends CandidateUnit> specialCompletion(final JavaSource source, final int line, final int column, String prefix) throws ExecutionException {
 
         // special command
+        final boolean useFuzzySearch = Config.load().UseClassFuzzySearch();
         if (prefix.equals("*import")) {
             // TODO
             return Collections.emptyList();
@@ -72,6 +74,9 @@ public class JavaCompletion {
             int idx = prefix.lastIndexOf(":");
             if (idx > 0) {
                 String classPrefix = prefix.substring(idx + 1, prefix.length());
+                if (useFuzzySearch) {
+                    return CachedASMReflector.getInstance().fuzzySearchClasses(classPrefix.toLowerCase());
+                }
                 return CachedASMReflector.getInstance().searchClasses(classPrefix.toLowerCase());
             }
             return this.completionConstructors(source);
@@ -172,7 +177,7 @@ public class JavaCompletion {
     }
 
     private Collection<? extends CandidateUnit> completionSymbols(final JavaSource source, int line, String prefix) throws ExecutionException {
-        final List<CandidateUnit> result = new ArrayList<>(16);
+        final List<CandidateUnit> result = new ArrayList<>(32);
 
         // prefix search
         log.debug("Search symbols Prefix:{} Line:{}", prefix, line);
@@ -206,8 +211,14 @@ public class JavaCompletion {
         if (Character.isUpperCase(prefix.charAt(0))) {
             // completion
             CachedASMReflector reflector = CachedASMReflector.getInstance();
-            return reflector.searchClasses(prefix.toLowerCase());
+            final boolean fuzzySearch = Config.load().UseClassFuzzySearch();
+            if (fuzzySearch) {
+                result.addAll(reflector.fuzzySearchClasses(prefix.toLowerCase()));
+            } else {
+                result.addAll(reflector.searchClasses(prefix.toLowerCase()));
+            }
         }
+
         return result;
     }
 

@@ -47,6 +47,10 @@ public class Config {
         log.debug("root-cache-dir:{}", getRootCacheDir());
         log.debug("project-setting-dir:{}", getProjectSettingDir());
         log.debug("project-cache-dir:{}", getProjectCacheDir());
+
+        log.debug("fast-boot:{}", UseFastBoot());
+        log.debug("class-fuzzy-search:{}", UseClassFuzzySearch());
+
         final File cache = new File(getProjectCacheDir());
         if (!cache.exists()) {
             cache.mkdirs();
@@ -192,6 +196,10 @@ public class Config {
 
     public boolean UseFastBoot() {
         return c.getBoolean("fast-boot");
+    }
+
+    public boolean UseClassFuzzySearch() {
+        return c.getBoolean("class-fuzzy-search");
     }
 
     @FunctionalInterface
