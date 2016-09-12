@@ -10,7 +10,6 @@ import meghanada.reflect.CandidateUnit;
 import meghanada.reflect.ClassIndex;
 import meghanada.reflect.MemberDescriptor;
 import meghanada.reflect.asm.CachedASMReflector;
-import meghanada.utils.ClassNameUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -30,6 +29,7 @@ public class JavaCompletion {
     }
 
     public Collection<? extends CandidateUnit> completionAt(File file, int line, int column, String prefix) {
+
         log.debug("line={} column={} prefix={}", line, column, prefix);
         try {
             final JavaSource source = this.sourceCache.get(file);
@@ -99,14 +99,14 @@ public class JavaCompletion {
             if (classIdx > 0 && prefixIdx > 0) {
                 final String prefix = searchWord.substring(prefixIdx + 1);
                 // return methods of prefix class
-                final String fqcn = ClassNameUtils.boxing(searchWord.substring(classIdx + 1, prefixIdx));
+                final String fqcn = searchWord.substring(classIdx + 1, prefixIdx);
                 return reflect(pkg, fqcn, prefix);
             }
             // chained method completion
 
             if (classIdx > 0) {
                 // return methods of prefix class
-                final String fqcn = ClassNameUtils.boxing(searchWord.substring(classIdx + 1, searchWord.length()));
+                final String fqcn = searchWord.substring(classIdx + 1, searchWord.length());
                 return reflect(pkg, fqcn, "");
 
             } else {
