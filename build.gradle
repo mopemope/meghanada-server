@@ -21,13 +21,7 @@ ext {
 }
 
 mainClassName = "meghanada.Main"
-
-jar {
-    manifest {
-        attributes 'Date': "$date"
-        attributes 'Version': "$longVersion"
-    }
-}
+applicationName = 'meghanada'
 
 shadowJar {
     baseName = 'meghanada'
@@ -128,3 +122,12 @@ task installHome(type: Copy) {
 }
 
 installHome.dependsOn(shadowJar)
+
+task embedVersion(type: Copy) {
+    from 'src/main/resources/VERSION'
+    into 'build/resources/main'
+
+    expand(buildDate: new Date(), version: longVersion, appName: applicationName)
+}
+
+shadowJar.dependsOn embedVersion

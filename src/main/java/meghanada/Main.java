@@ -11,23 +11,17 @@ import org.apache.logging.log4j.core.config.Configuration;
 import org.apache.logging.log4j.core.config.LoggerConfig;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.net.URL;
-import java.net.URLClassLoader;
-import java.util.Collection;
-import java.util.Map;
-import java.util.jar.Attributes;
-import java.util.jar.Manifest;
+import java.util.Properties;
 
 public class Main {
 
     private static Logger log = LogManager.getLogger(Main.class);
 
     public static String getVersion() throws IOException {
-        final Manifest manifest = new Manifest();
-        manifest.read(Thread.currentThread().getContextClassLoader().getResourceAsStream("META-INF/MANIFEST.MF"));
-        final Attributes mainAttributes = manifest.getMainAttributes();
-        return mainAttributes.getValue("Version");
+        final ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+        final Properties properties = new Properties();
+        properties.load(classLoader.getResourceAsStream("VERSION"));
+        return properties.getProperty("version");
     }
 
     public static void main(String args[]) throws ParseException, IOException {
