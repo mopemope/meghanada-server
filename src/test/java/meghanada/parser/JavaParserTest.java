@@ -494,7 +494,7 @@ public class JavaParserTest extends GradleTestBase {
             List<MemberDescriptor> result = typeScope.getMemberDescriptors();
             String type = typeScope.getFQCN();
             assertEquals("meghanada.completion.JavaCompletion", type);
-            assertEquals(18, result.size());
+            assertEquals(21, result.size());
         }
     }
 

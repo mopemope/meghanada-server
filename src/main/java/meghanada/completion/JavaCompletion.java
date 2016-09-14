@@ -181,6 +181,27 @@ public class JavaCompletion {
             }
         }
         final String declaration = cu.getDeclaration();
+        if (declaration.contains("private")) {
+            return false;
+        }
+        if (!isStatic) {
+            if (withCONSTRUCTOR) {
+                return !declaration.contains("static");
+            }
+            return !declaration.contains("static") && !cu.getType().equals("CONSTRUCTOR");
+        }
+        return declaration.contains("static");
+    }
+
+    private boolean privateFilter(final CandidateUnit cu, final boolean isStatic, final boolean withCONSTRUCTOR, final String target) {
+        final String name = cu.getName().toLowerCase();
+        if (target != null && !target.isEmpty()) {
+            // compare
+            if (!name.contains(target)) {
+                return false;
+            }
+        }
+        final String declaration = cu.getDeclaration();
         if (!isStatic) {
             if (withCONSTRUCTOR) {
                 return !declaration.contains("static");
@@ -201,6 +222,13 @@ public class JavaCompletion {
         return doReflect(fqcn)
                 .stream()
                 .filter(md -> this.packageFilter(md, noStatic, withCONSTRUCTOR, target))
+                .collect(Collectors.toSet());
+    }
+
+    private Collection<? extends CandidateUnit> privateReflect(final String fqcn, final boolean noStatic, final boolean withCONSTRUCTOR, final String target) {
+        return doReflect(fqcn)
+                .stream()
+                .filter(md -> this.privateFilter(md, noStatic, withCONSTRUCTOR, target))
                 .collect(Collectors.toSet());
     }
 
@@ -280,56 +308,76 @@ public class JavaCompletion {
         }
 
         log.debug("search {}'s field or method", var);
-        if (Character.isUpperCase(var.charAt(0))) {
+
+        final String ownPackage = source.getPkg();
+        {
             // completion static method
             String fqcn = source.importClass.get(var);
             if (fqcn != null) {
                 if (!fqcn.contains(".")) {
                     // try same pkg
-                    final String pkg = source.getPkg();
-                    if (pkg != null) {
-                        fqcn = pkg + "." + fqcn;
+                    if (ownPackage != null) {
+                        fqcn = ownPackage + "." + fqcn;
                     }
                 }
-                final String pkg = source.getPkg();
-                return reflect(pkg, fqcn, true, false, target);
+                Collection<? extends CandidateUnit> result = reflect(ownPackage, fqcn, true, false, target);
+                if (!result.isEmpty()) {
+                    return result;
+                }
             }
-        } else {
+        }
+
+        {
             final Map<String, Variable> symbols = source.getDeclaratorMap(line);
             final Variable ns = symbols.get(var);
-            final String pkg = source.getPkg();
             if (ns != null) {
                 // get data from reflector
                 String fqcn = ns.getFQCN();
-                log.debug("FQCN {}", fqcn);
                 if (!fqcn.contains(".")) {
-                    fqcn = pkg + "." + fqcn;
+                    fqcn = ownPackage + "." + fqcn;
                 }
-                return this.reflect(pkg, fqcn, target);
+                return this.reflect(ownPackage, fqcn, target);
             }
+        }
+        {
             final Optional<MemberDescriptor> fieldResult = source.getAllMember()
                     .stream()
                     .filter(md -> md.matchType(CandidateUnit.MemberType.FIELD) && md.getName().equals(var))
                     .findFirst();
+
             if (fieldResult.isPresent()) {
                 final MemberDescriptor memberDescriptor = fieldResult.orElse(null);
                 final String returnType = memberDescriptor.getRawReturnType();
-                return reflect(pkg, returnType, target);
+                return reflect(ownPackage, returnType, target);
             }
         }
+
+        {
+            // java.lang
+            final String fqcn = "java.lang." + var;
+            final Collection<? extends CandidateUnit> result = this.reflect(ownPackage, fqcn, true, false, target);
+            if (!result.isEmpty()) {
+                return result;
+            }
+        }
+
         return Collections.emptySet();
     }
 
-    private Collection<? extends CandidateUnit> reflect(final String pkg, final String fqcn, final boolean isStatic, final boolean withConstructor, final String prefix) {
-        if (fqcn.startsWith(pkg)) {
+    private Collection<? extends CandidateUnit> reflect(final String ownPackage, final String fqcn, final boolean isStatic, final boolean withConstructor, final String prefix) {
+        if (fqcn.startsWith(ownPackage)) {
             // package
             return this.packageReflect(fqcn, isStatic, withConstructor, prefix);
         }
         return this.publicReflect(fqcn, isStatic, withConstructor, prefix);
     }
 
-    private Collection<? extends CandidateUnit> reflect(final String pkg, final String fqcn, final String prefix) {
-        return this.reflect(pkg, fqcn, false, false, prefix);
+    private Collection<? extends CandidateUnit> reflectSelf(final String ownPackage, final String fqcn, final boolean isStatic, final boolean withConstructor, final String prefix) {
+        return this.privateReflect(fqcn, isStatic, withConstructor, prefix);
+    }
+
+    private Collection<? extends CandidateUnit> reflect(final String ownPackage, final String fqcn, final String prefix) {
+        return this.reflect(ownPackage, fqcn, false, false, prefix);
     }
 
 }
