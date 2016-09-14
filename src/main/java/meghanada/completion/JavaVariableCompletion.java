@@ -15,7 +15,7 @@ import java.util.concurrent.ExecutionException;
 
 public class JavaVariableCompletion {
     private static Logger log = LogManager.getLogger(JavaCompletion.class);
-    private static String[] PLURAL_CLASS = new String[]{
+    private static String[] pluralClass = new String[]{
             "List",
             "Set",
             "Collections"
@@ -139,7 +139,7 @@ public class JavaVariableCompletion {
         if (ClassNameUtils.isArray(returnType)) {
             return log.traceExit(true);
         }
-        for (String cls : PLURAL_CLASS) {
+        for (String cls : pluralClass) {
             if (returnType.endsWith(cls)) {
                 return log.traceExit(true);
             }

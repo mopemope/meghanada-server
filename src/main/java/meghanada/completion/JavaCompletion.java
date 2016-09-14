@@ -77,7 +77,7 @@ public class JavaCompletion {
     private Collection<? extends CandidateUnit> specialCompletion(final JavaSource source, final int line, final int column, final String searchWord) throws ExecutionException {
 
         // special command
-        final boolean useFuzzySearch = Config.load().UseClassFuzzySearch();
+        final boolean useFuzzySearch = Config.load().useClassFuzzySearch();
         if (searchWord.startsWith("*import")) {
             return Collections.emptyList();
         } else if (searchWord.startsWith("*new")) {
@@ -286,7 +286,7 @@ public class JavaCompletion {
         if (Character.isUpperCase(prefix.charAt(0))) {
             // completion
             final CachedASMReflector reflector = CachedASMReflector.getInstance();
-            final boolean fuzzySearch = Config.load().UseClassFuzzySearch();
+            final boolean fuzzySearch = Config.load().useClassFuzzySearch();
             if (fuzzySearch) {
                 result.addAll(reflector.fuzzySearchClasses(prefix.toLowerCase()));
             } else {

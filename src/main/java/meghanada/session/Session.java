@@ -121,7 +121,7 @@ public class Session {
         final String id = FileUtils.findProjectID(projectRoot, targetFile);
 
         log.debug("project ID={}", id);
-        if (config.UseFastBoot()) {
+        if (config.useFastBoot()) {
 
             final File projectCache = new File(projectSettingDir, PROJECT_CACHE);
 
@@ -146,7 +146,7 @@ public class Session {
         project.setId(id);
 
         final Project parsed = project.parseProject();
-        if (config.UseFastBoot()) {
+        if (config.useFastBoot()) {
             final File projectCache = new File(projectSettingDir, PROJECT_CACHE);
             Session.writeProjectCache(parsed, projectCache);
         }

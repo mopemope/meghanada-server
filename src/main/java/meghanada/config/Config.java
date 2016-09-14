@@ -48,8 +48,8 @@ public class Config {
         log.debug("project-setting-dir:{}", getProjectSettingDir());
         log.debug("project-cache-dir:{}", getProjectCacheDir());
 
-        log.debug("fast-boot:{}", UseFastBoot());
-        log.debug("class-fuzzy-search:{}", UseClassFuzzySearch());
+        log.debug("fast-boot:{}", useFastBoot());
+        log.debug("class-fuzzy-search:{}", useClassFuzzySearch());
 
         final File cache = new File(getProjectCacheDir());
         if (!cache.exists()) {
@@ -194,11 +194,11 @@ public class Config {
         return c.getString("gradle-version");
     }
 
-    public boolean UseFastBoot() {
+    public boolean useFastBoot() {
         return c.getBoolean("fast-boot");
     }
 
-    public boolean UseClassFuzzySearch() {
+    public boolean useClassFuzzySearch() {
         return c.getBoolean("class-fuzzy-search");
     }
 
