@@ -17,8 +17,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
-import static meghanada.config.Config.debugIt;
-import static meghanada.config.Config.timeIt;
+import static meghanada.config.Config.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
@@ -538,6 +537,20 @@ public class JavaParserTest extends GradleTestBase {
         List<MemberDescriptor> result = typeScope.getMemberDescriptors();
         String type = typeScope.getFQCN();
         assertEquals("meghanada.CallGen5", type);
+        assertEquals(1, result.size());
+    }
+
+    @Test
+    public void testParseClass28() throws Exception {//
+        JavaSource source = traceIt(() -> {
+            JavaParser javaParser = new JavaParser();
+            return javaParser.parse(new File("./src/test/java/meghanada/Gen6.java"));
+        });
+        assertNotNull(source);
+        TypeScope typeScope = source.getTypeScopes().get(0);
+        List<MemberDescriptor> result = typeScope.getMemberDescriptors();
+        String type = typeScope.getFQCN();
+        assertEquals("meghanada.Gen6", type);
         assertEquals(1, result.size());
     }
 

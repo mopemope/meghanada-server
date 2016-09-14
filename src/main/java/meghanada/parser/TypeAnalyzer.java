@@ -155,7 +155,8 @@ class TypeAnalyzer {
                     final ClassExpr clsExpr = (ClassExpr) expression;
                     final String type = clsExpr.getType().toString();
                     final String resolvedClass = this.fqcnResolver.resolveFQCN(type, source).orElse("java.lang.Class");
-                    if (!resolvedClass.equals("java.lang.Class") && !resolvedClass.equals("java.lang.Object")) {
+                    log.trace("ClassExpr resolvedClass={}", resolvedClass);
+                    if (!resolvedClass.equals("java.lang.Class")) {
                         return Optional.of("java.lang.Class<" + resolvedClass + ">");
                     }
                     return Optional.of(resolvedClass);
@@ -163,14 +164,14 @@ class TypeAnalyzer {
                 .when(eq(BinaryExpr.class)).get(() -> {
                     final BinaryExpr x = (BinaryExpr) expression;
                     final BinaryExpr.Operator op = x.getOperator();
-                    if (op == BinaryExpr.Operator.and ||
-                            op == BinaryExpr.Operator.or ||
-                            op == BinaryExpr.Operator.equals ||
-                            op == BinaryExpr.Operator.notEquals ||
-                            op == BinaryExpr.Operator.less ||
-                            op == BinaryExpr.Operator.greater ||
-                            op == BinaryExpr.Operator.lessEquals ||
-                            op == BinaryExpr.Operator.greaterEquals) {
+                    if (op == BinaryExpr.Operator.and
+                            || op == BinaryExpr.Operator.or
+                            || op == BinaryExpr.Operator.equals
+                            || op == BinaryExpr.Operator.notEquals
+                            || op == BinaryExpr.Operator.less
+                            || op == BinaryExpr.Operator.greater
+                            || op == BinaryExpr.Operator.lessEquals
+                            || op == BinaryExpr.Operator.greaterEquals) {
                         return Optional.of("java.lang.Boolean");
                     }
 
