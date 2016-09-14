@@ -39,8 +39,8 @@ import java.util.stream.Collectors;
 public class Session {
 
     private static final String PROJECT_CACHE = "project.dat";
-    private static final String mvnProjectFile = "pom.xml";
-    private static final String gradleProjectFile = "build.gradle";
+    private static final String MVN_PROJECT_FILE = "pom.xml";
+    private static final String GRADLE_PROJECT_FILE = "build.gradle";
 
     private static final Logger log = LogManager.getLogger(Session.class);
 
@@ -89,16 +89,16 @@ public class Session {
             }
 
             // challenge
-            File gradle = new File(dir, gradleProjectFile);
-            File mvn = new File(dir, mvnProjectFile);
+            File gradle = new File(dir, GRADLE_PROJECT_FILE);
+            File mvn = new File(dir, MVN_PROJECT_FILE);
             File meghanada = new File(dir, Config.MEGHANADA_CONF_FILE);
 
             if (gradle.exists()) {
                 log.debug("find gradle project {}", gradle);
-                return loadProject(dir, gradleProjectFile);
+                return loadProject(dir, GRADLE_PROJECT_FILE);
             } else if (mvn.exists()) {
                 log.debug("find mvn project {}", mvn);
-                return loadProject(dir, mvnProjectFile);
+                return loadProject(dir, MVN_PROJECT_FILE);
             } else if (meghanada.exists()) {
                 log.debug("find meghanada project {}", meghanada);
                 return loadProject(dir, Config.MEGHANADA_CONF_FILE);
@@ -136,9 +136,9 @@ public class Session {
         }
 
         Project project;
-        if (targetFile.equals(gradleProjectFile)) {
+        if (targetFile.equals(GRADLE_PROJECT_FILE)) {
             project = new GradleProject(projectRoot);
-        } else if (targetFile.equals(mvnProjectFile)) {
+        } else if (targetFile.equals(MVN_PROJECT_FILE)) {
             project = new MavenProject(projectRoot);
         } else {
             project = new MeghanadaProject(projectRoot);
@@ -458,31 +458,31 @@ public class Session {
         String pkg = javaSource.getPkg();
         String testName = testFile.getName().replace(".java", "");
 
-        String sb = "package " + pkg + ";\n" +
-                "\n" +
-                "import org.junit.After;\n" +
-                "import org.junit.Before;\n" +
-                "import org.junit.Test;\n" +
-                "\n" +
-                "import static org.junit.Assert.assertEquals;\n" +
-                "\n" +
-                "public class " + testName + " {\n" +
-                "\n" +
-                "    @Before\n" +
-                "    public void setUp() throws Exception {\n" +
-                "\n" +
-                "    }\n" +
-                "\n" +
-                "    @After\n" +
-                "    public void tearDown() throws Exception {\n" +
-                "\n" +
-                "    }\n" +
-                "\n" +
-                "    @Test\n" +
-                "    public void test() throws Exception {\n" +
-                "        assertEquals(1, 1);\n" +
-                "    }\n" +
-                "}\n";
+        String sb = "package " + pkg + ";\n"
+                + "\n"
+                + "import org.junit.After;\n"
+                + "import org.junit.Before;\n"
+                + "import org.junit.Test;\n"
+                + "\n"
+                + "import static org.junit.Assert.assertEquals;\n"
+                + "\n"
+                + "public class " + testName + " {\n"
+                + "\n"
+                + "    @Before\n"
+                + "    public void setUp() throws Exception {\n"
+                + "\n"
+                + "    }\n"
+                + "\n"
+                + "    @After\n"
+                + "    public void tearDown() throws Exception {\n"
+                + "\n"
+                + "    }\n"
+                + "\n"
+                + "    @Test\n"
+                + "    public void test() throws Exception {\n"
+                + "        assertEquals(1, 1);\n"
+                + "    }\n"
+                + "}\n";
         com.google.common.io.Files.write(sb, testFile, Charset.forName("UTF-8"));
     }
 

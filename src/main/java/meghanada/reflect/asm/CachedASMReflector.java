@@ -211,7 +211,7 @@ public class CachedASMReflector {
     }
 
     public Collection<? extends CandidateUnit> fuzzySearchClasses(final String keyword) {
-        final int length = keyword.length()+1;
+        final int length = keyword.length() + 1;
         return this.globalClassIndex.values().parallelStream()
                 .filter(classIndex -> {
                     final String name = classIndex.getName();
@@ -447,9 +447,9 @@ public class CachedASMReflector {
                 .filter(m -> {
                     final String mName = m.getName();
                     final List<String> parameters = m.getParameters();
-                    return (mName.equals(name) &&
-                            m.matchType(CandidateUnit.MemberType.METHOD) &&
-                            parameters.size() == argLen);
+                    return mName.equals(name)
+                            && m.matchType(CandidateUnit.MemberType.METHOD)
+                            && parameters.size() == argLen;
                 });
     }
 
@@ -459,9 +459,9 @@ public class CachedASMReflector {
                 .filter(m -> {
                     final String mName = m.getName();
                     final List<String> parameters = m.getParameters();
-                    if (mName.equals(name) &&
-                            m.matchType(CandidateUnit.MemberType.METHOD) &&
-                            parameters.size() == argLen) {
+                    if (mName.equals(name)
+                            && m.matchType(CandidateUnit.MemberType.METHOD)
+                            && parameters.size() == argLen) {
                         final String mdSig = m.getSig();
                         log.trace("compare sig sig={} mdSig={}", sig, mdSig);
                         return sig.equals(mdSig);
@@ -476,11 +476,9 @@ public class CachedASMReflector {
                 .filter(m -> {
                     final String mName = m.getName();
                     final List<String> parameters = m.getParameters();
-                    if (m.matchType(CandidateUnit.MemberType.CONSTRUCTOR) &&
-                            parameters.size() == argLen) {
-                        return sig.equals(mName + "::" + parameters.toString());
-                    }
-                    return false;
+                    return m.matchType(CandidateUnit.MemberType.CONSTRUCTOR)
+                            && parameters.size() == argLen
+                            && sig.equals(mName + "::" + parameters.toString());
                 });
     }
 

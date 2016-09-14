@@ -19,9 +19,9 @@ import java.util.List;
 public class TestRunner {
 
     private static Logger log = LogManager.getLogger(TestRunner.class);
-    int runCnt = 0;
-    int failureCnt = 0;
-    int ignoreCnt = 0;
+    private int runCnt;
+    private int failureCnt;
+    private int ignoreCnt;
 
     public TestRunner() throws IOException {
         CachedASMReflector cachedASMReflector = CachedASMReflector.getInstance();
@@ -40,9 +40,9 @@ public class TestRunner {
             String fqcn = classIndex.getReturnType();
             String className = classIndex.getName();
 
-            if (fqcn.equals(testName) ||
-                    className.equals(testName) ||
-                    fqcn.matches(testName)) {
+            if (fqcn.equals(testName)
+                    || className.equals(testName)
+                    || fqcn.matches(testName)) {
                 classes.add(Class.forName(fqcn));
             }
         }

@@ -161,7 +161,7 @@ public class ClassNameUtils {
 
     public static boolean hasPackage(String name) {
         int sep = name.lastIndexOf(".");
-        return (sep > 0);
+        return sep > 0;
     }
 
     public static String getSimpleName(final String fqcn) {

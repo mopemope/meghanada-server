@@ -101,10 +101,10 @@ class MethodSignatureVisitor extends SignatureVisitor {
 
         if (this.isInterfaceBound && !this.isFormalType) {
             final String name = this.current.name;
-            current.name = '<' + name +
-                    " extends " +
-                    className +
-                    '>';
+            current.name = '<' + name
+                    + " extends "
+                    + className
+                    + '>';
             log.traceExit(message);
             return;
         }

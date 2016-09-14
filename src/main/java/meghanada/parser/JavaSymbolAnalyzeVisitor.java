@@ -522,11 +522,11 @@ class JavaSymbolAnalyzeVisitor extends VoidVisitorAdapter<JavaSource> {
                         final String maybeReturn = this.typeAnalyzer.
                                 getReturnType(src, bs, declaringClass, methodName, args).
                                 orElse(null);
-                        return this.createMethodCallSymbol(node
-                                , scopeString
-                                , declaringClass
-                                , src
-                                , maybeReturn)
+                        return this.createMethodCallSymbol(node,
+                                scopeString,
+                                declaringClass,
+                                src,
+                                maybeReturn)
                                 .map(bs::addMethodCall);
                     });
         });

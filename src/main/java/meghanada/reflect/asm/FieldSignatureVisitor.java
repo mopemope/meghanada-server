@@ -20,10 +20,10 @@ class FieldSignatureVisitor extends SignatureVisitor {
     private Set<String> typeParameters;
     // main type
     private TypeInfo typeInfo;
-    private boolean isInstance = false;
-    private boolean isSuper = false;
-    private boolean isExtends = false;
-    private boolean holdArray = false;
+    private boolean isInstance;
+    private boolean isSuper;
+    private boolean isExtends;
+    private boolean holdArray;
 
     private Map<String, String> typeMap;
 
@@ -39,6 +39,10 @@ class FieldSignatureVisitor extends SignatureVisitor {
         this.classTypeParameters = classTypeParameters;
         this.typeParameters = new HashSet<>(2);
         log.traceExit();
+        isInstance = false;
+        isSuper = false;
+        isExtends = false;
+        holdArray = false;
     }
 
     private FieldSignatureVisitor(final String name, final FieldSignatureVisitor parent) {
@@ -49,6 +53,10 @@ class FieldSignatureVisitor extends SignatureVisitor {
         this.classTypeParameters = parent.classTypeParameters;
         this.typeMap = parent.typeMap;
         log.traceExit();
+        isInstance = false;
+        isSuper = false;
+        isExtends = false;
+        holdArray = false;
     }
 
     @Override

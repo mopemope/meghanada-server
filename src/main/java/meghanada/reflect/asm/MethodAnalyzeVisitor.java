@@ -70,7 +70,7 @@ class MethodAnalyzeVisitor extends MethodVisitor {
 
     private static int[] computeLvtSlotIndices(boolean isStatic, Type[] paramTypes) {
         int[] lvtIndex = new int[paramTypes.length];
-        int nextIndex = (isStatic ? 0 : 1);
+        int nextIndex = isStatic ? 0 : 1;
         for (int i = 0; i < paramTypes.length; i++) {
             lvtIndex[i] = nextIndex;
             if (isWideType(paramTypes[i])) {
@@ -84,7 +84,7 @@ class MethodAnalyzeVisitor extends MethodVisitor {
 
     private static boolean isWideType(Type aType) {
         // float is not a wide type
-        return (aType == Type.LONG_TYPE || aType == Type.DOUBLE_TYPE);
+        return aType == Type.LONG_TYPE || aType == Type.DOUBLE_TYPE;
     }
 
     MethodAnalyzeVisitor setTypeMap(Map<String, String> typeMap) {

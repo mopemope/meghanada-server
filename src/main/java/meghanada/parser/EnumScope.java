@@ -7,7 +7,7 @@ import java.util.List;
 public class EnumScope extends TypeScope {
 
     private List<String> implClasses;
-    private int index = 0;
+    private int index;
 
     EnumScope(final String pkg, final String type, final Range range, final Range nameRange) {
         super(pkg, type, range, nameRange);

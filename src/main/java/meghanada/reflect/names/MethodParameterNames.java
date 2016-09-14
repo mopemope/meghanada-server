@@ -18,11 +18,15 @@ public class MethodParameterNames implements Serializable {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
         MethodParameterNames that = (MethodParameterNames) o;
-        return Objects.equal(className, that.className) &&
-                Objects.equal(names, that.names);
+        return Objects.equal(className, that.className)
+                && Objects.equal(names, that.names);
     }
 
     @Override

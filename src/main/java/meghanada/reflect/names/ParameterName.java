@@ -14,11 +14,15 @@ public class ParameterName implements Serializable {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
         ParameterName that = (ParameterName) o;
-        return Objects.equal(type, that.type) &&
-                Objects.equal(name, that.name);
+        return Objects.equal(type, that.type)
+                && Objects.equal(name, that.name);
     }
 
     @Override

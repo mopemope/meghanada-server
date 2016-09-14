@@ -55,14 +55,18 @@ public abstract class AccessSymbol {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof AccessSymbol)) return false;
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof AccessSymbol)) {
+            return false;
+        }
         AccessSymbol that = (AccessSymbol) o;
-        return Objects.equal(declaringClass, that.declaringClass) &&
-                Objects.equal(scope, that.scope) &&
-                Objects.equal(name, that.name) &&
-                Objects.equal(range, that.range) &&
-                Objects.equal(returnType, that.returnType);
+        return Objects.equal(declaringClass, that.declaringClass)
+                && Objects.equal(scope, that.scope)
+                && Objects.equal(name, that.name)
+                && Objects.equal(range, that.range)
+                && Objects.equal(returnType, that.returnType);
     }
 
     @Override

@@ -202,7 +202,7 @@ class ASMReflector {
             classIndex.isInterface = isInterface;
             indexes.put(classIndex, file);
         } else {
-            if ((isPublic || isProtected || isSuper)) {
+            if (isPublic || isProtected || isSuper) {
                 final ClassAnalyzeVisitor classAnalyzeVisitor = new ClassAnalyzeVisitor(className, true, false);
                 classReader.accept(classAnalyzeVisitor, 0);
                 final ClassIndex classIndex = classAnalyzeVisitor.getClassIndex();
@@ -347,7 +347,7 @@ class ASMReflector {
                         }
                         return null;
                     }))
-                    .filter(memberDescriptors -> (memberDescriptors != null && memberDescriptors.size() > 0))
+                    .filter(memberDescriptors -> memberDescriptors != null && memberDescriptors.size() > 0)
                     .flatMap(Collection::stream)
                     .collect(Collectors.toList());
         }
@@ -409,13 +409,15 @@ class ASMReflector {
 
         } else if (file.isFile() && file.getName().endsWith(".class")) {
             final List<MemberDescriptor> members = getMembersFromClassFile(file, file, nameWithoutTP);
-            if (members != null) return members;
+            if (members != null) {
+                return members;
+            }
         } else if (file.isDirectory()) {
             return Files.walk(file.toPath()).parallel()
                     .map(Path::toFile)
-                    .filter(f -> (f.isFile() && f.getName().endsWith(".class")))
+                    .filter(f -> f.isFile() && f.getName().endsWith(".class"))
                     .map(wrapIO(f -> getMembersFromClassFile(file, f, nameWithoutTP)))
-                    .filter(memberDescriptors -> (memberDescriptors != null && memberDescriptors.size() > 0))
+                    .filter(descriptors -> descriptors != null && descriptors.size() > 0)
                     .findFirst().orElse(Collections.emptyList());
         }
         return Collections.emptyList();
@@ -556,7 +558,7 @@ class ASMReflector {
     private Stream<File> getClassFileStream(final File file) throws IOException {
         return Files.walk(file.toPath())
                 .map(Path::toFile)
-                .filter(f -> (f.isFile() && f.getName().endsWith(".class")))
+                .filter(f -> f.isFile() && f.getName().endsWith(".class"))
                 .collect(Collectors.toList())
                 .stream();
     }

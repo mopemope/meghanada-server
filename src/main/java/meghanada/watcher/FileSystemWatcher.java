@@ -1,5 +1,6 @@
 package meghanada.watcher;
 
+import com.google.common.base.MoreObjects;
 import com.google.common.eventbus.EventBus;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -17,10 +18,11 @@ public class FileSystemWatcher {
 
     private static Logger log = LogManager.getLogger(FileSystemWatcher.class);
     private final EventBus eventBus;
-    private boolean abort = false;
+    private boolean abort;
 
     public FileSystemWatcher(EventBus eventBus) {
         this.eventBus = eventBus;
+        abort = false;
     }
 
     @SuppressWarnings("unchecked")
@@ -121,9 +123,9 @@ public class FileSystemWatcher {
 
         @Override
         public String toString() {
-            return "FileEvent{" +
-                    "file=" + file +
-                    '}';
+            return MoreObjects.toStringHelper(this)
+                    .add("file", file)
+                    .toString();
         }
     }
 

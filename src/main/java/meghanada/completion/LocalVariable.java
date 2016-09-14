@@ -30,11 +30,15 @@ public class LocalVariable {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
         LocalVariable that = (LocalVariable) o;
-        return Objects.equal(returnType, that.returnType) &&
-                Objects.equal(candidates, that.candidates);
+        return Objects.equal(returnType, that.returnType)
+                && Objects.equal(candidates, that.candidates);
     }
 
     @Override

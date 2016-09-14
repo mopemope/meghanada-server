@@ -261,16 +261,20 @@ public class MethodDescriptor extends MemberDescriptor implements Serializable {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof MemberDescriptor)) return false;
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof MemberDescriptor)) {
+            return false;
+        }
         MethodDescriptor that = (MethodDescriptor) o;
-        return Objects.equal(name, that.name) &&
-                memberType == that.memberType &&
-                Objects.equal(modifier, that.modifier) &&
-                Objects.equal(parameters, that.parameters) &&
-                Objects.equal(exceptions, that.exceptions) &&
-                Objects.equal(returnType, that.returnType) &&
-                Objects.equal(typeParameters, that.typeParameters);
+        return Objects.equal(name, that.name)
+                && memberType == that.memberType
+                && Objects.equal(modifier, that.modifier)
+                && Objects.equal(parameters, that.parameters)
+                && Objects.equal(exceptions, that.exceptions)
+                && Objects.equal(returnType, that.returnType)
+                && Objects.equal(typeParameters, that.typeParameters);
     }
 
     @Override

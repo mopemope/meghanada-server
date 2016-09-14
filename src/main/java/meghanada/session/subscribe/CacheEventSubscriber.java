@@ -28,7 +28,7 @@ public class CacheEventSubscriber extends AbstractSubscriber {
 
     private static final String SRC_FILTER = "src-filter";
     private static Logger log = LogManager.getLogger(CacheEventSubscriber.class);
-    private int parsedCount = 0;
+    private int parsedCount;
 
     public CacheEventSubscriber(SessionEventBus sessionEventBus) {
         super(sessionEventBus);

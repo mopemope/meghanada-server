@@ -1,5 +1,6 @@
 package meghanada.session;
 
+import com.google.common.base.MoreObjects;
 import com.google.common.eventbus.AsyncEventBus;
 import com.google.common.eventbus.EventBus;
 import meghanada.session.subscribe.CacheEventSubscriber;
@@ -126,9 +127,10 @@ public class SessionEventBus {
 
         @Override
         public String toString() {
-            return "IORequest{" +
-                    "file=" + file +
-                    '}';
+            return MoreObjects.toStringHelper(this)
+                    .add("session", session)
+                    .add("file", file)
+                    .toString();
         }
     }
 
@@ -190,12 +192,6 @@ public class SessionEventBus {
             super(session, files);
         }
 
-        @Override
-        public String toString() {
-            return "FileWatchRequest{" +
-                    "files=" + files +
-                    '}';
-        }
     }
 
     public static class ParseFilesRequest extends IOListRequest {
@@ -212,12 +208,6 @@ public class SessionEventBus {
             super(session, files);
         }
 
-        @Override
-        public String toString() {
-            return "CompileFilesRequest{" +
-                    "files=" + files +
-                    '}';
-        }
     }
 
 

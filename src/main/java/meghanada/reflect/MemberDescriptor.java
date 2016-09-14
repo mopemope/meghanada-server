@@ -162,14 +162,18 @@ public abstract class MemberDescriptor implements CandidateUnit {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof MemberDescriptor)) return false;
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof MemberDescriptor)) {
+            return false;
+        }
         MemberDescriptor that = (MemberDescriptor) o;
-        return Objects.equal(name, that.name) &&
-                memberType == that.memberType &&
-                Objects.equal(modifier, that.modifier) &&
-                Objects.equal(returnType, that.returnType) &&
-                Objects.equal(typeParameters, that.typeParameters);
+        return Objects.equal(name, that.name)
+                && memberType == that.memberType
+                && Objects.equal(modifier, that.modifier)
+                && Objects.equal(returnType, that.returnType)
+                && Objects.equal(typeParameters, that.typeParameters);
     }
 
     @Override

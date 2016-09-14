@@ -39,13 +39,17 @@ public class ProjectDependency {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof ProjectDependency)) return false;
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof ProjectDependency)) {
+            return false;
+        }
         ProjectDependency that = (ProjectDependency) o;
-        return Objects.equal(id, that.id) &&
-                Objects.equal(scope, that.scope) &&
-                Objects.equal(version, that.version) &&
-                Objects.equal(file, that.file);
+        return Objects.equal(id, that.id)
+                && Objects.equal(scope, that.scope)
+                && Objects.equal(version, that.version)
+                && Objects.equal(file, that.file);
     }
 
     @Override

@@ -57,14 +57,18 @@ public class Variable {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
         Variable variable = (Variable) o;
-        return declaration == variable.declaration &&
-                Objects.equal(name, variable.name) &&
-                Objects.equal(fqcn, variable.fqcn) &&
-                Objects.equal(parent, variable.parent) &&
-                Objects.equal(range, variable.range);
+        return declaration == variable.declaration
+                && Objects.equal(name, variable.name)
+                && Objects.equal(fqcn, variable.fqcn)
+                && Objects.equal(parent, variable.parent)
+                && Objects.equal(range, variable.range);
     }
 
     @Override

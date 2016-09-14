@@ -124,10 +124,10 @@ public class SexpOutputFormatter implements OutputFormatter {
                 .stream()
                 .map(strings -> {
                     if (strings != null && strings.size() > 0) {
-                        return LPAREN +
-                                strings.stream()
-                                        .map(this::doubleQuote)
-                                        .collect(Collectors.joining(LIST_SEP))
+                        return LPAREN
+                                + strings.stream()
+                                .map(this::doubleQuote)
+                                .collect(Collectors.joining(LIST_SEP))
                                 + RPAREN;
                     }
                     return null;
@@ -147,11 +147,11 @@ public class SexpOutputFormatter implements OutputFormatter {
 
     @Override
     public String jumpDeclaration(Location loc) {
-        return LPAREN +
-                String.join(LIST_SEP,
-                        doubleQuote(loc.getPath()),
-                        Integer.toString(loc.getLine()),
-                        Integer.toString(loc.getColumn()))
+        return LPAREN
+                + String.join(LIST_SEP,
+                doubleQuote(loc.getPath()),
+                Integer.toString(loc.getLine()),
+                Integer.toString(loc.getColumn()))
                 + RPAREN;
     }
 
