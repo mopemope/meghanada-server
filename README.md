@@ -1,5 +1,7 @@
 # Meghanada-Server
 
+[![CircleCI](https://circleci.com/gh/mopemope/meghanada-server.svg?style=svg)](https://circleci.com/gh/mopemope/meghanada-server)
+
 A Java IDE Server for your editor. Java IDE-like features to your favourite text editor.
 
 <i>WARNING! This is a project beta quality. Under heavy development now.</i>
