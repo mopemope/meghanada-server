@@ -17,7 +17,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
-import static meghanada.config.Config.*;
+import static meghanada.config.Config.timeIt;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
@@ -27,8 +27,8 @@ public class JavaParserTest extends GradleTestBase {
     public static void beforeClass() throws Exception {
         GradleTestBase.setupReflector();
         CachedASMReflector cachedASMReflector = CachedASMReflector.getInstance();
-        cachedASMReflector.addJar(getOutputDir());
-        cachedASMReflector.addJar(getTestOutputDir());
+        cachedASMReflector.addDirectory(getOutputDir());
+        cachedASMReflector.addDirectory(getTestOutputDir());
         cachedASMReflector.createClassIndexes();
     }
 
@@ -513,7 +513,7 @@ public class JavaParserTest extends GradleTestBase {
 
     @Test
     public void testParseClass26() throws Exception {//
-        JavaSource source = debugIt(() -> {
+        JavaSource source = timeIt(() -> {
             JavaParser javaParser = new JavaParser();
             return javaParser.parse(new File("./src/test/java/meghanada/Gen4.java"));
         });
@@ -523,7 +523,6 @@ public class JavaParserTest extends GradleTestBase {
         String type = typeScope.getFQCN();
         assertEquals("meghanada.Gen4", type);
         assertEquals(5, result.size());
-
     }
 
     @Test
@@ -542,7 +541,7 @@ public class JavaParserTest extends GradleTestBase {
 
     @Test
     public void testParseClass28() throws Exception {//
-        JavaSource source = traceIt(() -> {
+        JavaSource source = timeIt(() -> {
             JavaParser javaParser = new JavaParser();
             return javaParser.parse(new File("./src/test/java/meghanada/Gen6.java"));
         });

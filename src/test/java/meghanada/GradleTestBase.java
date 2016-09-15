@@ -25,7 +25,7 @@ public class GradleTestBase {
         // System.setProperty("log-level", "DEBUG");
 
         if (project == null) {
-            project = new GradleProject(new File("./"));
+            project = new GradleProject(new File("./").getCanonicalFile());
             project.parseProject();
             String tmp = System.getProperty("java.io.tmpdir");
             System.setProperty("project-cache-dir", new File(tmp, "meghanada/cache").getCanonicalPath());

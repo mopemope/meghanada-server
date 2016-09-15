@@ -88,22 +88,22 @@ class MemberCacheLoader extends CacheLoader<String, List<MemberDescriptor>> {
         String path = ClassNameUtils.replace(fqcn, ".", File.separator);
         File cacheFilePath = new File(this.projectCache, this.javaVersion + "/member/" + path + ".dat");
 
-        File file = this.classFileMap.get(fqcn);
-        if (file == null) {
+        File classFile = this.classFileMap.get(fqcn);
+        if (classFile == null) {
             // try inner class
-            file = this.classFileMap.get(ClassNameUtils.replaceInnerMark(fqcn));
-            if (file == null) {
+            classFile = this.classFileMap.get(ClassNameUtils.replaceInnerMark(fqcn));
+            if (classFile == null) {
                 log.debug("Missing FQCN:{}'s file is null", fqcn);
                 return Collections.emptyList();
             }
         }
 
-        @SuppressWarnings("unchecked") List<MemberDescriptor> cachedResult = getCachedMemberDescriptors(fqcn, cacheFilePath, file);
+        @SuppressWarnings("unchecked") List<MemberDescriptor> cachedResult = getCachedMemberDescriptors(fqcn, cacheFilePath, classFile);
         if (cachedResult != null) {
             return cachedResult;
         }
 
-        final String fileName = file.getName();
+        final String fileName = classFile.getName();
 
         final String initName = ClassNameUtils.getSimpleName(fqcn);
 
@@ -125,7 +125,7 @@ class MemberCacheLoader extends CacheLoader<String, List<MemberDescriptor>> {
         return memberDescriptors;
     }
 
-    private List<MemberDescriptor> getCachedMemberDescriptors(String fqcn, File cacheFilePath, File file) throws IOException {
+    private List<MemberDescriptor> getCachedMemberDescriptors(final String fqcn, final File cacheFilePath, final File file) throws IOException {
         if (file.exists()) {
             final String fileName = file.getName();
             if (file.isFile() && fileName.endsWith(".class")) {
