@@ -259,6 +259,7 @@ public class CachedASMReflector {
         } catch (ExecutionException e) {
             throw new UncheckedExecutionException(e);
         }
+        members = members.stream().map(MemberDescriptor::clone).collect(Collectors.toList());
         if (tpIdx >= 0) {
             return this.replaceMembers(classWithoutTP, className, members);
         }

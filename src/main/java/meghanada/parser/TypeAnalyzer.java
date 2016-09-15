@@ -99,6 +99,7 @@ class TypeAnalyzer {
         final Optional<MemberDescriptor> memberDescriptor = source.getCurrentType().map(ts -> {
             final CachedASMReflector reflector = CachedASMReflector.getInstance();
             return reflector.reflectMethodStream(declaringClass, name, size, sig)
+                    .map(MemberDescriptor::clone)
                     .findFirst()
                     .orElseGet(() -> {
                         // get from static import
@@ -106,6 +107,7 @@ class TypeAnalyzer {
                         if (staticImp.containsKey(name)) {
                             final String dec = staticImp.get(name);
                             return reflector.reflectMethodStream(dec, name, size)
+                                    .map(MemberDescriptor::clone)
                                     .findFirst()
                                     .orElse(null);
                         }

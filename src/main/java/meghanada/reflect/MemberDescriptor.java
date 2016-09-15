@@ -3,12 +3,13 @@ package meghanada.reflect;
 import com.google.common.base.Objects;
 import meghanada.utils.ClassNameUtils;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 
-public abstract class MemberDescriptor implements CandidateUnit {
+public abstract class MemberDescriptor implements CandidateUnit, Cloneable {
 
     protected static final Pattern TRIM_RE = Pattern.compile("<[\\w \\?,]+>");
     public String declaringClass;
@@ -179,5 +180,17 @@ public abstract class MemberDescriptor implements CandidateUnit {
     @Override
     public int hashCode() {
         return Objects.hashCode(name, memberType, modifier, returnType, typeParameters);
+    }
+
+    @Override
+    public synchronized MemberDescriptor clone() {
+        final MemberDescriptor descriptor;
+        try {
+            descriptor = (MemberDescriptor) super.clone();
+        } catch (CloneNotSupportedException e) {
+            throw new UnsupportedOperationException(e);
+        }
+        descriptor.typeParameterMap = new HashMap<>(this.typeParameterMap);
+        return descriptor;
     }
 }
