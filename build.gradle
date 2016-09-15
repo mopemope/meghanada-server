@@ -112,16 +112,16 @@ task appVersion << {
     print longVersion
 }
 
-task installHome(type: Copy) {
+task installEmacsHome(type: Copy) {
     def home = System.properties['user.home']
     from "build/libs/meghanada-${serverVersion}.jar"
-    into "$home/.meghanada/"
+    into "$home/.emacs.d/meghanada/"
     rename { String fileName ->
         'meghanada.jar'
     }
 }
 
-installHome.dependsOn(shadowJar)
+installEmacsHome.dependsOn(shadowJar)
 
 task embedVersion(type: Copy) {
     from 'src/main/resources/VERSION'
