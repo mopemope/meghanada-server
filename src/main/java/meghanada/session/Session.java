@@ -118,6 +118,10 @@ public class Session {
 
         final Config config = Config.load();
         final String projectSettingDir = config.getProjectSettingDir();
+        final File settingFile = new File(projectSettingDir);
+        if (!settingFile.exists()) {
+            settingFile.mkdirs();
+        }
         final String id = FileUtils.findProjectID(projectRoot, targetFile);
 
         log.debug("project ID={}", id);
@@ -165,7 +169,7 @@ public class Session {
     public static boolean clearCache() throws IOException {
         final String projectSettingDir = Config.load().getProjectSettingDir();
         log.debug("clear cache projectCacheDir:{}", projectSettingDir);
-        FileUtils.deleteFile(new File(projectSettingDir));
+        FileUtils.deleteFile(new File(projectSettingDir), false);
         return true;
     }
 

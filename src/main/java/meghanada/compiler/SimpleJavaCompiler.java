@@ -39,11 +39,16 @@ public class SimpleJavaCompiler {
 
     public static File getChecksumFile() {
         final String settingDir = Config.load().getProjectSettingDir();
-        return new File(new File(settingDir), COMPILE_CHECKSUM);
+        final File setting = new File(settingDir);
+        if (!setting.exists()) {
+            setting.mkdirs();
+        }
+        return new File(setting, COMPILE_CHECKSUM);
     }
 
     public static void writeChecksum(final Map<String, String> map, final File outFile) throws FileNotFoundException {
         final CachedASMReflector reflector = CachedASMReflector.getInstance();
+
         reflector.getKryoPool().run(kryo -> {
             try (final Output output = new Output(new DeflaterOutputStream(new BufferedOutputStream(new FileOutputStream(outFile), 8192)))) {
                 kryo.writeObject(output, map);

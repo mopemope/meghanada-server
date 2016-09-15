@@ -46,8 +46,8 @@ public class FileUtils {
         }
     }
 
-    public static void deleteFile(final File file) throws IOException {
-        Files.walkFileTree(file.toPath(), new SimpleFileVisitor<Path>() {
+    public static void deleteFile(final File root, final boolean deleteRoot) throws IOException {
+        Files.walkFileTree(root.toPath(), new SimpleFileVisitor<Path>() {
             @Override
             public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
                 Files.delete(file);
@@ -56,7 +56,14 @@ public class FileUtils {
 
             @Override
             public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
-                Files.delete(dir);
+                if (deleteRoot) {
+                    Files.delete(dir);
+                } else {
+                    if (!dir.toFile().equals(root)) {
+                        Files.delete(dir);
+                    }
+                }
+
                 return FileVisitResult.CONTINUE;
             }
         });

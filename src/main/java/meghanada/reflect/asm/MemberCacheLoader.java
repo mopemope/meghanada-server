@@ -72,7 +72,11 @@ class MemberCacheLoader extends CacheLoader<String, List<MemberDescriptor>> {
 
     private File getChecksumFile() {
         final String settingDir = Config.load().getProjectSettingDir();
-        return new File(new File(settingDir), CLASS_CHECKSUM);
+        final File settingFile = new File(settingDir);
+        if (!settingFile.exists()) {
+            settingFile.mkdirs();
+        }
+        return new File(settingFile, CLASS_CHECKSUM);
     }
 
     @Override
@@ -241,7 +245,11 @@ class MemberCacheLoader extends CacheLoader<String, List<MemberDescriptor>> {
         final ScheduledExecutorService service = Executors.newSingleThreadScheduledExecutor();
         service.scheduleWithFixedDelay(() -> {
             final String settingDir = Config.load().getProjectSettingDir();
-            if (new File(settingDir).exists()) {
+            final File settingFile = new File(settingDir);
+            if (!settingFile.exists()) {
+                settingFile.mkdirs();
+            }
+            if (settingFile.exists()) {
                 MemberCacheLoader.this.writeCacheChecksum(MemberCacheLoader.this.cacheChecksum, MemberCacheLoader.this.cacheChecksumFile);
             }
         }, 1, 5, TimeUnit.SECONDS);

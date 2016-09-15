@@ -68,9 +68,9 @@ public class JavaCompletionTest extends GradleTestBase {
 
         // return CompileResult
         final Collection<? extends CandidateUnit> units1 = timeIt(() -> {
-            return completion.completionAt(file, 72, 80, "*method");
+            return completion.completionAt(file, 77, 80, "*method");
         });
-        // units1.forEach(md -> System.out.println(md));
+        units1.forEach(md -> System.out.println(md));
         assertEquals(15, units1.size());
     }
 
