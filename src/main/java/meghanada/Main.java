@@ -15,13 +15,19 @@ import java.util.Properties;
 
 public class Main {
 
+    public static final String VERSION = "0.1.0";
+
     private static Logger log = LogManager.getLogger(Main.class);
 
     public static String getVersion() throws IOException {
         final ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
         final Properties properties = new Properties();
         properties.load(classLoader.getResourceAsStream("VERSION"));
-        return properties.getProperty("version");
+        final String version = properties.getProperty("version");
+        if (version != null) {
+            return version;
+        }
+        return Main.VERSION;
     }
 
     public static void main(String args[]) throws ParseException, IOException {
