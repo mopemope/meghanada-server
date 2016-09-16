@@ -130,4 +130,5 @@ task embedVersion(type: Copy) {
     expand(buildDate: new Date(), version: longVersion, appName: applicationName)
 }
 
-shadowJar.dependsOn embedVersion
+classes.dependsOn embedVersion
+embedVersion.mustRunAfter processResources
