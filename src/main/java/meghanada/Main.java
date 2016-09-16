@@ -2,6 +2,7 @@ package meghanada;
 
 import meghanada.server.Server;
 import meghanada.server.emacs.EmacsServer;
+import meghanada.utils.FileUtils;
 import org.apache.commons.cli.*;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
@@ -11,7 +12,6 @@ import org.apache.logging.log4j.core.config.Configuration;
 import org.apache.logging.log4j.core.config.LoggerConfig;
 
 import java.io.IOException;
-import java.util.Properties;
 
 public class Main {
 
@@ -20,10 +20,7 @@ public class Main {
     private static Logger log = LogManager.getLogger(Main.class);
 
     public static String getVersion() throws IOException {
-        final ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-        final Properties properties = new Properties();
-        properties.load(classLoader.getResourceAsStream("VERSION"));
-        final String version = properties.getProperty("version");
+        final String version = FileUtils.getVersionInfo();
         if (version != null) {
             return version;
         }

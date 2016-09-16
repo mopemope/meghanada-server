@@ -18,6 +18,7 @@ import java.security.DigestInputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.List;
+import java.util.Properties;
 
 public class FileUtils {
 
@@ -133,6 +134,13 @@ public class FileUtils {
             sb.append(Character.forDigit(b & 0xF, 16));
         }
         return sb.toString();
+    }
+
+    public static String getVersionInfo() throws IOException {
+        final ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+        final Properties properties = new Properties();
+        properties.load(classLoader.getResourceAsStream("VERSION"));
+        return properties.getProperty("version");
     }
 
 }
