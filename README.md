@@ -1,5 +1,7 @@
 # Meghanada-Server
 
+[![Join the chat at https://gitter.im/mopemope/meghanada-server](https://badges.gitter.im/mopemope/meghanada-server.svg)](https://gitter.im/mopemope/meghanada-server?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 [![CircleCI](https://circleci.com/gh/mopemope/meghanada-server.svg?style=svg)](https://circleci.com/gh/mopemope/meghanada-server)
 
 A Java IDE Server for your editor. Java IDE-like features to your favourite text editor.
