@@ -6,8 +6,6 @@
 
 A Java IDE Server for your editor. Java IDE-like features to your favourite text editor.
 
-<i>WARNING! This is a project beta quality. Under heavy development now.</i>
-
 ## Features
 
 Some planned and implemented features:
