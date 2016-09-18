@@ -132,3 +132,13 @@ task embedVersion(type: Copy) {
 
 classes.dependsOn embedVersion
 embedVersion.mustRunAfter processResources
+
+task createPom << {
+    pom {
+        project {
+            groupId 'meghanada'
+            artifactId 'meghanada'
+            version "$serverVersion"
+        }
+    }.writeTo("pom.xml")
+}
