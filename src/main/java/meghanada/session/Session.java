@@ -495,9 +495,10 @@ public class Session {
         if (location != null) {
             Location backLocation = new Location(path, line, column);
             this.jumpDecHistory.addLast(backLocation);
+        } else {
+            log.warn("missing location path={} line={} column={} symbol={}", path, line, column, symbol);
+            location = new Location(path, line, column);
         }
-        // return same point
-        // return new Location(path, line, column);
         return location;
     }
 
