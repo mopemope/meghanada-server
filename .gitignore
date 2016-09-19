@@ -19,3 +19,6 @@ spec.md
 .ensime_cache.d
 .meghanada
 secrets.yml
+.classpath
+.project
+.settings
