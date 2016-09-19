@@ -10,7 +10,7 @@ plugins {
 
 ext {
     group = 'meghanada'
-    serverVersion = '0.1.1-SNAPSHOT'
+    serverVersion = '0.1.1'
 
     longVersion = "$serverVersion-${grgit.head().abbreviatedId}"
     date = new Date().format("yyyy-MM-dd'T'HH:mm:ssZ")
@@ -41,7 +41,7 @@ bintray {
     key = System.getenv('BINTRAY_KEY')
 
     publish = true
-    override = true
+    // override = true
 
     filesSpec {
         from 'build/libs'
