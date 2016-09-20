@@ -244,7 +244,7 @@ public class GradleProject extends Project {
                 final ProjectDependency projectDependency = new ProjectDependency(id, scope, version, file);
                 dependencyList.add(projectDependency);
             } else {
-                log.warn("dependency broken?:{}", dependency);
+                log.info("skip dependency :{}", dependency);
 //                IdeaModuleDependency ideaModuleDependency = (IdeaModuleDependency) dependency;
 //                IdeaModule tmpIdeaModule = ideaModuleDependency.getDependencyModule();
 //                Set<ProjectDependency> tmp = getDependency(tmpIdeaModule);
