@@ -11,7 +11,7 @@ A Java IDE Server for your editor. Java IDE-like features to your favourite text
 Some planned and implemented features:
 
 * Server supports a network connection
-* `Gradle` and `Maven`(Beta) project support
+* `Gradle` and `Maven` project support
 * Run build tool task
 * Compile your project
 * Analyze java source
@@ -27,6 +27,8 @@ Meghanada-Server support only emacs client (meghanada-mode)
 ### Requirement
 
 * JDK 8
+
+If your project were maven project, It needs `maven` and add `mvn` command your `$PATH`.
 
 ### Build jar
 
@@ -74,7 +76,7 @@ java -XX:+UseConcMarkSweepGC -XX:SoftRefLRUPolicyMSPerMB=50 -Xverify:none -Xms25
 
 TODO
 
-### Maven (Beta)
+### Maven
 
 TODO
 

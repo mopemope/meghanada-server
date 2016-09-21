@@ -194,6 +194,10 @@ public class Config {
         return c.getString("gradle-version");
     }
 
+    public String getMavenPath() {
+        return c.getString("maven-path");
+    }
+
     public boolean useFastBoot() {
         return c.getBoolean("fast-boot");
     }

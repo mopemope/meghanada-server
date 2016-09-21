@@ -285,11 +285,14 @@ public class CachedASMReflector {
             for (final MemberDescriptor md : members) {
                 if (md.hasTypeParameters()) {
                     md.clearTypeParameterMap();
+                    int realSize = realTypes.size();
                     for (int i = 0; i < types.size(); i++) {
                         final String t = types.get(i);
-                        final String real = realTypes.get(i);
-                        md.putTypeParameter(t, real);
-                        // log.debug("put t:{}, real:{}", t, real);
+                        if (realSize > i) {
+                            final String real = realTypes.get(i);
+                            md.putTypeParameter(t, real);
+                            // log.debug("put t:{}, real:{}", t, real);
+                        }
                     }
                 }
 

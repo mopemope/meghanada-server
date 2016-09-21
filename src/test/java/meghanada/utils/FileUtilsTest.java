@@ -31,6 +31,7 @@ public class FileUtilsTest {
     @Test
     public void testGetVersionInfo() throws Exception {
         final String version = timeIt(FileUtils::getVersionInfo);
+        System.out.println(version);
         assertNotNull(version);
         assertTrue(version.startsWith(Main.VERSION));
     }

@@ -11,6 +11,7 @@ import java.io.File;
 import java.util.List;
 import java.util.Map;
 
+import static meghanada.config.Config.debugIt;
 import static meghanada.config.Config.timeIt;
 import static org.junit.Assert.assertEquals;
 
@@ -34,7 +35,7 @@ public class JavaSourceTest extends GradleTestBase {
 
     @Test
     public void testOptimizeImports1() throws Exception {
-        List<String> optimizeImports = timeIt(() -> {
+        List<String> optimizeImports = debugIt(() -> {
             JavaParser parser = new JavaParser();
             JavaSource source = parser.parse(new File("./src/test/resources/MissingImport1.java"));
             return source.optimizeImports();

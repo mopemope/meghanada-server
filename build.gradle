@@ -67,18 +67,7 @@ bintray {
 
 dependencies {
 
-    compile('org.apache.maven:maven-aether-provider:3.3.9') {
-        exclude module: 'org.eclipse.sisu:org.eclipse.sisu.plexus'
-        exclude module: 'org.codehaus.plexus:plexus-component-annotations'
-    }
-    compile 'org.eclipse.aether:aether-api:1.1.0'
-    compile 'org.eclipse.aether:aether-spi:1.1.0'
-    compile 'org.eclipse.aether:aether-util:1.1.0'
-    compile 'org.eclipse.aether:aether-impl:1.1.0'
-    compile 'org.eclipse.aether:aether-connector-basic:1.1.0'
-    compile 'org.eclipse.aether:aether-transport-file:1.1.0'
-    compile 'org.eclipse.aether:aether-transport-http:1.1.0'
-    compile 'org.apache.maven:maven-artifact:3.3.9'
+    compile 'org.apache.maven:maven-model:3.3.9'
     compile 'com.leacox.motif:motif:0.1'
     compile 'com.leacox.motif:motif-hamcrest:0.1'
     compile 'com.github.javaparser:javaparser-core:2.5.1'

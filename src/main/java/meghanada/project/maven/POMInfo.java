@@ -22,8 +22,8 @@ public class POMInfo {
     String version;
     Properties properties = new Properties();
 
-    String compileSource = "1.7";
-    String compileTarget = "1.7";
+    String compileSource = "1.8";
+    String compileTarget = "1.8";
 
     POMInfo(String project) throws IOException {
         this.properties.setProperty("project.basedir", project);
