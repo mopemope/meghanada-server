@@ -6,6 +6,7 @@ plugins {
     id 'com.github.ben-manes.versions' version '0.13.0'
     id 'com.jfrog.bintray' version '1.7.1'
     id 'org.ajoberstar.grgit' version '1.5.1'
+    id 'org.ensime.gradle' version '0.2.8'
 }
 
 ext {

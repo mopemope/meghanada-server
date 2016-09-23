@@ -445,7 +445,15 @@ public abstract class Project {
                 mainConfig.setExcludeList(list);
             }
         }
-        log.debug("Merged Project:{}", this);
+        // log.debug("Merged Project:{}", this);
+
+        log.debug("sources {}", this.getSourceDirectories());
+        log.debug("resources {}", this.getResourceDirectories());
+        log.debug("output {}", this.getOutputDirectory());
+        log.debug("test sources {}", this.getTestSourceDirectories());
+        log.debug("test resources {}", this.getTestResourceDirectories());
+        log.debug("test output {}", this.getTestOutputDirectory());
+
         return this;
     }
 

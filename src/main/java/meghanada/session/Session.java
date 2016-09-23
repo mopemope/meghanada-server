@@ -46,10 +46,9 @@ public class Session {
 
     private static final Pattern SWITCH_TEST_RE = Pattern.compile("Test.java", Pattern.LITERAL);
     private static final Pattern SWITCH_JAVA_RE = Pattern.compile(".java", Pattern.LITERAL);
-
-    private final Project currentProject;
     private final LoadingCache<File, JavaSource> sourceCache;
     private final SessionEventBus sessionEventBus;
+    private Project currentProject;
     private JavaCompletion completion;
     private JavaVariableCompletion variableCompletion;
     private LocationSearcher locationSearcher;
@@ -134,6 +133,7 @@ public class Session {
                 if (tempProject != null && tempProject.getId().equals(id)) {
                     tempProject.setId(id);
                     log.debug("load from cache project={}", tempProject);
+                    log.info("current project projectRoot:{}", tempProject.getProjectRoot());
                     return tempProject.mergeFromProjectConfig();
                 }
             }
@@ -154,6 +154,7 @@ public class Session {
             final File projectCache = new File(projectSettingDir, PROJECT_CACHE);
             Session.writeProjectCache(parsed, projectCache);
         }
+        log.info("current project projectRoot:{}", project.getProjectRoot());
         return parsed.mergeFromProjectConfig();
     }
 
@@ -213,7 +214,7 @@ public class Session {
 
         this.setupSubscribes();
         log.debug("session start");
-        Set<File> sources = this.currentProject.getSourceDirectories();
+        Set<File> sources = this.getCurrentProject().getSourceDirectories();
         this.sessionEventBus.requestFileWatch(new ArrayList<>(sources));
         this.sessionEventBus.requestClassCache();
         log.debug("session started");
@@ -324,7 +325,7 @@ public class Session {
     }
 
     public synchronized CompileResult compileProject() throws IOException {
-        final Project prj = currentProject;
+        final Project prj = this.getCurrentProject();
         CompileResult result = prj.compileJava(false);
         if (result.isSuccess()) {
             result = prj.compileTestJava(false);
@@ -333,37 +334,40 @@ public class Session {
     }
 
     public Collection<File> getDependentJars() {
-        return currentProject.getDependencies()
+        return getCurrentProject()
+                .getDependencies()
                 .stream()
                 .map(ProjectDependency::getFile)
                 .collect(Collectors.toList());
     }
 
     public File getOutputDirectory() {
-        return currentProject.getOutputDirectory();
+        return getCurrentProject()
+                .getOutputDirectory();
     }
 
     public File getTestOutputDirectory() {
-        return currentProject.getTestOutputDirectory();
+        return getCurrentProject()
+                .getTestOutputDirectory();
     }
 
     private File normalize(String src) {
         File file = new File(src);
         if (!file.isAbsolute()) {
-            file = new File(currentProject.getProjectRoot(), src);
+            file = new File(getCurrentProject().getProjectRoot(), src);
         }
         return file;
     }
 
     private File normalizeFile(File file) {
         if (!file.isAbsolute()) {
-            file = new File(currentProject.getProjectRoot(), file.getPath());
+            file = new File(getCurrentProject().getProjectRoot(), file.getPath());
         }
         return file;
     }
 
     public InputStream runJUnit(String test) throws IOException {
-        return currentProject.runJUnit(test);
+        return getCurrentProject().runJUnit(test);
     }
 
     public String switchTest(String path) throws IOException {
@@ -420,7 +424,7 @@ public class Session {
     }
 
     String createJunitFile(String path) throws IOException, ExecutionException {
-        Project project = currentProject;
+        Project project = this.getCurrentProject();
         String root = null;
         Set<File> roots = project.getSourceDirectories();
 
@@ -511,7 +515,7 @@ public class Session {
     }
 
     public InputStream runTask(List<String> args) throws Exception {
-        return currentProject.runTask(args);
+        return getCurrentProject().runTask(args);
     }
 
 }
