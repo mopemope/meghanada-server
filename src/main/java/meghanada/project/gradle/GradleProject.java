@@ -7,6 +7,7 @@ import meghanada.project.Project;
 import meghanada.project.ProjectDependency;
 import meghanada.project.ProjectParseException;
 import meghanada.project.ProjectSerializer;
+import meghanada.session.Session;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.gradle.tooling.*;
@@ -21,7 +22,6 @@ import java.util.*;
 public class GradleProject extends Project {
 
     private static final Logger log = LogManager.getLogger(GradleProject.class);
-    private static final String GRADLE_PROJECT_FILE = "build.gradle";
     private final File rootProject;
 
     public GradleProject(File projectRoot) throws IOException {
@@ -33,13 +33,17 @@ public class GradleProject extends Project {
 
         File result = dir;
         dir = dir.getParentFile();
+        if (dir == null) {
+            System.setProperty("user.dir", result.getCanonicalPath());
+            return result;
+        }
         while (true) {
 
             if (dir.getPath().equals("/")) {
                 break;
             }
 
-            final File gradle = new File(dir, GRADLE_PROJECT_FILE);
+            final File gradle = new File(dir, Session.GRADLE_PROJECT_FILE);
             if (!gradle.exists()) {
                 break;
             }

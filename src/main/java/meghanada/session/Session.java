@@ -38,10 +38,9 @@ import java.util.stream.Collectors;
 
 public class Session {
 
+    public static final String GRADLE_PROJECT_FILE = "build.gradle";
     private static final String PROJECT_CACHE = "project.dat";
     private static final String MVN_PROJECT_FILE = "pom.xml";
-    private static final String GRADLE_PROJECT_FILE = "build.gradle";
-
     private static final Logger log = LogManager.getLogger(Session.class);
 
     private static final Pattern SWITCH_TEST_RE = Pattern.compile("Test.java", Pattern.LITERAL);
