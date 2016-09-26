@@ -11,6 +11,8 @@ import java.util.Map;
 
 public interface OutputFormatter {
 
+    String changeProject(boolean result);
+
     String compile(CompileResult compileResult, String path);
 
     String compileProject(CompileResult compileResult);

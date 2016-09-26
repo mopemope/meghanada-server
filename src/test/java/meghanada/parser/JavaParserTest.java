@@ -178,7 +178,7 @@ public class JavaParserTest extends GradleTestBase {
             final List<MemberDescriptor> result = typeScope.getMemberDescriptors();
             String type = pkg + "." + typeScope.getType();
             assertEquals("meghanada.session.Session", type);
-            assertEquals(52, result.size());
+            assertEquals(56, result.size());
         }
     }
 

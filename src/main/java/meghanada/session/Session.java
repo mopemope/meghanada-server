@@ -53,6 +53,7 @@ public class Session {
     private LocationSearcher locationSearcher;
     private Deque<Location> jumpDecHistory = new ArrayDeque<>(16);
     private boolean started;
+    private HashMap<File, Project> projects = new HashMap<>();
 
     private Session(final Project currentProject) {
         this.currentProject = currentProject;
@@ -63,6 +64,7 @@ public class Session {
         this.sessionEventBus = new SessionEventBus(this);
         this.started = false;
         this.locationSearcher = new LocationSearcher(currentProject.getAllSources(), this.sourceCache);
+        this.projects.put(currentProject.getProjectRoot(), currentProject);
     }
 
     public static Session createSession(String root) throws IOException {
@@ -78,35 +80,35 @@ public class Session {
         return new Session(project);
     }
 
-    private static Project findProject(File dir) throws IOException {
+    private static Project findProject(File base) throws IOException {
         while (true) {
 
-            log.debug("finding project from '{}' ...", dir);
-            if (dir.getPath().equals("/")) {
+            log.debug("finding project from '{}' ...", base);
+            if (base.getPath().equals("/")) {
                 return null;
             }
 
             // challenge
-            File gradle = new File(dir, GRADLE_PROJECT_FILE);
-            File mvn = new File(dir, MVN_PROJECT_FILE);
-            File meghanada = new File(dir, Config.MEGHANADA_CONF_FILE);
+            File gradle = new File(base, GRADLE_PROJECT_FILE);
+            File mvn = new File(base, MVN_PROJECT_FILE);
+            File meghanada = new File(base, Config.MEGHANADA_CONF_FILE);
 
             if (gradle.exists()) {
                 log.debug("find gradle project {}", gradle);
-                return loadProject(dir, GRADLE_PROJECT_FILE);
+                return loadProject(base, GRADLE_PROJECT_FILE);
             } else if (mvn.exists()) {
                 log.debug("find mvn project {}", mvn);
-                return loadProject(dir, MVN_PROJECT_FILE);
+                return loadProject(base, MVN_PROJECT_FILE);
             } else if (meghanada.exists()) {
                 log.debug("find meghanada project {}", meghanada);
-                return loadProject(dir, Config.MEGHANADA_CONF_FILE);
+                return loadProject(base, Config.MEGHANADA_CONF_FILE);
             }
 
-            File parent = dir.getParentFile();
+            File parent = base.getParentFile();
             if (parent == null) {
                 return null;
             }
-            dir = dir.getParentFile();
+            base = base.getParentFile();
         }
     }
 
@@ -198,6 +200,64 @@ public class Session {
         }
     }
 
+    private boolean searchAndChangeProject(final File base) throws IOException {
+        final File projectRoot = this.findProjectRoot(base);
+
+        if (this.currentProject.getProjectRoot().equals(projectRoot)) {
+            // not change
+            return false;
+        }
+        if (this.projects.containsKey(projectRoot)) {
+            // loaded project
+            this.currentProject = this.projects.get(projectRoot);
+            return false;
+        }
+        if (currentProject instanceof GradleProject) {
+            this.currentProject = loadProject(projectRoot, GRADLE_PROJECT_FILE);
+            this.projects.put(projectRoot, this.currentProject);
+            return true;
+        } else if (currentProject instanceof MavenProject) {
+            this.currentProject = loadProject(projectRoot, MVN_PROJECT_FILE);
+            this.projects.put(projectRoot, this.currentProject);
+            return true;
+        }
+        this.currentProject = loadProject(projectRoot, Config.MEGHANADA_CONF_FILE);
+        this.projects.put(projectRoot, this.currentProject);
+        return true;
+    }
+
+    private File findProjectRoot(File base) throws IOException {
+        while (true) {
+
+            log.debug("finding project from '{}' ...", base);
+            if (base.getPath().equals("/")) {
+                return null;
+            }
+
+            // challenge
+            File gradle = new File(base, GRADLE_PROJECT_FILE);
+            File mvn = new File(base, MVN_PROJECT_FILE);
+            File meghanada = new File(base, Config.MEGHANADA_CONF_FILE);
+
+            if (gradle.exists()) {
+                log.debug("find gradle project {}", gradle);
+                return base;
+            } else if (mvn.exists()) {
+                log.debug("find mvn project {}", mvn);
+                return base;
+            } else if (meghanada.exists()) {
+                log.debug("find meghanada project {}", meghanada);
+                return base;
+            }
+
+            File parent = base.getParentFile();
+            if (parent == null) {
+                return null;
+            }
+            base = base.getParentFile();
+        }
+    }
+
     private void setupSubscribes() throws IOException {
         // subscribe file watch
         this.sessionEventBus.subscribeFileWatch();
@@ -256,7 +316,20 @@ public class Session {
         return getCompletion().completionAt(file, line, column, prefix);
     }
 
-    public synchronized LocalVariable localVariable(String path, int line) throws ExecutionException {
+    public synchronized boolean changeProject(final String path) {
+        try {
+            final boolean changed = this.searchAndChangeProject(new File(path));
+            if (changed) {
+                this.sessionEventBus.requestClassCache();
+            }
+            return true;
+        } catch (IOException e) {
+            log.catching(e);
+            return false;
+        }
+    }
+
+    public synchronized LocalVariable localVariable(final String path, final int line) throws ExecutionException {
         // java file only
         File file = normalize(path);
         if (!JavaSource.isJavaFile(file)) {

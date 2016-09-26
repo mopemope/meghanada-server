@@ -128,6 +128,12 @@ public class EmacsServer implements Server {
     private boolean dispatch(List<String> argList, CommandHandler handler) {
 
         return match(argList)
+                .when(headTail(eq("pc"), any())).get(args -> {
+                    // pc : Project Change
+                    // usage: pc <filepath>
+                    handler.changeProject(args.get(0));
+                    return true;
+                })
                 .when(headTail(eq("p"), any())).get(args -> {
                     // p : Parse
                     // usage: p <filepath>

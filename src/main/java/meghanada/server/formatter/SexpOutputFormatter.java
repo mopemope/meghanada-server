@@ -29,6 +29,14 @@ public class SexpOutputFormatter implements OutputFormatter {
     }
 
     @Override
+    public String changeProject(final boolean result) {
+        if (result) {
+            return LPAREN + "success" + RPAREN;
+        }
+        return LPAREN + "error" + RPAREN;
+    }
+
+    @Override
     public String compile(CompileResult compileResult, String path) {
 
         if (compileResult.isSuccess()) {

@@ -28,7 +28,6 @@ public class CacheEventSubscriber extends AbstractSubscriber {
 
     private static final String SRC_FILTER = "src-filter";
     private static Logger log = LogManager.getLogger(CacheEventSubscriber.class);
-    private int parsedCount;
 
     public CacheEventSubscriber(SessionEventBus sessionEventBus) {
         super(sessionEventBus);
@@ -67,7 +66,7 @@ public class CacheEventSubscriber extends AbstractSubscriber {
     }
 
     private void requestParse() throws IOException {
-
+        final int[] parsedCount = {0};
         final Session session = this.sessionEventBus.getSession();
         final Project project = session.getCurrentProject();
         final List<File> fileList = project.getSourceDirectories()
@@ -78,6 +77,7 @@ public class CacheEventSubscriber extends AbstractSubscriber {
                 .filter(JavaSource::isJavaFile)
                 .filter(FileUtils::filterFile)
                 .collect(Collectors.toList());
+        final int size = fileList.size();
 
         final Config config = Config.load();
 
@@ -86,28 +86,27 @@ public class CacheEventSubscriber extends AbstractSubscriber {
         fileStream.forEach(file -> {
             try {
                 this.parseFile(file);
+                parsedCount[0]++;
             } catch (IOException | ExecutionException e) {
                 log.catching(e);
             } finally {
-                log.info("analyze {} / {}", this.parsedCount, fileList.size());
+                log.info("analyze {} / {}", parsedCount[0], size);
             }
         });
 
     }
 
-    private void parseFile(final File file) throws ExecutionException, IOException {
+    private boolean parseFile(final File file) throws ExecutionException, IOException {
         final String srcFilter = System.getProperty(SRC_FILTER);
         if (srcFilter != null) {
             final String path = file.getCanonicalPath();
             if (!path.matches(srcFilter)) {
                 // skip
-                // log.debug("Skip: filter:{} path:{}", srcFilter, path);
-                this.parsedCount++;
-                return;
+                return false;
             }
         }
         final Session session = this.sessionEventBus.getSession();
         session.getSourceCache().get(file);
-        this.parsedCount++;
+        return true;
     }
 }

@@ -31,6 +31,18 @@ public class CommandHandler {
         this.formatter = formatter;
     }
 
+    public void changeProject(String path) {
+        try {
+            path = new File(path).getCanonicalPath();
+            final boolean result = session.changeProject(path);
+            final String out = formatter.changeProject(result);
+            writer.write(out);
+            writer.newLine();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     public void diagnostics(String path) {
         try {
             path = new File(path).getCanonicalPath();
