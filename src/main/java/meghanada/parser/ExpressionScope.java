@@ -7,12 +7,12 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.Optional;
 
-class ExpressionScope extends Scope {
+public class ExpressionScope extends Scope {
 
     private static Logger log = LogManager.getLogger(ExpressionScope.class);
     private AccessSymbol expressionReturn;
 
-    ExpressionScope(final String name, final Range range) {
+    public ExpressionScope(final String name, final Range range) {
         super(name, range);
     }
 

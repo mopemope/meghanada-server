@@ -6,6 +6,8 @@ import meghanada.parser.JavaSource;
 import meghanada.parser.MethodScope;
 import meghanada.parser.TypeScope;
 import meghanada.parser.Variable;
+import meghanada.reflect.ClassIndex;
+import meghanada.reflect.asm.CachedASMReflector;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -52,24 +54,39 @@ public class LocationSearcher {
         return source.getMethodCallSymbol(line, col, true).flatMap(mc -> {
             final String methodName = mc.getName();
             final String fqcn = mc.getDeclaringClass();
-            return existsFQCN(this.sources, fqcn).flatMap(f -> {
-                try {
-                    final JavaSource declaringClassSrc = this.sourceCache.get(f);
-                    final String path = declaringClassSrc.getFile().getPath();
-                    return declaringClassSrc.getTypeScopes()
-                            .stream()
-                            .flatMap(ts -> ts.getInnerScopes().stream())
-                            .filter(bs -> methodName.equals(bs.getName()))
-                            .filter(bs -> bs instanceof MethodScope)
-                            .map(MethodScope.class::cast)
-                            .map(ms -> new Location(path,
-                                    ms.getBeginLine(),
-                                    ms.getNameRange().begin.column))
-                            .findFirst();
-                } catch (ExecutionException e) {
-                    throw new UncheckedExecutionException(e);
+
+            List<String> searchTargets = new ArrayList<>();
+            searchTargets.add(fqcn);
+            final Map<String, ClassIndex> globalClassIndex = CachedASMReflector.getInstance().getGlobalClassIndex();
+            if (globalClassIndex.containsKey(fqcn)) {
+                final List<String> supers = globalClassIndex.get(fqcn).supers;
+                searchTargets.addAll(supers);
+            }
+
+            for (final String targetFqcn : searchTargets) {
+                final Optional<Location> location = existsFQCN(this.sources, targetFqcn).flatMap(f -> {
+                    try {
+                        final JavaSource declaringClassSrc = this.sourceCache.get(f);
+                        final String path = declaringClassSrc.getFile().getPath();
+                        return declaringClassSrc.getTypeScopes()
+                                .stream()
+                                .flatMap(ts -> ts.getInnerScopes().stream())
+                                .filter(bs -> methodName.equals(bs.getName()))
+                                .filter(bs -> bs instanceof MethodScope)
+                                .map(MethodScope.class::cast)
+                                .map(ms -> new Location(path,
+                                        ms.getBeginLine(),
+                                        ms.getNameRange().begin.column))
+                                .findFirst();
+                    } catch (ExecutionException e) {
+                        throw new UncheckedExecutionException(e);
+                    }
+                });
+                if (location.isPresent()) {
+                    return location;
                 }
-            });
+            }
+            return Optional.empty();
         }).orElse(null);
     }
 
@@ -136,24 +153,38 @@ public class LocationSearcher {
                 .flatMap(fieldAccessSymbol -> {
                     final String fieldName = fieldAccessSymbol.getName();
                     final String fqcn = fieldAccessSymbol.getDeclaringClass();
+                    List<String> searchTargets = new ArrayList<>();
+                    searchTargets.add(fqcn);
 
-                    return existsFQCN(this.sources, fqcn).flatMap(f -> {
-                        try {
-                            final JavaSource declaringClassSrc = this.sourceCache.get(f);
-                            final String path = declaringClassSrc.getFile().getPath();
-                            return declaringClassSrc
-                                    .getTypeScopes()
-                                    .stream()
-                                    .map(ts -> ts.getFieldSymbol(fieldName))
-                                    .filter(ns -> ns != null)
-                                    .map(ns -> new Location(path,
-                                            ns.getLine(),
-                                            ns.getRange().begin.column))
-                                    .findFirst();
-                        } catch (ExecutionException e) {
-                            throw new UncheckedExecutionException(e);
+                    final Map<String, ClassIndex> globalClassIndex = CachedASMReflector.getInstance().getGlobalClassIndex();
+                    if (globalClassIndex.containsKey(fqcn)) {
+                        final List<String> supers = globalClassIndex.get(fqcn).supers;
+                        searchTargets.addAll(supers);
+                    }
+
+                    for (final String targetFqcn : searchTargets) {
+                        final Optional<Location> location = existsFQCN(this.sources, targetFqcn).flatMap(f -> {
+                            try {
+                                final JavaSource declaringClassSrc = this.sourceCache.get(f);
+                                final String path = declaringClassSrc.getFile().getPath();
+                                return declaringClassSrc
+                                        .getTypeScopes()
+                                        .stream()
+                                        .map(ts -> ts.getFieldSymbol(fieldName))
+                                        .filter(ns -> ns != null)
+                                        .map(ns -> new Location(path,
+                                                ns.getLine(),
+                                                ns.getRange().begin.column))
+                                        .findFirst();
+                            } catch (ExecutionException e) {
+                                throw new UncheckedExecutionException(e);
+                            }
+                        });
+                        if (location.isPresent()) {
+                            return location;
                         }
-                    });
+                    }
+                    return Optional.empty();
                 }).orElse(null);
     }
 
