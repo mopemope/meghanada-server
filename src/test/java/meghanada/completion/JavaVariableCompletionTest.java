@@ -14,6 +14,7 @@ import org.junit.Test;
 import java.io.File;
 
 import static meghanada.config.Config.*;
+import static org.junit.Assert.assertEquals;
 
 public class JavaVariableCompletionTest extends GradleTestBase {
 
@@ -57,6 +58,7 @@ public class JavaVariableCompletionTest extends GradleTestBase {
             return completion.createLocalVariable(mcs, "boolean");
         });
         System.out.println(lv);
+        assertEquals(lv.getCandidates().size(), 2);
     }
 
     @Test

@@ -126,4 +126,18 @@ public class ClassNameUtilsTest {
         assertEquals("java/util/function/Function", s);
     }
 
+    @Test
+    public void getAllSimpleName1() throws Exception {
+        String name = "java.util.function.Function<java.utils.List, java.util.Map>";
+        final String s = ClassNameUtils.getAllSimpleName(name);
+        assertEquals("Function<List, Map>", s);
+    }
+
+    @Test
+    public void getAllSimpleName2() throws Exception {
+        String name = "java.util.function.Function<java.utils.List<java.lang.List<java.io.File>>>";
+        final String s = ClassNameUtils.getAllSimpleName(name);
+        assertEquals("Function<List<List<File>>>", s);
+    }
+
 }

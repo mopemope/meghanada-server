@@ -8,8 +8,8 @@ import java.util.List;
 
 public class LocalVariable {
 
-    private String returnType;
-    private List<String> candidates;
+    private final String returnType;
+    private final List<String> candidates;
 
     public LocalVariable(final String returnType, List<String> candidates) {
         this.returnType = returnType;
@@ -21,7 +21,7 @@ public class LocalVariable {
     }
 
     public String getReturnType() {
-        return ClassNameUtils.getSimpleName(returnType);
+        return ClassNameUtils.getAllSimpleName(returnType);
     }
 
     public List<String> getCandidates() {

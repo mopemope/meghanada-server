@@ -1,5 +1,6 @@
 package meghanada.utils;
 
+import com.google.common.base.Joiner;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -414,6 +415,31 @@ public class ClassNameUtils {
             return ClassNameUtils.replace(name, VA_ARGS, ARRAY);
         }
         return name;
+    }
+
+    public static String getAllSimpleName(final String name) {
+        final String base = ClassNameUtils.removeTypeParameter(ClassNameUtils.getSimpleName(name));
+
+        StringBuilder sb = new StringBuilder(base);
+
+        final List<String> parameters = ClassNameUtils.parseTypeParameter(name);
+        if (parameters.size() > 0) {
+            sb.append("<");
+            List<String> temp = new ArrayList<>(parameters.size());
+
+            for (final String s : parameters) {
+                final String simpleName = ClassNameUtils.getSimpleName(s);
+                if (simpleName.indexOf("<") > 0) {
+                    temp.add(getAllSimpleName(simpleName));
+                } else {
+                    temp.add(simpleName);
+                }
+            }
+            sb.append(Joiner.on(", ").join(temp));
+            sb.append(">");
+        }
+
+        return sb.toString();
     }
 
 

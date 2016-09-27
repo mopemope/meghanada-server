@@ -102,16 +102,18 @@ public class JavaVariableCompletion {
         if (name.startsWith("get")) {
             name = name.substring(3);
         }
+
         // add simpleName
         final String uncapitalize = StringUtils.uncapitalize(name);
         final String[] strings = StringUtils.splitByCharacterTypeCamelCase(uncapitalize);
         final List<String> nameList = new ArrayList<>(Arrays.asList(strings));
+
         addName(names, nameList);
         names.add(uncapitalize);
 
         // add scope + simpleName
         String scope = accessSymbol.getScope();
-        if (!StringUtils.containsAny(scope, "(", ".", "$")) {
+        if (!scope.isEmpty() && !StringUtils.containsAny(scope, "(", ".", "$")) {
             //
             final String scopeName = StringUtils.uncapitalize(scope) + StringUtils.capitalize(name);
             names.add(scopeName);
