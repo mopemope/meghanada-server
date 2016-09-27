@@ -109,9 +109,9 @@ public class SimpleJavaCompiler {
                     ),
                     null,
                     compilationUnits);
-            boolean success = task.call();
-            log.debug("finish compile result {} {}", success, diagnosticCollector.getDiagnostics());
-            if (!success) {
+            final boolean success = task.call();
+
+            if (!success && log.isDebugEnabled()) {
                 log.warn("CompileError Diagnostics:{}", diagnosticCollector.getDiagnostics());
             }
             return new CompileResult(success, diagnosticCollector.getDiagnostics());
