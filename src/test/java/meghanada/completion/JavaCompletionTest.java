@@ -68,7 +68,7 @@ public class JavaCompletionTest extends GradleTestBase {
 
         // return CompileResult
         final Collection<? extends CandidateUnit> units1 = timeIt(() -> {
-            return completion.completionAt(file, 77, 80, "*method");
+            return completion.completionAt(file, 78, 80, "*method");
         });
         units1.forEach(md -> System.out.println(md));
         assertEquals(15, units1.size());
@@ -80,7 +80,7 @@ public class JavaCompletionTest extends GradleTestBase {
         File file = new File("./src/main/java/meghanada/compiler/SimpleJavaCompiler.java");
 
         final Collection<? extends CandidateUnit> units1 = timeIt(() -> {
-            return completion.completionAt(file, 34, 43, "*method");
+            return completion.completionAt(file, 35, 43, "*method");
         });
         units1.forEach(md -> System.out.println(md.getDisplayDeclaration()));
         assertEquals(61, units1.size());

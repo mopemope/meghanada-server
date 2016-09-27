@@ -29,6 +29,7 @@ public class SimpleJavaCompiler {
     private final Set<File> sourceRoots;
     private String compileSource = "1.8";
     private String compileTarget = "1.8";
+    private Map<File, Map<String, String>> checksum = new HashMap<>();
 
     public SimpleJavaCompiler(String compileSource, String compileTarget, Set<File> sourceRoots) {
         this.compileSource = compileSource;
@@ -132,14 +133,17 @@ public class SimpleJavaCompiler {
     }
 
     private List<File> getCompileFiles(final List<File> files, final Set<File> sourceRoots, final File output) throws FileNotFoundException {
-        final File checksumFile = this.getChecksumFile();
 
-        Map<String, String> checksumMap = new ConcurrentHashMap<>(64);
-        if (checksumFile.exists()) {
-            checksumMap = new ConcurrentHashMap<>(this.readChecksum(checksumFile));
+        final File checksumFile = getChecksumFile();
+        if (!this.checksum.containsKey(checksumFile)) {
+            Map<String, String> checksumMap = new ConcurrentHashMap<>(64);
+            if (checksumFile.exists()) {
+                checksumMap = new ConcurrentHashMap<>(this.readChecksum(checksumFile));
+            }
+            this.checksum.put(checksumFile, checksumMap);
         }
 
-        Map<String, String> finalChecksumMap = checksumMap;
+        Map<String, String> finalChecksumMap = this.checksum.get(checksumFile);
         final List<File> fileList = files
                 .stream()
                 .parallel()
@@ -174,6 +178,7 @@ public class SimpleJavaCompiler {
                 }).collect(Collectors.toList());
 
         SimpleJavaCompiler.writeChecksum(finalChecksumMap, checksumFile);
+        this.checksum.put(checksumFile, finalChecksumMap);
         return fileList;
     }
 }
