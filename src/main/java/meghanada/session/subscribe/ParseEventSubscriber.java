@@ -31,6 +31,7 @@ public class ParseEventSubscriber extends AbstractSubscriber {
 
     @Subscribe
     public synchronized void on(final SessionEventBus.ParseRequest request) throws ExecutionException {
+
         final Session session = super.sessionEventBus.getSession();
         final File file = request.getFile();
         if (!JavaSource.isJavaFile(file)) {
@@ -38,8 +39,8 @@ public class ParseEventSubscriber extends AbstractSubscriber {
         }
         try {
             this.parseFile(session, file);
-        } catch (IOException e) {
-            throw new ExecutionException(e.getMessage(), e);
+        } catch (Exception e) {
+            log.warn("parse error {}", e.getMessage());
         }
     }
 
@@ -53,8 +54,8 @@ public class ParseEventSubscriber extends AbstractSubscriber {
             }
             try {
                 this.parseFile(session, file);
-            } catch (IOException e) {
-                throw new ExecutionException(e.getMessage(), e);
+            } catch (Exception e) {
+                log.warn("parse error {}", e.getMessage());
             }
         }
 
