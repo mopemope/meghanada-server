@@ -1,5 +1,6 @@
-package meghanada.parser;
+package meghanada.parser.source;
 
+import com.esotericsoftware.kryo.DefaultSerializer;
 import com.github.javaparser.Range;
 import com.google.common.base.MoreObjects;
 import meghanada.reflect.MemberDescriptor;
@@ -10,19 +11,20 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 // Class or Interface
+@DefaultSerializer(TypeScopeSerializer.class)
 public class TypeScope extends MethodScope {
 
     private static Logger log = LogManager.getLogger(TypeScope.class);
 
-    Map<String, Variable> fieldSymbols = new HashMap<>(32);
-    private List<MemberDescriptor> memberDescriptors = new ArrayList<>(32);
+    public Map<String, Variable> fieldSymbols = new HashMap<>(32);
+    public List<MemberDescriptor> memberDescriptors = new ArrayList<>(32);
+    String pkg;
+    String fqcn;
+
     private Deque<String> currentMethod = new ArrayDeque<>(8);
 
-    private String pkg;
-    private String fqcn;
-
-    TypeScope(final String pkg, final String type, final Range range, final Range nameRange) {
-        super(type, range, nameRange);
+    public TypeScope(final String pkg, final String name, final Range range, final Range nameRange) {
+        super(name, range, nameRange);
         this.pkg = pkg;
         if (pkg != null) {
             this.fqcn = this.pkg + "." + this.name;
@@ -39,13 +41,13 @@ public class TypeScope extends MethodScope {
         return this.fqcn;
     }
 
-    void addFieldSymbol(String name, Variable ns) {
-        this.fieldSymbols.put(name, ns);
+    public void addFieldSymbol(final Variable ns) {
+        this.fieldSymbols.put(ns.name, ns);
         log.debug("add fieldSymbol name:{}, {}", this.name, ns);
     }
 
-    void addMemberDescriptor(MemberDescriptor cu) {
-        this.memberDescriptors.add(cu);
+    public void addMemberDescriptor(MemberDescriptor memberDescriptor) {
+        this.memberDescriptors.add(memberDescriptor);
     }
 
 //    void startBlock(String name, int begin, int end, int colStart) {
@@ -54,24 +56,24 @@ public class TypeScope extends MethodScope {
 //        super.startBlock(scope);
 //    }
 
-    BlockScope currentBlock() {
+    public BlockScope currentBlock() {
         return super.currentScope.peek();
     }
 
-    BlockScope endBlock() {
+    public BlockScope endBlock() {
         super.innerScopes.add(this.currentBlock());
         return super.currentScope.remove();
     }
 
-    void startMethod(String name) {
+    public void startMethod(String name) {
         this.currentMethod.push(name);
     }
 
-    String currentMethod() {
+    public String currentMethod() {
         return this.currentMethod.peek();
     }
 
-    String endMethod() {
+    public String endMethod() {
         return this.currentMethod.remove();
     }
 
@@ -79,7 +81,7 @@ public class TypeScope extends MethodScope {
         return this.fieldSymbols.get(name);
     }
 
-    Map<String, Variable> getFieldSymbols() {
+    public Map<String, Variable> getFieldSymbols() {
         return this.fieldSymbols;
     }
 
@@ -133,7 +135,7 @@ public class TypeScope extends MethodScope {
         return accessSymbol.orElse(null);
     }
 
-    List<MemberDescriptor> getMemberDescriptors() {
+    public List<MemberDescriptor> getMemberDescriptors() {
         return memberDescriptors;
     }
 

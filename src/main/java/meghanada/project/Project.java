@@ -6,7 +6,7 @@ import com.typesafe.config.ConfigFactory;
 import meghanada.compiler.CompileResult;
 import meghanada.compiler.SimpleJavaCompiler;
 import meghanada.config.Config;
-import meghanada.parser.JavaSource;
+import meghanada.parser.source.JavaSource;
 import meghanada.utils.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;

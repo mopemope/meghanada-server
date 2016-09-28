@@ -1,27 +1,29 @@
-package meghanada.parser;
+package meghanada.parser.source;
 
+import com.esotericsoftware.kryo.DefaultSerializer;
 import com.github.javaparser.Range;
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Objects;
 import meghanada.reflect.CandidateUnit;
 import meghanada.reflect.FieldDescriptor;
 
+@DefaultSerializer(VariableSerializer.class)
 public class Variable {
 
     final String name;
-    private final String fqcn;
-    private final String parent;
-    private final Range range;
-    private boolean declaration;
+    final String fqcn;
+    final String parent;
+    final Range range;
+    boolean declaration;
 
-    Variable(final String parent, final String name, final Range range, final String fqcn) {
+    public Variable(final String parent, final String name, final Range range, final String fqcn) {
         this.parent = parent;
         this.name = name;
         this.range = range;
         this.fqcn = fqcn;
     }
 
-    Variable(final String parent, final String name, final Range range, final String fqcn, final boolean declaration) {
+    public Variable(final String parent, final String name, final Range range, final String fqcn, final boolean declaration) {
         this.parent = parent;
         this.name = name;
         this.range = range;

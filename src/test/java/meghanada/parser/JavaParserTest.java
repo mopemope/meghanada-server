@@ -4,6 +4,8 @@ import com.github.javaparser.ParseException;
 import com.google.common.base.Stopwatch;
 import com.google.common.base.Strings;
 import meghanada.GradleTestBase;
+import meghanada.parser.source.JavaSource;
+import meghanada.parser.source.TypeScope;
 import meghanada.reflect.MemberDescriptor;
 import meghanada.reflect.asm.CachedASMReflector;
 import org.junit.After;
@@ -148,7 +150,7 @@ public class JavaParserTest extends GradleTestBase {
             List<MemberDescriptor> result = typeScope.getMemberDescriptors();
             String type = pkg + "." + typeScope.getType();
             assertEquals("meghanada.compiler.SimpleJavaCompiler", type);
-            assertEquals(14, result.size());
+            assertEquals(10, result.size());
         }
     }
 
@@ -186,13 +188,13 @@ public class JavaParserTest extends GradleTestBase {
     public void testParseClass6() throws Exception {
         JavaParser parser = new JavaParser();
         assertNotNull(parser);
-        JavaSource source = parser.parse(new File("./src/main/java/meghanada/parser/TypeScope.java"));
+        JavaSource source = parser.parse(new File("./src/main/java/meghanada/parser/source/TypeScope.java"));
         assertNotNull(source);
         String pkg = source.getPkg();
         for (TypeScope typeScope : source.getTypeScopes()) {
             List<MemberDescriptor> result = typeScope.getMemberDescriptors();
             String type = pkg + "." + typeScope.getType();
-            assertEquals("meghanada.parser.TypeScope", type);
+            assertEquals("meghanada.parser.source.TypeScope", type);
             assertEquals(25, result.size());
         }
     }
@@ -201,13 +203,13 @@ public class JavaParserTest extends GradleTestBase {
     public void testParseClass7() throws Exception {
         JavaParser parser = new JavaParser();
         assertNotNull(parser);
-        JavaSource source = parser.parse(new File("./src/main/java/meghanada/parser/Variable.java"));
+        JavaSource source = parser.parse(new File("./src/main/java/meghanada/parser/source/Variable.java"));
         assertNotNull(source);
         String pkg = source.getPkg();
         for (TypeScope typeScope : source.getTypeScopes()) {
             List<MemberDescriptor> result = typeScope.getMemberDescriptors();
             String type = pkg + "." + typeScope.getType();
-            assertEquals("meghanada.parser.Variable", type);
+            assertEquals("meghanada.parser.source.Variable", type);
             assertEquals(16, result.size());
         }
     }
@@ -216,14 +218,14 @@ public class JavaParserTest extends GradleTestBase {
     public void testParseClass8() throws Exception {
         JavaSource source = timeIt(() -> {
             JavaParser parser = new JavaParser();
-            return parser.parse(new File("./src/main/java/meghanada/parser/JavaSource.java"));
+            return parser.parse(new File("./src/main/java/meghanada/parser/source/JavaSource.java"));
         });
         String pkg = source.getPkg();
         for (TypeScope typeScope : source.getTypeScopes()) {
             List<MemberDescriptor> result = typeScope.getMemberDescriptors();
             String type = pkg + "." + typeScope.getType();
-            assertEquals("meghanada.parser.JavaSource", type);
-            assertEquals(45, result.size());
+            assertEquals("meghanada.parser.source.JavaSource", type);
+            assertEquals(42, result.size());
         }
     }
 

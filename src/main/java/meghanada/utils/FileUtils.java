@@ -1,14 +1,15 @@
 package meghanada.utils;
 
+import com.esotericsoftware.kryo.io.ByteBufferInput;
+import com.esotericsoftware.kryo.io.Input;
+import com.esotericsoftware.kryo.io.Output;
 import meghanada.config.Config;
+import meghanada.reflect.asm.CachedASMReflector;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.message.EntryMessage;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -17,10 +18,14 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.security.DigestInputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
+import java.util.zip.DeflaterOutputStream;
+import java.util.zip.InflaterInputStream;
 
-public class FileUtils {
+public final class FileUtils {
 
     private static final Logger log = LogManager.getLogger(FileUtils.class);
 
@@ -143,4 +148,68 @@ public class FileUtils {
         return properties.getProperty("version");
     }
 
+    public static File getSettingFile(final String fileName) {
+        final String settingDir = Config.load().getProjectSettingDir();
+        final File dir = new File(settingDir);
+        if (!dir.exists()) {
+            if (!dir.mkdirs()) {
+                log.warn("fail create directory={}", dir);
+            }
+        }
+        return new File(dir, fileName);
+    }
+
+    public static synchronized Map<String, String> readMapSetting(final File inFile) throws IOException {
+        final CachedASMReflector reflector = CachedASMReflector.getInstance();
+        try {
+            return reflector.getKryoPool().run(kryo -> {
+                try (Input input = new Input(new InflaterInputStream(new ByteBufferInput(new FileInputStream(inFile), 8192)))) {
+                    @SuppressWarnings("unchecked")
+                    Map<String, String> map = kryo.readObject(input, HashMap.class);
+                    return map;
+                } catch (IOException e) {
+                    throw new UncheckedIOException(e);
+                }
+            });
+        } catch (UncheckedIOException e) {
+            throw new IOException(e);
+        }
+    }
+
+    public static synchronized void writeMapSetting(final Map<String, String> map, final File outFile) throws IOException {
+        final CachedASMReflector reflector = CachedASMReflector.getInstance();
+
+        try {
+            reflector.getKryoPool().run(kryo -> {
+                try (final Output output = new Output(new DeflaterOutputStream(new BufferedOutputStream(new FileOutputStream(outFile), 8192)))) {
+                    kryo.writeObject(output, map);
+                    return map;
+                } catch (IOException e) {
+                    throw new UncheckedIOException(e);
+                }
+            });
+        } catch (UncheckedIOException e) {
+            throw new IOException(e);
+        }
+    }
+
+    public static String toHashedPath(final File f, String suffix) throws IOException {
+        final String path = f.getCanonicalPath();
+        MessageDigest md;
+        try {
+            md = MessageDigest.getInstance("SHA-256");
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException(e);
+        }
+        md.update(path.getBytes("UTF-8"));
+        byte[] digest = md.digest();
+
+        StringBuilder sb = new StringBuilder();
+        for (final int b : digest) {
+            sb.append(Character.forDigit(b >> 4 & 0xF, 16));
+            sb.append(Character.forDigit(b & 0xF, 16));
+        }
+        sb.append(suffix);
+        return sb.toString();
+    }
 }

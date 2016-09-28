@@ -1,25 +1,24 @@
 package meghanada.compiler;
 
-import com.esotericsoftware.kryo.io.ByteBufferInput;
-import com.esotericsoftware.kryo.io.Input;
-import com.esotericsoftware.kryo.io.Output;
 import com.google.common.collect.Lists;
 import meghanada.config.Config;
-import meghanada.parser.JavaSource;
-import meghanada.reflect.asm.CachedASMReflector;
+import meghanada.parser.source.JavaSource;
 import meghanada.utils.ClassNameUtils;
 import meghanada.utils.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import javax.tools.*;
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.charset.Charset;
-import java.util.*;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
-import java.util.zip.DeflaterOutputStream;
-import java.util.zip.InflaterInputStream;
 
 public class SimpleJavaCompiler {
 
@@ -29,49 +28,12 @@ public class SimpleJavaCompiler {
     private final Set<File> sourceRoots;
     private String compileSource = "1.8";
     private String compileTarget = "1.8";
-    private Map<File, Map<String, String>> checksum = new HashMap<>();
 
-    public SimpleJavaCompiler(String compileSource, String compileTarget, Set<File> sourceRoots) {
+    public SimpleJavaCompiler(final String compileSource, final String compileTarget, final Set<File> sourceRoots) {
         this.compileSource = compileSource;
         this.compileTarget = compileTarget;
         this.sourceRoots = sourceRoots;
         log.debug("Compiler settings compileSource:{} compileTarget:{}", this.compileSource, this.compileTarget);
-    }
-
-    public static File getChecksumFile() {
-        final String settingDir = Config.load().getProjectSettingDir();
-        final File setting = new File(settingDir);
-        if (!setting.exists()) {
-            setting.mkdirs();
-        }
-        return new File(setting, COMPILE_CHECKSUM);
-    }
-
-    public static void writeChecksum(final Map<String, String> map, final File outFile) throws FileNotFoundException {
-        final CachedASMReflector reflector = CachedASMReflector.getInstance();
-
-        reflector.getKryoPool().run(kryo -> {
-            try (final Output output = new Output(new DeflaterOutputStream(new BufferedOutputStream(new FileOutputStream(outFile), 8192)))) {
-                kryo.writeObject(output, map);
-                return map;
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
-            }
-        });
-    }
-
-    public static Map<String, String> readChecksum(final File inFile) throws FileNotFoundException {
-        final CachedASMReflector reflector = CachedASMReflector.getInstance();
-        return reflector.getKryoPool().run(kryo -> {
-            try (Input input = new Input(new InflaterInputStream(new ByteBufferInput(new FileInputStream(inFile), 8192)))) {
-                @SuppressWarnings("unchecked")
-                Map<String, String> map = kryo.readObject(input, HashMap.class);
-                return map;
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
-            }
-        });
-
     }
 
     public CompileResult compile(File file, String classpath, String output, boolean force) throws IOException {
@@ -132,18 +94,20 @@ public class SimpleJavaCompiler {
         return false;
     }
 
-    private List<File> getCompileFiles(final List<File> files, final Set<File> sourceRoots, final File output) throws FileNotFoundException {
+    private List<File> getCompileFiles(final List<File> files, final Set<File> sourceRoots, final File output) throws IOException {
 
-        final File checksumFile = getChecksumFile();
-        if (!this.checksum.containsKey(checksumFile)) {
+        final File checksumFile = FileUtils.getSettingFile(SimpleJavaCompiler.COMPILE_CHECKSUM);
+        final Map<File, Map<String, String>> checksum = Config.load().getAllChecksumMap();
+
+        if (!checksum.containsKey(checksumFile)) {
             Map<String, String> checksumMap = new ConcurrentHashMap<>(64);
             if (checksumFile.exists()) {
-                checksumMap = new ConcurrentHashMap<>(this.readChecksum(checksumFile));
+                checksumMap = new ConcurrentHashMap<>(FileUtils.readMapSetting(checksumFile));
             }
-            this.checksum.put(checksumFile, checksumMap);
+            checksum.put(checksumFile, checksumMap);
         }
 
-        Map<String, String> finalChecksumMap = this.checksum.get(checksumFile);
+        final Map<String, String> finalChecksumMap = checksum.get(checksumFile);
         final List<File> fileList = files
                 .stream()
                 .parallel()
@@ -177,8 +141,8 @@ public class SimpleJavaCompiler {
                     return true;
                 }).collect(Collectors.toList());
 
-        SimpleJavaCompiler.writeChecksum(finalChecksumMap, checksumFile);
-        this.checksum.put(checksumFile, finalChecksumMap);
+        FileUtils.writeMapSetting(finalChecksumMap, checksumFile);
+        checksum.put(checksumFile, finalChecksumMap);
         return fileList;
     }
 }

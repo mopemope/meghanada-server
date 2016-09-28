@@ -13,6 +13,7 @@ import com.github.javaparser.ast.type.ReferenceType;
 import com.github.javaparser.ast.type.Type;
 import com.github.javaparser.ast.visitor.VoidVisitorAdapter;
 import com.google.common.base.Strings;
+import meghanada.parser.source.*;
 import meghanada.reflect.*;
 import meghanada.reflect.asm.CachedASMReflector;
 import meghanada.utils.ClassNameUtils;
@@ -50,7 +51,7 @@ class JavaSymbolAnalyzeVisitor extends VoidVisitorAdapter<JavaSource> {
 
     @Override
     public void visit(PackageDeclaration n, JavaSource source) {
-        String pkg = n.getName().toString();
+        final String pkg = n.getName().toString();
         source.pkg = pkg;
 
         // load same package
@@ -190,7 +191,7 @@ class JavaSymbolAnalyzeVisitor extends VoidVisitorAdapter<JavaSource> {
                                                 node.getRange(),
                                                 ret,
                                                 true);
-                                        classScope.addFieldSymbol(md.getName(), ns);
+                                        classScope.addFieldSymbol(ns);
                                     });
                         });
             }
@@ -317,7 +318,7 @@ class JavaSymbolAnalyzeVisitor extends VoidVisitorAdapter<JavaSource> {
                             declaratorId.getRange(),
                             fqcn,
                             true);
-                    ts.addFieldSymbol(name, ns);
+                    ts.addFieldSymbol(ns);
 
                     final String modifier = toModifierString(node.getModifiers());
 

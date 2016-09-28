@@ -2,10 +2,10 @@ package meghanada.completion;
 
 import com.google.common.cache.LoadingCache;
 import meghanada.config.Config;
-import meghanada.parser.AccessSymbol;
-import meghanada.parser.JavaSource;
-import meghanada.parser.TypeScope;
-import meghanada.parser.Variable;
+import meghanada.parser.source.AccessSymbol;
+import meghanada.parser.source.JavaSource;
+import meghanada.parser.source.TypeScope;
+import meghanada.parser.source.Variable;
 import meghanada.reflect.CandidateUnit;
 import meghanada.reflect.ClassIndex;
 import meghanada.reflect.MemberDescriptor;

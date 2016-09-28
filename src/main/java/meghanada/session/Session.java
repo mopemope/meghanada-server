@@ -12,7 +12,7 @@ import meghanada.completion.LocalVariable;
 import meghanada.config.Config;
 import meghanada.location.Location;
 import meghanada.location.LocationSearcher;
-import meghanada.parser.JavaSource;
+import meghanada.parser.source.JavaSource;
 import meghanada.project.Project;
 import meghanada.project.ProjectDependency;
 import meghanada.project.gradle.GradleProject;

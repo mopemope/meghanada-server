@@ -11,7 +11,9 @@ import org.apache.logging.log4j.core.config.LoggerConfig;
 
 import java.io.File;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class Config {
 
@@ -23,6 +25,8 @@ public class Config {
     private boolean debug;
     private List<String> includeList;
     private List<String> excludeList;
+
+    private Map<File, Map<String, String>> checksumMap = new HashMap<>();
 
     private Config() {
         this.c = ConfigFactory.load();
@@ -204,6 +208,18 @@ public class Config {
 
     public boolean useClassFuzzySearch() {
         return c.getBoolean("class-fuzzy-search");
+    }
+
+    public boolean useSourceCache() {
+        return c.getBoolean("source-cache");
+    }
+
+    public Map<File, Map<String, String>> getAllChecksumMap() {
+        return checksumMap;
+    }
+
+    public Map<String, String> getChecksumMap(final File file) {
+        return checksumMap.get(file);
     }
 
     @FunctionalInterface

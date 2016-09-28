@@ -1,6 +1,6 @@
 package meghanada.location;
 
-import meghanada.parser.JavaSource;
+import meghanada.parser.source.JavaSource;
 
 @FunctionalInterface
 interface LocationSearchFunction {

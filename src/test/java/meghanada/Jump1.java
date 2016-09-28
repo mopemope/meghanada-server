@@ -2,7 +2,7 @@ package meghanada;
 
 import com.github.javaparser.Position;
 import com.github.javaparser.Range;
-import meghanada.parser.ExpressionScope;
+import meghanada.parser.source.ExpressionScope;
 
 public class Jump1 {
 

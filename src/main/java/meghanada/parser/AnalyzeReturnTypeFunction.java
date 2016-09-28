@@ -1,5 +1,7 @@
 package meghanada.parser;
 
+import meghanada.parser.source.JavaSource;
+
 import java.util.Optional;
 
 @FunctionalInterface

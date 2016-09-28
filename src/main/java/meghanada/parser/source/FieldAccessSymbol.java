@@ -1,10 +1,12 @@
-package meghanada.parser;
+package meghanada.parser.source;
 
+import com.esotericsoftware.kryo.DefaultSerializer;
 import com.github.javaparser.Range;
 
+@DefaultSerializer(FieldAccessSymbolSerializer.class)
 public class FieldAccessSymbol extends AccessSymbol {
 
-    FieldAccessSymbol(final String scope, final String fieldName, final Range range, final String declaringClass) {
+    public FieldAccessSymbol(final String scope, final String fieldName, final Range range, final String declaringClass) {
         super(scope, fieldName, range, declaringClass);
     }
 

@@ -242,10 +242,10 @@ public class CachedASMReflectorTest extends GradleTestBase {
         cachedASMReflector.createClassIndexes();
 
         {
-            String fqcn = "meghanada.parser.TypeScope";
+            String fqcn = "meghanada.parser.source.TypeScope";
             List<MemberDescriptor> memberDescriptors = cachedASMReflector.reflect(fqcn);
             // memberDescriptors.forEach(m -> System.out.println(m.getDisplayDeclaration()));
-            assertEquals(72, memberDescriptors.size());
+            assertEquals(74, memberDescriptors.size());
         }
 
     }
@@ -257,10 +257,10 @@ public class CachedASMReflectorTest extends GradleTestBase {
         cachedASMReflector.createClassIndexes();
 
         {
-            String fqcn = "meghanada.parser.MethodScope";
+            String fqcn = "meghanada.parser.source.MethodScope";
             List<MemberDescriptor> memberDescriptors = cachedASMReflector.reflect(fqcn);
             // memberDescriptors.forEach(m -> System.out.println(m.getDisplayDeclaration()));
-            assertEquals(55, memberDescriptors.size());
+            assertEquals(57, memberDescriptors.size());
         }
 
     }
@@ -287,7 +287,7 @@ public class CachedASMReflectorTest extends GradleTestBase {
         cachedASMReflector.createClassIndexes();
 
         {
-            String fqcn = "meghanada.parser.MethodCallSymbol";
+            String fqcn = "meghanada.parser.source.MethodCallSymbol";
             List<MemberDescriptor> memberDescriptors = cachedASMReflector.reflect(fqcn);
             memberDescriptors.forEach(m -> System.out.println(m.getDisplayDeclaration()));
             assertEquals(29, memberDescriptors.size());

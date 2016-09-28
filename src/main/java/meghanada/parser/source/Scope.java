@@ -1,4 +1,4 @@
-package meghanada.parser;
+package meghanada.parser.source;
 
 import com.github.javaparser.Range;
 import org.apache.logging.log4j.LogManager;
@@ -69,7 +69,7 @@ abstract class Scope {
         return start <= line && line <= end;
     }
 
-    boolean containsSymbol(final String name) {
+    public boolean containsSymbol(final String name) {
         for (Variable v : nameSymbols) {
             if (v.name.equals(name)) {
                 return true;
@@ -78,24 +78,24 @@ abstract class Scope {
         return false;
     }
 
-    void addNameSymbol(final Variable var) {
+    public void addNameSymbol(final Variable var) {
         this.nameSymbols.add(var);
         log.debug("add variable scope:{} line:{} {}", this.name, var.getLine(), var);
     }
 
-    MethodCallSymbol addMethodCall(final MethodCallSymbol mcs) {
+    public MethodCallSymbol addMethodCall(final MethodCallSymbol mcs) {
         this.methodCalls.add(mcs);
         log.debug("add methodCallSymbol scope:{} line:{} {}", this.name, mcs.getLine(), mcs);
         return mcs;
     }
 
-    FieldAccessSymbol addFieldAccess(final FieldAccessSymbol fas) {
+    public FieldAccessSymbol addFieldAccess(final FieldAccessSymbol fas) {
         this.fieldAccesses.add(fas);
         log.debug("add fieldAccessSymbol scope:{} line:{} {}", this.name, fas.getLine(), fas);
         return fas;
     }
 
-    Set<Variable> getNameSymbol(final int line) {
+    public Set<Variable> getNameSymbol(final int line) {
         if (this.contains(line)) {
             return nameSymbols;
         }
@@ -103,7 +103,7 @@ abstract class Scope {
     }
 
 
-    Map<String, Variable> getDeclaratorMap() {
+    public Map<String, Variable> getDeclaratorMap() {
         Map<String, Variable> result = new HashMap<>(32);
         nameSymbols.stream()
                 .filter(Variable::isDeclaration)
@@ -111,7 +111,7 @@ abstract class Scope {
         return result;
     }
 
-    Map<String, Variable> getDeclaratorMap(final int line) {
+    public Map<String, Variable> getDeclaratorMap(final int line) {
         if (this.contains(line)) {
             Map<String, Variable> result = new HashMap<>(32);
             nameSymbols.stream()
@@ -122,7 +122,7 @@ abstract class Scope {
         return Collections.emptyMap();
     }
 
-    List<MethodCallSymbol> getMethodCallSymbols(final int line) {
+    public List<MethodCallSymbol> getMethodCallSymbols(final int line) {
         log.traceEntry("line={}", line);
         final List<MethodCallSymbol> result = this.methodCalls
                 .stream()
@@ -131,15 +131,22 @@ abstract class Scope {
         return log.traceExit(result);
     }
 
-    List<FieldAccessSymbol> getFieldAccessSymbols(final int line) {
+    public List<FieldAccessSymbol> getFieldAccessSymbols(final int line) {
         return this.fieldAccesses.stream()
                 .filter(fieldAccessSymbol -> fieldAccessSymbol.getRange().begin.line == line)
                 .collect(Collectors.toList());
     }
 
-    Set<Variable> getNameSymbols() {
+    public Set<Variable> getNameSymbols() {
         return nameSymbols;
     }
 
-}
+    public List<MethodCallSymbol> getMethodCallSymbols() {
+        return this.methodCalls;
+    }
 
+    public List<FieldAccessSymbol> getFieldAccessSymbols() {
+        return this.fieldAccesses;
+    }
+
+}

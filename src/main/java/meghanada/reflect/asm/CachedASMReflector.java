@@ -54,6 +54,8 @@ public class CachedASMReflector {
     private final LoadingCache<String, List<MemberDescriptor>> memberCache;
     private final KryoPool kryoPool;
 
+    private Map<String, String> standardClasses;
+
     private CachedASMReflector() {
         String a = new String();
 
@@ -494,4 +496,13 @@ public class CachedASMReflector {
     public Optional<ClassIndex> containsClassIndex(final String className) {
         return Optional.ofNullable(this.globalClassIndex.get(className));
     }
+
+    public Map<String, String> getStandardClasses() {
+        if (this.standardClasses != null) {
+            return this.standardClasses;
+        }
+        this.standardClasses = getPackageClasses("java.lang");
+        return this.standardClasses;
+    }
+
 }

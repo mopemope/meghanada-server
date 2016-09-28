@@ -7,6 +7,7 @@ import com.github.javaparser.ast.stmt.BlockStmt;
 import com.github.javaparser.ast.stmt.ExpressionStmt;
 import com.github.javaparser.ast.stmt.Statement;
 import com.google.common.base.Strings;
+import meghanada.parser.source.*;
 import meghanada.reflect.CandidateUnit;
 import meghanada.reflect.MemberDescriptor;
 import meghanada.reflect.MethodDescriptor;

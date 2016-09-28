@@ -3,7 +3,7 @@ package meghanada.session.subscribe;
 import com.google.common.base.Stopwatch;
 import com.google.common.eventbus.Subscribe;
 import meghanada.config.Config;
-import meghanada.parser.JavaSource;
+import meghanada.parser.source.JavaSource;
 import meghanada.project.Project;
 import meghanada.reflect.asm.CachedASMReflector;
 import meghanada.session.Session;
@@ -18,6 +18,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -66,7 +67,8 @@ public class CacheEventSubscriber extends AbstractSubscriber {
     }
 
     private void requestParse() throws IOException {
-        final int[] parsedCount = {0};
+        final AtomicInteger count = new AtomicInteger(0);
+
         final Session session = this.sessionEventBus.getSession();
         final Project project = session.getCurrentProject();
         final List<File> fileList = project.getSourceDirectories()
@@ -86,11 +88,11 @@ public class CacheEventSubscriber extends AbstractSubscriber {
         fileStream.forEach(file -> {
             try {
                 this.parseFile(file);
-                parsedCount[0]++;
-            } catch (IOException | ExecutionException e) {
+                count.incrementAndGet();
+            } catch (Exception e) {
                 log.catching(e);
             } finally {
-                log.info("analyze {} / {}", parsedCount[0], size);
+                log.info("analyze {} / {}", count.get(), size);
             }
         });
 

@@ -1,8 +1,8 @@
 package meghanada.completion;
 
 import com.google.common.cache.LoadingCache;
-import meghanada.parser.AccessSymbol;
-import meghanada.parser.JavaSource;
+import meghanada.parser.source.AccessSymbol;
+import meghanada.parser.source.JavaSource;
 import meghanada.utils.ClassNameUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;

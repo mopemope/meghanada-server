@@ -1,5 +1,6 @@
-package meghanada.parser;
+package meghanada.parser.source;
 
+import com.esotericsoftware.kryo.DefaultSerializer;
 import com.github.javaparser.Range;
 import com.google.common.base.MoreObjects;
 
@@ -7,36 +8,37 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-class ClassScope extends TypeScope {
+@DefaultSerializer(ClassScopeSerializer.class)
+public class ClassScope extends TypeScope {
 
-    private boolean isInterface;
-    private List<String> extendsClasses;
-    private List<String> implClasses;
-    private List<String> typeParameters;
-    private Map<String, String> typeParameterMap = new HashMap<>();
+    public boolean isInterface;
+    public List<String> extendsClasses;
+    public List<String> implClasses;
+    public List<String> typeParameters;
+    public Map<String, String> typeParameterMap = new HashMap<>();
 
-    ClassScope(final String pkg, final String type, final Range range, final Range nameRange, final boolean isInterface) {
+    public ClassScope(final String pkg, final String type, final Range range, final Range nameRange, final boolean isInterface) {
         super(pkg, type, range, nameRange);
         this.isInterface = isInterface;
     }
 
-    boolean isInterface() {
+    public boolean isInterface() {
         return isInterface;
     }
 
-    List<String> getExtendsClasses() {
+    public List<String> getExtendsClasses() {
         return extendsClasses;
     }
 
-    void setExtendsClasses(List<String> extendsClasses) {
+    public void setExtendsClasses(List<String> extendsClasses) {
         this.extendsClasses = extendsClasses;
     }
 
-    List<String> getImplClasses() {
+    public List<String> getImplClasses() {
         return implClasses;
     }
 
-    void setImplClasses(List<String> implClasses) {
+    public void setImplClasses(List<String> implClasses) {
         this.implClasses = implClasses;
     }
 

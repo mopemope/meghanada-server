@@ -1,5 +1,6 @@
-package meghanada.parser;
+package meghanada.parser.source;
 
+import com.esotericsoftware.kryo.DefaultSerializer;
 import com.github.javaparser.Range;
 import com.google.common.base.MoreObjects;
 import org.apache.logging.log4j.LogManager;
@@ -7,40 +8,43 @@ import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.message.EntryMessage;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
+@DefaultSerializer(BlockScopeSerializer.class)
 public class BlockScope extends Scope {
 
     private static Logger log = LogManager.getLogger(BlockScope.class);
+    public boolean isLambdaBlock;
     List<BlockScope> innerScopes = new ArrayList<>(8);
     Deque<BlockScope> currentScope = new ArrayDeque<>(8);
-    boolean isLambdaBlock;
-    private List<ExpressionScope> expressions = new ArrayList<>(8);
-    private Deque<ExpressionScope> currentExpr = new ArrayDeque<>(8);
-    private BlockScope parent;
+    List<ExpressionScope> expressions = new ArrayList<>(8);
+    BlockScope parent;
+    Deque<ExpressionScope> currentExpr = new ArrayDeque<>(8);
 
-    BlockScope(final String name, final Range range) {
+    public BlockScope(final String name, final Range range) {
         super(name, range);
     }
 
     private BlockScope(final String name, final Range range, Map<String, Variable> classSymbol) {
         super(name, range);
-        for (Map.Entry<String, Variable> entry : classSymbol.entrySet()) {
-            this.nameSymbols.add(entry.getValue());
-        }
+        this.nameSymbols.addAll(classSymbol.entrySet()
+                .stream()
+                .map(Map.Entry::getValue)
+                .collect(Collectors.toList()));
     }
 
-    void startBlock(final String name, final Range range, final Map<String, Variable> fieldSymbol) {
+    public void startBlock(final String name, final Range range, final Map<String, Variable> fieldSymbol) {
         BlockScope blockScope = new BlockScope(name, range, fieldSymbol);
         this.startBlock(blockScope);
     }
 
-    void startBlock(final String name, final Range range, final Map<String, Variable> fieldSymbol, final boolean isLambdaBlock) {
+    public void startBlock(final String name, final Range range, final Map<String, Variable> fieldSymbol, final boolean isLambdaBlock) {
         BlockScope blockScope = new BlockScope(name, range, fieldSymbol);
         blockScope.isLambdaBlock = isLambdaBlock;
         this.startBlock(blockScope);
     }
 
-    void startBlock(BlockScope blockScope) {
+    public void startBlock(BlockScope blockScope) {
         blockScope.parent = this;
         if (this.isLambdaBlock) {
             blockScope.isLambdaBlock = true;
@@ -48,14 +52,14 @@ public class BlockScope extends Scope {
         this.currentScope.push(blockScope);
     }
 
-    BlockScope currentBlock() {
+    public BlockScope currentBlock() {
         if (this.currentScope == null) {
             return null;
         }
         return this.currentScope.peek();
     }
 
-    BlockScope endBlock() {
+    public BlockScope endBlock() {
         if (this.innerScopes == null) {
             return null;
         }
@@ -64,7 +68,7 @@ public class BlockScope extends Scope {
         return this.currentScope.remove();
     }
 
-    BlockScope getParent() {
+    public BlockScope getParent() {
         return parent;
     }
 
@@ -84,13 +88,13 @@ public class BlockScope extends Scope {
                 .add("scope", name)
                 .add("beginLine", getBeginLine())
                 .add("endLine", getEndLine())
-                .add("parent", parent.getName())
+                // .add("parent", parent.getName())
                 .add("isLambdaBlock", isLambdaBlock)
                 .toString();
     }
 
     @Override
-    void addNameSymbol(final Variable var) {
+    public void addNameSymbol(final Variable var) {
         final Optional<ExpressionScope> currentExpr = this.getCurrentExpr();
         if (currentExpr.isPresent()) {
             currentExpr.get().addNameSymbol(var);
@@ -100,7 +104,7 @@ public class BlockScope extends Scope {
     }
 
     @Override
-    MethodCallSymbol addMethodCall(MethodCallSymbol mcs) {
+    public MethodCallSymbol addMethodCall(MethodCallSymbol mcs) {
         final Optional<ExpressionScope> currentExpr = this.getCurrentExpr();
         if (currentExpr.isPresent()) {
             currentExpr.get().addMethodCall(mcs);
@@ -111,7 +115,7 @@ public class BlockScope extends Scope {
     }
 
     @Override
-    FieldAccessSymbol addFieldAccess(FieldAccessSymbol fas) {
+    public FieldAccessSymbol addFieldAccess(FieldAccessSymbol fas) {
         final Optional<ExpressionScope> currentExpr = this.getCurrentExpr();
         if (currentExpr.isPresent()) {
             currentExpr.get().addFieldAccess(fas);
@@ -122,7 +126,7 @@ public class BlockScope extends Scope {
     }
 
     @Override
-    Set<Variable> getNameSymbol(final int line) {
+    public Set<Variable> getNameSymbol(final int line) {
         if (this.contains(line)) {
             final Optional<ExpressionScope> expressionOpt = this.getExpression(line);
             if (expressionOpt.isPresent()) {
@@ -134,7 +138,7 @@ public class BlockScope extends Scope {
     }
 
     @Override
-    Map<String, Variable> getDeclaratorMap() {
+    public Map<String, Variable> getDeclaratorMap() {
         Map<String, Variable> result = new HashMap<>(32);
         this.nameSymbols
                 .stream()
@@ -149,7 +153,7 @@ public class BlockScope extends Scope {
     }
 
     @Override
-    Map<String, Variable> getDeclaratorMap(int line) {
+    public Map<String, Variable> getDeclaratorMap(int line) {
         Map<String, Variable> result = new HashMap<>(32);
         this.getNameSymbol(line)
                 .stream()
@@ -166,7 +170,7 @@ public class BlockScope extends Scope {
     }
 
     @Override
-    List<MethodCallSymbol> getMethodCallSymbols(final int line) {
+    public List<MethodCallSymbol> getMethodCallSymbols(final int line) {
         log.traceEntry("line={}", line);
 
         final List<MethodCallSymbol> result = new ArrayList<>(32);
@@ -183,7 +187,7 @@ public class BlockScope extends Scope {
     }
 
     @Override
-    List<FieldAccessSymbol> getFieldAccessSymbols(final int line) {
+    public List<FieldAccessSymbol> getFieldAccessSymbols(final int line) {
         log.traceEntry("line={}", line);
 
         final List<FieldAccessSymbol> result = new ArrayList<>(32);
@@ -199,7 +203,7 @@ public class BlockScope extends Scope {
         return log.traceExit(result);
     }
 
-    void startExpression(final ExpressionScope expr) {
+    public void startExpression(final ExpressionScope expr) {
         this.currentExpr.push(expr);
     }
 
@@ -207,7 +211,7 @@ public class BlockScope extends Scope {
         return Optional.ofNullable(this.currentExpr.peek());
     }
 
-    void endExpression() {
+    public void endExpression() {
         final EntryMessage entryMessage = log.traceEntry("currentExpr={}", currentExpr);
         this.getCurrentExpr().ifPresent(expr -> {
             this.expressions.add(expr);

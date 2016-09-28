@@ -1,7 +1,9 @@
-package meghanada.parser;
+package meghanada.parser.source;
 
+import com.esotericsoftware.kryo.DefaultSerializer;
 import com.github.javaparser.Range;
 
+@DefaultSerializer(MethodCallSymbolSerializer.class)
 public class MethodCallSymbol extends AccessSymbol {
 
     final Range nameRange;

@@ -1,4 +1,4 @@
-package meghanada.parser;
+package meghanada.parser.source;
 
 import com.google.common.base.MoreObjects;
 import meghanada.reflect.MemberDescriptor;
@@ -10,17 +10,16 @@ import java.util.Deque;
 import java.util.List;
 import java.util.Optional;
 
-class TypeHint {
+public class TypeHint {
 
     private static Logger log = LogManager.getLogger(TypeHint.class);
-
+    public int parameterHintIndex;
+    public int narrowingHintIndex;
     List<MemberDescriptor> hintDescriptors;
-    int parameterHintIndex;
-    int narrowingHintIndex;
     private Deque<String> lambdaReturnTypes = new ArrayDeque<>();
     private MemberDescriptor lambdaMethod;
 
-    void setHintDescriptors(final List<MemberDescriptor> hints) {
+    public void setHintDescriptors(final List<MemberDescriptor> hints) {
         log.traceEntry("hints:{}", hints.size());
         this.clearHintDescriptors();
         this.hintDescriptors = hints;
@@ -36,11 +35,11 @@ class TypeHint {
         return Optional.empty();
     }
 
-    boolean maybeResolved() {
+    public boolean maybeResolved() {
         return this.hintDescriptors != null && this.hintDescriptors.size() == 1;
     }
 
-    void clearHintDescriptors() {
+    public void clearHintDescriptors() {
         log.traceEntry();
         this.hintDescriptors = null;
         this.narrowingHintIndex = 0;
@@ -48,11 +47,11 @@ class TypeHint {
         log.traceExit();
     }
 
-    boolean hasHintDescriptors() {
+    public boolean hasHintDescriptors() {
         return this.hintDescriptors != null && this.hintDescriptors.size() > 0;
     }
 
-    String getLambdaReturnType() {
+    public String getLambdaReturnType() {
         log.traceEntry("lambdaReturnType={}", this.lambdaReturnTypes);
         if (this.lambdaReturnTypes.size() > 0) {
             final String returnType = this.lambdaReturnTypes.pop();
@@ -62,7 +61,7 @@ class TypeHint {
         return null;
     }
 
-    String peekLambdaReturnType() {
+    public String peekLambdaReturnType() {
         log.traceEntry("lambdaReturnType={}", this.lambdaReturnTypes);
         if (this.lambdaReturnTypes.size() > 0) {
             final String returnType = this.lambdaReturnTypes.peek();
@@ -72,25 +71,25 @@ class TypeHint {
         return null;
     }
 
-    void addLambdaReturnType(final String fqcn) {
+    public void addLambdaReturnType(final String fqcn) {
         log.traceEntry("fqcn={}", fqcn);
         this.lambdaReturnTypes.push(fqcn);
         log.traceExit();
     }
 
-    void clearLambdaReturnType() {
+    public void clearLambdaReturnType() {
         this.lambdaReturnTypes.clear();
     }
 
-    boolean hasLambdaReturn() {
+    public boolean hasLambdaReturn() {
         return this.lambdaReturnTypes.size() > 0;
     }
 
-    MemberDescriptor getLambdaMethod() {
+    public MemberDescriptor getLambdaMethod() {
         return lambdaMethod;
     }
 
-    MemberDescriptor setLambdaMethod(MemberDescriptor lambdaMethod) {
+    public MemberDescriptor setLambdaMethod(MemberDescriptor lambdaMethod) {
         this.lambdaMethod = lambdaMethod;
         return this.lambdaMethod;
     }

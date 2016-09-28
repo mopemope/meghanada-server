@@ -1,6 +1,6 @@
-package meghanada.parser;
+package meghanada.parser.source;
 
-import com.github.javaparser.ParseException;
+import com.esotericsoftware.kryo.DefaultSerializer;
 import com.google.common.base.MoreObjects;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
@@ -15,29 +15,29 @@ import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.message.EntryMessage;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
+@DefaultSerializer(JavaSourceSerializer.class)
 public class JavaSource {
 
     private static final int IMPORT_LIMIT = 5;
     private static Logger log = LogManager.getLogger(JavaSource.class);
-    private final File file;
-    private final JavaParser parser;
+
+    final File file;
+
     // K: className V: FQCN
     public BiMap<String, String> importClass = HashBiMap.create();
-    Map<String, String> staticImp = new HashMap<>(8);
-    List<TypeScope> typeScopes = new ArrayList<>(8);
-    Deque<TypeScope> currentType = new ArrayDeque<>(8);
-    String pkg;
-    TypeHint typeHint = new TypeHint();
-    private Map<String, String> unusedClass = new HashMap<>(32);
-    private Set<String> unknownClass = new HashSet<>(16);
+    public Map<String, String> staticImp = new HashMap<>(8);
+    public List<TypeScope> typeScopes = new ArrayList<>(8);
+    public String pkg;
+    public Map<String, String> unusedClass = new HashMap<>(32);
+    public Set<String> unknownClass = new HashSet<>(16);
+    public Deque<TypeScope> currentType = new ArrayDeque<>(8);
+    public TypeHint typeHint = new TypeHint();
 
-    JavaSource(final File file, final JavaParser parser) {
+    public JavaSource(final File file) {
         this.file = file;
-        this.parser = parser;
     }
 
     public static boolean isJavaFile(File file) {
@@ -199,19 +199,6 @@ public class JavaSource {
         return memberDescriptors;
     }
 
-    public JavaSource reparse() throws IOException, ParseException {
-        JavaSource newSource = parser.parse(this.file);
-        this.override(newSource);
-        return this;
-    }
-
-    private void override(JavaSource newSource) {
-        this.pkg = newSource.pkg;
-        this.importClass = newSource.importClass;
-        this.typeScopes = newSource.typeScopes;
-        this.currentType.clear();
-    }
-
     public String getPkg() {
         return pkg;
     }
@@ -296,11 +283,13 @@ public class JavaSource {
         if (this.importClass.containsKey(name)) {
             return log.traceExit(true);
         }
-        if (this.parser.globalClassSymbol.containsKey(name)) {
+
+        final CachedASMReflector reflector = CachedASMReflector.getInstance();
+
+        if (reflector.getStandardClasses().containsKey(name)) {
             return log.traceExit(true);
         }
 
-        final CachedASMReflector reflector = CachedASMReflector.getInstance();
         {
             final String pkg = this.pkg;
             if (pkg != null) {
@@ -366,21 +355,21 @@ public class JavaSource {
         return file;
     }
 
-    Optional<TypeScope> getCurrentType() {
+    public Optional<TypeScope> getCurrentType() {
         return Optional.ofNullable(this.currentType.peek());
     }
 
-    void addUnknownClass(String className) {
+    public void addUnknownClass(String className) {
         ClassName cn = new ClassName(className);
         this.unknownClass.add(cn.getName());
     }
 
-    void addUnusedClass(String className, String fqcn) {
+    public void addUnusedClass(String className, String fqcn) {
         ClassName cn = new ClassName(className);
         this.unusedClass.put(ClassNameUtils.getSimpleName(cn.getName()), fqcn);
     }
 
-    void removeUnusedClass(String className) {
+    public void removeUnusedClass(String className) {
         ClassName cn = new ClassName(className);
         this.unusedClass.remove(ClassNameUtils.getSimpleName(cn.getName()));
     }
@@ -391,14 +380,15 @@ public class JavaSource {
                 .add("file", file)
                 .add("pkg", pkg)
                 .add("typeScopes", typeScopes)
+                .add("importClass", importClass)
                 .toString();
     }
 
-    Optional<BlockScope> getCurrentBlock() {
+    public Optional<BlockScope> getCurrentBlock() {
         return this.getCurrentType().flatMap(this::getCurrentBlock);
     }
 
-    Optional<BlockScope> getCurrentBlock(TypeScope typeScope) {
+    public Optional<BlockScope> getCurrentBlock(TypeScope typeScope) {
         BlockScope blockScope = typeScope.currentBlock();
         if (blockScope == null) {
             return Optional.empty();

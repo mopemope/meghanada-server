@@ -1,6 +1,7 @@
 package meghanada.parser;
 
 import com.google.common.collect.BiMap;
+import meghanada.parser.source.*;
 import meghanada.reflect.MemberDescriptor;
 import meghanada.reflect.asm.CachedASMReflector;
 import meghanada.utils.ClassName;

@@ -2,10 +2,10 @@ package meghanada.location;
 
 import com.google.common.cache.LoadingCache;
 import com.google.common.util.concurrent.UncheckedExecutionException;
-import meghanada.parser.JavaSource;
-import meghanada.parser.MethodScope;
-import meghanada.parser.TypeScope;
-import meghanada.parser.Variable;
+import meghanada.parser.source.JavaSource;
+import meghanada.parser.source.MethodScope;
+import meghanada.parser.source.TypeScope;
+import meghanada.parser.source.Variable;
 import meghanada.reflect.ClassIndex;
 import meghanada.reflect.asm.CachedASMReflector;
 import org.apache.logging.log4j.LogManager;

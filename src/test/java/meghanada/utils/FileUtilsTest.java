@@ -36,4 +36,12 @@ public class FileUtilsTest {
         assertTrue(version.startsWith(Main.VERSION));
     }
 
+    @Test
+    public void testToHashFile() throws Exception {
+        final String res = timeIt(() -> {
+            return FileUtils.toHashedPath(new File("./src/main/java/meghanada/compiler/SimpleJavaCompiler.java"), ".sdat");
+        });
+        System.out.println(res);
+    }
+
 }

@@ -3,7 +3,7 @@ package meghanada.completion;
 import com.github.javaparser.Range;
 import com.google.common.cache.CacheBuilder;
 import meghanada.GradleTestBase;
-import meghanada.parser.MethodCallSymbol;
+import meghanada.parser.source.MethodCallSymbol;
 import meghanada.reflect.asm.CachedASMReflector;
 import meghanada.session.JavaSourceLoader;
 import org.junit.After;

@@ -1,7 +1,7 @@
 package meghanada.session.subscribe;
 
 import com.google.common.eventbus.Subscribe;
-import meghanada.parser.JavaSource;
+import meghanada.parser.source.JavaSource;
 import meghanada.project.Project;
 import meghanada.session.SessionEventBus;
 import org.apache.logging.log4j.LogManager;

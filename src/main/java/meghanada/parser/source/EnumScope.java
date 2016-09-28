@@ -1,15 +1,18 @@
-package meghanada.parser;
+package meghanada.parser.source;
 
+import com.esotericsoftware.kryo.DefaultSerializer;
 import com.github.javaparser.Range;
 
+import java.util.ArrayList;
 import java.util.List;
 
+@DefaultSerializer(EnumScopeSerializer.class)
 public class EnumScope extends TypeScope {
 
-    private List<String> implClasses;
-    private int index;
+    List<String> implClasses = new ArrayList<>();
+    int index;
 
-    EnumScope(final String pkg, final String type, final Range range, final Range nameRange) {
+    public EnumScope(final String pkg, final String type, final Range range, final Range nameRange) {
         super(pkg, type, range, nameRange);
     }
 

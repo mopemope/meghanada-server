@@ -1,6 +1,7 @@
 package meghanada.parser;
 
 import meghanada.GradleTestBase;
+import meghanada.parser.source.JavaSource;
 import meghanada.reflect.asm.CachedASMReflector;
 import org.junit.After;
 import org.junit.Before;

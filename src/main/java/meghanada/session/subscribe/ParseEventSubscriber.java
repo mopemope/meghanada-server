@@ -3,11 +3,13 @@ package meghanada.session.subscribe;
 import com.google.common.cache.LoadingCache;
 import com.google.common.eventbus.Subscribe;
 import meghanada.compiler.SimpleJavaCompiler;
-import meghanada.parser.JavaSource;
-import meghanada.parser.TypeScope;
+import meghanada.config.Config;
+import meghanada.parser.source.JavaSource;
+import meghanada.parser.source.TypeScope;
 import meghanada.reflect.asm.CachedASMReflector;
 import meghanada.session.Session;
 import meghanada.session.SessionEventBus;
+import meghanada.utils.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -63,28 +65,36 @@ public class ParseEventSubscriber extends AbstractSubscriber {
 
     private void parseFile(final Session session, final File file) throws ExecutionException, IOException {
         final LoadingCache<File, JavaSource> sourceCache = session.getSourceCache();
+
         sourceCache.invalidate(file);
+
         final JavaSource source = sourceCache.get(file);
         final CachedASMReflector cachedReflector = CachedASMReflector.getInstance();
 
-        final File checksumFile = SimpleJavaCompiler.getChecksumFile();
+        final File checksumFile = FileUtils.getSettingFile(SimpleJavaCompiler.COMPILE_CHECKSUM);
+        final Map<File, Map<String, String>> checksum = Config.load().getAllChecksumMap();
 
-        Map<String, String> checksumMap = new ConcurrentHashMap<>(64);
-        if (checksumFile.exists()) {
-            checksumMap = new ConcurrentHashMap<>(SimpleJavaCompiler.readChecksum(checksumFile));
+        if (!checksum.containsKey(checksumFile)) {
+            Map<String, String> checksumMap = new ConcurrentHashMap<>(64);
+            if (checksumFile.exists()) {
+                checksumMap = new ConcurrentHashMap<>(FileUtils.readMapSetting(checksumFile));
+            }
+            checksum.put(checksumFile, checksumMap);
         }
 
-        final Map<String, String> finalChecksumMap = checksumMap;
+        final Map<String, String> finalChecksumMap = checksum.get(checksumFile);
+
         final Set<String> target = new HashSet<>();
         final String pkg = source.getPkg();
-        for (TypeScope typeScope : source.getTypeScopes()) {
+
+        for (final TypeScope typeScope : source.getTypeScopes()) {
             final String fqcn = typeScope.getFQCN();
             target.add(fqcn);
             cachedReflector.invalidate(fqcn);
             finalChecksumMap.remove(file.getCanonicalPath());
         }
 
-        for (Map.Entry<File, JavaSource> entry : sourceCache.asMap().entrySet()) {
+        for (final Map.Entry<File, JavaSource> entry : sourceCache.asMap().entrySet()) {
             final File key = entry.getKey();
             final JavaSource javaSource = entry.getValue();
             if (pkg.equals(javaSource.getPkg())) {
@@ -99,6 +109,6 @@ public class ParseEventSubscriber extends AbstractSubscriber {
                 }
             }
         }
-        SimpleJavaCompiler.writeChecksum(finalChecksumMap, checksumFile);
+        FileUtils.writeMapSetting(finalChecksumMap, checksumFile);
     }
 }

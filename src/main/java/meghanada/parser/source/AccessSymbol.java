@@ -1,4 +1,4 @@
-package meghanada.parser;
+package meghanada.parser.source;
 
 import com.github.javaparser.Range;
 import com.google.common.base.MoreObjects;
@@ -12,9 +12,9 @@ public abstract class AccessSymbol {
     final Range range;
 
     // return FQCN
-    String returnType;
+    public String returnType;
 
-    AccessSymbol(final String scope, final String name, final Range range, final String declaringClass) {
+    public AccessSymbol(final String scope, final String name, final Range range, final String declaringClass) {
         this.name = name;
         this.declaringClass = declaringClass;
         this.scope = scope;
