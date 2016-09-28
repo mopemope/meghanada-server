@@ -1,6 +1,7 @@
 package meghanada.project;
 
 import com.esotericsoftware.kryo.DefaultSerializer;
+import com.google.common.base.Joiner;
 import com.google.common.base.MoreObjects;
 import com.typesafe.config.ConfigFactory;
 import meghanada.compiler.CompileResult;
@@ -317,14 +318,13 @@ public abstract class Project {
         }
         log.debug("runUnit test:{} prevTest:{}", tests, prevTest);
 
-        Config config = Config.load();
-        List<String> cmd = new ArrayList<>();
-        String binJava = "/bin/java".replace("/", File.separator);
-        String javaCmd = new File(config.getJavaHomeDir(), binJava).getCanonicalPath();
+        final Config config = Config.load();
+        final List<String> cmd = new ArrayList<>();
+        final String binJava = "/bin/java".replace("/", File.separator);
+        final String javaCmd = new File(config.getJavaHomeDir(), binJava).getCanonicalPath();
         cmd.add(javaCmd);
         String cp = this.allClasspath();
-        String mainJar = "meghanada.jar";
-        String jarPath = new File(config.getHomeDir(), mainJar).getCanonicalPath();
+        final String jarPath = config.getInstalledPath().getCanonicalPath();
         cp += File.pathSeparator + jarPath;
         cmd.add("-ea");
         cmd.add("-XX:+TieredCompilation");
@@ -340,7 +340,7 @@ public abstract class Project {
         Collections.addAll(cmd, tests);
 
         this.prevTest = tests;
-
+        log.debug("run cmd {}", Joiner.on(" ").join(cmd));
         return this.runProcess(cmd);
     }
 

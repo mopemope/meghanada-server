@@ -10,6 +10,7 @@ import org.apache.logging.log4j.core.config.Configuration;
 import org.apache.logging.log4j.core.config.LoggerConfig;
 
 import java.io.File;
+import java.net.URISyntaxException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -43,6 +44,7 @@ public class Config {
         final LoggerConfig loggerConfig = configuration.getLoggerConfig(LogManager.ROOT_LOGGER_NAME);
         loggerConfig.setLevel(level);
         context.updateLoggers();
+
         log.debug("home:{}", getHomeDir());
         log.debug("java-home:{}", getJavaHomeDir());
         log.debug("java-version:{}", getJavaVersion());
@@ -51,7 +53,6 @@ public class Config {
         log.debug("root-cache-dir:{}", getRootCacheDir());
         log.debug("project-setting-dir:{}", getProjectSettingDir());
         log.debug("project-cache-dir:{}", getProjectCacheDir());
-
         log.debug("fast-boot:{}", useFastBoot());
         log.debug("class-fuzzy-search:{}", useClassFuzzySearch());
 
@@ -220,6 +221,15 @@ public class Config {
 
     public Map<String, String> getChecksumMap(final File file) {
         return checksumMap.get(file);
+    }
+
+    public File getInstalledPath() {
+        try {
+            return new File(Config.class.getProtectionDomain().getCodeSource().getLocation().toURI().getPath());
+        } catch (URISyntaxException e) {
+            log.catching(e);
+        }
+        return null;
     }
 
     @FunctionalInterface
