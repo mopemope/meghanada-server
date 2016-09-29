@@ -84,7 +84,7 @@ public class SexpOutputFormatter implements OutputFormatter {
         final String s = units.stream()
                 .map(d -> LPAREN + String.join(LIST_SEP,
                         doubleQuote(d.getType()),
-                        doubleQuote(d.getName()),
+                        doubleQuote(toSimpleName(d.getName())),
                         doubleQuote(d.getDisplayDeclaration()),
                         doubleQuote(d.getDeclaration()),
                         doubleQuote(d.getReturnType())) + RPAREN)
@@ -95,6 +95,15 @@ public class SexpOutputFormatter implements OutputFormatter {
         return sb.toString();
     }
 
+    private String toSimpleName(final String name) {
+        final int i = name.lastIndexOf("$");
+        if (i > 0) {
+            return name.substring(i + 1);
+        }
+        return name;
+    }
+
+    @Override
     public String parse(boolean result) {
         if (result) {
             return LPAREN + "success" + RPAREN;

@@ -223,6 +223,14 @@ public class CachedASMReflector {
                 .collect(Collectors.toList());
     }
 
+    public Collection<? extends CandidateUnit> searchInnerClasses(final String parent) {
+        return this.globalClassIndex
+                .values()
+                .parallelStream()
+                .filter(classIndex -> classIndex.getReturnType().startsWith(parent + "$"))
+                .collect(Collectors.toList());
+    }
+
     public Collection<? extends CandidateUnit> searchClasses(final String keyword) {
         return this.searchClasses(keyword, true);
     }

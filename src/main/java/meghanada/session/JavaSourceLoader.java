@@ -25,7 +25,7 @@ import java.util.zip.InflaterInputStream;
 
 public class JavaSourceLoader extends CacheLoader<File, JavaSource> {
 
-    private static final Logger log = LogManager.getLogger(FileUtils.class);
+    private static final Logger log = LogManager.getLogger(JavaSourceLoader.class);
 
     private JavaParser javaParser;
 
@@ -38,6 +38,7 @@ public class JavaSourceLoader extends CacheLoader<File, JavaSource> {
             this.javaParser = new JavaParser();
         }
         final Config config = Config.load();
+
         if (!config.useSourceCache()) {
             return javaParser.parse(file);
         }
@@ -63,7 +64,7 @@ public class JavaSourceLoader extends CacheLoader<File, JavaSource> {
             if (md5sum.equals(prevSum)) {
                 // not modify
                 // load from cache
-                return loadFromCache(file);
+                return this.loadFromCache(file);
             }
             // update
             finalChecksumMap.put(path, md5sum);
@@ -134,4 +135,5 @@ public class JavaSourceLoader extends CacheLoader<File, JavaSource> {
         });
         return source;
     }
+
 }

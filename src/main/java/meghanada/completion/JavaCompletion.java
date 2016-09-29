@@ -10,6 +10,7 @@ import meghanada.reflect.CandidateUnit;
 import meghanada.reflect.ClassIndex;
 import meghanada.reflect.MemberDescriptor;
 import meghanada.reflect.asm.CachedASMReflector;
+import meghanada.utils.ClassNameUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -50,9 +51,9 @@ public class JavaCompletion {
         return CachedASMReflector.getInstance().reflect(fqcn);
     }
 
-    private Collection<? extends CandidateUnit> completionThis(final JavaSource source, final String prefix) throws ExecutionException {
-        final String fqcn = source.getTypeScopes().get(0).getFQCN();
-        return reflect(source.getPkg(), fqcn, prefix);
+    private Collection<? extends CandidateUnit> completionThis(final JavaSource source, final int line, final String prefix) throws ExecutionException {
+        final String fqcn = source.getTypeScope(line).getFQCN();
+        return this.reflectSelf(source.getPkg(), fqcn, false, false, prefix);
     }
 
     private Collection<? extends CandidateUnit> completionSuper(final JavaSource source, final int line, final String prefix) throws ExecutionException {
@@ -194,7 +195,12 @@ public class JavaCompletion {
     }
 
     private boolean privateFilter(final CandidateUnit cu, final boolean isStatic, final boolean withCONSTRUCTOR, final String target) {
+
         final String name = cu.getName().toLowerCase();
+        if (cu.getType().equals("FIELD") && name.startsWith("this$")) {
+            return false;
+        }
+
         if (target != null && !target.isEmpty()) {
             // compare
             if (!name.contains(target)) {
@@ -256,6 +262,33 @@ public class JavaCompletion {
 
         // prefix search
         log.debug("Search symbols Prefix:{} Line:{}", prefix, line);
+
+        final String fqcn = source.getTypeScope(line).getFQCN();
+
+        // add this scope member
+        this.reflectSelf(source.getPkg(), fqcn, false, false, prefix)
+                .stream()
+                .filter(c -> c.getName().startsWith(prefix))
+                .forEach(result::add);
+
+        if (fqcn.contains(ClassNameUtils.INNER_MARK)) {
+            // add parent
+            String parentClass = fqcn;
+            while (true) {
+                int i = parentClass.lastIndexOf("$");
+                if (i < 0) {
+                    break;
+                }
+                parentClass = parentClass.substring(0, i);
+                this.reflectSelf(source.getPkg(), parentClass, false, false, prefix)
+                        .stream()
+                        .filter(c -> c.getName().startsWith(prefix))
+                        .forEach(result::add);
+            }
+        }
+
+        log.debug("self fqcn:{}", fqcn);
+
         // Map<String, Variable> symbols = source.getNameSymbol(line);
         final Map<String, Variable> symbols = source.getDeclaratorMap(line);
         log.debug("Search symbols Size:{} Result:{} Size:{}", symbols.size(), symbols);
@@ -276,13 +309,14 @@ public class JavaCompletion {
         });
 
         // search this
-        for (CandidateUnit cu : source.getMemberDescriptors(line)) {
-            final String name = cu.getName();
-            if (name.startsWith(prefix)) {
-                result.add(cu);
-            }
-        }
+//        for (CandidateUnit cu : source.getMemberDescriptors(line)) {
+//            final String name = cu.getName();
+//            if (name.startsWith(prefix)) {
+//                result.add(cu);
+//            }
+//        }
 
+        // Add class
         if (Character.isUpperCase(prefix.charAt(0))) {
             // completion
             final CachedASMReflector reflector = CachedASMReflector.getInstance();
@@ -297,11 +331,11 @@ public class JavaCompletion {
         return result;
     }
 
-    private Collection<? extends CandidateUnit> completionFieldsOrMethods(final JavaSource source, int line, final String var, final String target) throws ExecutionException {
+    private Collection<? extends CandidateUnit> completionFieldsOrMethods(final JavaSource source, final int line, final String var, final String target) throws ExecutionException {
 
         // completionAt methods or fields
         if (var.equals("this")) {
-            return this.completionThis(source, target);
+            return this.completionThis(source, line, target);
         }
         if (var.equals("super")) {
             return this.completionSuper(source, line, target);
@@ -320,9 +354,17 @@ public class JavaCompletion {
                         fqcn = ownPackage + "." + fqcn;
                     }
                 }
-                Collection<? extends CandidateUnit> result = reflect(ownPackage, fqcn, true, false, target);
-                if (!result.isEmpty()) {
-                    return result;
+
+                final List<CandidateUnit> res = new ArrayList<>(32);
+                final Collection<? extends CandidateUnit> result = this.reflect(ownPackage, fqcn, true, false, target);
+                res.addAll(result);
+
+                // add inner class
+                final Collection<? extends CandidateUnit> inners = CachedASMReflector.getInstance().searchInnerClasses(fqcn);
+                res.addAll(inners);
+
+                if (!res.isEmpty()) {
+                    return res;
                 }
             }
         }

@@ -64,16 +64,11 @@ public class ParseEventSubscriber extends AbstractSubscriber {
     }
 
     private void parseFile(final Session session, final File file) throws ExecutionException, IOException {
-        final LoadingCache<File, JavaSource> sourceCache = session.getSourceCache();
 
-        sourceCache.invalidate(file);
-
-        final JavaSource source = sourceCache.get(file);
         final CachedASMReflector cachedReflector = CachedASMReflector.getInstance();
 
         final File checksumFile = FileUtils.getSettingFile(SimpleJavaCompiler.COMPILE_CHECKSUM);
         final Map<File, Map<String, String>> checksum = Config.load().getAllChecksumMap();
-
         if (!checksum.containsKey(checksumFile)) {
             Map<String, String> checksumMap = new ConcurrentHashMap<>(64);
             if (checksumFile.exists()) {
@@ -81,8 +76,18 @@ public class ParseEventSubscriber extends AbstractSubscriber {
             }
             checksum.put(checksumFile, checksumMap);
         }
-
         final Map<String, String> finalChecksumMap = checksum.get(checksumFile);
+
+        final LoadingCache<File, JavaSource> sourceCache = session.getSourceCache();
+        final JavaSource old = sourceCache.get(file);
+        if (old != null) {
+            cachedReflector.invalidate(old.getPkg());
+        }
+        finalChecksumMap.remove(file.getCanonicalPath());
+        sourceCache.invalidate(file);
+
+        // reload
+        final JavaSource source = sourceCache.get(file);
 
         final Set<String> target = new HashSet<>();
         final String pkg = source.getPkg();

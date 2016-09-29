@@ -125,8 +125,8 @@ public class EmacsServer implements Server {
 
     }
 
-    private boolean dispatch(List<String> argList, CommandHandler handler) {
-
+    private boolean dispatch(final List<String> argList, final CommandHandler handler) {
+        log.info("receive command {}", argList);
         return match(argList)
                 .when(headTail(eq("pc"), any())).get(args -> {
                     // pc : Project Change

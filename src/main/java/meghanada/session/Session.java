@@ -274,6 +274,7 @@ public class Session {
         this.setupSubscribes();
         log.debug("session start");
         Set<File> sources = this.getCurrentProject().getSourceDirectories();
+        sources.addAll(this.getCurrentProject().getTestSourceDirectories());
         this.sessionEventBus.requestFileWatch(new ArrayList<>(sources));
         this.sessionEventBus.requestClassCache();
         log.debug("session started");

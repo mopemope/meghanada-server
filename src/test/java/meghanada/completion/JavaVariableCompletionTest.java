@@ -6,8 +6,6 @@ import meghanada.GradleTestBase;
 import meghanada.parser.source.MethodCallSymbol;
 import meghanada.reflect.asm.CachedASMReflector;
 import meghanada.session.JavaSourceLoader;
-import org.junit.After;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -24,16 +22,6 @@ public class JavaVariableCompletionTest extends GradleTestBase {
         CachedASMReflector cachedASMReflector = CachedASMReflector.getInstance();
         cachedASMReflector.addDirectory(getOutputDir());
         cachedASMReflector.createClassIndexes();
-    }
-
-    @Before
-    public void setUp() throws Exception {
-
-    }
-
-    @After
-    public void tearDown() throws Exception {
-
     }
 
     @Test

@@ -6,7 +6,9 @@ import meghanada.GradleTestBase;
 import meghanada.reflect.CandidateUnit;
 import meghanada.reflect.asm.CachedASMReflector;
 import meghanada.session.JavaSourceLoader;
-import org.junit.*;
+import org.junit.BeforeClass;
+import org.junit.Ignore;
+import org.junit.Test;
 
 import java.io.File;
 import java.util.Collection;
@@ -22,17 +24,8 @@ public class JavaCompletionTest extends GradleTestBase {
         GradleTestBase.setupReflector();
         CachedASMReflector cachedASMReflector = CachedASMReflector.getInstance();
         cachedASMReflector.addDirectory(getOutputDir());
+        cachedASMReflector.addDirectory(getTestOutputDir());
         cachedASMReflector.createClassIndexes();
-    }
-
-    @Before
-    public void setUp() throws Exception {
-
-    }
-
-    @After
-    public void tearDown() throws Exception {
-
     }
 
     @Test
@@ -112,6 +105,39 @@ public class JavaCompletionTest extends GradleTestBase {
         });
         units1.forEach(System.out::println);
         assertEquals(2, units1.size());
+    }
+
+    @Test
+    public void testCompletion7() throws Exception {
+        JavaCompletion completion = getCompletion1();
+        File file = new File("./src/test/java/meghanada/TopClass.java");
+        final Collection<? extends CandidateUnit> units = debugIt(() -> {
+            return completion.completionAt(file, 8, 9, "*this");
+        });
+        units.forEach(a -> System.out.println(a.getDeclaration()));
+        assertEquals(15, units.size());
+    }
+
+    @Test
+    public void testCompletion8() throws Exception {
+        JavaCompletion completion = getCompletion1();
+        File file = new File("./src/test/java/meghanada/TopClass.java");
+        final Collection<? extends CandidateUnit> units = debugIt(() -> {
+            return completion.completionAt(file, 14, 9, "*this");
+        });
+        units.forEach(a -> System.out.println(a.getDeclaration()));
+        assertEquals(14, units.size());
+    }
+
+    @Test
+    public void testCompletion9() throws Exception {
+        JavaCompletion completion = getCompletion1();
+        File file = new File("./src/test/java/meghanada/TopClass.java");
+        final Collection<? extends CandidateUnit> units = debugIt(() -> {
+            return completion.completionAt(file, 8, 9, "fo");
+        });
+        units.forEach(a -> System.out.println(a.getDeclaration()));
+        assertEquals(units.size(), 1);
     }
 
     private JavaCompletion getCompletion1() throws Exception {
