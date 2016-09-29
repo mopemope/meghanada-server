@@ -324,7 +324,7 @@ public abstract class Project {
         final String javaCmd = new File(config.getJavaHomeDir(), binJava).getCanonicalPath();
         cmd.add(javaCmd);
         String cp = this.allClasspath();
-        final String jarPath = config.getInstalledPath().getCanonicalPath();
+        final String jarPath = Config.getInstalledPath().getCanonicalPath();
         cp += File.pathSeparator + jarPath;
         cmd.add("-ea");
         cmd.add("-XX:+TieredCompilation");
