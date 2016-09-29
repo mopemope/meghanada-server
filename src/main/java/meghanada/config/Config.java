@@ -223,7 +223,7 @@ public class Config {
         return checksumMap.get(file);
     }
 
-    public File getInstalledPath() {
+    public static File getInstalledPath() {
         try {
             return new File(Config.class.getProtectionDomain().getCodeSource().getLocation().toURI().getPath());
         } catch (URISyntaxException e) {

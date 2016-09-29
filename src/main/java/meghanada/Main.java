@@ -10,6 +10,7 @@ import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.core.LoggerContext;
 import org.apache.logging.log4j.core.config.Configuration;
 import org.apache.logging.log4j.core.config.LoggerConfig;
+import meghanada.config.Config;
 
 import java.io.IOException;
 
@@ -45,6 +46,8 @@ public class Main {
             System.out.println(version);
             return;
         }
+
+        System.setProperty("home", Config.getInstalledPath().getParentFile().getCanonicalPath());
 
         if (cmd.hasOption("v")) {
             final LoggerContext context = (LoggerContext) LogManager.getContext(false);
