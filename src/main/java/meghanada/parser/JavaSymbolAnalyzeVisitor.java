@@ -31,12 +31,10 @@ import java.util.stream.Collectors;
 class JavaSymbolAnalyzeVisitor extends VoidVisitorAdapter<JavaSource> {
 
     private static Logger log = LogManager.getLogger(JavaSymbolAnalyzeVisitor.class);
-    private final Map<String, String> globalClassSymbol;
     private final FQCNResolver fqcnResolver;
     private final TypeAnalyzer typeAnalyzer;
 
-    JavaSymbolAnalyzeVisitor(Map<String, String> globalClassSymbol) {
-        this.globalClassSymbol = globalClassSymbol;
+    JavaSymbolAnalyzeVisitor() {
         this.fqcnResolver = FQCNResolver.getInstance();
         this.typeAnalyzer = new TypeAnalyzer(this);
     }
@@ -50,16 +48,8 @@ class JavaSymbolAnalyzeVisitor extends VoidVisitorAdapter<JavaSource> {
 
 
     @Override
-    public void visit(PackageDeclaration n, JavaSource source) {
-        final String pkg = n.getName().toString();
-        source.pkg = pkg;
-
-        // load same package
-        CachedASMReflector reflector = CachedASMReflector.getInstance();
-        Map<String, String> pkgMap = reflector.getPackageClasses(pkg);
-        for (Map.Entry<String, String> entry : pkgMap.entrySet()) {
-            this.globalClassSymbol.put(entry.getKey(), entry.getValue());
-        }
+    public void visit(final PackageDeclaration n, final JavaSource source) {
+        source.pkg = n.getName().toString();
         super.visit(n, source);
     }
 
@@ -172,39 +162,49 @@ class JavaSymbolAnalyzeVisitor extends VoidVisitorAdapter<JavaSource> {
             final String type = current.getType();
             className = type + ClassNameUtils.INNER_MARK + className;
         }
+        final CachedASMReflector reflector = CachedASMReflector.getInstance();
 
         final ClassScope classScope = new ClassScope(source.pkg, className, node.getRange(), node.getNameExpr().getRange(), node.isInterface());
         final List<String> extendsClasses = new ArrayList<>(1);
         if (nExtends != null) {
-            for (ClassOrInterfaceType clazz : nExtends) {
-                this.fqcnResolver.resolveFQCN(clazz.toString(), source)
-                        .ifPresent(fqcn -> {
-                            extendsClasses.add(fqcn);
-                            this.markUsedClass(fqcn, source);
-                            CachedASMReflector.getInstance()
-                                    .reflectFieldStream(fqcn)
-                                    .forEach(md -> {
-                                        final String ret = this.fqcnResolver.resolveFQCN(md.getReturnType(), source).orElse(md.getReturnType());
-                                        final Variable ns = new Variable(
-                                                md.getDeclaringClass(),
-                                                md.getName(),
-                                                node.getRange(),
-                                                ret,
-                                                true);
-                                        classScope.addFieldSymbol(ns);
-                                    });
-                        });
+            for (final ClassOrInterfaceType ci : nExtends) {
+                final String name = ci.getName();
+                final Optional<String> clazz = this.fqcnResolver.resolveFQCN(name, source);
+
+                if (clazz.isPresent()) {
+                    final String fqcn = clazz.get();
+                    extendsClasses.add(fqcn);
+                    this.markUsedClass(fqcn, source);
+
+                    // import super class fields
+                    reflector.reflectFieldStream(fqcn)
+                            .forEach(md -> {
+                                final String ret = this.fqcnResolver.resolveFQCN(md.getReturnType(), source).orElse(md.getReturnType());
+                                final Variable ns = new Variable(
+                                        md.getDeclaringClass(),
+                                        md.getName(),
+                                        node.getRange(),
+                                        ret,
+                                        true);
+                                classScope.addFieldSymbol(ns);
+                            });
+                } else {
+                    this.markUsedClass(name, source);
+                }
             }
         }
         final List<String> implClasses = new ArrayList<>(4);
         if (nImplements != null) {
-            for (ClassOrInterfaceType clazz : nImplements) {
-                final String name = clazz.getName();
-                fqcnResolver.resolveFQCN(name, source)
-                        .ifPresent(fqcn -> {
-                            implClasses.add(fqcn);
-                            this.markUsedClass(fqcn, source);
-                        });
+            for (final ClassOrInterfaceType ci : nImplements) {
+                final String name = ci.getName();
+                final Optional<String> clazz = fqcnResolver.resolveFQCN(name, source);
+                if (clazz.isPresent()) {
+                    final String fqcn = clazz.get();
+                    implClasses.add(fqcn);
+                    this.markUsedClass(fqcn, source);
+                } else {
+                    this.markUsedClass(name, source);
+                }
             }
         }
 
@@ -674,6 +674,8 @@ class JavaSymbolAnalyzeVisitor extends VoidVisitorAdapter<JavaSource> {
 
     private void markUsedClass(final String type, final JavaSource source) {
         final String nm = ClassNameUtils.getSimpleName(type);
+        log.debug("mark className:{}", nm);
+
         if (!source.isImported(nm)) {
             log.debug("add unknown class:{}", nm);
             source.addUnknownClass(nm);

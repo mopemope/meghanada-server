@@ -240,7 +240,7 @@ public class JavaParserTest extends GradleTestBase {
             List<MemberDescriptor> result = typeScope.getMemberDescriptors();
             String type = typeScope.getFQCN();
             assertEquals("meghanada.parser.JavaSymbolAnalyzeVisitor", type);
-            assertEquals(37, result.size());
+            assertEquals(36, result.size());
         }
 
     }

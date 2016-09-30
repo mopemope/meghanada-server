@@ -3,8 +3,6 @@ package meghanada.parser.source;
 import meghanada.GradleTestBase;
 import meghanada.parser.JavaParser;
 import meghanada.reflect.asm.CachedASMReflector;
-import org.junit.After;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -26,23 +24,20 @@ public class JavaSourceTest extends GradleTestBase {
         cachedASMReflector.createClassIndexes();
     }
 
-    @Before
-    public void setUp() throws Exception {
-    }
-
-    @After
-    public void tearDown() throws Exception {
-    }
-
     @Test
     public void testOptimizeImports1() throws Exception {
-        List<String> optimizeImports = debugIt(() -> {
-            JavaParser parser = new JavaParser();
-            JavaSource source = parser.parse(new File("./src/test/resources/MissingImport1.java"));
-            return source.optimizeImports();
+        final JavaParser parser = new JavaParser();
+        final JavaSource source = debugIt(() -> {
+            return parser.parse(new File("./src/test/resources/MissingImport1.java"));
         });
+
+        Map<String, List<String>> missingImport = debugIt(source::searchMissingImport);
+        List<String> optimizeImports = debugIt(source::optimizeImports);
+
+        System.out.println(missingImport);
         System.out.println(optimizeImports);
-        assertEquals(3, optimizeImports.size());
+        assertEquals(5, missingImport.size());
+        assertEquals(2, optimizeImports.size());
     }
 
     @Test

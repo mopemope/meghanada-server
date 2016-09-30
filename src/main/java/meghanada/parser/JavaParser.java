@@ -3,7 +3,6 @@ package meghanada.parser;
 import com.github.javaparser.ParseException;
 import com.github.javaparser.ast.CompilationUnit;
 import meghanada.parser.source.JavaSource;
-import meghanada.reflect.asm.CachedASMReflector;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -18,8 +17,7 @@ public class JavaParser implements SourceParser {
     private JavaSymbolAnalyzeVisitor analyzeVisitor;
 
     public JavaParser() throws IOException {
-        CachedASMReflector reflector = CachedASMReflector.getInstance();
-        this.analyzeVisitor = new JavaSymbolAnalyzeVisitor(reflector.getStandardClasses());
+        this.analyzeVisitor = new JavaSymbolAnalyzeVisitor();
     }
 
     @Override

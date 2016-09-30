@@ -8,7 +8,6 @@ import java.util.Properties;
 import java.util.Set;
 
 import java.io.IOException;
-import java.io.File;
 import java.io.InputStream;
 
 import java.util.jar.JarEntry;
@@ -18,16 +17,17 @@ public class MissingImport1 extends File {
     Date date;
     java.util.Queue queue;
 
-    MissingImport1(Collection c)  {
-
-    }
-
     public List<String> testSimple() {
         Map<String, Long> foo = new HashMap<>();
         return new ArrayList<String>();
     }
 
-    public Properties getProp(Set<ABC> set) throws IOException {
+    public Properties getProp(Set<MemberDescriptor> set) throws IOException {
+        List<FileDescriptor> fileDescriptors = new ArrayList<FileDescriptor>();
+        return null;
+    }
+
+    public List<MethodCallSymbol> getMethodCalls() throws IOException {
         return null;
     }
 }

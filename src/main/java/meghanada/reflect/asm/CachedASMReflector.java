@@ -7,6 +7,7 @@ import com.esotericsoftware.kryo.pool.KryoCallback;
 import com.esotericsoftware.kryo.pool.KryoPool;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.LoadingCache;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.UncheckedExecutionException;
 import meghanada.config.Config;
 import meghanada.reflect.CandidateUnit;
@@ -509,7 +510,9 @@ public class CachedASMReflector {
         if (this.standardClasses != null) {
             return this.standardClasses;
         }
-        this.standardClasses = getPackageClasses("java.lang");
+        this.standardClasses = new ImmutableMap.Builder<String, String>()
+                .putAll(this.getPackageClasses("java.lang"))
+                .build();
         return this.standardClasses;
     }
 
