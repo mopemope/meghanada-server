@@ -20,14 +20,16 @@ public class ClassIndex implements CandidateUnit, Serializable {
     public List<String> supers;
     public boolean isInterface;
     public boolean functional;
+    public String name;
 
     public ClassIndex() {
     }
 
-    public ClassIndex(String declaration, List<String> typeParameters, List<String> supers) {
+    public ClassIndex(final String declaration, final List<String> typeParameters, final List<String> supers) {
         this.declaration = declaration;
         this.typeParameters = typeParameters;
         this.supers = supers;
+        this.name = ClassNameUtils.getSimpleName(this.declaration);
     }
 
     public static ClassIndex createPackage(String pkg) {
@@ -40,7 +42,7 @@ public class ClassIndex implements CandidateUnit, Serializable {
 
     @Override
     public String getName() {
-        return ClassNameUtils.getSimpleName(this.declaration);
+        return this.name;
     }
 
     @Override

@@ -215,7 +215,8 @@ public class CachedASMReflector {
 
     public Collection<? extends CandidateUnit> fuzzySearchClasses(final String keyword) {
         final int length = keyword.length() + 1;
-        return this.globalClassIndex.values().parallelStream()
+        return this.globalClassIndex.values()
+                .stream()
                 .filter(classIndex -> {
                     final String name = classIndex.getName();
                     final int score = StringUtils.getFuzzyDistance(name, keyword, Locale.ENGLISH);
@@ -227,7 +228,7 @@ public class CachedASMReflector {
     public Collection<? extends CandidateUnit> searchInnerClasses(final String parent) {
         return this.globalClassIndex
                 .values()
-                .parallelStream()
+                .stream()
                 .filter(classIndex -> classIndex.getReturnType().startsWith(parent + "$"))
                 .collect(Collectors.toList());
     }
@@ -237,7 +238,8 @@ public class CachedASMReflector {
     }
 
     public Collection<? extends CandidateUnit> searchClasses(final String keyword, final boolean partial) {
-        return this.globalClassIndex.values().parallelStream()
+        return this.globalClassIndex.values()
+                .stream()
                 .filter(classIndex -> this.containsKeyword(keyword, partial, classIndex))
                 .collect(Collectors.toList());
     }

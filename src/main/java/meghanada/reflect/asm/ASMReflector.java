@@ -161,7 +161,7 @@ class ASMReflector {
                 this.readClassIndex(indexes, in, file, true);
             }
         } else if (file.isDirectory()) {
-            this.getClassFileStream(file).parallel().forEach(wrapIOConsumer(classFile -> {
+            this.getClassFileStream(file).forEach(wrapIOConsumer(classFile -> {
                 final String entryName = classFile.getName();
                 if (!entryName.endsWith(".class")) {
                     return;
@@ -214,7 +214,9 @@ class ASMReflector {
 
     List<MemberDescriptor> reflectAll(final InheritanceInfo info) throws IOException {
 
-        final Map<String, List<MemberDescriptor>> collect = info.classFileMap.entrySet().parallelStream()
+        final Map<String, List<MemberDescriptor>> collect = info.classFileMap
+                .entrySet()
+                .stream()
                 .map(wrapIO(entry -> this.reflectAll(entry.getKey(), info.targetClass, new ArrayList<>(entry.getValue()))))
                 .flatMap(Collection::stream)
                 .collect(Collectors.groupingBy(md -> ClassNameUtils.removeTypeParameter(md.getDeclaringClass()), Collectors.toList()));
@@ -413,7 +415,7 @@ class ASMReflector {
                 return members;
             }
         } else if (file.isDirectory()) {
-            return Files.walk(file.toPath()).parallel()
+            return Files.walk(file.toPath())
                     .map(Path::toFile)
                     .filter(f -> f.isFile() && f.getName().endsWith(".class"))
                     .map(wrapIO(f -> getMembersFromClassFile(file, f, nameWithoutTP)))
@@ -448,7 +450,9 @@ class ASMReflector {
 
     private void readSuperMembers(File parent, ClassAnalyzeVisitor cv, List<MemberDescriptor> units) {
         final ClassIndex classIndex = cv.getClassIndex();
-        List<List<MemberDescriptor>> lists = classIndex.supers.stream().parallel()
+        List<List<MemberDescriptor>> lists = classIndex.supers
+                .stream()
+                .parallel()
                 .map(wrapIO(s -> reflect(parent, s)))
                 .collect(Collectors.toList());
         lists.forEach(units::addAll);
@@ -564,7 +568,7 @@ class ASMReflector {
     }
 
     private Stream<JarEntry> getJarEntryStream(final JarFile jarFile) {
-        return jarFile.stream().parallel()
+        return jarFile.stream()
                 .filter(jarEntry -> jarEntry.getName().endsWith(".class"))
                 .collect(Collectors.toList())
                 .stream();
