@@ -341,7 +341,7 @@ public class CachedASMReflector {
                         return;
                     }
                     final String className = ClassNameUtils.replaceSlash(entryName.substring(0, entryName.length() - 6));
-                    if (ASMReflector.ignorePackage(className)) {
+                    if (asmReflector.ignorePackage(className)) {
                         return;
                     }
 

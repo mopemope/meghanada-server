@@ -117,6 +117,15 @@ public class Config {
         }
     }
 
+    public static File getInstalledPath() {
+        try {
+            return new File(Config.class.getProtectionDomain().getCodeSource().getLocation().toURI().getPath());
+        } catch (URISyntaxException e) {
+            log.catching(e);
+        }
+        return null;
+    }
+
     public void setDebug() {
         this.setLogLevel("Debug");
     }
@@ -223,13 +232,8 @@ public class Config {
         return checksumMap.get(file);
     }
 
-    public static File getInstalledPath() {
-        try {
-            return new File(Config.class.getProtectionDomain().getCodeSource().getLocation().toURI().getPath());
-        } catch (URISyntaxException e) {
-            log.catching(e);
-        }
-        return null;
+    public List<String> getAllowClass() {
+        return c.getStringList("allow-class");
     }
 
     @FunctionalInterface

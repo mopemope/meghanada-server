@@ -147,7 +147,7 @@ class MemberCacheLoader extends CacheLoader<String, List<MemberDescriptor>> {
                 }
             } else if (file.isFile() && fileName.endsWith(".jar") && !fileName.contains("SNAPSHOT")) {
                 @SuppressWarnings("unchecked")
-                List<MemberDescriptor> cachedResult = this.loadFromCache(fqcn, cacheFilePath);
+                final List<MemberDescriptor> cachedResult = this.loadFromCache(fqcn, cacheFilePath);
                 if (cachedResult != null) {
                     return cachedResult;
                 }
@@ -164,7 +164,7 @@ class MemberCacheLoader extends CacheLoader<String, List<MemberDescriptor>> {
                         if (this.cacheChecksum.get(classFilePath).equals(md5sum)) {
                             // not modified
                             @SuppressWarnings("unchecked")
-                            List<MemberDescriptor> cachedResult = this.loadFromCache(fqcn, cacheFilePath);
+                            final List<MemberDescriptor> cachedResult = this.loadFromCache(fqcn, cacheFilePath);
                             if (cachedResult != null) {
                                 return cachedResult;
                             }
@@ -190,7 +190,7 @@ class MemberCacheLoader extends CacheLoader<String, List<MemberDescriptor>> {
                     return true;
                 }))
                 .orElseGet(() -> {
-                    String fqcn2 = ClassNameUtils.replaceInnerMark(fqcn);
+                    final String fqcn2 = ClassNameUtils.replaceInnerMark(fqcn);
                     reflector.containsClassIndex(fqcn2)
                             .ifPresent(wrapIOConsumer(classIndex -> {
                                 reflector.writeCache(classIndex, list, new File(this.projectCache));

@@ -46,7 +46,7 @@ public class ASMReflectorTest extends GradleTestBase {
         File jar = getRTJar();
         ASMReflector asmReflector = ASMReflector.getInstance();
         Map<ClassIndex, File> classIndex = timeIt(() -> asmReflector.getClasses(jar));
-        assertEquals(4104, classIndex.size());
+        assertEquals(4105, classIndex.size());
 //        classIndex.forEach((classIndex1, file) -> System.out.println(classIndex1));
     }
 

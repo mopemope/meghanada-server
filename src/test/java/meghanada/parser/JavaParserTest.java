@@ -135,7 +135,7 @@ public class JavaParserTest extends GradleTestBase {
             List<MemberDescriptor> result = typeScope.getMemberDescriptors();
             String type = pkg + "." + typeScope.getType();
             assertEquals("meghanada.reflect.asm.ASMReflector", type);
-            assertEquals(26, result.size());
+            assertEquals(28, result.size());
         }
     }
 

@@ -1,5 +1,6 @@
 package meghanada.reflect.asm;
 
+import meghanada.config.Config;
 import meghanada.reflect.CandidateUnit;
 import meghanada.reflect.ClassIndex;
 import meghanada.reflect.MemberDescriptor;
@@ -42,8 +43,12 @@ class ASMReflector {
 
     private static Logger log = LogManager.getLogger(ASMReflector.class);
     private static ASMReflector asmReflector;
+    private Set<String> allowClass = new HashSet<>();
 
     private ASMReflector() {
+        Config.load()
+                .getAllowClass()
+                .forEach(this::addAllowClass);
     }
 
     public static ASMReflector getInstance() {
@@ -120,7 +125,14 @@ class ASMReflector {
         return sb.toString();
     }
 
-    static boolean ignorePackage(final String target) {
+    public void addAllowClass(final String clazz) {
+        this.allowClass.add(clazz);
+    }
+
+    boolean ignorePackage(final String target) {
+        if (this.allowClass.contains(target)) {
+            return false;
+        }
         for (final String p : ASMReflector.filterPackage) {
             if (target.startsWith(p)) {
                 return true;
@@ -140,7 +152,7 @@ class ASMReflector {
                     return;
                 }
                 final String className = ClassNameUtils.replaceSlash(entryName.substring(0, entryName.length() - 6));
-                if (ASMReflector.ignorePackage(className)) {
+                if (this.ignorePackage(className)) {
                     return;
                 }
                 try (final InputStream in = jarFile.getInputStream(jarEntry)) {
@@ -154,7 +166,7 @@ class ASMReflector {
                 return indexes;
             }
             final String className = ClassNameUtils.replaceSlash(entryName.substring(0, entryName.length() - 6));
-            if (ASMReflector.ignorePackage(className)) {
+            if (this.ignorePackage(className)) {
                 return indexes;
             }
             try (final InputStream in = new FileInputStream(file)) {
@@ -167,7 +179,7 @@ class ASMReflector {
                     return;
                 }
                 final String className = ClassNameUtils.replaceSlash(entryName.substring(0, entryName.length() - 6));
-                if (ASMReflector.ignorePackage(className)) {
+                if (this.ignorePackage(className)) {
                     return;
                 }
                 try (InputStream in = new FileInputStream(classFile)) {
@@ -262,7 +274,7 @@ class ASMReflector {
                     continue;
                 }
                 final String className = ClassNameUtils.replaceSlash(entryName.substring(0, entryName.length() - 6));
-                if (ASMReflector.ignorePackage(className)) {
+                if (this.ignorePackage(className)) {
                     continue;
                 }
                 final Iterator<String> classIterator = targetClasses.iterator();
@@ -384,7 +396,7 @@ class ASMReflector {
                             return new ArrayList<MemberDescriptor>(0);
                         }
                         String className = ClassNameUtils.replaceSlash(entryName.substring(0, entryName.length() - 6));
-                        if (ASMReflector.ignorePackage(className)) {
+                        if (this.ignorePackage(className)) {
                             return new ArrayList<MemberDescriptor>(0);
                         }
                         if (className.equals(nameWithoutTP)) {

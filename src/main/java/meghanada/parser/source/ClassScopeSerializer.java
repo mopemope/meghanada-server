@@ -247,7 +247,8 @@ public class ClassScopeSerializer extends Serializer<ClassScope> {
         }
 
         // 18. typeParameterMap
-        Map<String, String> map = (Map<String, String>) kryo.readClassAndObject(input);
+        @SuppressWarnings("unchecked")
+        final Map<String, String> map = (Map<String, String>) kryo.readClassAndObject(input);
         scope.typeParameterMap = map;
 
         return scope;
