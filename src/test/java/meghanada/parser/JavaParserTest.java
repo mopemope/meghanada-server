@@ -8,8 +8,6 @@ import meghanada.parser.source.JavaSource;
 import meghanada.parser.source.TypeScope;
 import meghanada.reflect.MemberDescriptor;
 import meghanada.reflect.asm.CachedASMReflector;
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Test;
 
 import java.io.File;
@@ -19,6 +17,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
+import static meghanada.config.Config.debugIt;
 import static meghanada.config.Config.timeIt;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -32,14 +31,6 @@ public class JavaParserTest extends GradleTestBase {
         cachedASMReflector.addDirectory(getOutputDir());
         cachedASMReflector.addDirectory(getTestOutputDir());
         cachedASMReflector.createClassIndexes();
-    }
-
-    @Before
-    public void setUp() throws Exception {
-    }
-
-    @After
-    public void tearDown() throws Exception {
     }
 
     @Test
@@ -552,6 +543,20 @@ public class JavaParserTest extends GradleTestBase {
         List<MemberDescriptor> result = typeScope.getMemberDescriptors();
         String type = typeScope.getFQCN();
         assertEquals("meghanada.Gen6", type);
+        assertEquals(1, result.size());
+    }
+
+    @Test
+    public void testParseClass29() throws Exception {//
+        JavaSource source = debugIt(() -> {
+            JavaParser javaParser = new JavaParser();
+            return javaParser.parse(new File("./src/test/java/meghanada/StaticImp1.java"));
+        });
+        assertNotNull(source);
+        TypeScope typeScope = source.getTypeScopes().get(0);
+        List<MemberDescriptor> result = typeScope.getMemberDescriptors();
+        String type = typeScope.getFQCN();
+        assertEquals("meghanada.StaticImp1", type);
         assertEquals(1, result.size());
     }
 

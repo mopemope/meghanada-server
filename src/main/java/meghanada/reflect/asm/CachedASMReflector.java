@@ -432,6 +432,14 @@ public class CachedASMReflector {
         return this.reflect(className).stream();
     }
 
+    public Stream<MemberDescriptor> reflectStaticStream(final String className) {
+        return this.reflectStream(className)
+                .filter(md -> {
+                    final String declaration = md.getDeclaration();
+                    return declaration.contains("public") && declaration.contains("static");
+                });
+    }
+
     public Stream<MemberDescriptor> reflectFieldStream(final String className) {
         return this.reflectFieldStream(className, null);
     }

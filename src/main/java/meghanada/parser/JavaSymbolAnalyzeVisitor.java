@@ -54,24 +54,31 @@ class JavaSymbolAnalyzeVisitor extends VoidVisitorAdapter<JavaSource> {
     }
 
     @Override
-    public void visit(ImportDeclaration node, JavaSource source) {
+    public void visit(final ImportDeclaration node, final JavaSource source) {
         String fqcn = node.getName().toString();
         String name = node.getName().getName();
         if (node.isStatic()) {
-            String importMethod = name;
-            fqcn = ClassNameUtils.getPackage(fqcn);
-            name = ClassNameUtils.getSimpleName(fqcn);
-            source.staticImp.putIfAbsent(importMethod, fqcn);
-        }
-        if (!node.isAsterisk()) {
-            source.importClass.put(name, fqcn);
-            source.addUnusedClass(name, fqcn);
+            if (node.isAsterisk()) {
+                CachedASMReflector reflector = CachedASMReflector.getInstance();
+                reflector.reflectStaticStream(fqcn)
+                        .forEach(md -> {
+                            source.staticImp.putIfAbsent(md.getName(), md.getDeclaringClass());
+                        });
+            } else {
+                fqcn = ClassNameUtils.getPackage(fqcn);
+                source.staticImp.putIfAbsent(name, fqcn);
+            }
         } else {
-            CachedASMReflector reflector = CachedASMReflector.getInstance();
-            Map<String, String> symbols = reflector.getPackageClasses(fqcn);
-            for (Map.Entry<String, String> entry : symbols.entrySet()) {
-                source.importClass.put(entry.getKey(), entry.getValue());
-                source.addUnusedClass(entry.getKey(), entry.getValue());
+            if (!node.isAsterisk()) {
+                source.importClass.put(name, fqcn);
+                source.addUnusedClass(name, fqcn);
+            } else {
+                CachedASMReflector reflector = CachedASMReflector.getInstance();
+                Map<String, String> symbols = reflector.getPackageClasses(fqcn);
+                for (Map.Entry<String, String> entry : symbols.entrySet()) {
+                    source.importClass.put(entry.getKey(), entry.getValue());
+                    source.addUnusedClass(entry.getKey(), entry.getValue());
+                }
             }
         }
         super.visit(node, source);
