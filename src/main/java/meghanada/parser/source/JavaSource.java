@@ -281,15 +281,12 @@ public class JavaSource {
         final ClassName className = new ClassName(type);
         final String name = className.getName();
         if (this.importClass.containsKey(name)) {
-            log.debug("imported:{}", type);
             return log.traceExit(true);
         }
 
         final CachedASMReflector reflector = CachedASMReflector.getInstance();
         final Map<String, String> standardClasses = reflector.getStandardClasses();
-        log.debug("st {}", standardClasses);
         if (standardClasses.containsKey(name)) {
-            log.debug("is java.lang:{} {}", type, name);
             return log.traceExit(true);
         }
 
@@ -299,7 +296,6 @@ public class JavaSource {
                 String pkgClassName = pkg + "." + name;
                 Optional<ClassIndex> classIndex = reflector.containsClassIndex(pkgClassName);
                 if (classIndex.isPresent()) {
-                    log.debug("contains classIndex:{}", type);
                     return log.traceExit(true);
                 }
             }
