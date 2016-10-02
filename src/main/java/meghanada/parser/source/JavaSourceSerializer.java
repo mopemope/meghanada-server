@@ -22,9 +22,7 @@ public class JavaSourceSerializer extends Serializer<JavaSource> {
 
         // 2. importClass
         Map<String, String> map = new HashMap<>();
-        source.importClass.forEach((k, v) -> {
-            map.put(k, v);
-        });
+        source.importClass.forEach(map::put);
         kryo.writeClassAndObject(output, map);
 
         // 3. staticImp
@@ -51,23 +49,33 @@ public class JavaSourceSerializer extends Serializer<JavaSource> {
         final JavaSource source = new JavaSource(new File(path));
 
         // 2. importClass
-        Map<String, String> map = (Map<String, String>) kryo.readClassAndObject(input);
+        @SuppressWarnings("unchecked")
+        final Map<String, String> map = (Map<String, String>) kryo.readClassAndObject(input);
         source.importClass = HashBiMap.create(map);
 
         // 3. staticImp
-        source.staticImp = (Map<String, String>) kryo.readClassAndObject(input);
+        @SuppressWarnings("unchecked")
+        final Map<String, String> staticImp = (Map<String, String>) kryo.readClassAndObject(input);
+        source.staticImp = staticImp;
 
         // 4. typeScopes
-        source.typeScopes = (List<TypeScope>) kryo.readClassAndObject(input);
+        @SuppressWarnings("unchecked")
+        final List<TypeScope> typeScopes = (List<TypeScope>) kryo.readClassAndObject(input);
+        source.typeScopes = typeScopes;
 
         // 5. pkg
         source.pkg = input.readString();
 
         // 6. unusedClass
-        source.unusedClass = (Map<String, String>) kryo.readClassAndObject(input);
+        @SuppressWarnings("unchecked")
+        final Map<String, String> unusedClass = (Map<String, String>) kryo.readClassAndObject(input);
+        source.unusedClass = unusedClass;
 
         // 7. unknownClass
-        source.unknownClass = (Set<String>) kryo.readClassAndObject(input);
+        @SuppressWarnings("unchecked")
+        final Set<String> unknownClass = (Set<String>) kryo.readClassAndObject(input);
+        source.unknownClass = unknownClass;
+
         return source;
     }
 }
