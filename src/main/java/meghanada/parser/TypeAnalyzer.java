@@ -207,12 +207,12 @@ class TypeAnalyzer {
                     return Optional.of("java.lang.Boolean");
                 })
                 .when(eq(NameExpr.class)).get(() -> {
-                    NameExpr x = (NameExpr) expression;
-                    final Optional<String> result = this.fqcnResolver.resolveFQCN(x.getName(), source);
+                    final NameExpr x = (NameExpr) expression;
+                    final int line = x.getRange().begin.line;
+                    final Optional<String> result = this.fqcnResolver.resolveSymbolFQCN(x.getName(), source, line);
                     result.ifPresent(fqcn -> {
                         if (!blockScope.containsSymbol(x.getName())) {
                             final String parent = blockScope.getName();
-
                             final Variable symbol = new Variable(parent,
                                     x.getName(),
                                     x.getRange(),

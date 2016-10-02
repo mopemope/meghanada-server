@@ -631,7 +631,7 @@ class JavaSymbolAnalyzeVisitor extends VoidVisitorAdapter<JavaSource> {
     }
 
     @Override
-    public void visit(CatchClause node, JavaSource source) {
+    public void visit(final CatchClause node, final JavaSource source) {
         source.getCurrentType().ifPresent(typeScope -> {
             final Parameter except = node.getParam();
             final VariableDeclaratorId variableDeclaratorId = except.getId();
@@ -728,13 +728,13 @@ class JavaSymbolAnalyzeVisitor extends VoidVisitorAdapter<JavaSource> {
             } else {
                 final Map<String, Variable> map = bs.getDeclaratorMap();
                 if (map.containsKey(name)) {
-                    final Variable v = map.get(name);
-                    final Variable ns = new Variable(
+                    final String fqcn = map.get(name).getFQCN();
+                    final Variable v = new Variable(
                             ts.getFQCN(),
                             name,
                             node.getRange(),
-                            v.getFQCN());
-                    bs.addNameSymbol(ns);
+                            fqcn);
+                    bs.addNameSymbol(v);
                 }
             }
         }));
@@ -792,9 +792,9 @@ class JavaSymbolAnalyzeVisitor extends VoidVisitorAdapter<JavaSource> {
 
     @Override
     public void visit(final BlockStmt node, final JavaSource source) {
-        log.traceEntry("BlockStmt range={}", node.getRange());
+        final EntryMessage entryMessage = log.traceEntry("BlockStmt range={}", node.getRange());
 
-        Boolean called = source.getCurrentType().flatMap(typeScope -> source.getCurrentBlock(typeScope).map(blockScope -> {
+        final boolean called = source.getCurrentType().flatMap(typeScope -> source.getCurrentBlock(typeScope).map(blockScope -> {
             final Node parentNode = node.getParentNode();
             if (parentNode.getClass().equals(BlockStmt.class)) {
                 // simple Block
@@ -823,7 +823,7 @@ class JavaSymbolAnalyzeVisitor extends VoidVisitorAdapter<JavaSource> {
         if (!called) {
             super.visit(node, source);
         }
-        log.traceExit();
+        log.traceExit(entryMessage);
     }
 
     @Override

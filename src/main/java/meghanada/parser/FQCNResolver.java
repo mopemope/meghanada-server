@@ -70,6 +70,41 @@ class FQCNResolver {
 
     }
 
+    Optional<String> resolveSymbolFQCN(final String name, final JavaSource source, final int line) {
+        final Optional<BlockScope> currentBlock = source.getCurrentBlock();
+
+        return currentBlock.map(bs -> {
+
+            // search current
+            final Map<String, Variable> declaratorMap = bs.getDeclaratorMap();
+            log.trace("declaratorMap={}", declaratorMap);
+            if (declaratorMap.containsKey(name)) {
+                final Variable variable = declaratorMap.get(name);
+                return variable.getFQCN();
+            }
+
+            // search parent
+            BlockScope parent = bs.getParent();
+            while (parent != null) {
+                final Map<String, Variable> parentDeclaratorMap = parent.getDeclaratorMap();
+                if (parentDeclaratorMap.containsKey(name)) {
+                    final Variable variable = parentDeclaratorMap.get(name);
+                    return variable.getFQCN();
+                }
+                parent = parent.getParent();
+            }
+
+            // search field nam
+            return source.getCurrentType().map(typeScope -> {
+                final Variable fieldSymbol = typeScope.getFieldSymbol(name);
+                if (fieldSymbol != null) {
+                    return fieldSymbol.getFQCN();
+                }
+                return null;
+            }).orElse(null);
+        });
+    }
+
     Optional<String> resolveFQCN(final String name, final JavaSource source) {
 
         final String searchName = ClassNameUtils.removeCapture(name);

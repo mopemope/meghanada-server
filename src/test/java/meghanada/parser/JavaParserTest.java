@@ -8,6 +8,7 @@ import meghanada.parser.source.JavaSource;
 import meghanada.parser.source.TypeScope;
 import meghanada.reflect.MemberDescriptor;
 import meghanada.reflect.asm.CachedASMReflector;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.File;
@@ -449,7 +450,7 @@ public class JavaParserTest extends GradleTestBase {
             List<MemberDescriptor> result = typeScope.getMemberDescriptors();
             String type = typeScope.getFQCN();
             assertEquals("meghanada.parser.FQCNResolver", type);
-            assertEquals(23, result.size());
+            assertEquals(24, result.size());
         }
 
     }
@@ -548,7 +549,7 @@ public class JavaParserTest extends GradleTestBase {
 
     @Test
     public void testParseClass29() throws Exception {//
-        JavaSource source = debugIt(() -> {
+        JavaSource source = timeIt(() -> {
             JavaParser javaParser = new JavaParser();
             return javaParser.parse(new File("./src/test/java/meghanada/StaticImp1.java"));
         });
@@ -558,6 +559,20 @@ public class JavaParserTest extends GradleTestBase {
         String type = typeScope.getFQCN();
         assertEquals("meghanada.StaticImp1", type);
         assertEquals(1, result.size());
+    }
+
+    @Test
+    public void testParseClass30() throws Exception {//
+        JavaSource source = debugIt(() -> {
+            JavaParser javaParser = new JavaParser();
+            return javaParser.parse(new File("./src/test/java/meghanada/Variable1.java"));
+        });
+        assertNotNull(source);
+        TypeScope typeScope = source.getTypeScopes().get(0);
+        List<MemberDescriptor> result = typeScope.getMemberDescriptors();
+        String type = typeScope.getFQCN();
+        assertEquals("meghanada.Variable1", type);
+        assertEquals(2, result.size());
     }
 
     @Test
@@ -763,6 +778,7 @@ public class JavaParserTest extends GradleTestBase {
     }
 
     @Test
+    @Ignore
     public void testParseLambda4() throws Exception {
         JavaSource source = timeIt(() -> {
             JavaParser parser = new JavaParser();

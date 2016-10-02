@@ -58,27 +58,6 @@ public class Variable {
     }
 
     @Override
-    public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-        Variable variable = (Variable) o;
-        return declaration == variable.declaration
-                && Objects.equal(name, variable.name)
-                && Objects.equal(fqcn, variable.fqcn)
-                && Objects.equal(parent, variable.parent)
-                && Objects.equal(range, variable.range);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hashCode(name, fqcn, parent, range, declaration);
-    }
-
-    @Override
     public String toString() {
         return MoreObjects.toStringHelper(this)
                 .add("name", name)
@@ -87,5 +66,21 @@ public class Variable {
                 .add("range", range)
                 .add("declaration", declaration)
                 .toString();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Variable)) return false;
+        Variable variable = (Variable) o;
+        return Objects.equal(name, variable.name)
+                && Objects.equal(fqcn, variable.fqcn)
+                && Objects.equal(parent, variable.parent)
+                && Objects.equal(range, variable.range);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hashCode(name, fqcn, parent, range);
     }
 }
