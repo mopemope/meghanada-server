@@ -243,7 +243,7 @@ class JavaSymbolAnalyzeVisitor extends VoidVisitorAdapter<JavaSource> {
                     typeBound = this.toFQCN(typeBound, source);
 
                     classScope.getTypeParameterMap().put(name, typeBound);
-                    log.trace("put name={} typeBound={}", name, typeBound);
+                    log.trace("put typeParameterMap name={} typeBound={}", name, typeBound);
                 }
             }
         });
@@ -614,16 +614,16 @@ class JavaSymbolAnalyzeVisitor extends VoidVisitorAdapter<JavaSource> {
         final VariableDeclaratorId declaratorId = node.getId();
         final String type = checkArrayType(tempType, declaratorId);
 
-        source.getCurrentType().ifPresent(typeScope -> source.getCurrentBlock(typeScope)
-                .ifPresent(blockScope -> fqcnResolver.resolveFQCN(type, source).ifPresent(fqcn -> {
+        source.getCurrentType().ifPresent(ts -> source.getCurrentBlock(ts)
+                .ifPresent(bs -> fqcnResolver.resolveFQCN(type, source).ifPresent(fqcn -> {
                     final String name = declaratorId.getName();
                     final Variable ns = new Variable(
-                            typeScope.getFQCN(),
+                            ts.getFQCN(),
                             name,
                             declaratorId.getRange(),
                             fqcn,
                             true);
-                    blockScope.addNameSymbol(ns);
+                    bs.addNameSymbol(ns);
                 })));
 
         super.visit(node, source);

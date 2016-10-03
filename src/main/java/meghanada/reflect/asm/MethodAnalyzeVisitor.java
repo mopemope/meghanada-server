@@ -44,7 +44,7 @@ class MethodAnalyzeVisitor extends MethodVisitor {
 
     MethodAnalyzeVisitor(final ClassAnalyzeVisitor classAnalyzeVisitor, final int access, final String name, final String desc, final String signature, final String[] exceptions) {
         super(Opcodes.ASM5);
-        log.traceEntry("classAnalyzeVisitor={} access={} name={} desc={} signature={} exceptions={}", classAnalyzeVisitor, access, name, desc, signature, exceptions);
+        final EntryMessage entryMessage = log.traceEntry("classAnalyzeVisitor={} access={} name={} desc={} signature={} exceptions={}", classAnalyzeVisitor, access, name, desc, signature, exceptions);
         this.classAnalyzeVisitor = classAnalyzeVisitor;
         this.access = access;
         this.name = name;
@@ -65,7 +65,7 @@ class MethodAnalyzeVisitor extends MethodVisitor {
         // log.trace("name:{} sig:{}", name, target);
         // log.trace("classIndex:{}", classAnalyzeVisitor.getClassIndex().isInterface);
         // log.debug("methodName {} desc {} sig {}", name, desc, signature);
-        log.traceExit();
+        log.traceExit(entryMessage);
     }
 
     private static int[] computeLvtSlotIndices(boolean isStatic, Type[] paramTypes) {
@@ -170,17 +170,17 @@ class MethodAnalyzeVisitor extends MethodVisitor {
 
     @Override
     public void visitCode() {
-        log.traceEntry("name={}", this.name);
+        final EntryMessage entryMessage = log.traceEntry("name={}", this.name);
         if (this.interfaceMethod) {
             this.hasDefault = true;
         }
         super.visitCode();
-        log.traceExit();
+        log.traceExit(entryMessage);
     }
 
     @Override
     public void visitEnd() {
-        log.traceEntry("returnType={} parameterTypes={}", this.returnType, this.parameterTypes);
+        final EntryMessage entryMessage = log.traceEntry("returnType={} parameterTypes={}", this.returnType, this.parameterTypes);
         if (this.returnType == null) {
             // void
             this.returnType = new TypeInfo("void", "void");
@@ -203,8 +203,8 @@ class MethodAnalyzeVisitor extends MethodVisitor {
             typeInfo.paramName = this.parameterNames[i];
         }
         // log.debug("{} ({})", this.name, this.parameterTypes);
-        toMemberDescriptor();
-        log.traceExit();
+        this.toMemberDescriptor();
+        log.traceExit(entryMessage);
     }
 
     private boolean tryGetParameterName(final String className, final String name) {

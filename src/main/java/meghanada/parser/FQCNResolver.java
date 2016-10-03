@@ -57,7 +57,7 @@ class FQCNResolver {
         log.traceEntry("searchName={} name=name{}", searchName, name);
 
         {
-            final Optional<String> typeParam = isTypeParameter(name, source);
+            final Optional<String> typeParam = this.isTypeParameter(name, source);
             if (typeParam.isPresent()) {
                 return log.traceExit(typeParam);
             }
@@ -113,7 +113,7 @@ class FQCNResolver {
         log.traceEntry("searchName={} name={}", searchName, name);
 
         {
-            final Optional<String> typeParam = isTypeParameter(name, source);
+            final Optional<String> typeParam = this.isTypeParameter(name, source);
             if (typeParam.isPresent()) {
                 return log.traceExit(typeParam);
             }
@@ -343,13 +343,11 @@ class FQCNResolver {
         return source.getCurrentType().map(typeScope -> {
             if (typeScope instanceof ClassScope) {
                 final ClassScope cs = (ClassScope) typeScope;
-                final List<String> typeParameters = cs.getTypeParameters();
-                if (typeParameters != null) {
-                    return typeParameters
-                            .stream()
-                            .filter(s -> s.equals(name))
-                            .findFirst()
-                            .orElse(null);
+                final Map<String, String> typeParameterMap = cs.getTypeParameterMap();
+                if (typeParameterMap != null && typeParameterMap.containsKey(name)) {
+                    final String fqcn = typeParameterMap.get(name);
+                    log.trace("match typeParameter name={} fqcn={}", name, fqcn);
+                    return fqcn;
                 }
             }
             return null;
