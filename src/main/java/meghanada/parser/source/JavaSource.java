@@ -70,14 +70,12 @@ public class JavaSource {
 
     public FieldAccessSymbol searchFieldAccessSymbol(final int line, final String name) {
         Scope scope = Scope.getScope(line, this.typeScopes);
-        if (scope != null) {
-            if (scope instanceof TypeScope) {
-                TypeScope typeScope = (TypeScope) scope;
-                Collection<FieldAccessSymbol> accessSymbols = typeScope.getFieldAccessSymbols(line);
-                for (FieldAccessSymbol accessSymbol : accessSymbols) {
-                    if (accessSymbol.name.equals(name)) {
-                        return accessSymbol;
-                    }
+        if (scope != null && (scope instanceof TypeScope)) {
+            final TypeScope typeScope = (TypeScope) scope;
+            final Collection<FieldAccessSymbol> accessSymbols = typeScope.getFieldAccessSymbols(line);
+            for (FieldAccessSymbol accessSymbol : accessSymbols) {
+                if (accessSymbol.name.equals(name)) {
+                    return accessSymbol;
                 }
             }
         }
@@ -85,21 +83,18 @@ public class JavaSource {
     }
 
     public Optional<FieldAccessSymbol> getFieldAccessSymbol(int line, int column) {
-
-        Scope scope = Scope.getScope(line, this.typeScopes);
-        if (scope != null) {
-            if (scope instanceof TypeScope) {
-                TypeScope typeScope = (TypeScope) scope;
-                Collection<FieldAccessSymbol> symbols = typeScope.getFieldAccessSymbols(line);
-                int size = symbols.size();
-                if (size == 0) {
-                    symbols = scope.getFieldAccessSymbols(line);
-                }
-                while (size > 0 && column-- > 0) {
-                    for (FieldAccessSymbol fieldAccessSymbol : symbols) {
-                        if (fieldAccessSymbol.contains(column)) {
-                            return Optional.of(fieldAccessSymbol);
-                        }
+        final Scope scope = Scope.getScope(line, this.typeScopes);
+        if (scope != null && (scope instanceof TypeScope)) {
+            final TypeScope typeScope = (TypeScope) scope;
+            Collection<FieldAccessSymbol> symbols = typeScope.getFieldAccessSymbols(line);
+            int size = symbols.size();
+            if (size == 0) {
+                symbols = scope.getFieldAccessSymbols(line);
+            }
+            while (size > 0 && column-- > 0) {
+                for (FieldAccessSymbol fieldAccessSymbol : symbols) {
+                    if (fieldAccessSymbol.contains(column)) {
+                        return Optional.of(fieldAccessSymbol);
                     }
                 }
             }
@@ -170,12 +165,10 @@ public class JavaSource {
     }
 
     public AccessSymbol getExpressionReturn(final int line) {
-        Scope scope = Scope.getScope(line, this.typeScopes);
-        if (scope != null) {
-            if (scope instanceof TypeScope) {
-                TypeScope typeScope = (TypeScope) scope;
-                return typeScope.getExpressionReturn(line);
-            }
+        final Scope scope = Scope.getScope(line, this.typeScopes);
+        if (scope != null && (scope instanceof TypeScope)) {
+            final TypeScope typeScope = (TypeScope) scope;
+            return typeScope.getExpressionReturn(line);
         }
         return null;
     }

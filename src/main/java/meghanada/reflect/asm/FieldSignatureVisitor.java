@@ -127,12 +127,13 @@ class FieldSignatureVisitor extends SignatureVisitor {
             this.currentType.push(typeInfo);
         } else {
             final TypeInfo current = this.currentType.peek();
-            if (current != null && current.typeParameters != null) {
-                if (isInstance) {
-                    current.typeParameters.add(typeInfo);
-                    // swap
-                    this.currentType.push(typeInfo);
-                }
+            if (current != null
+                    && current.typeParameters != null
+                    && isInstance) {
+
+                current.typeParameters.add(typeInfo);
+                // swap
+                this.currentType.push(typeInfo);
             }
         }
         log.traceExit();

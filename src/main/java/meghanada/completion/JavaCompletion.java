@@ -65,12 +65,9 @@ public class JavaCompletion {
                     if (md.getDeclaringClass().equals(fqcn)) {
                         return false;
                     }
-                    if (prefix != null && !prefix.isEmpty()) {
-                        if (!md.getName().toLowerCase().startsWith(prefix)) {
-                            return false;
-                        }
-                    }
-                    return true;
+                    return !(prefix != null
+                            && !prefix.isEmpty()
+                            && !md.getName().toLowerCase().startsWith(prefix));
                 })
                 .collect(Collectors.toList());
     }
@@ -153,11 +150,10 @@ public class JavaCompletion {
     private boolean publicFilter(final CandidateUnit cu, final boolean isStatic, final boolean withCONSTRUCTOR, final String target) {
 
         final String name = cu.getName().toLowerCase();
-        if (target != null && !target.isEmpty()) {
-            // compare
-            if (!name.contains(target)) {
-                return false;
-            }
+        if (target != null
+                && !target.isEmpty()
+                && !name.contains(target)) {
+            return false;
         }
 
         final String declaration = cu.getDeclaration();
@@ -175,11 +171,11 @@ public class JavaCompletion {
 
     private boolean packageFilter(final CandidateUnit cu, final boolean isStatic, final boolean withCONSTRUCTOR, final String target) {
         final String name = cu.getName().toLowerCase();
-        if (target != null && !target.isEmpty()) {
-            // compare
-            if (!name.contains(target)) {
-                return false;
-            }
+
+        if (target != null
+                && !target.isEmpty()
+                && !name.contains(target)) {
+            return false;
         }
         final String declaration = cu.getDeclaration();
         if (declaration.contains("private")) {
@@ -201,12 +197,12 @@ public class JavaCompletion {
             return false;
         }
 
-        if (target != null && !target.isEmpty()) {
-            // compare
-            if (!name.contains(target)) {
-                return false;
-            }
+        if (target != null
+                && !target.isEmpty()
+                && !name.contains(target)) {
+            return false;
         }
+
         final String declaration = cu.getDeclaration();
         if (!isStatic) {
             if (withCONSTRUCTOR) {
@@ -348,11 +344,9 @@ public class JavaCompletion {
             // completion static method
             String fqcn = source.importClass.get(var);
             if (fqcn != null) {
-                if (!fqcn.contains(".")) {
-                    // try same pkg
-                    if (ownPackage != null) {
-                        fqcn = ownPackage + "." + fqcn;
-                    }
+                if (!fqcn.contains(".")
+                        && ownPackage != null) {
+                    fqcn = ownPackage + "." + fqcn;
                 }
 
                 final List<CandidateUnit> res = new ArrayList<>(32);

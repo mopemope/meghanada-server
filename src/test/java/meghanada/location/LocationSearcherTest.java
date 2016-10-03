@@ -4,8 +4,6 @@ import com.google.common.cache.CacheBuilder;
 import meghanada.GradleTestBase;
 import meghanada.reflect.asm.CachedASMReflector;
 import meghanada.session.JavaSourceLoader;
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -100,7 +98,7 @@ public class LocationSearcherTest extends GradleTestBase {
             Location result = locationSearcher.searchDeclaration(f, 374, 24, "searchMissingImport");
             assertNotNull(result);
             assertTrue(result.getPath().contains("JavaSource.java"));
-            assertEquals(315, result.getLine());
+            assertEquals(308, result.getLine());
             assertEquals(38, result.getColumn());
         }
     }

@@ -151,10 +151,8 @@ public final class FileUtils {
     public static File getSettingFile(final String fileName) {
         final String settingDir = Config.load().getProjectSettingDir();
         final File dir = new File(settingDir);
-        if (!dir.exists()) {
-            if (!dir.mkdirs()) {
-                log.warn("fail create directory={}", dir);
-            }
+        if (!dir.exists() && !dir.mkdirs()) {
+            log.warn("fail create directory={}", dir);
         }
         return new File(dir, fileName);
     }

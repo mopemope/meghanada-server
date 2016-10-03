@@ -50,12 +50,6 @@ public class TypeScope extends MethodScope {
         this.memberDescriptors.add(memberDescriptor);
     }
 
-//    void startBlock(String name, int begin, int end, int colStart) {
-//        // add method
-//        MethodScope scope = new MethodScope(name, begin, end, colStart);
-//        super.startBlock(scope);
-//    }
-
     public BlockScope currentBlock() {
         return super.currentScope.peek();
     }
@@ -120,14 +114,12 @@ public class TypeScope extends MethodScope {
     }
 
     public AccessSymbol getExpressionReturn(final int line) {
-        Scope scope = getScope(line, super.innerScopes);
-        if (scope != null) {
-            if (scope instanceof BlockScope) {
-                BlockScope blockScope = (BlockScope) scope;
-                final Optional<ExpressionScope> result = blockScope.getExpression(line);
-                final Optional<AccessSymbol> accessSymbol = result.flatMap(ExpressionScope::getExpressionReturn);
-                return accessSymbol.orElse(null);
-            }
+        final Scope scope = getScope(line, super.innerScopes);
+        if (scope != null && (scope instanceof BlockScope)) {
+            final BlockScope blockScope = (BlockScope) scope;
+            final Optional<ExpressionScope> result = blockScope.getExpression(line);
+            final Optional<AccessSymbol> accessSymbol = result.flatMap(ExpressionScope::getExpressionReturn);
+            return accessSymbol.orElse(null);
         }
 
         final Optional<ExpressionScope> result = this.getExpression(line);

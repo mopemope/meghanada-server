@@ -54,10 +54,10 @@ public class ParameterNameVisitor extends VoidVisitorAdapter<Object> {
                     String key = this.pkg + "." + name;
                     name = this.originClassName + "." + name;
                     for (MethodParameterNames mpn : this.parameterNamesList) {
-                        if (mpn != null && mpn.className != null) {
-                            if (mpn.className.equals(key)) {
-                                mpn.className = name;
-                            }
+                        if (mpn != null
+                                && mpn.className != null
+                                && mpn.className.equals(key)) {
+                            mpn.className = name;
                         }
                     }
                 }

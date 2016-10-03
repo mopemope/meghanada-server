@@ -191,11 +191,10 @@ class MethodAnalyzeVisitor extends MethodVisitor {
             this.parameterTypes = new ArrayList<>(4);
         }
 
-        if ((this.parameterTypes.size() != this.parameterNames.length) || (this.parameterNames.length > 0 && this.parameterNames[0] == null)) {
-            // missing debug info ...
-            if (!tryGetParameterName(this.classAnalyzeVisitor.className, this.name)) {
+        if (((this.parameterTypes.size() != this.parameterNames.length)
+                || (this.parameterNames.length > 0 && this.parameterNames[0] == null))
+                && !tryGetParameterName(this.classAnalyzeVisitor.className, this.name)) {
                 setDefaultParameterNames();
-            }
         }
 
         for (int i = 0; i < this.parameterTypes.size(); i++) {

@@ -381,12 +381,11 @@ class MethodSignatureVisitor extends SignatureVisitor {
         int last = this.parameterTypes.size() - 1;
         for (int i = 0; i < this.parameterTypes.size(); i++) {
             TypeInfo ti = this.parameterTypes.get(i);
-            if (ti.variableArguments) {
-                if (one || last != i) {
-                    // change array
-                    ti.variableArguments = false;
-                    ti.isArray = true;
-                }
+            if (ti.variableArguments
+                    && (one || last != i)) {
+                // change array
+                ti.variableArguments = false;
+                ti.isArray = true;
             }
         }
     }

@@ -1,7 +1,7 @@
 image: mopemope/java:jdk8
 test:
   script:
-    - ./gradlew clean test jar
+    - ./gradlew --full-stacktrace check shadowJar
   artifacts:
     paths:
-      - build/libs/meghanada.jar
+      - build/libs/meghanada*
