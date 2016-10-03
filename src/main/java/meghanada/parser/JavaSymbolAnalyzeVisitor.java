@@ -796,22 +796,13 @@ class JavaSymbolAnalyzeVisitor extends VoidVisitorAdapter<JavaSource> {
 
         final boolean called = source.getCurrentType().flatMap(typeScope -> source.getCurrentBlock(typeScope).map(blockScope -> {
             final Node parentNode = node.getParentNode();
-            if (parentNode.getClass().equals(BlockStmt.class)) {
-                // simple Block
+            final Class<? extends Node> parentNodeClass = parentNode.getClass();
+            if (parentNodeClass.equals(BlockStmt.class)
+                    || parentNodeClass.equals(IfStmt.class)
+                    || parentNodeClass.equals(TryStmt.class)) {
                 blockScope.startBlock("", node.getRange(), blockScope.getDeclaratorMap());
                 super.visit(node, source);
-                // pop inner
                 blockScope.endBlock();
-                // called
-                return true;
-            }
-            if (parentNode.getClass().equals(IfStmt.class)) {
-                // simple Block
-                blockScope.startBlock("", node.getRange(), blockScope.getDeclaratorMap());
-                super.visit(node, source);
-                // pop inner
-                blockScope.endBlock();
-                // called
                 return true;
             }
 
