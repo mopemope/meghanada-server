@@ -91,7 +91,7 @@ public class Main {
         final int portInt = Integer.parseInt(port);
 
         log.info("Meghanada-Server Version:{}", version);
-        final Server server = createServer("127.0.0.1", portInt, projectRoot, fmt);
+        final Server server = createServer("localhost", portInt, projectRoot, fmt);
         server.startServer();
     }
 

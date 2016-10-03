@@ -159,14 +159,14 @@ class FQCNResolver {
     private Optional<String> resolveSuper(final String name, final JavaSource source) {
         log.traceEntry("name={}", name);
         final Optional<TypeScope> currentType = source.getCurrentType();
-        if (name.equals("super")) {
-            if (currentType.isPresent() && currentType.get() instanceof ClassScope) {
-                ClassScope classScope = (ClassScope) currentType.get();
-                List<String> supers = classScope.getExtendsClasses();
-                if (supers.size() > 0) {
-                    final String s = supers.get(0);
-                    return Optional.ofNullable(s);
-                }
+        if (name.equals("super")
+            && (currentType.isPresent() && currentType.get() instanceof ClassScope)) {
+
+            final ClassScope classScope = (ClassScope) currentType.get();
+            final List<String> supers = classScope.getExtendsClasses();
+            if (supers.size() > 0) {
+                final String s = supers.get(0);
+                return Optional.ofNullable(s);
             }
         }
         final Optional<String> empty = Optional.empty();
