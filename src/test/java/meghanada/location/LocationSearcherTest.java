@@ -37,14 +37,6 @@ public class LocationSearcherTest extends GradleTestBase {
         return searcher;
     }
 
-    @Before
-    public void setUp() throws Exception {
-    }
-
-    @After
-    public void tearDown() throws Exception {
-    }
-
     @Test
     public void testJumpNS1() throws Exception {
         File f = new File("./src/main/java/meghanada/session/Session.java");
@@ -55,7 +47,7 @@ public class LocationSearcherTest extends GradleTestBase {
                 return locationSearcher.searchDeclaration(f, 78, 29, "project");
             });
             assertNotNull(result);
-            assertEquals(76, result.getLine());
+            assertEquals(77, result.getLine());
             assertEquals(23, result.getColumn());
         }
     }
@@ -68,7 +60,7 @@ public class LocationSearcherTest extends GradleTestBase {
             //     private static Project findProject(File base) throws IOException
             Location result = locationSearcher.searchDeclaration(f, 98, 37, "base");
             assertNotNull(result);
-            assertEquals(83, result.getLine());
+            assertEquals(84, result.getLine());
             assertEquals(45, result.getColumn());
         }
     }
@@ -91,11 +83,11 @@ public class LocationSearcherTest extends GradleTestBase {
         File f = new File("./src/main/java/meghanada/session/Session.java");
         LocationSearcher locationSearcher = getSearcher();
         Location result = timeIt(() -> {
-            return locationSearcher.searchDeclaration(f, 349, 39, "parseJavaSource");
+            return locationSearcher.searchDeclaration(f, 350, 39, "parseJavaSource");
         });
 
         assertNotNull(result);
-        assertEquals(380, result.getLine());
+        assertEquals(381, result.getLine());
         assertEquals(24, result.getColumn());
     }
 
@@ -105,7 +97,7 @@ public class LocationSearcherTest extends GradleTestBase {
         LocationSearcher locationSearcher = getSearcher();
         {
             // return source.searchMissingImport();
-            Location result = locationSearcher.searchDeclaration(f, 373, 24, "searchMissingImport");
+            Location result = locationSearcher.searchDeclaration(f, 374, 24, "searchMissingImport");
             assertNotNull(result);
             assertTrue(result.getPath().contains("JavaSource.java"));
             assertEquals(315, result.getLine());

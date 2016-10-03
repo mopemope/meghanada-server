@@ -58,6 +58,7 @@ public class Session {
     private Session(final Project currentProject) {
         this.currentProject = currentProject;
         this.sourceCache = CacheBuilder.newBuilder()
+                .maximumSize(16)
                 .expireAfterAccess(15, TimeUnit.MINUTES)
                 .build(new JavaSourceLoader());
 

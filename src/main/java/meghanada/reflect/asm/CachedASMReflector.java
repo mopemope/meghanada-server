@@ -61,7 +61,8 @@ public class CachedASMReflector {
         String a = new String();
 
         this.memberCache = CacheBuilder.newBuilder()
-                .initialCapacity(1024)
+                .initialCapacity(64)
+                .maximumSize(256)
                 .expireAfterAccess(30, TimeUnit.MINUTES)
                 .build(new MemberCacheLoader(this.classFileMap, reflectIndex));
 
