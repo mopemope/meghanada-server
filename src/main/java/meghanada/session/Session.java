@@ -19,6 +19,7 @@ import meghanada.project.gradle.GradleProject;
 import meghanada.project.maven.MavenProject;
 import meghanada.project.meghanada.MeghanadaProject;
 import meghanada.reflect.CandidateUnit;
+import meghanada.reflect.asm.CachedASMReflector;
 import meghanada.utils.ClassNameUtils;
 import meghanada.utils.FileUtils;
 import org.apache.logging.log4j.LogManager;
@@ -160,7 +161,7 @@ public class Session {
         return parsed.mergeFromProjectConfig();
     }
 
-    public static Collection<File> getSystemJars() throws IOException {
+    public static List<File> getSystemJars() throws IOException {
         final String javaHome = Config.load().getJavaHomeDir();
         File jvmDir = new File(javaHome);
         return Files.walk(jvmDir.toPath())
@@ -277,7 +278,13 @@ public class Session {
         Set<File> sources = this.getCurrentProject().getSourceDirectories();
         sources.addAll(this.getCurrentProject().getTestSourceDirectories());
         this.sessionEventBus.requestFileWatch(new ArrayList<>(sources));
+
+        // load once
+        final CachedASMReflector reflector = CachedASMReflector.getInstance();
+        reflector.addJars(Session.getSystemJars());
+
         this.sessionEventBus.requestClassCache();
+
         log.debug("session started");
         this.started = true;
         return this;
@@ -319,16 +326,25 @@ public class Session {
     }
 
     public synchronized boolean changeProject(final String path) {
-        try {
-            final boolean changed = this.searchAndChangeProject(new File(path));
-            if (changed) {
-                this.sessionEventBus.requestClassCache();
+        final File file = new File(path);
+
+        if (this.started) {
+            try {
+                final boolean changed = this.searchAndChangeProject(file);
+                if (changed) {
+                    this.sessionEventBus.requestClassCache();
+                } else {
+                    // load source
+                    this.sourceCache.get(file);
+                }
+                return true;
+            } catch (Exception e) {
+                log.catching(e);
+                return false;
             }
-            return true;
-        } catch (IOException e) {
-            log.catching(e);
-            return false;
         }
+
+        return false;
     }
 
     public synchronized LocalVariable localVariable(final String path, final int line) throws ExecutionException {

@@ -18,9 +18,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
-import static meghanada.config.Config.debugIt;
 import static meghanada.config.Config.timeIt;
-import static meghanada.config.Config.traceIt;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 

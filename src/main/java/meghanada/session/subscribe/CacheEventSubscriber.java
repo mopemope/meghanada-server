@@ -3,27 +3,21 @@ package meghanada.session.subscribe;
 import com.google.common.base.Stopwatch;
 import com.google.common.eventbus.Subscribe;
 import meghanada.config.Config;
-import meghanada.parser.source.JavaSource;
 import meghanada.project.Project;
 import meghanada.reflect.asm.CachedASMReflector;
 import meghanada.session.Session;
 import meghanada.session.SessionEventBus;
-import meghanada.utils.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static meghanada.config.Config.timeItF;
-import static meghanada.utils.FunctionUtils.wrapIO;
 
 public class CacheEventSubscriber extends AbstractSubscriber {
 
@@ -51,7 +45,6 @@ public class CacheEventSubscriber extends AbstractSubscriber {
             return true;
         });
 
-        reflector.addJars(Session.getSystemJars());
         reflector.addJars(session.getDependentJars());
         reflector.addDirectory(project.getOutputDirectory());
         reflector.addDirectory(project.getTestOutputDirectory());
@@ -60,31 +53,13 @@ public class CacheEventSubscriber extends AbstractSubscriber {
         reflector.createClassIndexes();
         log.info("done index size:{} elapsed:{}", reflector.getGlobalClassIndex().size(), stopwatch.stop());
         stopwatch.reset();
-
-        stopwatch.start();
-        this.requestParse();
-        log.info("project analyzed elapsed:{}", stopwatch.stop());
     }
 
-    private void requestParse() throws IOException {
+    private void parseFiles(final List<File> fileList) throws IOException {
         final AtomicInteger count = new AtomicInteger(0);
-
-        final Session session = this.sessionEventBus.getSession();
-        final Project project = session.getCurrentProject();
-        final List<File> fileList = project.getSourceDirectories()
-                .parallelStream()
-                .filter(File::exists)
-                .flatMap(wrapIO(root -> Files.walk(root.toPath())))
-                .map(Path::toFile)
-                .filter(JavaSource::isJavaFile)
-                .filter(FileUtils::filterFile)
-                .collect(Collectors.toList());
         final int size = fileList.size();
-
         final Config config = Config.load();
-
         final Stream<File> fileStream = config.isDebug() ? fileList.stream() : fileList.parallelStream();
-
         fileStream.forEach(file -> {
             try {
                 this.parseFile(file);

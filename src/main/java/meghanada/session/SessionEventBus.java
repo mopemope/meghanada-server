@@ -156,7 +156,7 @@ public class SessionEventBus {
 
     public static class ClassCacheRequest extends IORequest {
 
-        public ClassCacheRequest(Session session) {
+        public ClassCacheRequest(final Session session) {
             super(session, null);
         }
 
