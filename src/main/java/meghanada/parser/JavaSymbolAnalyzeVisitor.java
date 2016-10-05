@@ -304,7 +304,7 @@ class JavaSymbolAnalyzeVisitor extends VoidVisitorAdapter<JavaSource> {
         final EntryMessage entryMessage = log.traceEntry("Start FieldDeclaration:{}, Range:{}", node, node.getRange());
         source.getCurrentType().ifPresent(ts -> {
 
-            for (VariableDeclarator v : node.getVariables()) {
+            for (final VariableDeclarator v : node.getVariables()) {
                 String type = node.getType().toString();
                 final VariableDeclaratorId declaratorId = v.getId();
                 type = checkArrayType(type, declaratorId);
@@ -312,8 +312,13 @@ class JavaSymbolAnalyzeVisitor extends VoidVisitorAdapter<JavaSource> {
                 Optional<String> result = this.resolveFQCN(type, source);
 
                 if (!result.isPresent()) {
-                    log.warn("MISSING Type:{}", type);
-                    result = Optional.of(ClassNameUtils.OBJECT_CLASS);
+                    if (ClassNameUtils.isArray(type)) {
+                        result = Optional.of(ClassNameUtils.OBJECT_CLASS + ClassNameUtils.ARRAY);
+                        log.warn("Unknown Type:{}. use Object[]", type);
+                    } else {
+                        result = Optional.of(ClassNameUtils.OBJECT_CLASS);
+                        log.warn("Unknown Type:{}. use Object", type);
+                    }
                 }
                 result.ifPresent(fqcn -> {
                     this.markUsedClass(fqcn, source);
