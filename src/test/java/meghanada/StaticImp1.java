@@ -1,6 +1,6 @@
 package meghanada;
 
-import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.*;
 
 public class StaticImp1 {
 
