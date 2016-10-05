@@ -237,13 +237,14 @@ class JavaSymbolAnalyzeVisitor extends VoidVisitorAdapter<JavaSource> {
             if (name != null && !name.isEmpty()) {
                 final List<ClassOrInterfaceType> typeBounds = tp.getTypeBound();
                 if (typeBounds != null && typeBounds.size() > 0) {
-                    // TODO bounds to str
                     final ClassOrInterfaceType type = typeBounds.get(0);
-                    String typeBound = type.toString();
-                    typeBound = this.toFQCN(typeBound, source);
-
-                    classScope.getTypeParameterMap().put(name, typeBound);
+                    final String typeBound = type.toString();
+                    final String fqcn = this.toFQCN(typeBound, source);
+                    classScope.getTypeParameterMap().put(name, fqcn);
                     log.trace("put typeParameterMap name={} typeBound={}", name, typeBound);
+                } else {
+                    classScope.getTypeParameterMap().put(name, ClassNameUtils.OBJECT_CLASS);
+                    log.trace("put typeParameterMap name={} typeBound={}", name, ClassNameUtils.OBJECT_CLASS);
                 }
             }
         });
@@ -308,10 +309,11 @@ class JavaSymbolAnalyzeVisitor extends VoidVisitorAdapter<JavaSource> {
                 final VariableDeclaratorId declaratorId = v.getId();
                 type = checkArrayType(type, declaratorId);
 
-                final Optional<String> result = this.resolveFQCN(type, source);
+                Optional<String> result = this.resolveFQCN(type, source);
 
                 if (!result.isPresent()) {
                     log.warn("MISSING Type:{}", type);
+                    result = Optional.of(ClassNameUtils.OBJECT_CLASS);
                 }
                 result.ifPresent(fqcn -> {
                     this.markUsedClass(fqcn, source);
