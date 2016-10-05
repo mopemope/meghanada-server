@@ -139,7 +139,6 @@ public class SimpleJavaCompiler {
                     } catch (IOException e) {
                         throw new UncheckedIOException(e);
                     }
-                    log.info("# target:{}", f);
                     return true;
                 }).collect(Collectors.toList());
 
