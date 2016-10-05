@@ -615,7 +615,8 @@ class TypeAnalyzer {
     private Optional<String> getReturnFromStaticImp(final String name, final String declaringClass, final boolean isLocal, final boolean isField, final JavaSource source) {
         log.traceEntry("name={} declaringClass={} isLocal={} isField={}", name, declaringClass, isLocal, isField);
         if (source.staticImp.containsKey(name)) {
-            final Optional<String> result = getReturnFromReflect(name, declaringClass, isLocal, isField, source);
+            final String dec = source.staticImp.get(name);
+            final Optional<String> result = getReturnFromReflect(name, dec, isLocal, isField, source);
             return log.traceExit(result);
         }
         final Optional<String> empty = Optional.empty();

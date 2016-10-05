@@ -1,11 +1,20 @@
 package meghanada;
 
-import static org.junit.Assert.*;
+import org.junit.Test;
+
+import static org.junit.Assert.assertTrue;
 
 public class StaticImp1 {
 
+    @Test
     public void testExists() {
-        String name = "test";
-        assertFalse(true);
+        try {
+
+            Thread.currentThread().interrupt();
+            assertTrue("Assert", Thread.currentThread().isInterrupted());
+        } finally {
+            Thread.interrupted();
+        }
     }
 }
+
