@@ -523,17 +523,23 @@ class JavaSymbolAnalyzeVisitor extends VoidVisitorAdapter<JavaSource> {
                 this.markUsedClass(type, src);
             }
         }
-        Optional<Expression> optional = Optional.ofNullable(scope);
-        if (!optional.isPresent()) {
-            Expression expr = new ThisExpr();
-            optional = Optional.of(expr);
+        Optional<Expression> scopeExpression = Optional.ofNullable(scope);
+        if (!scopeExpression.isPresent()) {
+            if (src.staticImp.containsKey(methodName)) {
+                final String dec = src.staticImp.get(methodName);
+                final Expression expr = new NameExpr(dec);
+                scopeExpression = Optional.of(expr);
+            } else {
+                final Expression expr = new ThisExpr();
+                scopeExpression = Optional.of(expr);
+            }
         }
-
-        final Optional<MethodCallSymbol> result = optional.flatMap(scopeExpr -> {
+        final Optional<MethodCallSymbol> result = scopeExpression.flatMap(scopeExpr -> {
             final String scopeString = scopeExpr.toString();
 
             return this.typeAnalyzer.analyzeExprClass(scopeExpr, bs, src)
                     .flatMap(declaringClass -> {
+                        log.trace("scope declaringClass:{} methodName:{}", declaringClass, methodName);
                         final String maybeReturn = this.typeAnalyzer.
                                 getReturnType(src, bs, declaringClass, methodName, args).
                                 orElse(null);
