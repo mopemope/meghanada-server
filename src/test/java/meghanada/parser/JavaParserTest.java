@@ -552,6 +552,7 @@ public class JavaParserTest extends GradleTestBase {
             JavaParser javaParser = new JavaParser();
             return javaParser.parse(new File("./src/test/java/meghanada/StaticImp1.java"));
         });
+
         assertNotNull(source);
         TypeScope typeScope = source.getTypeScopes().get(0);
         List<MemberDescriptor> result = typeScope.getMemberDescriptors();

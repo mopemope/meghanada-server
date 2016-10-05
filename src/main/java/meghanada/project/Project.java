@@ -3,6 +3,7 @@ package meghanada.project;
 import com.esotericsoftware.kryo.DefaultSerializer;
 import com.google.common.base.Joiner;
 import com.google.common.base.MoreObjects;
+import com.google.common.collect.ImmutableSet;
 import com.typesafe.config.ConfigFactory;
 import meghanada.compiler.CompileResult;
 import meghanada.compiler.SimpleJavaCompiler;
@@ -172,16 +173,16 @@ public abstract class Project {
         }
     }
 
-    private List<File> getSourceFiles(Set<File> sourceDirs) throws IOException {
-        return sourceDirs.parallelStream()
+    private List<File> collectJavaFiles(Set<File> sourceDirs) throws IOException {
+        return sourceDirs.stream()
                 .filter(File::exists)
-                .map(this::getSourceFiles)
+                .map(this::collectJavaFiles)
                 .flatMap(Collection::stream)
                 .filter(FileUtils::filterFile)
                 .collect(Collectors.toList());
     }
 
-    private List<File> getSourceFiles(File root) {
+    private List<File> collectJavaFiles(File root) {
         if (!root.exists()) {
             return Collections.emptyList();
         }
@@ -197,19 +198,19 @@ public abstract class Project {
     }
 
     public CompileResult compileJava(final boolean force) throws IOException {
-        List<File> files = this.getSourceFiles(this.getSourceDirectories());
+        List<File> files = this.collectJavaFiles(this.getSourceDirectories());
         if (files != null && !files.isEmpty()) {
             return getJavaCompiler().compileFiles(files, this.allClasspath(), this.output.getCanonicalPath(), force);
         }
-        return new CompileResult(false);
+        return new CompileResult(true);
     }
 
     public CompileResult compileTestJava(final boolean force) throws IOException {
-        List<File> files = this.getSourceFiles(this.getTestSourceDirectories());
+        List<File> files = this.collectJavaFiles(this.getTestSourceDirectories());
         if (files != null && !files.isEmpty()) {
             return getJavaCompiler().compileFiles(files, this.allClasspath(), this.testOutput.getCanonicalPath(), force);
         }
-        return new CompileResult(false);
+        return new CompileResult(true);
     }
 
     public CompileResult compileFile(final File file, final boolean force) throws IOException {
@@ -447,11 +448,18 @@ public abstract class Project {
         }
         // log.debug("Merged Project:{}", this);
 
+        this.sources = new ImmutableSet.Builder<File>().addAll(this.sources).build();
         log.debug("sources {}", this.getSourceDirectories());
+        this.resources = new ImmutableSet.Builder<File>().addAll(this.resources).build();
         log.debug("resources {}", this.getResourceDirectories());
+
         log.debug("output {}", this.getOutputDirectory());
+
+        this.testSources = new ImmutableSet.Builder<File>().addAll(this.testSources).build();
         log.debug("test sources {}", this.getTestSourceDirectories());
+        this.testResources = new ImmutableSet.Builder<File>().addAll(this.testResources).build();
         log.debug("test resources {}", this.getTestResourceDirectories());
+
         log.debug("test output {}", this.getTestOutputDirectory());
 
         return this;

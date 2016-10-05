@@ -67,10 +67,10 @@ public class JavaSourceLoader extends CacheLoader<File, JavaSource> {
                 return this.loadFromCache(file);
             }
             // update
-            finalChecksumMap.put(path, md5sum);
+            // finalChecksumMap.put(path, md5sum);
         } else {
             // save checksum
-            finalChecksumMap.put(path, md5sum);
+            // finalChecksumMap.put(path, md5sum);
         }
 
         final JavaSource source = javaParser.parse(file);

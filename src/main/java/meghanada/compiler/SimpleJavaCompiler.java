@@ -48,6 +48,7 @@ public class SimpleJavaCompiler {
         }
         final List<File> compileFiles = force ? files : getCompileFiles(files, this.sourceRoots, tempOut);
         if (compileFiles.isEmpty()) {
+            log.warn("compileFiles isEmpty");
             return new CompileResult(true);
         }
         // log.debug("start compile classpath {} output {}", classpath, output);
@@ -138,6 +139,7 @@ public class SimpleJavaCompiler {
                     } catch (IOException e) {
                         throw new UncheckedIOException(e);
                     }
+                    log.info("# target:{}", f);
                     return true;
                 }).collect(Collectors.toList());
 
