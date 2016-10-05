@@ -224,6 +224,10 @@ public class Config {
         return c.getBoolean("source-cache");
     }
 
+    public boolean analyzeAll() {
+        return c.getBoolean("analyze-all");
+    }
+
     public Map<File, Map<String, String>> getAllChecksumMap() {
         return checksumMap;
     }
