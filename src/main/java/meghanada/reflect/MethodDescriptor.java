@@ -176,7 +176,7 @@ public class MethodDescriptor extends MemberDescriptor implements Serializable {
         final EntryMessage entryMessage = log.traceEntry("template={}, formalType={} typeParameterMap={} typeParameters={}", template, formalType, typeParameterMap, typeParameters);
         String temp = template;
         if (this.typeParameterMap.size() > 0) {
-            for (Map.Entry<String, String> entry : this.typeParameterMap.entrySet()) {
+            for (final Map.Entry<String, String> entry : this.typeParameterMap.entrySet()) {
                 final String k = entry.getKey();
                 final String v = entry.getValue();
                 temp = ClassNameUtils.replace(temp, ClassNameUtils.CLASS_TYPE_VARIABLE_MARK + k, v);
@@ -187,7 +187,7 @@ public class MethodDescriptor extends MemberDescriptor implements Serializable {
             }
         } else {
 
-            for (String entry : this.typeParameters) {
+            for (final String entry : this.typeParameters) {
                 temp = ClassNameUtils.replace(temp, ClassNameUtils.CLASS_TYPE_VARIABLE_MARK + entry, ClassNameUtils.OBJECT_CLASS);
                 if (formalType) {
                     // follow intellij

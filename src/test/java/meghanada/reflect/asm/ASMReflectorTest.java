@@ -17,15 +17,6 @@ import static org.junit.Assert.assertNotNull;
 
 public class ASMReflectorTest extends GradleTestBase {
 
-    @org.junit.Before
-    public void setUp() throws Exception {
-    }
-
-    @org.junit.After
-    public void tearDown() throws Exception {
-
-    }
-
     @org.junit.Test
     public void testGetInstance() throws Exception {
         ASMReflector asmReflector = ASMReflector.getInstance();

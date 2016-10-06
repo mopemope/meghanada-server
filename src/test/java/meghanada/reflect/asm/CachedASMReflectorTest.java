@@ -358,6 +358,28 @@ public class CachedASMReflectorTest extends GradleTestBase {
     }
 
     @Test
+    public void testLocalReflect9() throws Exception {
+        CachedASMReflector cachedASMReflector = CachedASMReflector.getInstance();
+        cachedASMReflector.addDirectory(getOutputDir());
+        cachedASMReflector.addDirectory(getTestOutputDir());
+        cachedASMReflector.createClassIndexes();
+
+        {
+            String fqcn = "meghanada.SelfRef1$Ref";
+            List<MemberDescriptor> memberDescriptors = timeIt(() -> {
+                return cachedASMReflector.reflect(fqcn);
+            });
+            memberDescriptors.forEach(m -> System.out.println(m.getDisplayDeclaration()));
+            assertEquals(21, memberDescriptors.size());
+//            cachedASMReflector.reflectStream(fqcn)
+//                    .forEach(md -> {
+//                        System.out.println(md);
+//                    });
+        }
+
+    }
+
+    @Test
     public void testLocalInterface1() throws Exception {
         CachedASMReflector cachedASMReflector = CachedASMReflector.getInstance();
         cachedASMReflector.addDirectory(getOutputDir());

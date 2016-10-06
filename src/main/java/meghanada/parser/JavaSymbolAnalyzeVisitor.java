@@ -186,14 +186,18 @@ class JavaSymbolAnalyzeVisitor extends VoidVisitorAdapter<JavaSource> {
                     // import super class fields
                     reflector.reflectFieldStream(fqcn)
                             .forEach(md -> {
-                                final String ret = this.fqcnResolver.resolveFQCN(md.getReturnType(), source).orElse(md.getReturnType());
-                                final Variable ns = new Variable(
-                                        md.getDeclaringClass(),
-                                        md.getName(),
-                                        node.getRange(),
-                                        ret,
-                                        true);
-                                classScope.addFieldSymbol(ns);
+                                final String declaration = md.getDeclaration();
+                                if (declaration.contains("public")
+                                        || declaration.contains("protected")) {
+                                    final String ret = this.fqcnResolver.resolveFQCN(md.getReturnType(), source).orElse(md.getReturnType());
+                                    final Variable ns = new Variable(
+                                            md.getDeclaringClass(),
+                                            md.getName(),
+                                            node.getRange(),
+                                            ret,
+                                            true);
+                                    classScope.addFieldSymbol(ns);
+                                }
                             });
                 } else {
                     this.markUsedClass(name, source);
@@ -310,6 +314,7 @@ class JavaSymbolAnalyzeVisitor extends VoidVisitorAdapter<JavaSource> {
                 type = checkArrayType(type, declaratorId);
 
                 Optional<String> result = this.resolveFQCN(type, source);
+                log.debug("result:{} {}", result, declaratorId);
 
                 if (!result.isPresent()) {
                     if (ClassNameUtils.isArray(type)) {
@@ -482,12 +487,10 @@ class JavaSymbolAnalyzeVisitor extends VoidVisitorAdapter<JavaSource> {
         }
 
         return optional.flatMap(scopeExpr -> {
-
             final String scopeString = scopeExpr.toString();
             return this.typeAnalyzer.analyzeExprClass(scopeExpr, blockScope, source)
-                    .flatMap(fqcn -> {
-                        final String declaringClass = this.toFQCN(fqcn, source);
-                        log.trace("declaringClass returnFQCN:{}", declaringClass);
+                    .flatMap(exprClass -> {
+                        final String declaringClass = this.toFQCN(exprClass, source);
                         return this.createFieldAccessSymbol(fieldName,
                                 scopeString,
                                 declaringClass,
@@ -528,9 +531,11 @@ class JavaSymbolAnalyzeVisitor extends VoidVisitorAdapter<JavaSource> {
             if (src.staticImp.containsKey(methodName)) {
                 final String dec = src.staticImp.get(methodName);
                 final Expression expr = new NameExpr(dec);
+                expr.setRange(node.getRange());
                 scopeExpression = Optional.of(expr);
             } else {
                 final Expression expr = new ThisExpr();
+                expr.setRange(node.getRange());
                 scopeExpression = Optional.of(expr);
             }
         }
@@ -539,10 +544,10 @@ class JavaSymbolAnalyzeVisitor extends VoidVisitorAdapter<JavaSource> {
 
             return this.typeAnalyzer.analyzeExprClass(scopeExpr, bs, src)
                     .flatMap(declaringClass -> {
-                        log.trace("scope declaringClass:{} methodName:{}", declaringClass, methodName);
                         final String maybeReturn = this.typeAnalyzer.
                                 getReturnType(src, bs, declaringClass, methodName, args).
                                 orElse(null);
+
                         return this.createMethodCallSymbol(node,
                                 scopeString,
                                 declaringClass,
@@ -593,7 +598,8 @@ class JavaSymbolAnalyzeVisitor extends VoidVisitorAdapter<JavaSource> {
                 name,
                 range,
                 declaringClass);
-        final boolean isLocal = scope.equals("this") || scope.equals("super");
+
+        boolean isLocal = scope.equals("this") || scope.equals("super");
 
         // 1. normal field access instanceA.name
         final Optional<FieldAccessSymbol> fas = this.typeAnalyzer.getReturnFromReflect(name, declaringClass, isLocal, true, source)
@@ -614,9 +620,21 @@ class JavaSymbolAnalyzeVisitor extends VoidVisitorAdapter<JavaSource> {
                     return symbol;
                 });
         if (!fas2.isPresent()) {
-            log.warn("MISSING ReturnType:{} :{}", symbol, source.getFile());
+            log.warn("MISSING ReturnType:{} File:{}", symbol, source.getFile());
         }
         return log.traceExit(entryMessage, fas2);
+    }
+
+    private boolean isLocal(String scope, String declaringClass, JavaSource source) {
+        final Optional<TypeScope> currentType = source.getCurrentType();
+        if (currentType.isPresent()) {
+            final String fqcn = currentType.get().getFQCN();
+            if (declaringClass.contains(fqcn)) {
+                // inner or self
+                return true;
+            }
+        }
+        return scope.equals("this") || scope.equals("super");
     }
 
     @Override

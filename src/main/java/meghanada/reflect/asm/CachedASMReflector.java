@@ -5,6 +5,7 @@ import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.pool.KryoCallback;
 import com.esotericsoftware.kryo.pool.KryoPool;
+import com.google.common.base.Splitter;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableMap;
@@ -13,6 +14,7 @@ import meghanada.config.Config;
 import meghanada.reflect.CandidateUnit;
 import meghanada.reflect.ClassIndex;
 import meghanada.reflect.MemberDescriptor;
+import meghanada.reflect.MethodDescriptor;
 import meghanada.reflect.names.MethodParameterNames;
 import meghanada.utils.ClassName;
 import meghanada.utils.ClassNameUtils;
@@ -58,8 +60,6 @@ public class CachedASMReflector {
     private Map<String, String> standardClasses;
 
     private CachedASMReflector() {
-        String a = new String();
-
         this.memberCache = CacheBuilder.newBuilder()
                 .initialCapacity(64)
                 .maximumSize(256)
@@ -488,6 +488,41 @@ public class CachedASMReflector {
                     if (mName.equals(name)
                             && m.matchType(CandidateUnit.MemberType.METHOD)
                             && parameters.size() == argLen) {
+
+                        final MethodDescriptor md = (MethodDescriptor) m;
+                        final String formalType = md.formalType;
+                        if (formalType != null) {
+                            final int start1 = sig.indexOf("[");
+                            final int end1 = sig.lastIndexOf("]");
+                            final Iterable<String> split1 = Splitter.on(",").split(sig.substring(start1 + 1, end1));
+
+                            final String mdSig = m.getSig();
+                            final int start2 = mdSig.indexOf("[");
+                            final int end2 = mdSig.lastIndexOf("]");
+                            final Iterable<String> split2 = Splitter.on(",").split(mdSig.substring(start2 + 1, end2));
+                            final Set<String> typeParameters = md.getTypeParameters();
+
+                            boolean match = true;
+                            final Iterator<String> iterator2 = split2.iterator();
+                            for (final Iterator<String> iterator1 = split1.iterator(); iterator1.hasNext(); ) {
+                                final String next1 = iterator1.next();
+                                final String next2 = iterator2.next();
+                                if (next2.startsWith(ClassNameUtils.FORMAL_TYPE_VARIABLE_MARK)) {
+                                    final String key = next2.substring(2);
+                                    if (typeParameters.contains(key)) {
+                                        md.getTypeParameterMap().put(key, next2);
+                                        continue;
+                                    }
+                                    match = false;
+                                } else {
+                                    if (!next1.equals(next2)) {
+                                        match = false;
+                                    }
+                                }
+                            }
+                            return match;
+                        }
+
                         final String mdSig = m.getSig();
                         log.trace("compare sig sig={} mdSig={}", sig, mdSig);
                         return sig.equals(mdSig);

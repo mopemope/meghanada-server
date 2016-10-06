@@ -248,8 +248,7 @@ class ASMReflector {
                             result.putIfAbsent(declaration, md);
                         }
                     } else {
-                        final String declaration = md.getDeclaration();
-                        result.putIfAbsent(declaration, md);
+                        result.putIfAbsent(md.getName(), md);
                     }
                 });
             }

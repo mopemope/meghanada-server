@@ -95,13 +95,13 @@ class FQCNResolver {
             }
 
             // search field nam
-            return source.getCurrentType().map(typeScope -> {
-                final Variable fieldSymbol = typeScope.getFieldSymbol(name);
+            return source.getCurrentType().map(ts -> {
+                final Variable fieldSymbol = ts.getFieldSymbol(name);
                 if (fieldSymbol != null) {
                     return fieldSymbol.getFQCN();
                 }
                 return null;
-            }).orElse(null);
+            }).orElseGet(() -> resolveFQCN(name, source).orElse(null));
         });
     }
 
@@ -419,9 +419,6 @@ class FQCNResolver {
                     if (blockScope instanceof ClassScope) {
                         ClassScope classScope = (ClassScope) blockScope;
                         final Map<String, Variable> fieldSymbols = classScope.fieldSymbols;
-
-                        log.trace("name={} fieldSymbols={}", name, fieldSymbols);
-
                         final Variable variable = fieldSymbols.get(name);
                         if (variable != null) {
                             final String fqcn = variable.getFQCN();

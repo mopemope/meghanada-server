@@ -88,16 +88,8 @@ class TypeAnalyzer {
         });
     }
 
-    Optional<List<MemberDescriptor>> getCallingMethods(final JavaSource source, final String declaringClass, final String name, final int size, final String sig) {
-        return source.getCurrentType().map(ts -> {
-            final CachedASMReflector reflector = CachedASMReflector.getInstance();
-            return reflector.reflectMethodStream(declaringClass, name, size, sig)
-                    .collect(Collectors.toList());
-        });
-    }
-
     Optional<MemberDescriptor> getCallingMethod(final JavaSource source, final String declaringClass, final String name, final int size, final String sig) {
-        final Optional<MemberDescriptor> memberDescriptor = source.getCurrentType().map(ts -> {
+        return source.getCurrentType().map(ts -> {
             final CachedASMReflector reflector = CachedASMReflector.getInstance();
             return reflector.reflectMethodStream(declaringClass, name, size, sig)
                     .map(MemberDescriptor::clone)
@@ -114,8 +106,8 @@ class TypeAnalyzer {
                         }
                         return null;
                     });
+
         });
-        return memberDescriptor;
     }
 
     private String getLambdaReturnType(JavaSource source, MemberDescriptor callMethod) {
@@ -223,6 +215,7 @@ class TypeAnalyzer {
                     return result;
                 })
                 .when(eq(FieldAccessExpr.class)).get(() -> {
+                    // TODO check
                     FieldAccessExpr x = (FieldAccessExpr) expression;
                     if (CachedASMReflector.getInstance().containsFQCN(x.toStringWithoutComments())) {
                         return Optional.of(x.toStringWithoutComments());
@@ -506,13 +499,20 @@ class TypeAnalyzer {
                     final String sp = parameter.getType();
                     final String p = realIterator.next();
 
+                    if (sp.startsWith(FORMAL_TYPE_VARIABLE_MARK)) {
+                        final String typeVal = ClassNameUtils.removeTypeMark(sp);
+                        if (formalTypes.contains(typeVal)) {
+                            method.typeParameterMap.put(typeVal, p);
+                        }
+                        continue;
+                    }
                     final List<String> sigTypes = ClassNameUtils.parseTypeParameter(sp);
                     final List<String> realTypes = ClassNameUtils.parseTypeParameter(p);
-
                     if (sigTypes.size() == realTypes.size()) {
                         final Iterator<String> realTypeIterator = realTypes.iterator();
                         for (final String sig : sigTypes) {
                             final String real = realTypeIterator.next();
+
                             if (sig.startsWith(FORMAL_TYPE_VARIABLE_MARK) || sig.startsWith(CLASS_TYPE_VARIABLE_MARK)) {
                                 final String typeVal = ClassNameUtils.removeTypeMark(sig);
                                 log.trace("methodTypeMap type={} real={}", typeVal, real);
@@ -659,7 +659,6 @@ class TypeAnalyzer {
         final String declaringClass2 = declaringClass;
 
         boolean onlyPublic = !isLocal && classFile.getName().endsWith("jar");
-
         final String result = reflector.reflectStream(declaringClass2)
                 .filter(md -> this.returnTypeFilter(name, isField, onlyPublic, md))
                 .map(md -> {

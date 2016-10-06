@@ -231,7 +231,7 @@ public class JavaParserTest extends GradleTestBase {
             List<MemberDescriptor> result = typeScope.getMemberDescriptors();
             String type = typeScope.getFQCN();
             assertEquals("meghanada.parser.JavaSymbolAnalyzeVisitor", type);
-            assertEquals(36, result.size());
+            assertEquals(37, result.size());
         }
 
     }
@@ -643,6 +643,20 @@ public class JavaParserTest extends GradleTestBase {
         String type = typeScope.getFQCN();
         assertEquals("meghanada.Gen11", type);
         assertEquals(2, result.size());
+    }
+
+    @Test
+    public void testParseClass36() throws Exception {//
+        JavaSource source = timeIt(() -> {
+            JavaParser javaParser = new JavaParser();
+            return javaParser.parse(new File("./src/test/java/meghanada/SelfRef1.java"));
+        });
+        assertNotNull(source);
+        TypeScope typeScope = source.getTypeScopes().get(0);
+        List<MemberDescriptor> result = typeScope.getMemberDescriptors();
+        String type = typeScope.getFQCN();
+        assertEquals("meghanada.SelfRef1$Ref", type);
+        assertEquals(3, result.size());
     }
 
     @Test
