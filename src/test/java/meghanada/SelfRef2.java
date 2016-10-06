@@ -2,7 +2,7 @@ package meghanada;
 
 import java.lang.ref.PhantomReference;
 
-public class SelfRef1<T> {
+public class SelfRef2 {
 
     private Ref head = new Ref(null);
 

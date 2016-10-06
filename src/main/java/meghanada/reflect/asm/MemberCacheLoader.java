@@ -84,7 +84,6 @@ class MemberCacheLoader extends CacheLoader<String, List<MemberDescriptor>> {
 
         final ClassName cn = new ClassName(className);
         final String fqcn = cn.getName();
-
         String path = ClassNameUtils.replace(fqcn, ".", File.separator);
         File cacheFilePath = new File(this.projectCache, this.javaVersion + "/member/" + path + ".dat");
 
@@ -121,7 +120,7 @@ class MemberCacheLoader extends CacheLoader<String, List<MemberDescriptor>> {
         }).collect(Collectors.toList());
 
         this.writeFileCache(fqcn, memberDescriptors);
-        log.trace("load from class file {} elapsed:{}", fqcn, stopwatch.stop());
+        log.trace("load fqcn:{} elapsed:{}", fqcn, stopwatch.stop());
         return memberDescriptors;
     }
 

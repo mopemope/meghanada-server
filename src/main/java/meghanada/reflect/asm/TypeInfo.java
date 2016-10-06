@@ -1,6 +1,7 @@
 package meghanada.reflect.asm;
 
 import com.google.common.base.Joiner;
+import meghanada.utils.ClassNameUtils;
 
 import java.util.List;
 
@@ -12,6 +13,7 @@ class TypeInfo {
     boolean isArray;
     boolean variableArguments;
     String paramName;
+    String innerClass;
 
     TypeInfo(String name, String fqcn) {
         this.name = name;
@@ -26,6 +28,10 @@ class TypeInfo {
         if (this.typeParameters != null && this.typeParameters.size() > 0) {
             sb.append("<");
             Joiner.on(", ").appendTo(sb, this.typeParameters).append(">");
+        }
+        if (innerClass != null) {
+            sb.append(ClassNameUtils.INNER_MARK);
+            sb.append(innerClass);
         }
         if (isArray) {
             sb.append("[]");
@@ -44,6 +50,10 @@ class TypeInfo {
         if (this.typeParameters != null && this.typeParameters.size() > 0) {
             sb.append("<");
             Joiner.on(", ").appendTo(sb, this.typeParameters).append(">");
+        }
+        if (innerClass != null) {
+            sb.append(ClassNameUtils.INNER_MARK);
+            sb.append(innerClass);
         }
         if (isArray) {
             sb.append("[]");

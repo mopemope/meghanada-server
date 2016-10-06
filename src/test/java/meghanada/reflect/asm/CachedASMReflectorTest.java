@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Map;
 
 import static meghanada.config.Config.timeIt;
+import static meghanada.config.Config.traceIt;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -365,18 +366,46 @@ public class CachedASMReflectorTest extends GradleTestBase {
         cachedASMReflector.createClassIndexes();
 
         {
+            String fqcn = "meghanada.SelfRef1";
+            List<MemberDescriptor> memberDescriptors = traceIt(() -> {
+                return cachedASMReflector.reflect(fqcn);
+            });
+            memberDescriptors.forEach(m -> System.out.println(m.getDisplayDeclaration()));
+            assertEquals(13, memberDescriptors.size());
+        }
+        {
             String fqcn = "meghanada.SelfRef1$Ref";
             List<MemberDescriptor> memberDescriptors = timeIt(() -> {
                 return cachedASMReflector.reflect(fqcn);
             });
             memberDescriptors.forEach(m -> System.out.println(m.getDisplayDeclaration()));
             assertEquals(21, memberDescriptors.size());
-//            cachedASMReflector.reflectStream(fqcn)
-//                    .forEach(md -> {
-//                        System.out.println(md);
-//                    });
         }
+    }
 
+    @Test
+    public void testLocalReflect10() throws Exception {
+        CachedASMReflector cachedASMReflector = CachedASMReflector.getInstance();
+        cachedASMReflector.addDirectory(getOutputDir());
+        cachedASMReflector.addDirectory(getTestOutputDir());
+        cachedASMReflector.createClassIndexes();
+
+        {
+            String fqcn = "meghanada.SelfRef2";
+            List<MemberDescriptor> memberDescriptors = traceIt(() -> {
+                return cachedASMReflector.reflect(fqcn);
+            });
+            memberDescriptors.forEach(m -> System.out.println(m.getDisplayDeclaration()));
+            assertEquals(13, memberDescriptors.size());
+        }
+        {
+            String fqcn = "meghanada.SelfRef2$Ref";
+            List<MemberDescriptor> memberDescriptors = timeIt(() -> {
+                return cachedASMReflector.reflect(fqcn);
+            });
+            memberDescriptors.forEach(m -> System.out.println(m.getDisplayDeclaration()));
+            assertEquals(21, memberDescriptors.size());
+        }
     }
 
     @Test

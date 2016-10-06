@@ -247,7 +247,7 @@ public class JavaParserTest extends GradleTestBase {
             List<MemberDescriptor> result = typeScope.getMemberDescriptors();
             String type = typeScope.getFQCN();
             assertEquals("meghanada.reflect.asm.TypeInfo", type);
-            assertEquals(9, result.size());
+            assertEquals(10, result.size());
         }
     }
 
@@ -657,6 +657,20 @@ public class JavaParserTest extends GradleTestBase {
         String type = typeScope.getFQCN();
         assertEquals("meghanada.SelfRef1$Ref", type);
         assertEquals(3, result.size());
+    }
+
+    @Test
+    public void testParseClass37() throws Exception {//
+        JavaSource source = timeIt(() -> {
+            JavaParser javaParser = new JavaParser();
+            return javaParser.parse(new File("./src/test/java/meghanada/GenArray1.java"));
+        });
+        assertNotNull(source);
+        TypeScope typeScope = source.getTypeScopes().get(0);
+        List<MemberDescriptor> result = typeScope.getMemberDescriptors();
+        String type = typeScope.getFQCN();
+        assertEquals("meghanada.GenArray1", type);
+        assertEquals(2, result.size());
     }
 
     @Test

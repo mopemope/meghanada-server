@@ -1,8 +1,10 @@
 package meghanada.reflect.asm;
 
+import com.google.common.base.MoreObjects;
 import meghanada.reflect.FieldDescriptor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.message.EntryMessage;
 import org.objectweb.asm.FieldVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.signature.SignatureReader;
@@ -33,9 +35,11 @@ class FieldAnalyzeVisitor extends FieldVisitor {
             signature = sig;
         }
         this.fieldSignature = signature;
+        log.trace("fieldSignature={}", fieldSignature);
     }
 
     FieldAnalyzeVisitor parseSignature() {
+        final EntryMessage m = log.traceEntry("fieldSignature={}", fieldSignature);
         boolean isStatic = (Opcodes.ACC_STATIC & this.access) > 0;
         SignatureReader signatureReader = new SignatureReader(this.fieldSignature);
         FieldSignatureVisitor visitor;
@@ -50,16 +54,18 @@ class FieldAnalyzeVisitor extends FieldVisitor {
 
         this.fieldSignatureVisitor = visitor;
         signatureReader.acceptType(fieldSignatureVisitor);
-        return this;
+        return log.traceExit(m, this);
     }
 
     @Override
     public void visitEnd() {
+        final EntryMessage m = log.traceEntry("fieldSignature={}", fieldSignature);
         final String modifier = ASMReflector.toModifier(access, false);
         final String fqcn = fieldSignatureVisitor.getResult();
         final FieldDescriptor fd = new FieldDescriptor(this.classAnalyzeVisitor.className, this.name, modifier, fqcn);
         fd.typeParameters = fieldSignatureVisitor.getTypeParameters();
         this.classAnalyzeVisitor.getMembers().add(fd);
+        log.traceExit(m);
     }
 
     FieldAnalyzeVisitor setTypeMap(Map<String, String> typeMap) {
@@ -67,4 +73,13 @@ class FieldAnalyzeVisitor extends FieldVisitor {
         return this;
     }
 
+    @Override
+    public String toString() {
+        return MoreObjects.toStringHelper(this)
+                .add("access", access)
+                .add("name", name)
+                .add("fieldSignature", fieldSignature)
+                .add("typeMap", typeMap)
+                .toString();
+    }
 }

@@ -120,6 +120,41 @@ public class ClassNameUtilsTest {
     }
 
     @Test
+    public void removeTypeParameter1() throws Exception {
+        String name = "java.util.Map<K, V>";
+        final String s = ClassNameUtils.removeTypeParameter(name);
+        assertEquals("java.util.Map", s);
+    }
+
+    @Test
+    public void removeTypeParameter2() throws Exception {
+        String name = "java.util.Map<K, V>$Entry";
+        final String s = ClassNameUtils.removeTypeParameter(name);
+        assertEquals("java.util.Map$Entry", s);
+    }
+
+    @Test
+    public void removeTypeArrayParameter1() throws Exception {
+        String name = "java.util.Map<K, V>[]";
+        final String s = ClassNameUtils.removeTypeAndArray(name);
+        assertEquals("java.util.Map", s);
+    }
+
+    @Test
+    public void removeTypeArrayParameter2() throws Exception {
+        String name = "java.util.Map<K, V>$Entry[]";
+        final String s = ClassNameUtils.removeTypeAndArray(name);
+        assertEquals("java.util.Map$Entry", s);
+    }
+
+    @Test
+    public void removeTypeArrayParameter3() throws Exception {
+        String name = "java.util.Map<Object[], Void>";
+        final String s = ClassNameUtils.removeTypeAndArray(name);
+        assertEquals("java.util.Map", s);
+    }
+
+    @Test
     public void replaceDot() throws Exception {
         String name = "java.util.function.Function<? super T, ? extends Stream<? extends R>>";
         final String s = ClassNameUtils.replaceDot2FileSep(name);

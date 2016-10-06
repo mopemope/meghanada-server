@@ -491,6 +491,7 @@ class JavaSymbolAnalyzeVisitor extends VoidVisitorAdapter<JavaSource> {
             return this.typeAnalyzer.analyzeExprClass(scopeExpr, blockScope, source)
                     .flatMap(exprClass -> {
                         final String declaringClass = this.toFQCN(exprClass, source);
+
                         return this.createFieldAccessSymbol(fieldName,
                                 scopeString,
                                 declaringClass,

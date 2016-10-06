@@ -60,7 +60,10 @@ public class CacheEventSubscriber extends AbstractSubscriber {
         log.info("done index size:{} elapsed:{}", reflector.getGlobalClassIndex().size(), stopwatch.stop());
 
         if (Config.load().analyzeAll()) {
+            stopwatch.reset();
+            stopwatch.start();
             this.requestParse();
+            log.info("analyzed elapsed:{}", stopwatch.stop());
         }
     }
 

@@ -260,21 +260,20 @@ public class CachedASMReflector {
     }
 
     public List<MemberDescriptor> reflect(final String className) {
-        String classWithoutTP = className;
-
+        final ClassName cn = new ClassName(className);
         // check type parameter
-        int tpIdx = classWithoutTP.indexOf("<");
-        if (tpIdx >= 0) {
-            classWithoutTP = classWithoutTP.substring(0, tpIdx);
-        }
+        final String classWithoutTP = cn.getName();
         List<MemberDescriptor> members;
         try {
             members = this.memberCache.get(classWithoutTP);
         } catch (ExecutionException e) {
             throw new UncheckedExecutionException(e);
         }
-        members = members.stream().map(MemberDescriptor::clone).collect(Collectors.toList());
-        if (tpIdx >= 0) {
+        members = members.stream()
+                .map(MemberDescriptor::clone)
+                .collect(Collectors.toList());
+
+        if (cn.hasTypeParameter()) {
             return this.replaceMembers(classWithoutTP, className, members);
         }
 
@@ -283,7 +282,7 @@ public class CachedASMReflector {
 
     private List<MemberDescriptor> replaceMembers(final String classWithoutTP, final String className, final List<MemberDescriptor> members) {
 
-        ClassIndex classIdx = this.globalClassIndex.get(classWithoutTP);
+        final ClassIndex classIdx = this.globalClassIndex.get(classWithoutTP);
         if (classIdx != null) {
             return replaceTypeParameters(className, classIdx.getDisplayDeclaration(), members);
         }

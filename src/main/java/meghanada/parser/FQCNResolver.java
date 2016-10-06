@@ -357,13 +357,13 @@ class FQCNResolver {
     private Optional<String> resolveSymbolName(final String name, final JavaSource source) {
         final ClassName className = new ClassName(name);
         final String symbolName = className.getName();
-        log.traceEntry("name={} symbolName={}", name, symbolName);
+        final EntryMessage entryMessage = log.traceEntry("name={} symbolName={}", name, symbolName);
 
         {
             // check primitive
             if (ClassNameUtils.isPrimitive(symbolName)) {
                 final Optional<String> result = Optional.ofNullable(className.addTypeParameters(symbolName));
-                return log.traceExit(result);
+                return log.traceExit(entryMessage, result);
             }
         }
 
@@ -374,14 +374,14 @@ class FQCNResolver {
 
         if (resultFQCN != null) {
             final Optional<String> result = Optional.ofNullable(className.addTypeParameters(resultFQCN));
-            return log.traceExit(result);
+            return log.traceExit(entryMessage, result);
         }
         final Optional<String> result = Optional.empty();
-        return log.traceExit(result);
+        return log.traceExit(entryMessage, result);
     }
 
     private String resolveFromSource(final String name, final JavaSource source) {
-        final EntryMessage entryMessage = log.traceEntry("name={}", name);
+        final EntryMessage em = log.traceEntry("name={}", name);
         final String res = source.getTypeScopes()
                 .stream()
                 .map(TypeScope::getFieldSymbols)
@@ -396,12 +396,12 @@ class FQCNResolver {
                 .filter(s -> s != null)
                 .findFirst()
                 .orElse(null);
-        log.traceExit(entryMessage);
+        log.traceExit(em, res);
         return res;
     }
 
     private String resolveFromField(final String name, final JavaSource source, final String symbolName, final TypeScope ts) {
-        final EntryMessage entryMessage = log.traceEntry("name={} symbolName={}", name, symbolName);
+        final EntryMessage em = log.traceEntry("name={} symbolName={}", name, symbolName);
 
         final CachedASMReflector reflector = CachedASMReflector.getInstance();
         if (!symbolName.startsWith("this.")) {
@@ -413,7 +413,7 @@ class FQCNResolver {
                     final Variable resolveNS = blockScope.getDeclaratorMap().get(name);
                     if (resolveNS != null) {
                         final String fqcn = resolveNS.getFQCN();
-                        return log.traceExit(fqcn);
+                        return log.traceExit(em, fqcn);
                     }
                     // from field
                     if (blockScope instanceof ClassScope) {
@@ -422,7 +422,7 @@ class FQCNResolver {
                         final Variable variable = fieldSymbols.get(name);
                         if (variable != null) {
                             final String fqcn = variable.getFQCN();
-                            return log.traceExit(fqcn);
+                            return log.traceExit(em, fqcn);
                         }
                     }
                     blockScope = blockScope.getParent();
@@ -443,7 +443,7 @@ class FQCNResolver {
                     Variable ns = fieldMap.get(searchField);
                     if (ns != null) {
                         final String fqcn1 = ns.getFQCN();
-                        return log.traceExit(fqcn1);
+                        return log.traceExit(em, fqcn1);
                     }
                 }
             }
@@ -457,7 +457,7 @@ class FQCNResolver {
                         .map(MemberDescriptor::getRawReturnType)
                         .findFirst()
                         .orElse(null));
-        log.traceExit(entryMessage);
+        log.traceExit(em, res);
         return res;
     }
 

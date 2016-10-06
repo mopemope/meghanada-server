@@ -4,6 +4,7 @@ import com.google.common.base.MoreObjects;
 import meghanada.utils.ClassNameUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.message.EntryMessage;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.signature.SignatureVisitor;
 
@@ -34,11 +35,11 @@ class FieldSignatureVisitor extends SignatureVisitor {
 
     FieldSignatureVisitor(final String name, final List<String> classTypeParameters) {
         super(Opcodes.ASM5);
-        log.traceEntry("name={} classTypeParameters={}", name, classTypeParameters);
+        final EntryMessage em = log.traceEntry("name={} classTypeParameters={}", name, classTypeParameters);
         this.name = name;
         this.classTypeParameters = classTypeParameters;
         this.typeParameters = new HashSet<>(2);
-        log.traceExit();
+        log.traceExit(em);
         isInstance = false;
         isSuper = false;
         isExtends = false;
@@ -61,7 +62,7 @@ class FieldSignatureVisitor extends SignatureVisitor {
 
     @Override
     public SignatureVisitor visitTypeArgument(final char c) {
-        log.traceEntry("name={} typeInfo={} currentType={}", this.name, this.typeInfo, this.currentType);
+        final EntryMessage em = log.traceEntry("name={} typeInfo={} currentType={}", this.name, this.typeInfo, this.currentType);
 
         this.isInstance = false;
         this.isExtends = false;
@@ -80,19 +81,19 @@ class FieldSignatureVisitor extends SignatureVisitor {
         }
 
         if (this.currentType.size() == 0) {
-            return log.traceExit(super.visitTypeArgument(c));
+            return log.traceExit(em, super.visitTypeArgument(c));
         }
 
         final TypeInfo typeInfo = this.currentType.peek();
         if (typeInfo.typeParameters == null) {
             typeInfo.typeParameters = new ArrayList<>(4);
         }
-        return log.traceExit(super.visitTypeArgument(c));
+        return log.traceExit(em, super.visitTypeArgument(c));
     }
 
     @Override
     public void visitTypeArgument() {
-        log.traceEntry("mame={} typeInfo={} currentType={}", this.name, this.typeInfo, this.currentType);
+        final EntryMessage m = log.traceEntry("mame={} typeInfo={} currentType={}", this.name, this.typeInfo, this.currentType);
         if (this.currentType.size() == 0) {
             this.visitClassType("?");
             log.traceExit();
@@ -105,7 +106,7 @@ class FieldSignatureVisitor extends SignatureVisitor {
             current.typeParameters = new ArrayList<>(4);
         }
         current.typeParameters.add(typeInfo);
-        log.traceExit();
+        log.traceExit(m);
     }
 
     @Override
@@ -120,7 +121,7 @@ class FieldSignatureVisitor extends SignatureVisitor {
                 this.holdArray = false;
             }
         }
-        log.traceEntry("s={} name={} typeInfo={} currentType={}", s, this.name, this.typeInfo, this.currentType);
+        final EntryMessage em = log.traceEntry("s={} name={} typeInfo={} currentType={}", s, this.name, this.typeInfo, this.currentType);
 
         if (this.currentType.size() == 0) {
             // set main
@@ -136,7 +137,7 @@ class FieldSignatureVisitor extends SignatureVisitor {
                 this.currentType.push(typeInfo);
             }
         }
-        log.traceExit();
+        log.traceExit(em);
     }
 
     @Override
@@ -149,8 +150,8 @@ class FieldSignatureVisitor extends SignatureVisitor {
             // on hold array flag
             this.holdArray = true;
         }
-        log.traceEntry("name={} current={} currentType={}", this.name, current, this.currentType);
-        return log.traceExit(super.visitArrayType());
+        final EntryMessage em = log.traceEntry("name={} current={} currentType={}", this.name, current, this.currentType);
+        return log.traceExit(em, super.visitArrayType());
     }
 
     @Override
@@ -170,13 +171,13 @@ class FieldSignatureVisitor extends SignatureVisitor {
             // set main
             this.currentType.push(typeInfo);
         }
-        log.traceEntry("c={} name={} typeInfo={} currentType={}", c, this.name, this.typeInfo, this.currentType);
-        log.traceExit();
+        final EntryMessage em = log.traceEntry("c={} name={} typeInfo={} currentType={}", c, this.name, this.typeInfo, this.currentType);
+        log.traceExit(em);
     }
 
     @Override
     public void visitTypeVariable(String typeVariable) {
-        log.traceEntry("name={} typeVariable={} typeInfo={} current={}", this.name, typeVariable, this.typeInfo, this.currentType);
+        final EntryMessage em = log.traceEntry("name={} typeVariable={} typeInfo={} current={}", this.name, typeVariable, this.typeInfo, this.currentType);
         TypeInfo typeInfo;
 
         if (this.typeMap != null && typeMap.containsKey(typeVariable)) {
@@ -220,16 +221,35 @@ class FieldSignatureVisitor extends SignatureVisitor {
                 this.currentType.push(typeInfo);
             }
         }
-        log.traceExit();
+        log.traceExit(em);
     }
 
     @Override
     public void visitEnd() {
-        log.traceEntry("name={} typeInfo={} currentType={} ", this.name, this.typeInfo, this.currentType);
+        final EntryMessage em = log.traceEntry("name={} typeInfo={} currentType={} ", this.name, this.typeInfo, this.currentType);
         if (this.currentType.size() > 1) {
             this.currentType.pop();
         }
-        log.traceExit();
+        log.traceExit(em);
+    }
+
+    @Override
+    public void visitFormalTypeParameter(final String name) {
+        final EntryMessage em = log.traceEntry("name={}", name);
+        super.visitFormalTypeParameter(name);
+        log.traceExit(em);
+    }
+
+    @Override
+    public void visitInnerClassType(final String name) {
+        final EntryMessage em = log.traceEntry("name={} typeInfo={}", name, this.typeInfo);
+        this.typeInfo.innerClass = name;
+        log.traceExit(em);
+    }
+
+    @Override
+    public SignatureVisitor visitReturnType() {
+        return super.visitReturnType();
     }
 
     public String getResult() {

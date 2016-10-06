@@ -14,17 +14,38 @@ public class ClassNameTest extends GradleTestBase {
     }
 
     @Test
-    public void getSimpleName1() throws Exception {
+    public void getName1() throws Exception {
         ClassName className = new ClassName("Map.Entry<String, Long>");
         String name = className.getName();
         assertEquals("Map.Entry", name);
     }
 
     @Test
-    public void getSimpleName2() throws Exception {
+    public void getName2() throws Exception {
         ClassName className = new ClassName("Map.Entry<String, Long>[]");
         String name = className.getName();
         assertEquals("Map.Entry", name);
+    }
+
+    @Test
+    public void getName3() throws Exception {
+        ClassName className = new ClassName("Map<K, V>.Entry");
+        String name = className.getName();
+        assertEquals("Map.Entry", name);
+    }
+
+    @Test
+    public void getName4() throws Exception {
+        ClassName className = new ClassName("ThreadLocal<int[]>");
+        String name = className.getName();
+        assertEquals("ThreadLocal", name);
+    }
+
+    @Test
+    public void getName5() throws Exception {
+        ClassName className = new ClassName("Map<Object[], Void>");
+        String name = className.getName();
+        assertEquals("Map", name);
     }
 
     @Test

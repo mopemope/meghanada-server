@@ -205,7 +205,10 @@ public class ClassNameUtils {
         // check type parameter
         int tpIdx = name.indexOf("<");
         if (tpIdx >= 0) {
-            name = name.substring(0, tpIdx);
+            final int last = name.lastIndexOf(">");
+            String fst = name.substring(0, tpIdx);
+            String sec = name.substring(last + 1, name.length());
+            name = fst + sec;
         }
         return name;
     }
@@ -214,7 +217,10 @@ public class ClassNameUtils {
         // check array parameter
         int idx = name.indexOf("[");
         if (idx >= 0) {
-            name = name.substring(0, idx);
+            final int last = name.lastIndexOf("]");
+            String fst = name.substring(0, idx);
+            String sec = name.substring(last + 1, name.length());
+            name = fst + sec;
         }
         return name;
     }

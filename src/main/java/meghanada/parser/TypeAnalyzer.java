@@ -215,7 +215,6 @@ class TypeAnalyzer {
                     return result;
                 })
                 .when(eq(FieldAccessExpr.class)).get(() -> {
-                    // TODO check
                     FieldAccessExpr x = (FieldAccessExpr) expression;
                     if (CachedASMReflector.getInstance().containsFQCN(x.toStringWithoutComments())) {
                         return Optional.of(x.toStringWithoutComments());
@@ -655,15 +654,15 @@ class TypeAnalyzer {
                 return log.traceExit(entryMessage, empty);
             }
         }
-
         final String declaringClass2 = declaringClass;
 
         boolean onlyPublic = !isLocal && classFile.getName().endsWith("jar");
+
         final String result = reflector.reflectStream(declaringClass2)
                 .filter(md -> this.returnTypeFilter(name, isField, onlyPublic, md))
                 .map(md -> {
                     if (isField) {
-                        return md.getReturnType();
+                        return md.getRawReturnType();
                     }
                     MethodDescriptor method = (MethodDescriptor) md;
                     log.trace("found:{} declaringClass:{}", method.rawDeclaration(), declaringClass2);
