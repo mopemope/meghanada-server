@@ -763,7 +763,7 @@ public class JavaParserTest extends GradleTestBase {
             List<MemberDescriptor> result = typeScope.getMemberDescriptors();
             String type = pkg + "." + typeScope.getType();
             assertEquals("meghanada.project.Project", type);
-            assertEquals(61, result.size());
+            assertEquals(65, result.size());
 //            for (MemberDescriptor md : result) {
 //                String typeString = md.getType();
 //                System.out.println(typeString + ":" + md);

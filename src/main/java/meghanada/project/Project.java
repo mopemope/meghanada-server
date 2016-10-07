@@ -28,16 +28,20 @@ public abstract class Project {
     public static final String DEFAULT_PATH = File.separator + "src" + File.separator + "main" + File.separator;
     private static final Logger log = LogManager.getLogger(Project.class);
 
-    private static final String COMPILE_SOURCE_PATH = "compile-source";
-    private static final String COMPILE_TARGET_PATH = "compile-target";
-    private static final String DEPENDENCIES_PATH = "dependencies";
-    private static final String TEST_DEPENDENCIES_PATH = "test-dependencies";
-    private static final String SOURCES_PATH = "sources";
-    private static final String RESOURCES_PATH = "resources";
-    private static final String TEST_SOURCES_PATH = "test-sources";
-    private static final String TEST_RESOURCES_PATH = "test-resources";
-    private static final String OUTPUT_PATH = "output";
-    private static final String TEST_OUTPUT_PATH = "test-output";
+    private static final String JAVA_HOME = "java-home";
+    private static final String JAVA_VERSION = "java-version";
+    private static final String COMPILE_SOURCE = "compile-source";
+    private static final String COMPILE_TARGET = "compile-target";
+    private static final String DEPENDENCIES = "dependencies";
+    private static final String TEST_DEPENDENCIES = "test-dependencies";
+    private static final String SOURCES = "sources";
+    private static final String RESOURCES = "resources";
+    private static final String TEST_SOURCES = "test-sources";
+    private static final String TEST_RESOURCES = "test-resources";
+    private static final String OUTPUT = "output";
+    private static final String TEST_OUTPUT = "test-output";
+    private static final String INCLUDE_FILE = "include-file";
+    private static final String EXCLUDE_FILE = "exclude-file";
 
     protected File projectRoot;
     protected Set<ProjectDependency> dependencies = new HashSet<>();
@@ -350,28 +354,28 @@ public abstract class Project {
         if (configFile.exists()) {
             final com.typesafe.config.Config config = ConfigFactory.parseFile(configFile);
             // java.home
-            if (config.hasPath("java-home")) {
-                String o = config.getString("java-home");
+            if (config.hasPath(JAVA_HOME)) {
+                String o = config.getString(JAVA_HOME);
                 System.setProperty("java.home", o);
             }
             // java.home
-            if (config.hasPath("java-version")) {
-                String o = config.getString("java-version");
+            if (config.hasPath(JAVA_VERSION)) {
+                String o = config.getString(JAVA_VERSION);
                 System.setProperty("java.specification.version", o);
             }
 
             // compile-source
-            if (config.hasPath(COMPILE_SOURCE_PATH)) {
-                this.compileSource = config.getString(COMPILE_SOURCE_PATH);
+            if (config.hasPath(COMPILE_SOURCE)) {
+                this.compileSource = config.getString(COMPILE_SOURCE);
             }
             // compile-source
-            if (config.hasPath(COMPILE_TARGET_PATH)) {
-                this.compileTarget = config.getString(COMPILE_TARGET_PATH);
+            if (config.hasPath(COMPILE_TARGET)) {
+                this.compileTarget = config.getString(COMPILE_TARGET);
             }
 
             // dependencies
-            if (config.hasPath(DEPENDENCIES_PATH)) {
-                config.getStringList(DEPENDENCIES_PATH).stream()
+            if (config.hasPath(DEPENDENCIES)) {
+                config.getStringList(DEPENDENCIES).stream()
                         .filter(path -> new File(path).exists())
                         .map(path -> {
                             final File file = new File(path);
@@ -379,8 +383,8 @@ public abstract class Project {
                         }).forEach(p -> this.dependencies.add(p));
             }
             // test-dependencies
-            if (config.hasPath(TEST_DEPENDENCIES_PATH)) {
-                config.getStringList(TEST_DEPENDENCIES_PATH).stream()
+            if (config.hasPath(TEST_DEPENDENCIES)) {
+                config.getStringList(TEST_DEPENDENCIES).stream()
                         .filter(path -> new File(path).exists())
                         .map(path -> {
                             final File file = new File(path);
@@ -389,60 +393,55 @@ public abstract class Project {
             }
 
             // sources
-            if (config.hasPath(SOURCES_PATH)) {
-                config.getStringList(SOURCES_PATH)
+            if (config.hasPath(SOURCES)) {
+                config.getStringList(SOURCES)
                         .stream()
                         .filter(path -> new File(path).exists())
                         .map(File::new)
                         .forEach(file -> this.sources.add(file));
             }
             // sources
-            if (config.hasPath(RESOURCES_PATH)) {
-                config.getStringList(RESOURCES_PATH)
+            if (config.hasPath(RESOURCES)) {
+                config.getStringList(RESOURCES)
                         .stream()
                         .filter(path -> new File(path).exists())
                         .map(File::new)
                         .forEach(file -> this.resources.add(file));
             }
             // test-sources
-            if (config.hasPath(TEST_SOURCES_PATH)) {
-                config.getStringList(TEST_SOURCES_PATH)
+            if (config.hasPath(TEST_SOURCES)) {
+                config.getStringList(TEST_SOURCES)
                         .stream()
                         .filter(path -> new File(path).exists())
                         .map(File::new)
                         .forEach(file -> this.testSources.add(file));
             }
             // test-resources
-            if (config.hasPath(TEST_RESOURCES_PATH)) {
-                config.getStringList(TEST_RESOURCES_PATH)
+            if (config.hasPath(TEST_RESOURCES)) {
+                config.getStringList(TEST_RESOURCES)
                         .stream()
                         .filter(path -> new File(path).exists())
                         .map(File::new)
                         .forEach(file -> this.testResources.add(file));
             }
             // output
-            if (config.hasPath(OUTPUT_PATH)) {
-                String o = config.getString(OUTPUT_PATH);
+            if (config.hasPath(OUTPUT)) {
+                String o = config.getString(OUTPUT);
                 this.output = new File(o);
             }
             // test-output
-            if (config.hasPath(TEST_OUTPUT_PATH)) {
-                String o = config.getString(TEST_OUTPUT_PATH);
+            if (config.hasPath(TEST_OUTPUT)) {
+                String o = config.getString(TEST_OUTPUT);
                 this.testOutput = new File(o);
             }
 
-            if (config.hasPath("src-filter")) {
-                String o = config.getString("src-filter");
-                System.setProperty("src-filter", o);
-            }
-
             final Config mainConfig = Config.load();
-            if (config.hasPath("include-file")) {
-                final List<String> list = config.getStringList("include-file");
+            if (config.hasPath(INCLUDE_FILE)) {
+                final List<String> list = config.getStringList(INCLUDE_FILE);
                 mainConfig.setIncludeList(list);
             }
-            if (config.hasPath("exclude-file")) {
-                final List<String> list = config.getStringList("exclude-file");
+            if (config.hasPath(EXCLUDE_FILE)) {
+                final List<String> list = config.getStringList(INCLUDE_FILE);
                 mainConfig.setExcludeList(list);
             }
         }

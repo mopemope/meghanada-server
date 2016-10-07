@@ -27,7 +27,6 @@ import static meghanada.utils.FunctionUtils.wrapIO;
 
 public class CacheEventSubscriber extends AbstractSubscriber {
 
-    private static final String SRC_FILTER = "src-filter";
     private static Logger log = LogManager.getLogger(CacheEventSubscriber.class);
 
     public CacheEventSubscriber(SessionEventBus sessionEventBus) {
@@ -100,14 +99,6 @@ public class CacheEventSubscriber extends AbstractSubscriber {
     }
 
     private boolean parseFile(final File file) throws ExecutionException, IOException {
-        final String srcFilter = System.getProperty(SRC_FILTER);
-        if (srcFilter != null) {
-            final String path = file.getCanonicalPath();
-            if (!path.matches(srcFilter)) {
-                // skip
-                return false;
-            }
-        }
         final Session session = this.sessionEventBus.getSession();
         session.getSourceCache().get(file);
         return true;
