@@ -136,6 +136,13 @@ public class GradleProject extends Project {
                 this.dependencies.addAll(dependMap.get(projectName));
             }
 
+            if (this.sources.isEmpty()) {
+                this.sources.add(new File("src/main/java"));
+            }
+            if (this.testSources.isEmpty()) {
+                this.testSources.add(new File("src/test/java"));
+            }
+
             log.debug("sources {}", this.sources);
             log.debug("resources {}", this.resources);
             log.debug("output {}", this.output);
