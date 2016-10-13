@@ -12,13 +12,12 @@ import java.util.Optional;
 
 public class ClassIndex implements CandidateUnit, Serializable {
 
-    private static final long serialVersionUID = -3047315151468869897L;
-
     // fqcn
     public String declaration;
     public List<String> typeParameters;
     public List<String> supers;
     public boolean isInterface;
+    public boolean isAnnotation;
     public boolean functional;
     public String name;
 

@@ -140,6 +140,17 @@ public class JavaCompletionTest extends GradleTestBase {
         assertEquals(units.size(), 1);
     }
 
+    @Test
+    public void testCompletion10() throws Exception {
+        JavaCompletion completion = getCompletion1();
+        File file = new File("./src/test/java/meghanada/TopClass.java");
+        final Collection<? extends CandidateUnit> units = debugIt(() -> {
+            return completion.completionAt(file, 8, 9, "@Test");
+        });
+        units.forEach(a -> System.out.println(a.getDeclaration()));
+        assertEquals(units.size(), 18);
+    }
+
     private JavaCompletion getCompletion1() throws Exception {
         return new JavaCompletion(CacheBuilder.newBuilder()
                 .maximumSize(256)

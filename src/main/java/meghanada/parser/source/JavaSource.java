@@ -318,7 +318,7 @@ public class JavaSource {
         log.debug("unknown class:{} ", this.unknownClass);
         for (String clazzName : this.unknownClass) {
             log.debug("search unknown {} ...", clazzName);
-            Collection<? extends CandidateUnit> findUnits = reflector.searchClasses(clazzName, false);
+            Collection<? extends CandidateUnit> findUnits = reflector.searchClasses(clazzName, false, false);
             log.debug("find CandidateUnit {}", findUnits);
 
             if (findUnits.size() == 0) {

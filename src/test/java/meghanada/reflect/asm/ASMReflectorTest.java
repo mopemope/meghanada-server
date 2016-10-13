@@ -5,6 +5,7 @@ import meghanada.GradleTestBase;
 import meghanada.reflect.ClassIndex;
 import meghanada.reflect.MemberDescriptor;
 import meghanada.reflect.MethodDescriptor;
+import org.junit.Test;
 
 import java.io.File;
 import java.util.List;
@@ -17,13 +18,13 @@ import static org.junit.Assert.assertNotNull;
 
 public class ASMReflectorTest extends GradleTestBase {
 
-    @org.junit.Test
+    @Test
     public void testGetInstance() throws Exception {
         ASMReflector asmReflector = ASMReflector.getInstance();
         assertNotNull(asmReflector);
     }
 
-    @org.junit.Test
+    @Test
     public void testGetClasses1() throws Exception {
         File jar = getJar("junit");
         ASMReflector asmReflector = ASMReflector.getInstance();
@@ -32,7 +33,7 @@ public class ASMReflectorTest extends GradleTestBase {
 //        classIndex.forEach((classIndex1, file) -> System.out.println(classIndex1));
     }
 
-    @org.junit.Test
+    @Test
     public void testGetClasses2() throws Exception {
         File jar = getRTJar();
         ASMReflector asmReflector = ASMReflector.getInstance();
@@ -41,7 +42,7 @@ public class ASMReflectorTest extends GradleTestBase {
 //        classIndex.forEach((classIndex1, file) -> System.out.println(classIndex1));
     }
 
-    @org.junit.Test
+    @Test
     public void testReflectInner1() throws Exception {
         ASMReflector asmReflector = ASMReflector.getInstance();
         Stopwatch stopwatch = Stopwatch.createUnstarted();
@@ -59,7 +60,7 @@ public class ASMReflectorTest extends GradleTestBase {
         }
     }
 
-    @org.junit.Test
+    @Test
     public void testReflectInner2() throws Exception {
         ASMReflector asmReflector = ASMReflector.getInstance();
         Stopwatch stopwatch = Stopwatch.createUnstarted();
@@ -82,7 +83,7 @@ public class ASMReflectorTest extends GradleTestBase {
 
     }
 
-    @org.junit.Test
+    @Test
     public void testReflectWithGenerics1() throws Exception {
         ASMReflector asmReflector = ASMReflector.getInstance();
         Stopwatch stopwatch = Stopwatch.createUnstarted();
@@ -113,7 +114,7 @@ public class ASMReflectorTest extends GradleTestBase {
         }
     }
 
-    @org.junit.Test
+    @Test
     public void testReflectWithGenerics2() throws Exception {
         ASMReflector asmReflector = ASMReflector.getInstance();
         Stopwatch stopwatch = Stopwatch.createUnstarted();
@@ -133,7 +134,7 @@ public class ASMReflectorTest extends GradleTestBase {
         }
     }
 
-    @org.junit.Test
+    @Test
     public void testReflectWithGenerics3() throws Exception {
         ASMReflector asmReflector = ASMReflector.getInstance();
         Stopwatch stopwatch = Stopwatch.createUnstarted();
@@ -153,7 +154,7 @@ public class ASMReflectorTest extends GradleTestBase {
         }
     }
 
-    @org.junit.Test
+    @Test
     public void testReflectWithGenerics4() throws Exception {
         ASMReflector asmReflector = ASMReflector.getInstance();
         Stopwatch stopwatch = Stopwatch.createUnstarted();
@@ -175,7 +176,7 @@ public class ASMReflectorTest extends GradleTestBase {
         }
     }
 
-    @org.junit.Test
+    @Test
     public void testReflectAll1() throws Exception {
         ASMReflector asmReflector = ASMReflector.getInstance();
         Stopwatch stopwatch = Stopwatch.createUnstarted();
@@ -202,7 +203,7 @@ public class ASMReflectorTest extends GradleTestBase {
         }
     }
 
-    @org.junit.Test
+    @Test
     public void testReflectAll2() throws Exception {
         ASMReflector asmReflector = ASMReflector.getInstance();
         Stopwatch stopwatch = Stopwatch.createUnstarted();
@@ -220,7 +221,7 @@ public class ASMReflectorTest extends GradleTestBase {
         }
     }
 
-    @org.junit.Test
+    @Test
     public void testReflectAll3() throws Exception {
         ASMReflector asmReflector = ASMReflector.getInstance();
         {
@@ -241,7 +242,7 @@ public class ASMReflectorTest extends GradleTestBase {
         }
     }
 
-    @org.junit.Test
+    @Test
     public void testReflectAll4() throws Exception {
         ASMReflector asmReflector = ASMReflector.getInstance();
         Stopwatch stopwatch = Stopwatch.createUnstarted();
@@ -261,7 +262,7 @@ public class ASMReflectorTest extends GradleTestBase {
 
     }
 
-    @org.junit.Test
+    @Test
     public void testReflectAll5() throws Exception {
         ASMReflector asmReflector = ASMReflector.getInstance();
         Stopwatch stopwatch = Stopwatch.createUnstarted();
@@ -286,7 +287,7 @@ public class ASMReflectorTest extends GradleTestBase {
         }
     }
 
-    @org.junit.Test
+    @Test
     public void testReflectAll6() throws Exception {
         ASMReflector asmReflector = ASMReflector.getInstance();
         Stopwatch stopwatch = Stopwatch.createUnstarted();
@@ -309,7 +310,7 @@ public class ASMReflectorTest extends GradleTestBase {
         }
     }
 
-    @org.junit.Test
+    @Test
     public void testReflectAll7() throws Exception {
         ASMReflector asmReflector = ASMReflector.getInstance();
         Stopwatch stopwatch = Stopwatch.createUnstarted();
@@ -332,7 +333,7 @@ public class ASMReflectorTest extends GradleTestBase {
         }
     }
 
-    @org.junit.Test
+    @Test
     public void testReflectAll8() throws Exception {
         final ASMReflector asmReflector = ASMReflector.getInstance();
         final File file = getTestOutputDir();
@@ -348,7 +349,7 @@ public class ASMReflectorTest extends GradleTestBase {
         });
     }
 
-    @org.junit.Test
+    @Test
     public void testGetReflectClass1() throws Exception {
         ASMReflector asmReflector = ASMReflector.getInstance();
         Stopwatch stopwatch = Stopwatch.createUnstarted();
@@ -364,7 +365,7 @@ public class ASMReflectorTest extends GradleTestBase {
         }
     }
 
-    @org.junit.Test
+    @Test
     public void testGetReflectClass2() throws Exception {
         ASMReflector asmReflector = ASMReflector.getInstance();
         Stopwatch stopwatch = Stopwatch.createUnstarted();
@@ -387,7 +388,7 @@ public class ASMReflectorTest extends GradleTestBase {
         }
     }
 
-    @org.junit.Test
+    @Test
     public void testReflectInterface1() throws Exception {
         ASMReflector asmReflector = ASMReflector.getInstance();
         Stopwatch stopwatch = Stopwatch.createUnstarted();
@@ -405,6 +406,33 @@ public class ASMReflectorTest extends GradleTestBase {
                 System.out.println("Return: " + m.getRawReturnType());
             });
             assertEquals(1, memberDescriptors.size());
+            stopwatch.reset();
+        }
+    }
+
+    @Test
+    public void testReflectAnnotation1() throws Exception {
+        ASMReflector asmReflector = ASMReflector.getInstance();
+        Stopwatch stopwatch = Stopwatch.createUnstarted();
+        {
+            String fqcn = "org.junit.Test";
+            File jar = getJar("junit");
+            stopwatch.start();
+            List<MemberDescriptor> memberDescriptors = timeIt(() -> {
+                Map<ClassIndex, File> index = asmReflector.getClasses(jar);
+                index.keySet().forEach(classIndex -> {
+                    if (classIndex.isAnnotation) {
+                        System.out.println(classIndex);
+                    }
+                });
+                final InheritanceInfo info = asmReflector.getReflectInfo(index, fqcn);
+                return asmReflector.reflectAll(info);
+            });
+            System.out.println(stopwatch.stop());
+            memberDescriptors.forEach(m -> {
+                System.out.println(m.getDeclaration());
+            });
+            assertEquals(2, memberDescriptors.size());
             stopwatch.reset();
         }
     }

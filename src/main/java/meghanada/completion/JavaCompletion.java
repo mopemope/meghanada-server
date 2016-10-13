@@ -39,12 +39,24 @@ public class JavaCompletion {
                 // special command
                 return this.specialCompletion(source, line, column, prefix);
             }
+            if (prefix.startsWith("@")) {
+                return this.annotationCompletion(source, line, column, prefix);
+            }
             // search symbol
             return this.completionSymbols(source, line, prefix);
         } catch (Exception e) {
             log.error(e.getMessage(), e);
             return Collections.emptyList();
         }
+    }
+
+    private Collection<? extends CandidateUnit> annotationCompletion(final JavaSource source, final int line, final int column, final String prefix) {
+        final boolean useFuzzySearch = Config.load().useClassFuzzySearch();
+        String classPrefix = prefix.substring(1);
+        if (useFuzzySearch) {
+            return CachedASMReflector.getInstance().fuzzySearchAnnotations(classPrefix.toLowerCase());
+        }
+        return CachedASMReflector.getInstance().searchAnnotaions(classPrefix.toLowerCase());
     }
 
     private List<MemberDescriptor> doReflect(String fqcn) {

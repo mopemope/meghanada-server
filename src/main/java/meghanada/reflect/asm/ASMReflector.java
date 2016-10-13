@@ -202,6 +202,8 @@ class ASMReflector {
         final boolean isProtected = (Opcodes.ACC_PROTECTED & access) == Opcodes.ACC_PROTECTED;
 
         final boolean isInterface = (Opcodes.ACC_INTERFACE & access) == Opcodes.ACC_INTERFACE;
+        final boolean isAnnotation = (Opcodes.ACC_ANNOTATION & access) == Opcodes.ACC_ANNOTATION;
+
         boolean isSuper = false;
 
         if (allowSuper) {
@@ -212,6 +214,7 @@ class ASMReflector {
             classReader.accept(classAnalyzeVisitor, 0);
             final ClassIndex classIndex = classAnalyzeVisitor.getClassIndex();
             classIndex.isInterface = isInterface;
+            classIndex.isAnnotation = isAnnotation;
             indexes.put(classIndex, file);
         } else {
             if (isPublic || isProtected || isSuper) {
@@ -219,6 +222,7 @@ class ASMReflector {
                 classReader.accept(classAnalyzeVisitor, 0);
                 final ClassIndex classIndex = classAnalyzeVisitor.getClassIndex();
                 classIndex.isInterface = isInterface;
+                classIndex.isAnnotation = isAnnotation;
                 indexes.put(classIndex, file);
             }
         }

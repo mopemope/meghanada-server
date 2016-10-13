@@ -215,10 +215,21 @@ public class CachedASMReflector {
     }
 
     public Collection<? extends CandidateUnit> fuzzySearchClasses(final String keyword) {
+        return this.fuzzySearchClasses(keyword, false);
+    }
+
+    public Collection<? extends CandidateUnit> fuzzySearchAnnotations(final String keyword) {
+        return this.fuzzySearchClasses(keyword, true);
+    }
+
+    public Collection<? extends CandidateUnit> fuzzySearchClasses(final String keyword, final boolean anno) {
         final int length = keyword.length() + 1;
         return this.globalClassIndex.values()
                 .stream()
                 .filter(classIndex -> {
+                    if (anno && !classIndex.isAnnotation) {
+                        return false;
+                    }
                     final String name = classIndex.getName();
                     final int score = StringUtils.getFuzzyDistance(name, keyword, Locale.ENGLISH);
                     return score >= length;
@@ -235,13 +246,22 @@ public class CachedASMReflector {
     }
 
     public Collection<? extends CandidateUnit> searchClasses(final String keyword) {
-        return this.searchClasses(keyword, true);
+        return this.searchClasses(keyword, true, false);
     }
 
-    public Collection<? extends CandidateUnit> searchClasses(final String keyword, final boolean partial) {
+    public Collection<? extends CandidateUnit> searchAnnotaions(final String keyword) {
+        return this.searchClasses(keyword, true, true);
+    }
+
+    public Collection<? extends CandidateUnit> searchClasses(final String keyword, final boolean partial, final boolean anno) {
         return this.globalClassIndex.values()
                 .stream()
-                .filter(classIndex -> this.containsKeyword(keyword, partial, classIndex))
+                .filter(classIndex -> {
+                    if (anno && !classIndex.isAnnotation) {
+                        return false;
+                    }
+                    return this.containsKeyword(keyword, partial, classIndex);
+                })
                 .collect(Collectors.toList());
     }
 
