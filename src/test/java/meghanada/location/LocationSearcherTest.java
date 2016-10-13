@@ -21,7 +21,7 @@ public class LocationSearcherTest extends GradleTestBase {
     public static void beforeClass() throws Exception {
         GradleTestBase.setupReflector();
         CachedASMReflector cachedASMReflector = CachedASMReflector.getInstance();
-        cachedASMReflector.addDirectory(getOutputDir());
+        cachedASMReflector.addClasspath(getOutputDir());
         cachedASMReflector.createClassIndexes();
     }
 

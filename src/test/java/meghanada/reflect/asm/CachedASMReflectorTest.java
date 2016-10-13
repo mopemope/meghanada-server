@@ -239,7 +239,7 @@ public class CachedASMReflectorTest extends GradleTestBase {
     @Test
     public void testLocalReflect1() throws Exception {
         CachedASMReflector cachedASMReflector = CachedASMReflector.getInstance();
-        cachedASMReflector.addDirectory(getOutputDir());
+        cachedASMReflector.addClasspath(getOutputDir());
         cachedASMReflector.createClassIndexes();
 
         {
@@ -254,7 +254,7 @@ public class CachedASMReflectorTest extends GradleTestBase {
     @Test
     public void testLocalReflect2() throws Exception {
         CachedASMReflector cachedASMReflector = CachedASMReflector.getInstance();
-        cachedASMReflector.addDirectory(getOutputDir());
+        cachedASMReflector.addClasspath(getOutputDir());
         cachedASMReflector.createClassIndexes();
 
         {
@@ -269,7 +269,7 @@ public class CachedASMReflectorTest extends GradleTestBase {
     @Test
     public void testLocalReflect3() throws Exception {
         CachedASMReflector cachedASMReflector = CachedASMReflector.getInstance();
-        cachedASMReflector.addDirectory(getOutputDir());
+        cachedASMReflector.addClasspath(getOutputDir());
         cachedASMReflector.createClassIndexes();
 
         {
@@ -284,7 +284,7 @@ public class CachedASMReflectorTest extends GradleTestBase {
     @Test
     public void testLocalReflect4() throws Exception {
         CachedASMReflector cachedASMReflector = CachedASMReflector.getInstance();
-        cachedASMReflector.addDirectory(getOutputDir());
+        cachedASMReflector.addClasspath(getOutputDir());
         cachedASMReflector.createClassIndexes();
 
         {
@@ -299,7 +299,7 @@ public class CachedASMReflectorTest extends GradleTestBase {
     @Test
     public void testLocalReflect5() throws Exception {
         CachedASMReflector cachedASMReflector = CachedASMReflector.getInstance();
-        cachedASMReflector.addDirectory(getOutputDir());
+        cachedASMReflector.addClasspath(getOutputDir());
         cachedASMReflector.createClassIndexes();
 
         {
@@ -315,7 +315,7 @@ public class CachedASMReflectorTest extends GradleTestBase {
     @Test
     public void testLocalReflect6() throws Exception {
         CachedASMReflector cachedASMReflector = CachedASMReflector.getInstance();
-        cachedASMReflector.addDirectory(getOutputDir());
+        cachedASMReflector.addClasspath(getOutputDir());
         cachedASMReflector.createClassIndexes();
 
         {
@@ -330,8 +330,8 @@ public class CachedASMReflectorTest extends GradleTestBase {
     @Test
     public void testLocalReflect7() throws Exception {
         CachedASMReflector cachedASMReflector = CachedASMReflector.getInstance();
-        cachedASMReflector.addDirectory(getOutputDir());
-        cachedASMReflector.addDirectory(getTestOutputDir());
+        cachedASMReflector.addClasspath(getOutputDir());
+        cachedASMReflector.addClasspath(getTestOutputDir());
         cachedASMReflector.createClassIndexes();
 
         {
@@ -347,8 +347,8 @@ public class CachedASMReflectorTest extends GradleTestBase {
     @Test
     public void testLocalReflect8() throws Exception {
         CachedASMReflector cachedASMReflector = CachedASMReflector.getInstance();
-        cachedASMReflector.addDirectory(getOutputDir());
-        cachedASMReflector.addDirectory(getTestOutputDir());
+        cachedASMReflector.addClasspath(getOutputDir());
+        cachedASMReflector.addClasspath(getTestOutputDir());
         cachedASMReflector.createClassIndexes();
         String fqcn = "meghanada.Gen3<Long>";
         List<MemberDescriptor> memberDescriptors = timeIt(() -> cachedASMReflector.reflect(fqcn));
@@ -361,8 +361,8 @@ public class CachedASMReflectorTest extends GradleTestBase {
     @Test
     public void testLocalReflect9() throws Exception {
         CachedASMReflector cachedASMReflector = CachedASMReflector.getInstance();
-        cachedASMReflector.addDirectory(getOutputDir());
-        cachedASMReflector.addDirectory(getTestOutputDir());
+        cachedASMReflector.addClasspath(getOutputDir());
+        cachedASMReflector.addClasspath(getTestOutputDir());
         cachedASMReflector.createClassIndexes();
 
         {
@@ -386,8 +386,8 @@ public class CachedASMReflectorTest extends GradleTestBase {
     @Test
     public void testLocalReflect10() throws Exception {
         CachedASMReflector cachedASMReflector = CachedASMReflector.getInstance();
-        cachedASMReflector.addDirectory(getOutputDir());
-        cachedASMReflector.addDirectory(getTestOutputDir());
+        cachedASMReflector.addClasspath(getOutputDir());
+        cachedASMReflector.addClasspath(getTestOutputDir());
         cachedASMReflector.createClassIndexes();
 
         {
@@ -411,7 +411,7 @@ public class CachedASMReflectorTest extends GradleTestBase {
     @Test
     public void testLocalInterface1() throws Exception {
         CachedASMReflector cachedASMReflector = CachedASMReflector.getInstance();
-        cachedASMReflector.addDirectory(getOutputDir());
+        cachedASMReflector.addClasspath(getOutputDir());
         cachedASMReflector.createClassIndexes();
 
         {
@@ -426,7 +426,7 @@ public class CachedASMReflectorTest extends GradleTestBase {
     @Test
     public void testLocalInterface2() throws Exception {
         CachedASMReflector cachedASMReflector = CachedASMReflector.getInstance();
-        cachedASMReflector.addDirectory(getOutputDir());
+        cachedASMReflector.addClasspath(getOutputDir());
         cachedASMReflector.createClassIndexes();
 
         {

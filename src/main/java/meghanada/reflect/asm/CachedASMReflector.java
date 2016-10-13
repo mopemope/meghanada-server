@@ -86,16 +86,16 @@ public class CachedASMReflector {
         return kryoPool;
     }
 
-    public void addJars(final Collection<File> depends) {
-        this.jars.addAll(depends);
+    public void addClasspath(final Collection<File> depends) {
+        depends.forEach(this::addClasspath);
     }
 
-    public void addJar(final File dep) {
-        this.jars.add(dep);
-    }
-
-    public void addDirectory(final File f) {
-        this.directories.add(f);
+    public void addClasspath(final File dep) {
+        if (dep.isDirectory()) {
+            this.directories.add(dep);
+        } else {
+            this.jars.add(dep);
+        }
     }
 
     public Map<String, ClassIndex> getGlobalClassIndex() {

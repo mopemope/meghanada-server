@@ -50,9 +50,9 @@ public class CacheEventSubscriber extends AbstractSubscriber {
             return true;
         });
 
-        reflector.addJars(session.getDependentJars());
-        reflector.addDirectory(project.getOutputDirectory());
-        reflector.addDirectory(project.getTestOutputDirectory());
+        reflector.addClasspath(session.getDependentJars());
+        reflector.addClasspath(project.getOutputDirectory());
+        reflector.addClasspath(project.getTestOutputDirectory());
 
         final Stopwatch stopwatch = Stopwatch.createStarted();
         reflector.createClassIndexes();

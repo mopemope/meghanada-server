@@ -25,7 +25,7 @@ public class TestRunner {
 
     public TestRunner() throws IOException {
         CachedASMReflector cachedASMReflector = CachedASMReflector.getInstance();
-        cachedASMReflector.addJar(new File("./"));
+        cachedASMReflector.addClasspath(new File("./"));
         cachedASMReflector.createClassIndexes();
     }
 

@@ -23,8 +23,8 @@ public class JavaCompletionTest extends GradleTestBase {
     public static void beforeClass() throws Exception {
         GradleTestBase.setupReflector();
         CachedASMReflector cachedASMReflector = CachedASMReflector.getInstance();
-        cachedASMReflector.addDirectory(getOutputDir());
-        cachedASMReflector.addDirectory(getTestOutputDir());
+        cachedASMReflector.addClasspath(getOutputDir());
+        cachedASMReflector.addClasspath(getTestOutputDir());
         cachedASMReflector.createClassIndexes();
     }
 

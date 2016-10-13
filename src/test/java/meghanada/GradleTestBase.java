@@ -36,8 +36,8 @@ public class GradleTestBase {
     protected static void setupReflector() throws Exception {
         GradleTestBase.setupProject();
         CachedASMReflector cachedASMReflector = CachedASMReflector.getInstance();
-        cachedASMReflector.addJars(getSystemJars());
-        cachedASMReflector.addJars(getJars());
+        cachedASMReflector.addClasspath(getSystemJars());
+        cachedASMReflector.addClasspath(getJars());
         final Stopwatch stopwatch = Stopwatch.createStarted();
         cachedASMReflector.createClassIndexes();
         System.out.println("createClassIndexes elapsed:" + stopwatch.stop());

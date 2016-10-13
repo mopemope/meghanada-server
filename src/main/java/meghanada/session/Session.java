@@ -282,7 +282,7 @@ public class Session {
 
         // load once
         final CachedASMReflector reflector = CachedASMReflector.getInstance();
-        reflector.addJars(Session.getSystemJars());
+        reflector.addClasspath(Session.getSystemJars());
 
         this.sessionEventBus.requestClassCache();
 

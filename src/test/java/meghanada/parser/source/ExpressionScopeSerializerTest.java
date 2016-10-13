@@ -22,7 +22,7 @@ public class ExpressionScopeSerializerTest extends GradleTestBase {
     public static void beforeClass() throws Exception {
         GradleTestBase.setupReflector();
         CachedASMReflector cachedASMReflector = CachedASMReflector.getInstance();
-        cachedASMReflector.addDirectory(getOutputDir());
+        cachedASMReflector.addClasspath(getOutputDir());
         cachedASMReflector.createClassIndexes();
     }
 
@@ -95,7 +95,7 @@ public class ExpressionScopeSerializerTest extends GradleTestBase {
 
         final MethodCallSymbol mcs = new MethodCallSymbol("scope", "methodName", r2, r3, "declaringClass");
         mcs.returnType = "java.util.List";
-        
+
         expressionScope.addMethodCall(mcs);
 
         System.out.println(expressionScope);
