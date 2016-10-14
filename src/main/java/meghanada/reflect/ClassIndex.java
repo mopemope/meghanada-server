@@ -10,7 +10,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
-public class ClassIndex implements CandidateUnit, Serializable {
+public class ClassIndex implements CandidateUnit, Serializable, Cloneable {
+
+    private static final long serialVersionUID = 4643906658266028478L;
 
     // fqcn
     public String declaration;
@@ -125,6 +127,17 @@ public class ClassIndex implements CandidateUnit, Serializable {
                     .map(classIndex -> classIndex.isImplements(fqcn)).orElse(false);
         }).findFirst();
         return result.isPresent();
+    }
+
+    @Override
+    public synchronized ClassIndex clone() {
+        final ClassIndex ci;
+        try {
+            ci = (ClassIndex) super.clone();
+        } catch (CloneNotSupportedException e) {
+            throw new UnsupportedOperationException(e);
+        }
+        return ci;
     }
 
 }

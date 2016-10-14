@@ -53,10 +53,21 @@ public class JavaCompletion {
     private Collection<? extends CandidateUnit> annotationCompletion(final JavaSource source, final int line, final int column, final String prefix) {
         final boolean useFuzzySearch = Config.load().useClassFuzzySearch();
         String classPrefix = prefix.substring(1);
+        List<ClassIndex> result;
         if (useFuzzySearch) {
-            return CachedASMReflector.getInstance().fuzzySearchAnnotations(classPrefix.toLowerCase());
+            result = CachedASMReflector
+                    .getInstance()
+                    .fuzzySearchAnnotations(classPrefix.toLowerCase());
+
+        } else {
+            result = CachedASMReflector
+                    .getInstance()
+                    .searchAnnotations(classPrefix.toLowerCase());
         }
-        return CachedASMReflector.getInstance().searchAnnotaions(classPrefix.toLowerCase());
+        result.forEach(classIndex -> {
+            classIndex.name = "@" + classIndex.name;
+        });
+        return result;
     }
 
     private List<MemberDescriptor> doReflect(String fqcn) {

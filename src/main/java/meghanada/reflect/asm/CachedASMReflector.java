@@ -214,15 +214,15 @@ public class CachedASMReflector {
         return result;
     }
 
-    public Collection<? extends CandidateUnit> fuzzySearchClasses(final String keyword) {
+    public List<ClassIndex> fuzzySearchClasses(final String keyword) {
         return this.fuzzySearchClasses(keyword, false);
     }
 
-    public Collection<? extends CandidateUnit> fuzzySearchAnnotations(final String keyword) {
+    public List<ClassIndex> fuzzySearchAnnotations(final String keyword) {
         return this.fuzzySearchClasses(keyword, true);
     }
 
-    public Collection<? extends CandidateUnit> fuzzySearchClasses(final String keyword, final boolean anno) {
+    public List<ClassIndex> fuzzySearchClasses(final String keyword, final boolean anno) {
         final int length = keyword.length() + 1;
         return this.globalClassIndex.values()
                 .stream()
@@ -234,26 +234,28 @@ public class CachedASMReflector {
                     final int score = StringUtils.getFuzzyDistance(name, keyword, Locale.ENGLISH);
                     return score >= length;
                 })
+                .map(ClassIndex::clone)
                 .collect(Collectors.toList());
     }
 
-    public Collection<? extends CandidateUnit> searchInnerClasses(final String parent) {
+    public List<ClassIndex> searchInnerClasses(final String parent) {
         return this.globalClassIndex
                 .values()
                 .stream()
                 .filter(classIndex -> classIndex.getReturnType().startsWith(parent + "$"))
+                .map(ClassIndex::clone)
                 .collect(Collectors.toList());
     }
 
-    public Collection<? extends CandidateUnit> searchClasses(final String keyword) {
+    public List<ClassIndex> searchClasses(final String keyword) {
         return this.searchClasses(keyword, true, false);
     }
 
-    public Collection<? extends CandidateUnit> searchAnnotaions(final String keyword) {
+    public List<ClassIndex> searchAnnotations(final String keyword) {
         return this.searchClasses(keyword, true, true);
     }
 
-    public Collection<? extends CandidateUnit> searchClasses(final String keyword, final boolean partial, final boolean anno) {
+    public List<ClassIndex> searchClasses(final String keyword, final boolean partial, final boolean anno) {
         return this.globalClassIndex.values()
                 .stream()
                 .filter(classIndex -> {
@@ -262,6 +264,7 @@ public class CachedASMReflector {
                     }
                     return this.containsKeyword(keyword, partial, classIndex);
                 })
+                .map(ClassIndex::clone)
                 .collect(Collectors.toList());
     }
 
