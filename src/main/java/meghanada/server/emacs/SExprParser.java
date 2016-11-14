@@ -118,6 +118,7 @@ class SExprParser {
 
         Iterator<SExpr> iterator();
 
+        @SuppressWarnings("unchecked")
         <T> T value();
 
 
@@ -198,6 +199,7 @@ class SExprParser {
             return new AtomSymbol(value);
         }
 
+        @Override
         public boolean isAtom() {
             return true;
         }
@@ -212,6 +214,7 @@ class SExprParser {
             throw new UnsupportedOperationException("is atom");
         }
 
+        @Override
         public Iterator<SExpr> iterator() {
             throw new UnsupportedOperationException("is atom");
         }

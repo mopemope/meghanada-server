@@ -12,10 +12,10 @@ public class Gen2<V> {
     }
 
     static class Entry<V> {
-        public V value;
+        public V value2;
 
         public Entry(V v) {
-            this.value = value;
+            this.value2 = v;
         }
     }
 }

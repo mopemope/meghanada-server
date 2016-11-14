@@ -25,10 +25,10 @@ public class GradleTestBase {
         // System.setProperty("log-level", "DEBUG");
 
         if (project == null) {
-            project = new GradleProject(new File("./").getCanonicalFile());
-            project.parseProject();
             String tmp = System.getProperty("java.io.tmpdir");
             System.setProperty("project-cache-dir", new File(tmp, "meghanada/cache").getCanonicalPath());
+            project = new GradleProject(new File("./").getCanonicalFile());
+            project.parseProject();
         }
         Config.load();
     }
@@ -61,7 +61,7 @@ public class GradleTestBase {
         return new File(Config.load().getJavaHomeDir(), "/lib/rt.jar");
     }
 
-    private static Set<File> getJars() {
+    protected static Set<File> getJars() {
         return project.getDependencies()
                 .stream()
                 .map(ProjectDependency::getFile)

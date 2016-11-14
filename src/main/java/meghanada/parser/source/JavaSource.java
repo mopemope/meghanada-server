@@ -124,7 +124,7 @@ public class JavaSource {
         if (scope != null) {
             Collection<MethodCallSymbol> symbols = scope.getMethodCallSymbols(line);
             int size = symbols.size();
-            log.trace("symbols:{}", symbols);
+            log.trace("variables:{}", symbols);
             if (onlyName) {
                 for (MethodCallSymbol methodCallSymbol : symbols) {
                     if (methodCallSymbol.nameContains(col)) {

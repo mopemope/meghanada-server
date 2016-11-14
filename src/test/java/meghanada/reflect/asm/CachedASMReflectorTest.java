@@ -44,11 +44,17 @@ public class CachedASMReflectorTest extends GradleTestBase {
     @Test
     public void testSearchClasses() throws Exception {
         CachedASMReflector cachedASMReflector = CachedASMReflector.getInstance();
+        boolean isOpenJDK = System.getProperty("java.home").contains("openjdk");
+
         Stopwatch stopwatch = Stopwatch.createStarted();
         Collection<? extends CandidateUnit> candidateUnits = cachedASMReflector.searchClasses("map");
         System.out.println(stopwatch.stop());
         // candidateUnits.forEach(u -> System.out.println(u.getDeclaration()));
-        assertEquals(239, candidateUnits.size());
+        if (isOpenJDK) {
+            assertEquals(217, candidateUnits.size());
+        } else {
+            assertEquals(237, candidateUnits.size());
+        }
     }
 
     @Test
@@ -135,7 +141,7 @@ public class CachedASMReflectorTest extends GradleTestBase {
             String fqcn = "com.google.common.collect.FluentIterable<String>";
             List<MemberDescriptor> memberDescriptors = cachedASMReflector.reflect(fqcn);
             memberDescriptors.forEach(md -> System.out.println(md.getDisplayDeclaration()));
-            assertEquals(48, memberDescriptors.size());
+            assertEquals(56, memberDescriptors.size());
         }
     }
 
@@ -159,7 +165,7 @@ public class CachedASMReflectorTest extends GradleTestBase {
             String fqcn = "com.google.common.base.Joiner";
             List<MemberDescriptor> memberDescriptors = cachedASMReflector.reflect(fqcn);
             memberDescriptors.forEach(md -> System.out.println(md.getDisplayDeclaration()));
-            assertEquals(30, memberDescriptors.size());
+            assertEquals(31, memberDescriptors.size());
         }
     }
 

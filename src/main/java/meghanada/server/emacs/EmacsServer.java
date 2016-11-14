@@ -22,6 +22,7 @@ import static com.leacox.motif.MatchesExact.eq;
 import static com.leacox.motif.Motif.match;
 import static com.leacox.motif.cases.ListConsCases.headNil;
 import static com.leacox.motif.cases.ListConsCases.headTail;
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class EmacsServer implements Server {
 
@@ -87,8 +88,8 @@ public class EmacsServer implements Server {
     private void acceptConnection(final Socket conn) {
 
         this.executorService.submit(() -> {
-            try (BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
-                 BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(conn.getOutputStream()))) {
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream(), UTF_8));
+                 BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(conn.getOutputStream(), UTF_8))) {
 
                 final CommandHandler handler = new CommandHandler(session, writer, getOutputFormatter());
                 boolean start = true;

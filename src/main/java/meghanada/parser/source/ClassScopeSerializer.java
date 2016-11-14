@@ -73,7 +73,7 @@ public class ClassScopeSerializer extends Serializer<ClassScope> {
             kryo.writeClassAndObject(output, bs);
         }
 
-        // 10. fieldSymbols
+        // 10. variables
         final Collection<Variable> values = scope.fieldSymbols.values();
         output.writeInt(values.size(), true);
         for (final Variable v : values) {
@@ -193,7 +193,7 @@ public class ClassScopeSerializer extends Serializer<ClassScope> {
             scope.innerScopes.add(blockScope);
         }
 
-        // 10. fieldSymbols
+        // 10. variables
         final int fieldSize = input.readInt(true);
         for (int i = 0; i < fieldSize; i++) {
             final Variable v = (Variable) kryo.readClassAndObject(input);

@@ -160,7 +160,7 @@ class FQCNResolver {
         log.traceEntry("name={}", name);
         final Optional<TypeScope> currentType = source.getCurrentType();
         if (name.equals("super")
-            && (currentType.isPresent() && currentType.get() instanceof ClassScope)) {
+                && (currentType.isPresent() && currentType.get() instanceof ClassScope)) {
 
             final ClassScope classScope = (ClassScope) currentType.get();
             final List<String> supers = classScope.getExtendsClasses();

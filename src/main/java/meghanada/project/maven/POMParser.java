@@ -9,10 +9,13 @@ import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
 import org.codehaus.plexus.util.xml.Xpp3Dom;
 import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
 
+import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.util.Properties;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 class POMParser {
     private static Logger log = LogManager.getLogger(POMParser.class);
@@ -29,7 +32,7 @@ class POMParser {
             if (!pom.isAbsolute()) {
                 pom = pom.getCanonicalFile();
             }
-            try (FileReader reader = new FileReader(pom)) {
+            try (BufferedReader reader = Files.newBufferedReader(pom.toPath(), UTF_8)) {
                 final POMInfo pomInfo = new POMInfo(pom.getParent());
 
                 final MavenXpp3Reader xpp3Reader = new MavenXpp3Reader();

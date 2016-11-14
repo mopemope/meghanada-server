@@ -92,7 +92,7 @@ public class CacheEventSubscriber extends AbstractSubscriber {
             } catch (Exception e) {
                 log.catching(e);
             } finally {
-                log.info("analyze {} / {}", count.get(), size);
+                log.info("analyzeCompilationUnitTree {} / {}", count.get(), size);
             }
         });
 

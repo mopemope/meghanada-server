@@ -225,7 +225,7 @@ public class Config {
     }
 
     public boolean analyzeAll() {
-        return c.getBoolean("analyze-all");
+        return c.getBoolean("analyzeCompilationUnitTree-all");
     }
 
     public Map<File, Map<String, String>> getAllChecksumMap() {

@@ -1,5 +1,6 @@
 package meghanada;
 
+import meghanada.config.Config;
 import meghanada.server.Server;
 import meghanada.server.emacs.EmacsServer;
 import meghanada.utils.FileUtils;
@@ -10,7 +11,6 @@ import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.core.LoggerContext;
 import org.apache.logging.log4j.core.config.Configuration;
 import org.apache.logging.log4j.core.config.LoggerConfig;
-import meghanada.config.Config;
 
 import java.io.IOException;
 

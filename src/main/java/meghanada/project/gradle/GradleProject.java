@@ -57,6 +57,7 @@ public class GradleProject extends Project {
         return result;
     }
 
+    @Override
     public Project parseProject() throws ProjectParseException {
         final ProjectConnection projectConnection = getProjectConnection();
         try {

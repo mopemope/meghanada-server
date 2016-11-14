@@ -19,7 +19,6 @@ public class Gen4 extends Gen2<Long> {
         } else {
             String s = "";
             if (s.isEmpty()) {
-                s.toString();
             }
         }
     }

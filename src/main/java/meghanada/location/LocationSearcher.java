@@ -122,7 +122,7 @@ public class LocationSearcher {
         log.traceEntry("line={} col={} symbol={}", line, col, symbol);
 
         final Map<String, Variable> symbols = source.getDeclaratorMap(line);
-        log.trace("symbols={}", symbols);
+        log.trace("variables={}", symbols);
         final Location location = Optional.ofNullable(symbols.get(symbol))
                 .map(ns -> new Location(source.getFile().getPath(),
                         ns.getLine(),

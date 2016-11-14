@@ -280,7 +280,7 @@ public class JavaCompletion {
         final List<CandidateUnit> result = new ArrayList<>(32);
 
         // prefix search
-        log.debug("Search symbols Prefix:{} Line:{}", prefix, line);
+        log.debug("Search variables Prefix:{} Line:{}", prefix, line);
 
         final String fqcn = source.getTypeScope(line).getFQCN();
 
@@ -308,9 +308,9 @@ public class JavaCompletion {
 
         log.debug("self fqcn:{}", fqcn);
 
-        // Map<String, Variable> symbols = source.getNameSymbol(line);
+        // Map<String, Variable> variables = source.getNameSymbol(line);
         final Map<String, Variable> symbols = source.getDeclaratorMap(line);
-        log.debug("Search symbols Size:{} Result:{} Size:{}", symbols.size(), symbols);
+        log.debug("Search variables Size:{} Result:{} Size:{}", symbols.size(), symbols);
 
         symbols.entrySet().forEach(entry -> {
             final String key = entry.getKey();

@@ -83,8 +83,7 @@ class MethodAnalyzeVisitor extends MethodVisitor {
     }
 
     private static boolean isWideType(Type aType) {
-        // float is not a wide type
-        return aType == Type.LONG_TYPE || aType == Type.DOUBLE_TYPE;
+        return aType.equals(Type.LONG_TYPE) || aType.equals(Type.DOUBLE_TYPE);
     }
 
     MethodAnalyzeVisitor setTypeMap(Map<String, String> typeMap) {
@@ -194,7 +193,7 @@ class MethodAnalyzeVisitor extends MethodVisitor {
         if (((this.parameterTypes.size() != this.parameterNames.length)
                 || (this.parameterNames.length > 0 && this.parameterNames[0] == null))
                 && !tryGetParameterName(this.classAnalyzeVisitor.className, this.name)) {
-                setDefaultParameterNames();
+            setDefaultParameterNames();
         }
 
         for (int i = 0; i < this.parameterTypes.size(); i++) {
