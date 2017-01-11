@@ -860,7 +860,6 @@ public class TreeAnalyzer {
 
     private void analyzeVariableDecl(final JCTree.JCVariableDecl vd, final Source src, final int preferredPos, final int endPos, final EndPosTable endPosTable) throws IOException {
 
-
         final Name name = vd.getName();
         final JCTree.JCExpression initializer = vd.getInitializer();
         final JCTree.JCExpression nameExpression = vd.getNameExpression();

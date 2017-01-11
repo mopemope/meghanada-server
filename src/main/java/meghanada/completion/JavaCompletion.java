@@ -310,7 +310,7 @@ public class JavaCompletion {
 
         // Map<String, Variable> variables = source.getNameSymbol(line);
         final Map<String, Variable> symbols = source.getDeclaratorMap(line);
-        log.debug("Search variables Size:{} Result:{} Size:{}", symbols.size(), symbols);
+        log.debug("Search variables Size:{} CompileResult:{} Size:{}", symbols.size(), symbols);
 
         symbols.entrySet().forEach(entry -> {
             final String key = entry.getKey();

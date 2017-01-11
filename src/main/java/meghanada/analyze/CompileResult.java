@@ -8,18 +8,18 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-public class Result {
+public class CompileResult {
 
     private final boolean success;
     private final Map<File, Source> sources;
     private List<Diagnostic<? extends JavaFileObject>> diagnostics = new ArrayList<>();
 
-    public Result(final boolean success, final Map<File, Source> sources) {
+    public CompileResult(final boolean success, final Map<File, Source> sources) {
         this.success = success;
         this.sources = sources;
     }
 
-    public Result(final boolean success, final Map<File, Source> sources, List<Diagnostic<? extends JavaFileObject>> diagnostics) {
+    public CompileResult(final boolean success, final Map<File, Source> sources, List<Diagnostic<? extends JavaFileObject>> diagnostics) {
         this(success, sources);
         this.diagnostics = diagnostics;
     }
