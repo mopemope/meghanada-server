@@ -4,6 +4,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 public abstract class Scope {
 
@@ -22,6 +23,31 @@ public abstract class Scope {
     Scope(final int pos, final Range range) {
         this.pos = pos;
         this.range = range;
+    }
+
+    public static Scope getScope(final int line, final List<? extends Scope> scopeList) {
+        for (final Scope scope : scopeList) {
+            if (scope.contains(line)) {
+                return scope;
+            }
+        }
+        return null;
+    }
+
+    public static Scope getInnerScope(final int line, final List<? extends Scope> scopeList) {
+        for (Scope scope : scopeList) {
+            if (scope.contains(line)) {
+                if (scope instanceof BlockScope) {
+                    final BlockScope bs = (BlockScope) scope;
+                    final Scope inScope = Scope.getInnerScope(line, bs.scopes);
+                    if (inScope != null) {
+                        return inScope;
+                    }
+                }
+                return scope;
+            }
+        }
+        return null;
     }
 
     public FieldAccess addFieldAccess(final FieldAccess fieldAccess) {
@@ -114,5 +140,41 @@ public abstract class Scope {
         } else {
             return "Block";
         }
+    }
+
+    public List<MethodCall> getMethodCall(final int line) {
+        log.traceEntry("line={}", line);
+
+        final List<MethodCall> result = this.methodCalls
+                .stream()
+                .filter(mc -> mc.range.begin.line == line)
+                .collect(Collectors.toList());
+        return log.traceExit(result);
+    }
+
+    public List<FieldAccess> getFieldAccess(final int line) {
+        return this.fieldAccesses
+                .stream()
+                .filter(fa -> fa.range.begin.line == line)
+                .collect(Collectors.toList());
+    }
+
+    public Map<String, Variable> getDeclaratorMap() {
+        final Map<String, Variable> result = new HashMap<>(32);
+        variables.stream()
+                .filter(Variable::isDecl)
+                .forEach(v -> result.putIfAbsent(v.name, v));
+        return result;
+    }
+
+    public Map<String, Variable> getDeclaratorMap(final int line) {
+        if (this.contains(line)) {
+            final Map<String, Variable> result = new HashMap<>(32);
+            variables.stream()
+                    .filter(Variable::isDecl)
+                    .forEach(v -> result.putIfAbsent(v.name, v));
+            return result;
+        }
+        return Collections.emptyMap();
     }
 }

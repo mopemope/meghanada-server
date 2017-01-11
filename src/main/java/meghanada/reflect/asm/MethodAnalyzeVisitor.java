@@ -150,7 +150,7 @@ class MethodAnalyzeVisitor extends MethodVisitor {
 
     @Override
     public void visitLocalVariable(String name, String description, String signature, Label start, Label end, int index) {
-        log.traceEntry("name={} description={} signature={} start={} end={} index={}", name, description, signature, start, end, index);
+        log.traceEntry("name={} description={} signature={} start={} endPos={} index={}", name, description, signature, start, end, index);
         // boolean hasLvtInfo = true;
         for (int i = 0; i < this.lvtSlotIndex.length; i++) {
             if (this.lvtSlotIndex[i] == index) {

@@ -4,6 +4,7 @@ import javax.tools.Diagnostic;
 import javax.tools.JavaFileObject;
 import java.io.File;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -13,6 +14,10 @@ public class CompileResult {
     private final boolean success;
     private final Map<File, Source> sources;
     private List<Diagnostic<? extends JavaFileObject>> diagnostics = new ArrayList<>();
+
+    public CompileResult(final boolean success) {
+        this(success, new HashMap<>());
+    }
 
     public CompileResult(final boolean success, final Map<File, Source> sources) {
         this.success = success;

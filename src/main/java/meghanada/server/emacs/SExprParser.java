@@ -118,7 +118,7 @@ class SExprParser {
 
         Iterator<SExpr> iterator();
 
-        @SuppressWarnings("unchecked")
+        @SuppressWarnings("TypeParameterUnusedInFormals")
         <T> T value();
 
 

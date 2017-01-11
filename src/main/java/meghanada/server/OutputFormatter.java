@@ -1,6 +1,6 @@
 package meghanada.server;
 
-import meghanada.compiler.CompileResult;
+import meghanada.analyze.CompileResult;
 import meghanada.completion.LocalVariable;
 import meghanada.location.Location;
 import meghanada.reflect.CandidateUnit;

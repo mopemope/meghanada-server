@@ -5,6 +5,7 @@ import com.google.common.base.MoreObjects;
 public abstract class AccessSymbol {
 
     public String declaringClass;
+    public String scope = "";
     public String name;
     public int pos;
     public Range range;
@@ -29,4 +30,17 @@ public abstract class AccessSymbol {
                 .add("range", range)
                 .toString();
     }
+
+    public boolean containsLine(final int line) {
+        return this.range.containsLine(line);
+    }
+
+    public boolean containsColumn(final int col) {
+        final int start = this.range.begin.column;
+        final int end = this.range.end.column;
+        return start <= col && col <= end;
+    }
+
+    public abstract boolean match(int line, int column);
+
 }

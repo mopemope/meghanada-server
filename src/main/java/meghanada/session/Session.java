@@ -5,14 +5,14 @@ import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.LoadingCache;
-import meghanada.compiler.CompileResult;
+import meghanada.analyze.CompileResult;
+import meghanada.analyze.Source;
 import meghanada.completion.JavaCompletion;
 import meghanada.completion.JavaVariableCompletion;
 import meghanada.completion.LocalVariable;
 import meghanada.config.Config;
 import meghanada.location.Location;
 import meghanada.location.LocationSearcher;
-import meghanada.parser.source.JavaSource;
 import meghanada.project.Project;
 import meghanada.project.ProjectDependency;
 import meghanada.project.gradle.GradleProject;
@@ -46,7 +46,7 @@ public class Session {
 
     private static final Pattern SWITCH_TEST_RE = Pattern.compile("Test.java", Pattern.LITERAL);
     private static final Pattern SWITCH_JAVA_RE = Pattern.compile(".java", Pattern.LITERAL);
-    private final LoadingCache<File, JavaSource> sourceCache;
+    private final LoadingCache<File, Source> sourceCache;
     private final SessionEventBus sessionEventBus;
     private Project currentProject;
     private JavaCompletion completion;
@@ -61,7 +61,7 @@ public class Session {
         this.sourceCache = CacheBuilder.newBuilder()
                 .maximumSize(16)
                 .expireAfterAccess(15, TimeUnit.MINUTES)
-                .build(new JavaSourceLoader());
+                .build(new JavaSourceLoader(currentProject));
 
         this.sessionEventBus = new SessionEventBus(this);
         this.started = false;
@@ -320,7 +320,7 @@ public class Session {
     public synchronized Collection<? extends CandidateUnit> completionAt(String path, int line, int column, String prefix) throws IOException, ClassNotFoundException, ExecutionException {
         // java file only
         File file = normalize(path);
-        if (!JavaSource.isJavaFile(file)) {
+        if (!FileUtils.isJavaFile(file)) {
             return Collections.emptyList();
         }
         return getCompletion().completionAt(file, line, column, prefix);
@@ -350,8 +350,8 @@ public class Session {
 
     public synchronized LocalVariable localVariable(final String path, final int line) throws ExecutionException {
         // java file only
-        File file = normalize(path);
-        if (!JavaSource.isJavaFile(file)) {
+        final File file = normalize(path);
+        if (!FileUtils.isJavaFile(file)) {
             return new LocalVariable("", Collections.emptyList());
         }
         return getVariableCompletion().localVariable(file, line);
@@ -359,12 +359,12 @@ public class Session {
 
     public synchronized boolean addImport(String path, String fqcn) throws ExecutionException {
         // java file only
-        File file = normalize(path);
-        if (!JavaSource.isJavaFile(file)) {
+        final File file = normalize(path);
+        if (!FileUtils.isJavaFile(file)) {
             return false;
         }
 
-        JavaSource source = parseJavaSource(file);
+        final Source source = parseJavaSource(file);
         source.importClass.put(ClassNameUtils.getSimpleName(fqcn), fqcn);
         return true;
     }
@@ -372,22 +372,23 @@ public class Session {
     public synchronized List<String> optimizeImport(String path) throws ExecutionException {
         // java file only
         File file = normalize(path);
-        if (!JavaSource.isJavaFile(file)) {
+        if (!FileUtils.isJavaFile(file)) {
             return Collections.emptyList();
         }
 
-        JavaSource source = parseJavaSource(file);
-        return source.optimizeImports();
+        Source source = parseJavaSource(file);
+        // TODO
+        return new ArrayList<>();
     }
 
     public synchronized Map<String, List<String>> searchMissingImport(String path) throws ExecutionException {
         // java file only
-        File file = normalize(path);
-        if (!JavaSource.isJavaFile(file)) {
+        final File file = normalize(path);
+        if (!FileUtils.isJavaFile(file)) {
             return Collections.emptyMap();
         }
 
-        JavaSource source = parseJavaSource(file);
+        final Source source = parseJavaSource(file);
         return source.searchMissingImport();
     }
 
@@ -395,14 +396,14 @@ public class Session {
         return "";
     }
 
-    private JavaSource parseJavaSource(final File file) throws ExecutionException {
+    private Source parseJavaSource(final File file) throws ExecutionException {
         return this.sourceCache.get(file);
     }
 
     public synchronized boolean parseFile(final String path) throws ExecutionException {
         // java file only
         final File file = normalize(path);
-        if (!JavaSource.isJavaFile(file)) {
+        if (!FileUtils.isJavaFile(file)) {
             return false;
         }
         parseJavaSource(file);
@@ -553,8 +554,8 @@ public class Session {
     }
 
     private void createTestFile(String path, File testFile) throws IOException, ExecutionException {
-        JavaSource javaSource = this.parseJavaSource(new File(path));
-        String pkg = javaSource.getPkg();
+        Source javaSource = this.parseJavaSource(new File(path));
+        String pkg = javaSource.packageName;
         String testName = testFile.getName().replace(".java", "");
 
         String sb = "package " + pkg + ";\n"
@@ -585,7 +586,7 @@ public class Session {
         com.google.common.io.Files.write(sb, testFile, Charset.forName("UTF-8"));
     }
 
-    public synchronized Location jumpDeclaration(final String path, final int line, final int column, final String symbol) throws ExecutionException {
+    public synchronized Location jumpDeclaration(final String path, final int line, final int column, final String symbol) throws ExecutionException, IOException {
         Location location = locationSearcher.searchDeclaration(new File(path), line, column, symbol);
         if (location != null) {
             Location backLocation = new Location(path, line, column);
@@ -601,7 +602,7 @@ public class Session {
         return this.jumpDecHistory.pollLast();
     }
 
-    public LoadingCache<File, JavaSource> getSourceCache() {
+    public LoadingCache<File, Source> getSourceCache() {
         return sourceCache;
     }
 

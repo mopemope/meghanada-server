@@ -1,10 +1,14 @@
 package meghanada.analyze;
 
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.util.*;
 
 public class BlockScope extends Scope {
 
+    private static Logger log = LogManager.getLogger(ClassScope.class);
     public List<BlockScope> scopes = new ArrayList<>(8);
     public Deque<BlockScope> currentScope = new ArrayDeque<>(8);
     public List<ExpressionScope> expressions = new ArrayList<>(8);
@@ -22,6 +26,10 @@ public class BlockScope extends Scope {
     public void startBlock(final BlockScope blockScope) {
         blockScope.parent = this;
         this.currentScope.push(blockScope);
+    }
+
+    public String getName() {
+        return "";
     }
 
     public Optional<BlockScope> getCurrentBlock() {
@@ -126,5 +134,49 @@ public class BlockScope extends Scope {
         for (final BlockScope blockScope : this.scopes) {
             blockScope.dump();
         }
+    }
+
+    protected Optional<ExpressionScope> getExpression(final int line) {
+        log.traceEntry("line={} expressions={}", line, this.expressions);
+        final Optional<ExpressionScope> result = this.expressions.stream()
+                .filter(expr -> expr.contains(line))
+                .findFirst();
+        return log.traceExit(result);
+    }
+
+    public List<BlockScope> getScopes() {
+        return scopes;
+    }
+
+    @Override
+    public List<FieldAccess> getFieldAccess(int line) {
+        if (this.contains(line)) {
+            for (final BlockScope bs : scopes) {
+                if (bs.contains(line)) {
+                    return bs.getFieldAccess(line);
+                }
+            }
+
+        }
+        return super.getFieldAccess(line);
+    }
+
+    @Override
+    public List<MethodCall> getMethodCall(final int line) {
+        for (final BlockScope bs : this.scopes) {
+            final List<MethodCall> methodCalls = bs.getMethodCall(line);
+            if (methodCalls != null && !methodCalls.isEmpty()) {
+                return methodCalls;
+            }
+        }
+
+        for (final ExpressionScope es : this.expressions) {
+            final List<MethodCall> methodCalls = es.getMethodCall(line);
+            if (methodCalls != null && !methodCalls.isEmpty()) {
+                return methodCalls;
+            }
+        }
+
+        return super.getMethodCall(line);
     }
 }

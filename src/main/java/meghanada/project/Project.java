@@ -5,10 +5,9 @@ import com.google.common.base.Joiner;
 import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableSet;
 import com.typesafe.config.ConfigFactory;
-import meghanada.compiler.CompileResult;
-import meghanada.compiler.SimpleJavaCompiler;
+import meghanada.analyze.CompileResult;
+import meghanada.analyze.JavaAnalyzer;
 import meghanada.config.Config;
-import meghanada.parser.source.JavaSource;
 import meghanada.utils.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -55,7 +54,7 @@ public abstract class Project {
     protected String compileTarget = "1.8";
     protected String id;
 
-    private SimpleJavaCompiler javaCompiler;
+    private JavaAnalyzer javaAnalyzer;
     private String cachedClasspath;
     private String cachedAllClasspath;
 
@@ -113,11 +112,11 @@ public abstract class Project {
         return compileTarget;
     }
 
-    private SimpleJavaCompiler getJavaCompiler() {
-        if (this.javaCompiler == null) {
-            this.javaCompiler = new SimpleJavaCompiler(this.compileSource, this.compileTarget, getAllSources());
+    private JavaAnalyzer getJavaAnalyzer() {
+        if (this.javaAnalyzer == null) {
+            this.javaAnalyzer = new JavaAnalyzer(this.compileSource, this.compileTarget, getAllSources());
         }
-        return this.javaCompiler;
+        return this.javaAnalyzer;
     }
 
     public String classpath() {
@@ -193,7 +192,7 @@ public abstract class Project {
         try {
             return Files.walk(root.toPath())
                     .map(Path::toFile)
-                    .filter(JavaSource::isJavaFile)
+                    .filter(FileUtils::isJavaFile)
                     .collect(Collectors.toList());
         } catch (IOException e) {
             throw new UncheckedIOException(e);
@@ -204,7 +203,7 @@ public abstract class Project {
     public CompileResult compileJava(final boolean force) throws IOException {
         List<File> files = this.collectJavaFiles(this.getSourceDirectories());
         if (files != null && !files.isEmpty()) {
-            return getJavaCompiler().compileFiles(files, this.allClasspath(), this.output.getCanonicalPath(), force);
+            return getJavaAnalyzer().analyzeAndCompile(files, this.allClasspath(), this.output.getCanonicalPath(), force);
         }
         return new CompileResult(true);
     }
@@ -212,7 +211,7 @@ public abstract class Project {
     public CompileResult compileTestJava(final boolean force) throws IOException {
         List<File> files = this.collectJavaFiles(this.getTestSourceDirectories());
         if (files != null && !files.isEmpty()) {
-            return getJavaCompiler().compileFiles(files, this.allClasspath(), this.testOutput.getCanonicalPath(), force);
+            return getJavaAnalyzer().analyzeAndCompile(files, this.allClasspath(), this.testOutput.getCanonicalPath(), force);
         }
         return new CompileResult(true);
     }
@@ -234,7 +233,9 @@ public abstract class Project {
             output = this.output.getCanonicalPath();
         }
         if (FileUtils.filterFile(file)) {
-            return getJavaCompiler().compile(file, this.allClasspath(), output, force);
+            final List<File> files = new ArrayList<>();
+            files.add(file);
+            return getJavaAnalyzer().analyzeAndCompile(files, this.allClasspath(), output, force);
         }
         return new CompileResult(false);
     }
@@ -261,7 +262,7 @@ public abstract class Project {
                 .filter(FileUtils::filterFile)
                 .collect(Collectors.toList());
 
-        return getJavaCompiler().compileFiles(filesList, this.allClasspath(), output, force);
+        return getJavaAnalyzer().analyzeAndCompile(filesList, this.allClasspath(), output, force);
     }
 
     public File getProjectRoot() {

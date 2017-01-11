@@ -51,9 +51,9 @@ public class CachedASMReflectorTest extends GradleTestBase {
         System.out.println(stopwatch.stop());
         // candidateUnits.forEach(u -> System.out.println(u.getDeclaration()));
         if (isOpenJDK) {
-            assertEquals(217, candidateUnits.size());
+            assertEquals(215, candidateUnits.size());
         } else {
-            assertEquals(237, candidateUnits.size());
+            assertEquals(235, candidateUnits.size());
         }
     }
 
@@ -141,7 +141,7 @@ public class CachedASMReflectorTest extends GradleTestBase {
             String fqcn = "com.google.common.collect.FluentIterable<String>";
             List<MemberDescriptor> memberDescriptors = cachedASMReflector.reflect(fqcn);
             memberDescriptors.forEach(md -> System.out.println(md.getDisplayDeclaration()));
-            assertEquals(56, memberDescriptors.size());
+            assertEquals(57, memberDescriptors.size());
         }
     }
 
@@ -243,36 +243,6 @@ public class CachedASMReflectorTest extends GradleTestBase {
     }
 
     @Test
-    public void testLocalReflect1() throws Exception {
-        CachedASMReflector cachedASMReflector = CachedASMReflector.getInstance();
-        cachedASMReflector.addClasspath(getOutputDir());
-        cachedASMReflector.createClassIndexes();
-
-        {
-            String fqcn = "meghanada.parser.source.TypeScope";
-            List<MemberDescriptor> memberDescriptors = cachedASMReflector.reflect(fqcn);
-            // memberDescriptors.forEach(m -> System.out.println(m.getDisplayDeclaration()));
-            assertEquals(74, memberDescriptors.size());
-        }
-
-    }
-
-    @Test
-    public void testLocalReflect2() throws Exception {
-        CachedASMReflector cachedASMReflector = CachedASMReflector.getInstance();
-        cachedASMReflector.addClasspath(getOutputDir());
-        cachedASMReflector.createClassIndexes();
-
-        {
-            String fqcn = "meghanada.parser.source.MethodScope";
-            List<MemberDescriptor> memberDescriptors = cachedASMReflector.reflect(fqcn);
-            // memberDescriptors.forEach(m -> System.out.println(m.getDisplayDeclaration()));
-            assertEquals(57, memberDescriptors.size());
-        }
-
-    }
-
-    @Test
     public void testLocalReflect3() throws Exception {
         CachedASMReflector cachedASMReflector = CachedASMReflector.getInstance();
         cachedASMReflector.addClasspath(getOutputDir());
@@ -283,21 +253,6 @@ public class CachedASMReflectorTest extends GradleTestBase {
             List<MemberDescriptor> memberDescriptors = cachedASMReflector.reflect(fqcn);
             memberDescriptors.forEach(m -> System.out.println(m.getDisplayDeclaration()));
             assertEquals(45, memberDescriptors.size());
-        }
-
-    }
-
-    @Test
-    public void testLocalReflect4() throws Exception {
-        CachedASMReflector cachedASMReflector = CachedASMReflector.getInstance();
-        cachedASMReflector.addClasspath(getOutputDir());
-        cachedASMReflector.createClassIndexes();
-
-        {
-            String fqcn = "meghanada.parser.source.MethodCallSymbol";
-            List<MemberDescriptor> memberDescriptors = cachedASMReflector.reflect(fqcn);
-            memberDescriptors.forEach(m -> System.out.println(m.getDisplayDeclaration()));
-            assertEquals(29, memberDescriptors.size());
         }
 
     }

@@ -6,7 +6,6 @@ import com.sun.tools.javac.api.JavacTaskImpl;
 import com.sun.tools.javac.parser.FuzzyParserFactory;
 import com.sun.tools.javac.util.Context;
 import meghanada.config.Config;
-import meghanada.parser.source.JavaSource;
 import meghanada.utils.ClassNameUtils;
 import meghanada.utils.FileUtils;
 import org.apache.logging.log4j.LogManager;
@@ -24,7 +23,7 @@ import java.util.stream.Collectors;
 
 public class JavaAnalyzer {
 
-    private static final String COMPILE_CHECKSUM = "compile_checksum.dat";
+    public static final String COMPILE_CHECKSUM = "compile_checksum.dat";
     private static Logger log = LogManager.getLogger(JavaAnalyzer.class);
     public final JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
     private Context context = new Context();
@@ -52,10 +51,9 @@ public class JavaAnalyzer {
         }
 
         final File tempOut = new File(out);
-        if (!tempOut.exists()) {
-            if (!tempOut.mkdirs()) {
-                log.warn("fail mkdirs path:{}", tempOut);
-            }
+        if (!tempOut.exists() && !tempOut.mkdirs()) {
+            tempOut.mkdirs();
+            log.warn("fail mkdirs path:{}", tempOut);
         }
 
         final List<File> compileFiles = force ? files : getCompileTargets(files, this.sourceRoots, tempOut);
@@ -143,7 +141,7 @@ public class JavaAnalyzer {
                 .stream()
                 .parallel()
                 .filter(f -> {
-                    if (!JavaSource.isJavaFile(f)) {
+                    if (!FileUtils.isJavaFile(f)) {
                         return false;
                     }
                     try {

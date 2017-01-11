@@ -10,7 +10,7 @@ public class TopClass {
 
     }
 
-    public class NestedClass {
+    public static class NestedClass {
 
         private String bar;
 

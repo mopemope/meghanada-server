@@ -1,6 +1,8 @@
 package meghanada.analyze;
 
 import com.google.common.base.MoreObjects;
+import meghanada.reflect.CandidateUnit;
+import meghanada.reflect.FieldDescriptor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -24,6 +26,7 @@ public class Variable {
         this.name = name;
         this.pos = pos;
         this.range = range;
+        // TODO need having class ?
     }
 
     @Override
@@ -37,4 +40,13 @@ public class Variable {
                 .add("pos", pos)
                 .toString();
     }
+
+    public boolean isDecl() {
+        return def;
+    }
+
+    public CandidateUnit toCandidateUnit() {
+        return FieldDescriptor.createVar("", this.name, this.fqcn);
+    }
+
 }

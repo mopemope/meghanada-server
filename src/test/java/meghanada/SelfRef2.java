@@ -4,7 +4,7 @@ import java.lang.ref.PhantomReference;
 
 public class SelfRef2 {
 
-    private Ref head = new Ref(null);
+    private final Ref head = new Ref(null);
 
     private final class Ref extends PhantomReference<Object> {
         private Ref next;

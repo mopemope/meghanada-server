@@ -1,6 +1,7 @@
 package meghanada.utils;
 
 import meghanada.Main;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.File;
@@ -14,7 +15,7 @@ public class FileUtilsTest {
     @Test
     public void testMd5sum1() throws Exception {
         final String sum = timeIt(() -> {
-            return FileUtils.md5sum(new File("./src/main/java/meghanada/compiler/SimpleJavaCompiler.java"));
+            return FileUtils.md5sum(new File("./src/main/java/meghanada/analyze/JavaAnalyzer.java"));
         });
         System.out.println(sum);
     }
@@ -28,6 +29,7 @@ public class FileUtilsTest {
         System.out.println(sum);
     }
 
+    @Ignore
     @Test
     public void testGetVersionInfo() throws Exception {
         final String version = timeIt(FileUtils::getVersionInfo);

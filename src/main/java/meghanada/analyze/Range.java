@@ -12,6 +12,10 @@ public class Range {
     public Range() {
     }
 
+    public Range(final int beginCol, int beginLine, final int endCol, int endLine) {
+        this(new Position(beginCol, beginLine), new Position(endCol, endLine));
+    }
+
     public Range(final Position begin, final Position end) {
         this.begin = begin;
         this.end = end;

@@ -18,7 +18,11 @@ import java.util.stream.Collectors;
 
 public class GradleTestBase {
 
-    private static Project project;
+    public static Project project;
+
+    public static Project getProject() {
+        return project;
+    }
 
     @BeforeClass
     public static void setupProject() throws Exception {

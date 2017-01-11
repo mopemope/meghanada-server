@@ -72,22 +72,25 @@ public class TreeAnalyzer {
         cut.getTypeDecls().forEach(wrapIOConsumer(td -> {
             if (td instanceof JCTree.JCClassDecl) {
                 final JCTree.JCClassDecl classDecl = (JCTree.JCClassDecl) td;
-
                 final int startPos = classDecl.getPreferredPosition();
                 final int endPos = classDecl.getEndPosition(endPositions);
 
-                final Range range = Range.create(src, startPos, endPos);
                 final Name simpleName = classDecl.getSimpleName();
+                final Range range = Range.create(src, startPos + 1, endPos);
+
+                final int nameStart = startPos + 6;
+                final Range nameRange = Range.create(src, nameStart, nameStart + simpleName.length());
 
                 final String fqcn = packageName + "." + simpleName.toString();
-                final ClassScope classScope = new ClassScope(fqcn, null, startPos, range);
-
+                final ClassScope classScope = new ClassScope(fqcn, nameRange, startPos, range);
                 log.trace("class={}", classScope);
+
                 src.startClass(classScope);
                 classDecl.getMembers().forEach(wrapIOConsumer(tree -> {
                     this.analyzeParsedTree(tree, src, endPositions);
                 }));
-                src.endClass();
+                final Optional<ClassScope> endClass = src.endClass();
+                log.trace("class={}", endClass);
 
             } else {
                 log.warn("unknown td={}", td);
@@ -463,6 +466,9 @@ public class TreeAnalyzer {
         }));
 
         final JCTree.JCExpression methodSelect = methodInvocation.getMethodSelect();
+        int identBegin = methodSelect.getStartPosition();
+        int identEnd = methodSelect.getEndPosition(endPosTable);
+        final Range nameRange = Range.create(src, identBegin, identEnd);
 
         if (methodSelect instanceof JCTree.JCIdent) {
             // super
@@ -476,7 +482,7 @@ public class TreeAnalyzer {
                 if (s.equals("super")) {
                     // call constructor
                     final String constructor = owner.flatName().toString();
-                    final MethodCall methodCall = new MethodCall(constructor, preferredPos + 1, range);
+                    final MethodCall methodCall = new MethodCall(s, constructor, preferredPos + 1, nameRange, range);
                     if (owner.type != null) {
                         this.toFQCNString(owner.type).ifPresent(fqcn -> {
                             methodCall.declaringClass = this.markFQCN(src, fqcn);
@@ -491,7 +497,8 @@ public class TreeAnalyzer {
                         scope.addMethodCall(methodCall);
                     });
                 } else {
-                    final MethodCall methodCall = new MethodCall(s, preferredPos + 1, range);
+                    final MethodCall methodCall = new MethodCall(s, preferredPos + 1, nameRange, range);
+
                     if (owner != null && owner.type != null) {
                         this.toFQCNString(owner.type).ifPresent(fqcn -> {
                             methodCall.declaringClass = this.markFQCN(src, fqcn);
@@ -514,14 +521,15 @@ public class TreeAnalyzer {
             }
         } else if (methodSelect instanceof JCTree.JCFieldAccess) {
             final JCTree.JCFieldAccess fa = (JCTree.JCFieldAccess) methodSelect;
-
             final JCTree.JCExpression expression = fa.getExpression();
+            final String selectScope = expression.toString();
             this.analyzeParsedTree(expression, src, endPosTable);
 
             final Type owner = expression.type;
             final String name = fa.getIdentifier().toString();
+
             final Range range = Range.create(src, preferredPos + 1, endPos);
-            final MethodCall methodCall = new MethodCall(name, preferredPos + 1, range);
+            final MethodCall methodCall = new MethodCall(selectScope, name, preferredPos + 1, nameRange, range);
 
             if (owner == null) {
                 // call static
@@ -571,8 +579,12 @@ public class TreeAnalyzer {
         final JCTree.JCExpression identifier = newClass.getIdentifier();
         final String name = identifier.toString();
 
+        final int start = identifier.getStartPosition();
+        final int end = identifier.getEndPosition(endPosTable);
+        final Range nameRange = Range.create(src, start, end);
+
         final Range range = Range.create(src, preferredPos + 4, endPos);
-        final MethodCall methodCall = new MethodCall(name, preferredPos, range);
+        final MethodCall methodCall = new MethodCall(name, preferredPos, nameRange, range);
 
         final Type type = identifier.type;
         this.toFQCNString(type).ifPresent(fqcn -> {
@@ -639,21 +651,25 @@ public class TreeAnalyzer {
     private void analyzeFieldAccess(final JCTree.JCFieldAccess fieldAccess, final Source src, final EndPosTable endPosTable, final int preferredPos, final int endPos) throws IOException {
 
         final Symbol sym = fieldAccess.sym;
-        final JCTree.JCExpression selected = fieldAccess.selected;
+        final JCTree.JCExpression selected = fieldAccess.getExpression();
         this.analyzeParsedTree(selected, src, endPosTable);
 
+        final String selectScope = selected.toString();
         final Name identifier = fieldAccess.getIdentifier();
         final Range range = Range.create(src, preferredPos + 1, endPos);
         if (sym == null) {
             final FieldAccess fa = new FieldAccess(identifier.toString(), preferredPos + 1, range);
             // TODO
+            log.warn("sym is null");
             return;
         }
+
         final ElementKind kind = sym.getKind();
 
         if (kind.equals(ElementKind.FIELD)) {
             //
             final FieldAccess fa = new FieldAccess(identifier.toString(), preferredPos + 1, range);
+            fa.scope = selectScope;
             final Symbol owner = sym.owner;
 
             if (owner.type != null) {
@@ -672,7 +688,8 @@ public class TreeAnalyzer {
 
         } else if (kind.equals(ElementKind.METHOD)) {
             //
-            final MethodCall methodCall = new MethodCall(identifier.toString(), preferredPos + 1, range);
+
+            final MethodCall methodCall = new MethodCall(selectScope, identifier.toString(), preferredPos + 1, range, range);
             final Symbol owner = sym.owner;
             if (owner != null && owner.type != null) {
                 this.toFQCNString(owner.type).ifPresent(fqcn -> {
@@ -696,6 +713,7 @@ public class TreeAnalyzer {
             }
         } else if (kind.equals(ElementKind.ENUM_CONSTANT)) {
             final FieldAccess fa = new FieldAccess(identifier.toString(), preferredPos + 1, range);
+            fa.scope = selectScope;
             fa.isEnum = true;
             final Symbol owner = sym.owner;
 
@@ -741,6 +759,7 @@ public class TreeAnalyzer {
         src.getCurrentClass().ifPresent(parent -> {
             final String parentName = parent.name;
             final String fqcn = parentName + ClassNameUtils.INNER_MARK + simpleName;
+
             final ClassScope classScope = new ClassScope(fqcn, null, startPos, range);
 
             log.trace("maybe inner class={}", classScope);
@@ -955,7 +974,8 @@ public class TreeAnalyzer {
     private void analyzeUnit(Map<File, Source> analyzedMap, CompilationUnitTree cut) throws IOException {
         final URI uri = cut.getSourceFile().toUri();
         final File file = new File(uri.normalize());
-        final Source source = new Source(file);
+        final String path = file.getCanonicalPath();
+        final Source source = new Source(path);
         final EntryMessage entryMessage = log.traceEntry("---------- analyze file:{} ----------", file);
         this.analyzeCompilationUnitTree(cut, source);
         log.traceExit(entryMessage);

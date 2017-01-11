@@ -1,9 +1,9 @@
 package meghanada.session.subscribe;
 
 import com.google.common.eventbus.Subscribe;
-import meghanada.parser.source.JavaSource;
 import meghanada.project.Project;
 import meghanada.session.SessionEventBus;
+import meghanada.utils.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -23,7 +23,7 @@ public class CompileEventSubscriber extends AbstractSubscriber {
     public synchronized void on(SessionEventBus.CompileRequest request) throws IOException {
         Project project = super.sessionEventBus.getSession().getCurrentProject();
         File file = request.getFile();
-        if (!JavaSource.isJavaFile(file)) {
+        if (!FileUtils.isJavaFile(file)) {
             return;
         }
         project.compileFile(file, false);

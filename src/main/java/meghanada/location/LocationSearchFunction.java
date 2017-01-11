@@ -1,10 +1,10 @@
 package meghanada.location;
 
-import meghanada.parser.source.JavaSource;
+import meghanada.analyze.Source;
 
 @FunctionalInterface
 interface LocationSearchFunction {
 
-    Location apply(JavaSource javaSource, Integer line, Integer column, String symbol);
+    Location apply(Source javaSource, Integer line, Integer column, String symbol);
 
 }

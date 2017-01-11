@@ -29,6 +29,10 @@ public final class FileUtils {
 
     private static final Logger log = LogManager.getLogger(FileUtils.class);
 
+    public static boolean isJavaFile(final File file) {
+        return file.getName().endsWith(".java") && file.exists();
+    }
+
     public static String md5sum(final File file) throws IOException {
         final EntryMessage entryMessage = log.traceEntry("file={}", file);
         MessageDigest md;

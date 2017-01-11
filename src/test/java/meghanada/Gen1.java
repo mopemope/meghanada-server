@@ -1,5 +1,7 @@
 package meghanada;
 
+import java.io.File;
+import java.nio.charset.Charset;
 import java.util.List;
 
 public class Gen1<K, V> {
@@ -13,6 +15,9 @@ public class Gen1<K, V> {
         this.name = name;
         this.key = key;
         this.value = value;
+        byte[] bytes = this.name.getBytes(Charset.defaultCharset());
+        final File file = new File("");
+        file.getName();
     }
 
 }

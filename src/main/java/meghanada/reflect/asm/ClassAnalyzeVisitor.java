@@ -40,7 +40,6 @@ class ClassAnalyzeVisitor extends ClassVisitor {
         this.classNameWithType = classNameWithTP;
     }
 
-
     ClassAnalyzeVisitor(String className) {
         this(className, false, false);
     }

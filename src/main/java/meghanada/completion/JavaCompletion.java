@@ -1,11 +1,11 @@
 package meghanada.completion;
 
 import com.google.common.cache.LoadingCache;
+import meghanada.analyze.AccessSymbol;
+import meghanada.analyze.Source;
+import meghanada.analyze.TypeScope;
+import meghanada.analyze.Variable;
 import meghanada.config.Config;
-import meghanada.parser.source.AccessSymbol;
-import meghanada.parser.source.JavaSource;
-import meghanada.parser.source.TypeScope;
-import meghanada.parser.source.Variable;
 import meghanada.reflect.CandidateUnit;
 import meghanada.reflect.ClassIndex;
 import meghanada.reflect.MemberDescriptor;
@@ -23,9 +23,9 @@ public class JavaCompletion {
 
     private static Logger log = LogManager.getLogger(JavaCompletion.class);
 
-    private LoadingCache<File, JavaSource> sourceCache;
+    private LoadingCache<File, Source> sourceCache;
 
-    public JavaCompletion(LoadingCache<File, JavaSource> sourceCache) {
+    public JavaCompletion(LoadingCache<File, Source> sourceCache) {
         this.sourceCache = sourceCache;
     }
 
@@ -33,7 +33,7 @@ public class JavaCompletion {
 
         log.debug("line={} column={} prefix={}", line, column, prefix);
         try {
-            final JavaSource source = this.sourceCache.get(file);
+            final Source source = this.sourceCache.get(file);
             // check type
             if (prefix.startsWith("*")) {
                 // special command
@@ -50,7 +50,7 @@ public class JavaCompletion {
         }
     }
 
-    private Collection<? extends CandidateUnit> annotationCompletion(final JavaSource source, final int line, final int column, final String prefix) {
+    private Collection<? extends CandidateUnit> annotationCompletion(final Source source, final int line, final int column, final String prefix) {
         final boolean useFuzzySearch = Config.load().useClassFuzzySearch();
         String classPrefix = prefix.substring(1);
         List<ClassIndex> result;
@@ -74,12 +74,12 @@ public class JavaCompletion {
         return CachedASMReflector.getInstance().reflect(fqcn);
     }
 
-    private Collection<? extends CandidateUnit> completionThis(final JavaSource source, final int line, final String prefix) throws ExecutionException {
+    private Collection<? extends CandidateUnit> completionThis(final Source source, final int line, final String prefix) throws ExecutionException {
         final String fqcn = source.getTypeScope(line).getFQCN();
-        return this.reflectSelf(source.getPkg(), fqcn, false, false, prefix);
+        return this.reflectSelf(source.packageName, fqcn, false, false, prefix);
     }
 
-    private Collection<? extends CandidateUnit> completionSuper(final JavaSource source, final int line, final String prefix) throws ExecutionException {
+    private Collection<? extends CandidateUnit> completionSuper(final Source source, final int line, final String prefix) throws ExecutionException {
         final TypeScope typeScope = source.getTypeScope(line);
         final String fqcn = typeScope.getFQCN();
         return doReflect(fqcn)
@@ -95,7 +95,7 @@ public class JavaCompletion {
                 .collect(Collectors.toList());
     }
 
-    private Collection<? extends CandidateUnit> specialCompletion(final JavaSource source, final int line, final int column, final String searchWord) throws ExecutionException {
+    private Collection<? extends CandidateUnit> specialCompletion(final Source source, final int line, final int column, final String searchWord) throws ExecutionException {
 
         // special command
         final boolean useFuzzySearch = Config.load().useClassFuzzySearch();
@@ -115,7 +115,7 @@ public class JavaCompletion {
         } else if (searchWord.startsWith("*method")) {
             final int prefixIdx = searchWord.lastIndexOf("#");
             final int classIdx = searchWord.lastIndexOf(":");
-            final String pkg = source.getPkg();
+            final String pkg = source.packageName;
 
             if (classIdx > 0 && prefixIdx > 0) {
                 final String prefix = searchWord.substring(prefixIdx + 1);
@@ -138,8 +138,8 @@ public class JavaCompletion {
 
                 // search near method call and return methods of prefix class
                 List<AccessSymbol> targets = new ArrayList<>();
-                targets.addAll(source.getMethodCallSymbols(line));
-                targets.addAll(source.getFieldAccessSymbols(line));
+                targets.addAll(source.getMethodCall(line));
+                targets.addAll(source.getFieldAccess(line));
                 log.debug("targets:{}", targets);
 
                 int size = targets.size();
@@ -148,7 +148,7 @@ public class JavaCompletion {
                 while (size > 0 && startColumn-- > 0) {
                     for (AccessSymbol accessSymbol : targets) {
                         if (accessSymbol.match(line, startColumn)) {
-                            return reflect(pkg, accessSymbol.getReturnType(), prefix);
+                            return reflect(pkg, accessSymbol.returnType, prefix);
                         }
                     }
                 }
@@ -257,7 +257,7 @@ public class JavaCompletion {
                 .collect(Collectors.toSet());
     }
 
-    private Collection<? extends CandidateUnit> completionConstructors(final JavaSource source) throws ExecutionException {
+    private Collection<? extends CandidateUnit> completionConstructors(final Source source) throws ExecutionException {
         return source.importClass
                 .values()
                 .parallelStream()
@@ -272,23 +272,24 @@ public class JavaCompletion {
         return this.sourceCache.asMap()
                 .values()
                 .stream()
-                .map(source -> ClassIndex.createPackage(source.getPkg()))
+                .map(source -> ClassIndex.createPackage(source.packageName))
                 .collect(Collectors.toSet());
     }
 
-    private Collection<? extends CandidateUnit> completionSymbols(final JavaSource source, final int line, final String prefix) throws ExecutionException {
+    private Collection<? extends CandidateUnit> completionSymbols(final Source source, final int line, final String prefix) throws ExecutionException {
         final List<CandidateUnit> result = new ArrayList<>(32);
 
         // prefix search
-        log.debug("Search variables Prefix:{} Line:{}", prefix, line);
+        log.debug("Search variables prefix:{} line:{}", prefix, line);
 
         final String fqcn = source.getTypeScope(line).getFQCN();
 
+        // TODO need ???
         // add this scope member
-        this.reflectSelf(source.getPkg(), fqcn, false, false, prefix)
-                .stream()
-                .filter(c -> c.getName().startsWith(prefix))
-                .forEach(result::add);
+//        this.reflectSelf(source.packageName, fqcn, false, false, prefix)
+//                .stream()
+//                .filter(c -> c.getName().startsWith(prefix))
+//                .forEach(result::add);
 
         if (fqcn.contains(ClassNameUtils.INNER_MARK)) {
             // add parent
@@ -299,7 +300,7 @@ public class JavaCompletion {
                     break;
                 }
                 parentClass = parentClass.substring(0, i);
-                this.reflectSelf(source.getPkg(), parentClass, false, false, prefix)
+                this.reflectSelf(source.packageName, parentClass, false, false, prefix)
                         .stream()
                         .filter(c -> c.getName().startsWith(prefix))
                         .forEach(result::add);
@@ -310,12 +311,13 @@ public class JavaCompletion {
 
         // Map<String, Variable> variables = source.getNameSymbol(line);
         final Map<String, Variable> symbols = source.getDeclaratorMap(line);
-        log.debug("Search variables Size:{} CompileResult:{} Size:{}", symbols.size(), symbols);
+        log.debug("search variables size:{} result:{}", symbols.size(), symbols);
 
         symbols.entrySet().forEach(entry -> {
             final String key = entry.getKey();
-            log.debug("Variable Name:{}", key);
+            log.debug("check variable name:{}", key);
             if (key.startsWith(prefix)) {
+                log.debug("match variable name:{}", key);
                 result.add(entry.getValue().toCandidateUnit());
             }
         });
@@ -350,7 +352,7 @@ public class JavaCompletion {
         return result;
     }
 
-    private Collection<? extends CandidateUnit> completionFieldsOrMethods(final JavaSource source, final int line, final String var, final String target) throws ExecutionException {
+    private Collection<? extends CandidateUnit> completionFieldsOrMethods(final Source source, final int line, final String var, final String target) throws ExecutionException {
 
         // completionAt methods or fields
         if (var.equals("this")) {
@@ -362,7 +364,7 @@ public class JavaCompletion {
 
         log.debug("search {}'s field or method", var);
 
-        final String ownPackage = source.getPkg();
+        final String ownPackage = source.packageName;
         {
             // completion static method
             String fqcn = source.importClass.get(var);
@@ -388,10 +390,10 @@ public class JavaCompletion {
 
         {
             final Map<String, Variable> symbols = source.getDeclaratorMap(line);
-            final Variable ns = symbols.get(var);
-            if (ns != null) {
+            final Variable variable = symbols.get(var);
+            if (variable != null) {
                 // get data from reflector
-                String fqcn = ns.getFQCN();
+                String fqcn = variable.fqcn;
                 if (!fqcn.contains(".")) {
                     fqcn = ownPackage + "." + fqcn;
                 }

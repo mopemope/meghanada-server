@@ -3,7 +3,6 @@ package meghanada.session.subscribe;
 import com.google.common.base.Stopwatch;
 import com.google.common.eventbus.Subscribe;
 import meghanada.config.Config;
-import meghanada.parser.source.JavaSource;
 import meghanada.project.Project;
 import meghanada.reflect.asm.CachedASMReflector;
 import meghanada.session.Session;
@@ -76,7 +75,7 @@ public class CacheEventSubscriber extends AbstractSubscriber {
                 .filter(File::exists)
                 .flatMap(wrapIO(root -> Files.walk(root.toPath())))
                 .map(Path::toFile)
-                .filter(JavaSource::isJavaFile)
+                .filter(FileUtils::isJavaFile)
                 .filter(FileUtils::filterFile)
                 .collect(Collectors.toList());
         final int size = fileList.size();

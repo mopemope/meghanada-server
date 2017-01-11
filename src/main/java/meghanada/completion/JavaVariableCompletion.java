@@ -1,8 +1,8 @@
 package meghanada.completion;
 
 import com.google.common.cache.LoadingCache;
-import meghanada.parser.source.AccessSymbol;
-import meghanada.parser.source.JavaSource;
+import meghanada.analyze.AccessSymbol;
+import meghanada.analyze.Source;
 import meghanada.utils.ClassNameUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
@@ -21,20 +21,17 @@ public class JavaVariableCompletion {
             "Collections"
     };
 
-    private LoadingCache<File, JavaSource> sourceCache;
+    private LoadingCache<File, Source> sourceCache;
 
-    public JavaVariableCompletion(LoadingCache<File, JavaSource> sourceCache) {
+    public JavaVariableCompletion(LoadingCache<File, Source> sourceCache) {
         this.sourceCache = sourceCache;
     }
 
     public LocalVariable localVariable(final File file, final int line) throws ExecutionException {
-        final JavaSource source = this.sourceCache.get(file);
+        final Source source = this.sourceCache.get(file);
         AccessSymbol accessSymbol = source.getExpressionReturn(line);
-        if (accessSymbol != null) {
-            final String returnType = accessSymbol.getReturnType();
-            if (returnType != null) {
-                return createLocalVariable(accessSymbol, returnType);
-            }
+        if (accessSymbol != null && accessSymbol.returnType != null) {
+            return createLocalVariable(accessSymbol, accessSymbol.returnType);
         }
         return null;
     }
@@ -98,7 +95,7 @@ public class JavaVariableCompletion {
     private List<String> fromName(final AccessSymbol accessSymbol) {
         Set<String> names = new HashSet<>();
 
-        String name = accessSymbol.getName();
+        String name = accessSymbol.name;
         if (name.startsWith("get")) {
             name = name.substring(3);
         }
@@ -112,7 +109,7 @@ public class JavaVariableCompletion {
         names.add(uncapitalize);
 
         // add scope + simpleName
-        String scope = accessSymbol.getScope();
+        final String scope = accessSymbol.scope;
         if (!scope.isEmpty() && !StringUtils.containsAny(scope, "(", ".", "$")) {
             //
             final String scopeName = StringUtils.uncapitalize(scope) + StringUtils.capitalize(name);

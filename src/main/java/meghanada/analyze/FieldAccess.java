@@ -12,4 +12,9 @@ public class FieldAccess extends AccessSymbol {
         super(name, pos, range);
     }
 
+    @Override
+    public boolean match(int line, int column) {
+        return this.range.begin.line == line && this.containsColumn(column);
+    }
+
 }

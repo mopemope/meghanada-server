@@ -4,11 +4,17 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.message.EntryMessage;
 
+import java.util.Optional;
+
 public class ExpressionScope extends Scope {
 
     private static Logger log = LogManager.getLogger(ExpressionScope.class);
 
     public AccessSymbol expressionReturn;
+
+    public ExpressionScope() {
+
+    }
 
     public ExpressionScope(final int pos, final Range range) {
         super(pos, range);
@@ -46,6 +52,21 @@ public class ExpressionScope extends Scope {
         super.dumpVariable(log);
         super.dumpFieldAccess(log);
         log.traceExit(entryMessage);
+    }
+
+    public Optional<AccessSymbol> getExpressionReturn() {
+        log.traceEntry("expressionReturn={}", this.expressionReturn);
+        final Optional<Variable> var = this.variables
+                .stream()
+                .filter(Variable::isDecl)
+                .findFirst();
+
+        if (var.isPresent()) {
+            return log.traceExit(Optional.empty());
+        }
+
+        final Optional<AccessSymbol> aReturn = Optional.ofNullable(this.expressionReturn);
+        return log.traceExit(aReturn);
     }
 
 }
