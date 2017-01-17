@@ -31,9 +31,9 @@ import static meghanada.utils.FunctionUtils.wrapIOConsumer;
 
 public class TreeAnalyzer {
 
-    private static Logger log = LogManager.getLogger(TreeAnalyzer.class);
+    private static final Logger log = LogManager.getLogger(TreeAnalyzer.class);
 
-    private Source analyzeCompilationUnitTree(final CompilationUnitTree cut, final Source src) throws IOException {
+    private Source analyzeCompilationUnitTree(final CompilationUnitTree cut, final Source src) {
         final ExpressionTree packageExpr = cut.getPackageName();
         log.trace("file={}", src.getFile());
         final String packageName = packageExpr.toString();
@@ -386,9 +386,7 @@ public class TreeAnalyzer {
         log.traceExit(entryMessage);
     }
 
-    private void analyzeEnhancedForLoop(JCTree.JCEnhancedForLoop tree, Source src, EndPosTable endPosTable) throws IOException {
-        final JCTree.JCEnhancedForLoop forLoop = tree;
-
+    private void analyzeEnhancedForLoop(JCTree.JCEnhancedForLoop forLoop, Source src, EndPosTable endPosTable) throws IOException {
         final JCTree.JCExpression expression = forLoop.getExpression();
         if (expression != null) {
             this.analyzeParsedTree(expression, src, endPosTable);
@@ -403,8 +401,7 @@ public class TreeAnalyzer {
         }
     }
 
-    private void analyzeSwitch(JCTree.JCSwitch tree, Source src, EndPosTable endPosTable) throws IOException {
-        final JCTree.JCSwitch jcSwitch = tree;
+    private void analyzeSwitch(JCTree.JCSwitch jcSwitch, Source src, EndPosTable endPosTable) throws IOException {
         final JCTree.JCExpression expression = jcSwitch.getExpression();
         this.analyzeParsedTree(expression, src, endPosTable);
         final List<JCTree.JCCase> cases = jcSwitch.getCases();
@@ -424,8 +421,7 @@ public class TreeAnalyzer {
         }
     }
 
-    private void analyzeTry(JCTree.JCTry tree, Source src, EndPosTable endPosTable) throws IOException {
-        final JCTree.JCTry tryExpr = tree;
+    private void analyzeTry(JCTree.JCTry tryExpr, Source src, EndPosTable endPosTable) throws IOException {
         final JCTree.JCBlock block = tryExpr.getBlock();
         final List<JCTree.JCCatch> catches = tryExpr.getCatches();
         final JCTree.JCBlock finallyBlock = tryExpr.getFinallyBlock();
@@ -445,8 +441,7 @@ public class TreeAnalyzer {
         }
     }
 
-    private void analyzeForLoop(JCTree.JCForLoop tree, Source src, EndPosTable endPosTable) throws IOException {
-        final JCTree.JCForLoop forLoop = tree;
+    private void analyzeForLoop(final JCTree.JCForLoop forLoop, Source src, EndPosTable endPosTable) throws IOException {
         final List<JCTree.JCStatement> initializers = forLoop.getInitializer();
         final JCTree.JCExpression condition = forLoop.getCondition();
         final List<JCTree.JCExpressionStatement> updates = forLoop.getUpdate();
@@ -581,8 +576,7 @@ public class TreeAnalyzer {
         }
     }
 
-    private void analyzeNewClass(JCTree.JCNewClass tree, Source src, EndPosTable endPosTable, int preferredPos, int endPos) throws IOException {
-        final JCTree.JCNewClass newClass = tree;
+    private void analyzeNewClass(final JCTree.JCNewClass newClass, Source src, EndPosTable endPosTable, int preferredPos, int endPos) throws IOException {
         newClass.getArguments().forEach(wrapIOConsumer(jcExpression -> {
             this.analyzeParsedTree(jcExpression, src, endPosTable);
         }));
@@ -811,7 +805,6 @@ public class TreeAnalyzer {
                 if (ClassNameUtils.getSimpleName(className).equals(nm)) {
                     variable.fqcn = this.markFQCN(src, className);
                     src.getCurrentScope().ifPresent(scope -> scope.addVariable(variable));
-                    return;
                 }
             });
         }
@@ -887,7 +880,7 @@ public class TreeAnalyzer {
 
     }
 
-    private void analyzeVariableDecl(final JCTree.JCVariableDecl vd, final Source src, final int preferredPos, final int endPos, final EndPosTable endPosTable) throws IOException {
+    private void analyzeVariableDecl(final JCTree.JCVariableDecl vd, final Source src, final int preferredPos, final int endPos, final EndPosTable endPosTable) {
 
         final Name name = vd.getName();
         final JCTree.JCExpression initializer = vd.getInitializer();

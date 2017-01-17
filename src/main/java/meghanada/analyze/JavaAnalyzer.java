@@ -6,6 +6,7 @@ import com.sun.tools.javac.api.JavacTaskImpl;
 import com.sun.tools.javac.parser.FuzzyParserFactory;
 import com.sun.tools.javac.util.Context;
 import meghanada.config.Config;
+import meghanada.session.JavaSourceLoader;
 import meghanada.utils.ClassNameUtils;
 import meghanada.utils.FileUtils;
 import org.apache.logging.log4j.LogManager;
@@ -24,13 +25,11 @@ import java.util.stream.Collectors;
 public class JavaAnalyzer {
 
     public static final String COMPILE_CHECKSUM = "compile_checksum.dat";
-    private static Logger log = LogManager.getLogger(JavaAnalyzer.class);
-    public final JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
-    private Context context = new Context();
+    private static final Logger log = LogManager.getLogger(JavaAnalyzer.class);
+    private final JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
+    private final Set<File> sourceRoots;
     private String compileSource = "1.8";
     private String compileTarget = "1.8";
-    private Set<File> sourceRoots;
-    private boolean recompile = true;
 
     public JavaAnalyzer(final String compileSource, final String compileTarget, final Set<File> sourceRoots) {
         this.compileSource = compileSource;
@@ -49,7 +48,6 @@ public class JavaAnalyzer {
 
         final File tempOut = new File(out);
         if (!tempOut.exists() && !tempOut.mkdirs()) {
-            tempOut.mkdirs();
             log.warn("fail mkdirs path:{}", tempOut);
         }
 
@@ -61,22 +59,31 @@ public class JavaAnalyzer {
             return new CompileResult(true, analyzedMap);
         }
 
-        log.trace("start compile classpath={} files={} output={}", classpath, compileFiles, out);
+        final List<File> targets = getFinalTargets(compileFiles);
 
-        final CompileResult cr1 = this.runAnalyzeAndCompile(classpath, out, compileFiles);
-        if (recompile) {
-            final CompileResult cr2 = this.runDependAnalyzeAndCompile(classpath, out, cr1.getSources());
+        log.trace("start compile classpath={} files={} output={}", classpath, targets, out);
 
-            final Map<File, Source> sources = cr2.getSources();
-            final List<Diagnostic<? extends JavaFileObject>> depDiagnostics = cr2.getDiagnostics();
-
-            // TODO distinct ?
-            cr1.getSources().putAll(sources);
-            cr1.getDiagnostics().addAll(depDiagnostics);
-        }
-
-        return cr1;
+        return this.runAnalyzeAndCompile(classpath, out, targets);
     }
+
+    private List<File> getFinalTargets(final List<File> compileFiles) {
+        final Set<File> temp = Collections.newSetFromMap(new ConcurrentHashMap<File, Boolean>());
+
+        compileFiles.parallelStream().forEach(file -> {
+            if (file.isFile()) {
+                final List<File> list = FileUtils.listJavaFiles(file.getParentFile());
+                temp.addAll(list);
+            } else {
+                final List<File> list = FileUtils.listJavaFiles(file);
+                temp.addAll(list);
+            }
+        });
+
+        // TODO caller
+
+        return new ArrayList<>(temp);
+    }
+
 
     private CompileResult runAnalyzeAndCompile(final String classpath, final String out, List<File> compileFiles) throws IOException {
 
@@ -110,24 +117,36 @@ public class JavaAnalyzer {
             final List<Diagnostic<? extends JavaFileObject>> diagnostics = diagnosticCollector.getDiagnostics();
             // TODO check success
             boolean success = diagnostics == null || diagnostics.size() == 0;
-            return new CompileResult(success, analyzedMap, diagnostics);
+            final CompileResult compileResult = new CompileResult(success, analyzedMap, diagnostics);
+            return this.updateCache(compileResult);
         }
     }
 
-    private CompileResult runDependAnalyzeAndCompile(final String classpath, final String out, final Map<File, Source> map) throws IOException {
+    private CompileResult updateCache(final CompileResult compileResult) throws IOException {
+        final Config config = Config.load();
+        if (config.useSourceCache()) {
+            final Map<File, Source> sourceMap = compileResult.getSources();
+            final Map<File, Map<String, String>> checksum = config.getAllChecksumMap();
+            final File checksumFile = FileUtils.getSettingFile(JavaAnalyzer.COMPILE_CHECKSUM);
+            final Map<String, String> finalChecksumMap = checksum.getOrDefault(checksumFile, new ConcurrentHashMap<>());
 
-        final List<File> temp = new ArrayList<>();
-        map.forEach((f, s) -> {
-            final List<File> list = s.invalidateCache(this.sourceRoots);
-            list.forEach(lf -> {
-                if (!map.containsKey(lf)) {
-                    temp.add(lf);
+            compileResult.getDiagnostics().forEach(diagnostic -> {
+                final JavaFileObject javaFileObject = diagnostic.getSource();
+                try {
+                    final File file = new File(javaFileObject.toUri()).getCanonicalFile();
+                    if (file.exists() && !sourceMap.containsKey(file)) {
+                        JavaSourceLoader.writeCache(sourceMap.get(file));
+                    } else {
+                        finalChecksumMap.remove(file.getAbsolutePath());
+                    }
+                } catch (IOException e) {
+                    throw new UncheckedIOException(e);
                 }
             });
-        });
-
-        final List<File> compileFiles = temp.stream().distinct().collect(Collectors.toList());
-        return runAnalyzeAndCompile(classpath, out, compileFiles);
+            FileUtils.writeMapSetting(finalChecksumMap, checksumFile);
+            checksum.put(checksumFile, finalChecksumMap);
+        }
+        return compileResult;
     }
 
     private void replaceParser(final JavaCompiler.CompilationTask compilerTask) {
@@ -168,8 +187,7 @@ public class JavaAnalyzer {
 
         final Map<String, String> finalChecksumMap = checksum.get(checksumFile);
         final List<File> fileList = files
-                .stream()
-                .parallel()
+                .parallelStream()
                 .filter(f -> {
                     if (!FileUtils.isJavaFile(f)) {
                         return false;
@@ -202,6 +220,8 @@ public class JavaAnalyzer {
 
         FileUtils.writeMapSetting(finalChecksumMap, checksumFile);
         checksum.put(checksumFile, finalChecksumMap);
+        log.debug("remove unmodified {} -> {}", files.size(), fileList.size());
+        log.debug("modified : {}", fileList);
         return fileList;
     }
 

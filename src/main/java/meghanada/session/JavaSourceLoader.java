@@ -1,4 +1,3 @@
-
 package meghanada.session;
 
 import com.esotericsoftware.kryo.Kryo;
@@ -36,55 +35,7 @@ public class JavaSourceLoader extends CacheLoader<File, Source> {
         this.project = project;
     }
 
-    @Override
-    public Source load(final File file) throws IOException {
-        final Config config = Config.load();
-
-        if (!config.useSourceCache()) {
-            final CompileResult compileResult = project.compileFile(file, true);
-            return compileResult.getSources().get(file);
-        }
-
-        final File checksumFile = FileUtils.getSettingFile(JavaAnalyzer.COMPILE_CHECKSUM);
-        final Map<File, Map<String, String>> checksum = Config.load().getAllChecksumMap();
-
-        if (!checksum.containsKey(checksumFile)) {
-            Map<String, String> checksumMap = new ConcurrentHashMap<>(64);
-            if (checksumFile.exists()) {
-                checksumMap = new ConcurrentHashMap<>(FileUtils.readMapSetting(checksumFile));
-            }
-            checksum.put(checksumFile, checksumMap);
-        }
-
-        final Map<String, String> finalChecksumMap = checksum.get(checksumFile);
-
-        final String path = file.getCanonicalPath();
-        final String md5sum = FileUtils.md5sum(file);
-        if (finalChecksumMap.containsKey(path)) {
-            // compare checksum
-            final String prevSum = finalChecksumMap.get(path);
-            if (md5sum.equals(prevSum)) {
-                // not modify
-                // load from cache
-                final Optional<Source> source = this.loadFromCache(file);
-                if (source.isPresent()) {
-                    return source.get();
-                }
-            }
-            // update
-            finalChecksumMap.put(path, md5sum);
-        } else {
-            // save checksum
-            finalChecksumMap.put(path, md5sum);
-        }
-
-        final CompileResult compileResult = project.compileFile(file.getCanonicalFile(), true);
-        final Source source = compileResult.getSources().get(file.getCanonicalFile());
-        FileUtils.writeMapSetting(finalChecksumMap, checksumFile);
-        return this.writeCache(source);
-    }
-
-    private Optional<Source> loadFromCache(final File sourceFile) throws IOException {
+    public static Optional<Source> loadFromCache(final File sourceFile) throws IOException {
         final CachedASMReflector reflector = CachedASMReflector.getInstance();
 
         final Config config = Config.load();
@@ -115,7 +66,7 @@ public class JavaSourceLoader extends CacheLoader<File, Source> {
 
     }
 
-    private Source writeCache(final Source source) throws IOException {
+    public static Source writeCache(final Source source) throws IOException {
         final CachedASMReflector reflector = CachedASMReflector.getInstance();
         final File sourceFile = source.getFile();
         final Config config = Config.load();
@@ -141,6 +92,54 @@ public class JavaSourceLoader extends CacheLoader<File, Source> {
             }
         });
         return source;
+    }
+
+    @Override
+    public Source load(final File file) throws IOException {
+        final Config config = Config.load();
+
+        if (!config.useSourceCache()) {
+            final CompileResult compileResult = project.compileFile(file, true);
+            return compileResult.getSources().get(file);
+        }
+
+        final File checksumFile = FileUtils.getSettingFile(JavaAnalyzer.COMPILE_CHECKSUM);
+        final Map<File, Map<String, String>> checksum = Config.load().getAllChecksumMap();
+
+        if (!checksum.containsKey(checksumFile)) {
+            Map<String, String> checksumMap = new ConcurrentHashMap<>(64);
+            if (checksumFile.exists()) {
+                checksumMap = new ConcurrentHashMap<>(FileUtils.readMapSetting(checksumFile));
+            }
+            checksum.put(checksumFile, checksumMap);
+        }
+
+        final Map<String, String> finalChecksumMap = checksum.get(checksumFile);
+
+        final String path = file.getCanonicalPath();
+        final String md5sum = FileUtils.md5sum(file);
+        if (finalChecksumMap.containsKey(path)) {
+            // compare checksum
+            final String prevSum = finalChecksumMap.get(path);
+            if (md5sum.equals(prevSum)) {
+                // not modify
+                // load from cache
+                final Optional<Source> source = loadFromCache(file);
+                if (source.isPresent()) {
+                    return source.get();
+                }
+            }
+            // update
+            finalChecksumMap.put(path, md5sum);
+        } else {
+            // save checksum
+            finalChecksumMap.put(path, md5sum);
+        }
+
+        final CompileResult compileResult = project.compileFile(file.getCanonicalFile(), true);
+        final Source source = compileResult.getSources().get(file.getCanonicalFile());
+        FileUtils.writeMapSetting(finalChecksumMap, checksumFile);
+        return writeCache(source);
     }
 
 }

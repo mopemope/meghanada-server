@@ -6,7 +6,6 @@ import meghanada.reflect.CandidateUnit;
 import meghanada.reflect.MemberDescriptor;
 import meghanada.reflect.asm.CachedASMReflector;
 import meghanada.utils.ClassNameUtils;
-import meghanada.utils.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.message.EntryMessage;
@@ -18,24 +17,17 @@ import java.util.stream.Collectors;
 
 public class Source {
 
-    private static Logger log = LogManager.getLogger(Source.class);
-
-    public String filePath;
-
-    public String packageName;
-
+    private static final Logger log = LogManager.getLogger(Source.class);
     // K: className V: FQCN
-    public Map<String, String> importClass = new HashMap<>(8);
-    public Map<String, String> staticImportClass = new HashMap<>(8);
-
-    public Set<String> imported = new HashSet<>(8);
-    public Set<String> unknown = new HashSet<>(8);
-
+    public final Map<String, String> importClass = new HashMap<>(8);
+    public final Map<String, String> staticImportClass = new HashMap<>(8);
+    public final Set<String> imported = new HashSet<>(8);
+    public final Set<String> unknown = new HashSet<>(8);
+    public final List<ClassScope> classScopes = new ArrayList<>(1);
+    public final Deque<ClassScope> currentClassScope = new ArrayDeque<>(1);
+    public String filePath;
+    public String packageName;
     public List<LineRange> lineRange;
-
-    public List<ClassScope> classScopes = new ArrayList<>(1);
-    public Deque<ClassScope> currentClassScope = new ArrayDeque<>(1);
-
     // temp flag
     public boolean isParameter;
 
@@ -326,23 +318,10 @@ public class Source {
     }
 
 
-    public List<File> invalidateCache(final Set<File> sourceRoots) {
-
+    public void invalidateCache() {
         final CachedASMReflector reflector = CachedASMReflector.getInstance();
         for (final ClassScope cs : this.classScopes) {
             reflector.invalidate(cs.getFQCN());
         }
-
-        // search dependency
-        // recompile same package
-        final List<File> result = FileUtils.listJavaFiles(this.getFile().getParentFile());
-        this.importClass.forEach((k, fqcn) -> {
-            final Optional<File> sourceFile = FileUtils.getSourceFile(fqcn, sourceRoots);
-            sourceFile.ifPresent(f -> {
-                result.add(f);
-            });
-        });
-
-        return result;
     }
 }

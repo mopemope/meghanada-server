@@ -9,9 +9,9 @@ import java.util.*;
 
 public class ClassScope extends TypeScope {
 
-    private static Logger log = LogManager.getLogger(ClassScope.class);
-    public List<ClassScope> classScopes = new ArrayList<>(1);
-    public Deque<ClassScope> currentClassScope = new ArrayDeque<>(1);
+    private static final Logger log = LogManager.getLogger(ClassScope.class);
+    public final List<ClassScope> classScopes = new ArrayList<>(1);
+    public final Deque<ClassScope> currentClassScope = new ArrayDeque<>(1);
 
     public ClassScope() {
 

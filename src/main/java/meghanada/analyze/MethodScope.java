@@ -8,7 +8,7 @@ import java.util.Map;
 
 public class MethodScope extends BlockScope {
 
-    private static Logger log = LogManager.getLogger(MethodScope.class);
+    private static final Logger log = LogManager.getLogger(MethodScope.class);
 
     public String name;
     public Range nameRange;

@@ -8,11 +8,11 @@ import java.util.*;
 
 public class BlockScope extends Scope {
 
-    private static Logger log = LogManager.getLogger(ClassScope.class);
-    public List<BlockScope> scopes = new ArrayList<>(8);
-    public Deque<BlockScope> currentScope = new ArrayDeque<>(8);
-    public List<ExpressionScope> expressions = new ArrayList<>(8);
-    public Deque<ExpressionScope> currentExpr = new ArrayDeque<>(8);
+    private static final Logger log = LogManager.getLogger(ClassScope.class);
+    public final List<BlockScope> scopes = new ArrayList<>(8);
+    public final Deque<BlockScope> currentScope = new ArrayDeque<>(8);
+    public final List<ExpressionScope> expressions = new ArrayList<>(8);
+    public final Deque<ExpressionScope> currentExpr = new ArrayDeque<>(8);
     public BlockScope parent;
 
     BlockScope() {

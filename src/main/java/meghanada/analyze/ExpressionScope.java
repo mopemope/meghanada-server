@@ -8,7 +8,7 @@ import java.util.Optional;
 
 public class ExpressionScope extends Scope {
 
-    private static Logger log = LogManager.getLogger(ExpressionScope.class);
+    private static final Logger log = LogManager.getLogger(ExpressionScope.class);
 
     public AccessSymbol expressionReturn;
 

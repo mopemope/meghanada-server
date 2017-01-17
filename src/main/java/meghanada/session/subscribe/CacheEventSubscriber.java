@@ -2,6 +2,7 @@ package meghanada.session.subscribe;
 
 import com.google.common.base.Stopwatch;
 import com.google.common.eventbus.Subscribe;
+import meghanada.analyze.CompileResult;
 import meghanada.project.Project;
 import meghanada.reflect.asm.CachedASMReflector;
 import meghanada.session.Session;
@@ -30,8 +31,16 @@ public class CacheEventSubscriber extends AbstractSubscriber {
 
         boolean result = timeItF("project analyze and compile elapsed:{}", () -> {
             try {
-                project.compileJava(false);
-                project.compileTestJava(false);
+                final CompileResult compileResult = project.compileJava(false);
+                if (!compileResult.isSuccess()) {
+                    log.warn("Compile Error : {}", compileResult.getDiagnosticsSummary());
+                }
+
+                final CompileResult testCompileResult = project.compileTestJava(false);
+                if (!testCompileResult.isSuccess()) {
+                    log.warn("Test Compile Error : {}", testCompileResult.getDiagnosticsSummary());
+                }
+
             } catch (Exception e) {
                 log.catching(e);
             }

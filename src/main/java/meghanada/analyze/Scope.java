@@ -8,19 +8,17 @@ import java.util.stream.Collectors;
 
 public abstract class Scope {
 
-    private static Logger log = LogManager.getLogger(Scope.class);
+    private static final Logger log = LogManager.getLogger(Scope.class);
+    public final Set<Variable> variables = new HashSet<>(16);
+    public final List<FieldAccess> fieldAccesses = new ArrayList<>(16);
+    public final List<MethodCall> methodCalls = new ArrayList<>(16);
     public int pos;
     public Range range;
 
-    public Set<Variable> variables = new HashSet<>(16);
-    public List<FieldAccess> fieldAccesses = new ArrayList<>(16);
-    public List<MethodCall> methodCalls = new ArrayList<>(16);
-
-    Scope() {
-
+    public Scope() {
     }
 
-    Scope(final int pos, final Range range) {
+    public Scope(final int pos, final Range range) {
         this.pos = pos;
         this.range = range;
     }
