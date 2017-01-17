@@ -6,7 +6,6 @@ import com.esotericsoftware.kryo.io.ByteBufferInput;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.pool.KryoCallback;
-import com.github.javaparser.ParseException;
 import com.google.common.base.Joiner;
 import com.google.common.cache.CacheLoader;
 import meghanada.analyze.CompileResult;
@@ -38,7 +37,7 @@ public class JavaSourceLoader extends CacheLoader<File, Source> {
     }
 
     @Override
-    public Source load(final File file) throws IOException, ParseException {
+    public Source load(final File file) throws IOException {
         final Config config = Config.load();
 
         if (!config.useSourceCache()) {
@@ -85,7 +84,7 @@ public class JavaSourceLoader extends CacheLoader<File, Source> {
         return this.writeCache(source);
     }
 
-    private Optional<Source> loadFromCache(final File sourceFile) throws IOException, ParseException {
+    private Optional<Source> loadFromCache(final File sourceFile) throws IOException {
         final CachedASMReflector reflector = CachedASMReflector.getInstance();
 
         final Config config = Config.load();
@@ -116,7 +115,7 @@ public class JavaSourceLoader extends CacheLoader<File, Source> {
 
     }
 
-    private Source writeCache(final Source source) throws IOException, ParseException {
+    private Source writeCache(final Source source) throws IOException {
         final CachedASMReflector reflector = CachedASMReflector.getInstance();
         final File sourceFile = source.getFile();
         final Config config = Config.load();
