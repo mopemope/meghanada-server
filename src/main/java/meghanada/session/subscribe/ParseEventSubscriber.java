@@ -40,7 +40,7 @@ public class ParseEventSubscriber extends AbstractSubscriber {
     public synchronized void on(SessionEventBus.ParseFilesRequest request) throws ExecutionException {
         final Session session = super.sessionEventBus.getSession();
         final List<File> files = request.getFiles();
-        for (File file : files) {
+        for (final File file : files) {
             if (!FileUtils.isJavaFile(file)) {
                 continue;
             }
@@ -54,6 +54,6 @@ public class ParseEventSubscriber extends AbstractSubscriber {
     }
 
     private void parseFile(final Session session, final File file) throws ExecutionException, IOException {
-        // TODO
+        session.parseFile(file.getCanonicalPath());
     }
 }

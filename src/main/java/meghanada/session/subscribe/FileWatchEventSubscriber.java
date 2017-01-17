@@ -16,7 +16,7 @@ public class FileWatchEventSubscriber extends AbstractSubscriber {
 
     private FileSystemWatcher fileSystemWatcher;
 
-    public FileWatchEventSubscriber(SessionEventBus sessionEventBus) {
+    public FileWatchEventSubscriber(final SessionEventBus sessionEventBus) {
         super(sessionEventBus);
         log.debug("subscribe file watch");
     }
@@ -24,25 +24,25 @@ public class FileWatchEventSubscriber extends AbstractSubscriber {
     @Subscribe
     public void on(FileSystemWatcher.CreateEvent event) {
         log.debug("create event {}", event);
-        File file = event.getFile();
+        final File file = event.getFile();
         // parse
         this.sessionEventBus.requestParse(file);
     }
 
     @Subscribe
-    public void on(FileSystemWatcher.ModifyEvent event) {
+    public void on(final FileSystemWatcher.ModifyEvent event) {
         log.debug("modify event {}", event);
-        File file = event.getFile();
+        final File file = event.getFile();
         // parse
         this.sessionEventBus.requestParse(file);
     }
 
     @Subscribe
-    public void on(SessionEventBus.FileWatchRequest request) throws IOException, InterruptedException {
+    public void on(final SessionEventBus.FileWatchRequest request) throws IOException, InterruptedException {
         if (this.fileSystemWatcher == null) {
             this.fileSystemWatcher = new FileSystemWatcher(super.sessionEventBus.getEventBus());
         }
-        List<File> files = request.getFiles();
+        final List<File> files = request.getFiles();
         this.fileSystemWatcher.start(files);
     }
 

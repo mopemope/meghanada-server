@@ -4,7 +4,6 @@ import com.google.common.base.MoreObjects;
 import com.google.common.eventbus.AsyncEventBus;
 import com.google.common.eventbus.EventBus;
 import meghanada.session.subscribe.CacheEventSubscriber;
-import meghanada.session.subscribe.CompileEventSubscriber;
 import meghanada.session.subscribe.FileWatchEventSubscriber;
 import meghanada.session.subscribe.ParseEventSubscriber;
 import org.apache.logging.log4j.LogManager;
@@ -37,10 +36,6 @@ public class SessionEventBus {
 
     void subscribeFileWatch() {
         this.eventBus.register(new FileWatchEventSubscriber(this));
-    }
-
-    void subscribeCompile() {
-        this.eventBus.register(new CompileEventSubscriber(this));
     }
 
     void subscribeParse() {
@@ -81,18 +76,6 @@ public class SessionEventBus {
 
     public void requestClassCache() {
         this.eventBus.post(new ClassCacheRequest(this.session));
-    }
-
-    public void requestCompile(File file) {
-        this.eventBus.post(new CompileRequest(this.session, file));
-    }
-
-    public void requestCompileFiles(List<File> files) {
-        this.eventBus.post(new CompileFilesRequest(this.session, files));
-    }
-
-    public void requestTestCompile(File file) {
-        this.eventBus.post(new TestCompileRequest(this.session, file));
     }
 
     public void requestParse(File file) {

@@ -264,7 +264,6 @@ public class Session {
         // subscribe file watch
         this.sessionEventBus.subscribeFileWatch();
         this.sessionEventBus.subscribeParse();
-        this.sessionEventBus.subscribeCompile();
         this.sessionEventBus.subscribeCache();
     }
 

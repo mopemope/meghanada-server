@@ -79,11 +79,11 @@ public class LocationSearcherTest extends GradleTestBase {
         File f = new File("./src/main/java/meghanada/session/Session.java");
         LocationSearcher locationSearcher = getSearcher();
         Location result = timeIt(() -> {
-            return locationSearcher.searchDeclaration(f, 367, 31, "parseJavaSource");
+            return locationSearcher.searchDeclaration(f, 366, 31, "parseJavaSource");
         });
 
         assertNotNull(result);
-        assertEquals(399, result.getLine());
+        assertEquals(398, result.getLine());
         assertEquals(20, result.getColumn());
     }
 
@@ -93,7 +93,7 @@ public class LocationSearcherTest extends GradleTestBase {
         LocationSearcher locationSearcher = getSearcher();
         {
             // return source.searchMissingImport();
-            Location result = locationSearcher.searchDeclaration(f, 392, 24, "searchMissingImport");
+            Location result = locationSearcher.searchDeclaration(f, 391, 24, "searchMissingImport");
             assertNotNull(result);
             assertTrue(result.getPath().contains("Source.java"));
             assertEquals(287, result.getLine());
