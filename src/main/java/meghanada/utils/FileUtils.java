@@ -18,10 +18,7 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.security.DigestInputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
+import java.util.*;
 import java.util.zip.DeflaterOutputStream;
 import java.util.zip.InflaterInputStream;
 
@@ -43,17 +40,34 @@ public final class FileUtils {
         }
         try (InputStream is = Files.newInputStream(file.toPath());
              DigestInputStream dis = new DigestInputStream(is, md)) {
-            byte[] buf = new byte[8192];
+            final byte[] buf = new byte[8192];
             while (dis.read(buf) != -1) {
             }
-            byte[] digest = md.digest();
-            StringBuilder sb = new StringBuilder();
-            for (int b : digest) {
+            final byte[] digest = md.digest();
+            final StringBuilder sb = new StringBuilder();
+            for (final int b : digest) {
                 sb.append(Character.forDigit(b >> 4 & 0xF, 16));
                 sb.append(Character.forDigit(b & 0xF, 16));
             }
             return log.traceExit(entryMessage, sb.toString());
         }
+    }
+
+    public static List<File> listJavaFiles(File parent) {
+        if (parent.isFile()) {
+            parent = parent.getParentFile();
+        }
+
+        final List<File> list = new ArrayList<>();
+        final File[] files = parent.listFiles();
+        if (files != null) {
+            for (final File file : files) {
+                if (file.isFile() && isJavaFile(file)) {
+                    list.add(file);
+                }
+            }
+        }
+        return list;
     }
 
     public static void deleteFile(final File root, final boolean deleteRoot) throws IOException {
@@ -213,5 +227,17 @@ public final class FileUtils {
         }
         sb.append(suffix);
         return sb.toString();
+    }
+
+    public static Optional<File> getSourceFile(final String importClass, final Set<File> sourceRoots) {
+        final String p = ClassNameUtils.replaceDot2FileSep(importClass) + ".java";
+        for (final File root : sourceRoots) {
+            // TODO slow
+            final File file = new File(root, p);
+            if (file.exists()) {
+                return Optional.of(file);
+            }
+        }
+        return Optional.empty();
     }
 }

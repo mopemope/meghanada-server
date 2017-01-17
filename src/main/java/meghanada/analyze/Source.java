@@ -6,6 +6,7 @@ import meghanada.reflect.CandidateUnit;
 import meghanada.reflect.MemberDescriptor;
 import meghanada.reflect.asm.CachedASMReflector;
 import meghanada.utils.ClassNameUtils;
+import meghanada.utils.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.message.EntryMessage;
@@ -324,4 +325,24 @@ public class Source {
         return ask;
     }
 
+
+    public List<File> invalidateCache(final Set<File> sourceRoots) {
+
+        final CachedASMReflector reflector = CachedASMReflector.getInstance();
+        for (final ClassScope cs : this.classScopes) {
+            reflector.invalidate(cs.getFQCN());
+        }
+
+        // search dependency
+        // recompile same package
+        final List<File> result = FileUtils.listJavaFiles(this.getFile().getParentFile());
+        this.importClass.forEach((k, fqcn) -> {
+            final Optional<File> sourceFile = FileUtils.getSourceFile(fqcn, sourceRoots);
+            sourceFile.ifPresent(f -> {
+                result.add(f);
+            });
+        });
+
+        return result;
+    }
 }

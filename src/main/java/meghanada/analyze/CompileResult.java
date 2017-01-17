@@ -26,7 +26,7 @@ public class CompileResult {
 
     public CompileResult(final boolean success, final Map<File, Source> sources, List<Diagnostic<? extends JavaFileObject>> diagnostics) {
         this(success, sources);
-        this.diagnostics = diagnostics;
+        this.diagnostics = new ArrayList<>(diagnostics);
     }
 
     public boolean isSuccess() {

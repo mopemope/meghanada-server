@@ -30,12 +30,9 @@ public class JavaAnalyzer {
     private String compileSource = "1.8";
     private String compileTarget = "1.8";
     private Set<File> sourceRoots;
-
-    public JavaAnalyzer() {
-    }
+    private boolean recompile = true;
 
     public JavaAnalyzer(final String compileSource, final String compileTarget, final Set<File> sourceRoots) {
-        this();
         this.compileSource = compileSource;
         this.compileTarget = compileTarget;
         this.sourceRoots = sourceRoots;
@@ -66,6 +63,23 @@ public class JavaAnalyzer {
 
         log.trace("start compile classpath={} files={} output={}", classpath, compileFiles, out);
 
+        final CompileResult cr1 = this.runAnalyzeAndCompile(classpath, out, compileFiles);
+        if (recompile) {
+            final CompileResult cr2 = this.runDependAnalyzeAndCompile(classpath, out, cr1.getSources());
+
+            final Map<File, Source> sources = cr2.getSources();
+            final List<Diagnostic<? extends JavaFileObject>> depDiagnostics = cr2.getDiagnostics();
+
+            // TODO distinct ?
+            cr1.getSources().putAll(sources);
+            cr1.getDiagnostics().addAll(depDiagnostics);
+        }
+
+        return cr1;
+    }
+
+    private CompileResult runAnalyzeAndCompile(final String classpath, final String out, List<File> compileFiles) throws IOException {
+
         try (StandardJavaFileManager fileManager = compiler.getStandardFileManager(null, null, Charset.forName("UTF-8"))) {
             final Iterable<? extends JavaFileObject> compilationUnits = fileManager.getJavaFileObjectsFromFiles(compileFiles);
             final DiagnosticCollector<JavaFileObject> diagnosticCollector = new DiagnosticCollector<>();
@@ -76,8 +90,8 @@ public class JavaAnalyzer {
                             "-cp", classpath,
                             "-g", "-deprecation",
                             "-d", out,
-                            "-source", "1.8",
-                            "-target", "1.8",
+                            "-source", this.compileSource,
+                            "-target", this.compileTarget,
                             "-encoding", "UTF-8"
                     ),
                     null,
@@ -98,6 +112,22 @@ public class JavaAnalyzer {
             boolean success = diagnostics == null || diagnostics.size() == 0;
             return new CompileResult(success, analyzedMap, diagnostics);
         }
+    }
+
+    private CompileResult runDependAnalyzeAndCompile(final String classpath, final String out, final Map<File, Source> map) throws IOException {
+
+        final List<File> temp = new ArrayList<>();
+        map.forEach((f, s) -> {
+            final List<File> list = s.invalidateCache(this.sourceRoots);
+            list.forEach(lf -> {
+                if (!map.containsKey(lf)) {
+                    temp.add(lf);
+                }
+            });
+        });
+
+        final List<File> compileFiles = temp.stream().distinct().collect(Collectors.toList());
+        return runAnalyzeAndCompile(classpath, out, compileFiles);
     }
 
     private void replaceParser(final JavaCompiler.CompilationTask compilerTask) {

@@ -19,7 +19,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import static meghanada.config.Config.timeIt;
-import static meghanada.config.Config.traceIt;
 
 public class JavaAnalyzerTest extends GradleTestBase {
 
@@ -57,7 +56,7 @@ public class JavaAnalyzerTest extends GradleTestBase {
 
     @Test
     public void analyze1() throws Exception {
-        final JavaAnalyzer analyzer = new JavaAnalyzer();
+        final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8", project.getSourceDirectories());
         final String cp = getClasspath();
 
         List<File> files = new ArrayList<>();
@@ -66,7 +65,7 @@ public class JavaAnalyzerTest extends GradleTestBase {
 
         final String tmp = System.getProperty("java.io.tmpdir");
 
-        traceIt(() -> {
+        timeIt(() -> {
             final CompileResult compileResult = analyzer.analyzeAndCompile(files, cp, tmp, true);
             compileResult.getSources().values().forEach(Source::dump);
             return compileResult;
@@ -79,7 +78,7 @@ public class JavaAnalyzerTest extends GradleTestBase {
 
     @Test
     public void analyze2() throws Exception {
-        final JavaAnalyzer analyzer = new JavaAnalyzer();
+        final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8", project.getSourceDirectories());
         final String cp = getClasspath();
 
         List<File> files = new ArrayList<>();
@@ -88,7 +87,7 @@ public class JavaAnalyzerTest extends GradleTestBase {
 
         final String tmp = System.getProperty("java.io.tmpdir");
 
-        traceIt(() -> {
+        timeIt(() -> {
             final CompileResult compileResult = analyzer.analyzeAndCompile(files, cp, tmp, true);
             compileResult.getSources().values().forEach(Source::dump);
             return compileResult;
@@ -101,7 +100,7 @@ public class JavaAnalyzerTest extends GradleTestBase {
 
     @Test
     public void analyze3() throws Exception {
-        final JavaAnalyzer analyzer = new JavaAnalyzer();
+        final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8", project.getSourceDirectories());
         final String cp = getClasspath();
 
         List<File> files = new ArrayList<>();
@@ -110,7 +109,7 @@ public class JavaAnalyzerTest extends GradleTestBase {
 
         final String tmp = System.getProperty("java.io.tmpdir");
 
-        traceIt(() -> {
+        timeIt(() -> {
             final CompileResult compileResult = analyzer.analyzeAndCompile(files, cp, tmp, true);
             compileResult.getSources().values().forEach(Source::dump);
             return compileResult;
@@ -123,7 +122,7 @@ public class JavaAnalyzerTest extends GradleTestBase {
 
     @Test
     public void analyze4() throws Exception {
-        final JavaAnalyzer analyzer = new JavaAnalyzer();
+        final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8", project.getSourceDirectories());
         final String cp = getClasspath();
 
         List<File> files = new ArrayList<>();
@@ -132,7 +131,7 @@ public class JavaAnalyzerTest extends GradleTestBase {
 
         final String tmp = System.getProperty("java.io.tmpdir");
 
-        traceIt(() -> {
+        timeIt(() -> {
             final CompileResult compileResult = analyzer.analyzeAndCompile(files, cp, tmp, true);
             compileResult.getSources().values().forEach(Source::dump);
             return compileResult;
@@ -145,7 +144,7 @@ public class JavaAnalyzerTest extends GradleTestBase {
 
     @Test
     public void analyze5() throws Exception {
-        final JavaAnalyzer analyzer = new JavaAnalyzer();
+        final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8", project.getSourceDirectories());
         final String cp = getClasspath();
 
         List<File> files = new ArrayList<>();
@@ -154,7 +153,7 @@ public class JavaAnalyzerTest extends GradleTestBase {
 
         final String tmp = System.getProperty("java.io.tmpdir");
 
-        traceIt(() -> {
+        timeIt(() -> {
             final CompileResult compileResult = analyzer.analyzeAndCompile(files, cp, tmp, true);
             compileResult.getSources().values().forEach(Source::dump);
             return compileResult;
@@ -167,7 +166,7 @@ public class JavaAnalyzerTest extends GradleTestBase {
 
     @Test
     public void analyze6() throws Exception {
-        final JavaAnalyzer analyzer = new JavaAnalyzer();
+        final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8", project.getSourceDirectories());
         final String cp = getClasspath();
 
         List<File> files = new ArrayList<>();
@@ -176,7 +175,7 @@ public class JavaAnalyzerTest extends GradleTestBase {
 
         final String tmp = System.getProperty("java.io.tmpdir");
 
-        traceIt(() -> {
+        timeIt(() -> {
             final CompileResult compileResult = analyzer.analyzeAndCompile(files, cp, tmp, true);
             compileResult.getSources().values().forEach(Source::dump);
             return compileResult;
@@ -189,7 +188,7 @@ public class JavaAnalyzerTest extends GradleTestBase {
 
     @Test
     public void analyze7() throws Exception {
-        final JavaAnalyzer analyzer = new JavaAnalyzer();
+        final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8", project.getSourceDirectories());
         final String cp = getClasspath();
 
         List<File> files = new ArrayList<>();
@@ -198,7 +197,7 @@ public class JavaAnalyzerTest extends GradleTestBase {
 
         final String tmp = System.getProperty("java.io.tmpdir");
 
-        traceIt(() -> {
+        timeIt(() -> {
             final CompileResult compileResult = analyzer.analyzeAndCompile(files, cp, tmp, true);
             compileResult.getSources().values().forEach(Source::dump);
             return compileResult;
@@ -211,7 +210,7 @@ public class JavaAnalyzerTest extends GradleTestBase {
 
     @Test
     public void analyze8() throws Exception {
-        final JavaAnalyzer analyzer = new JavaAnalyzer();
+        final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8", project.getSourceDirectories());
         final String cp = getClasspath();
 
         List<File> files = new ArrayList<>();
@@ -220,7 +219,7 @@ public class JavaAnalyzerTest extends GradleTestBase {
 
         final String tmp = System.getProperty("java.io.tmpdir");
 
-        traceIt(() -> {
+        timeIt(() -> {
             final CompileResult compileResult = analyzer.analyzeAndCompile(files, cp, tmp, true);
             compileResult.getSources().values().forEach(Source::dump);
             return compileResult;
@@ -233,7 +232,7 @@ public class JavaAnalyzerTest extends GradleTestBase {
 
     @Test
     public void analyze9() throws Exception {
-        final JavaAnalyzer analyzer = new JavaAnalyzer();
+        final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8", project.getSourceDirectories());
         final String cp = getClasspath();
 
         List<File> files = new ArrayList<>();
@@ -242,7 +241,7 @@ public class JavaAnalyzerTest extends GradleTestBase {
 
         final String tmp = System.getProperty("java.io.tmpdir");
 
-        traceIt(() -> {
+        timeIt(() -> {
             final CompileResult compileResult = analyzer.analyzeAndCompile(files, cp, tmp, true);
             compileResult.getSources().values().forEach(Source::dump);
             return compileResult;
@@ -255,7 +254,7 @@ public class JavaAnalyzerTest extends GradleTestBase {
 
     @Test
     public void analyze10() throws Exception {
-        final JavaAnalyzer analyzer = new JavaAnalyzer();
+        final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8", project.getSourceDirectories());
         final String cp = getClasspath();
 
         List<File> files = new ArrayList<>();
@@ -264,7 +263,7 @@ public class JavaAnalyzerTest extends GradleTestBase {
 
         final String tmp = System.getProperty("java.io.tmpdir");
 
-        traceIt(() -> {
+        timeIt(() -> {
             final CompileResult compileResult = analyzer.analyzeAndCompile(files, cp, tmp, true);
             compileResult.getSources().values().forEach(Source::dump);
             return compileResult;
@@ -277,7 +276,7 @@ public class JavaAnalyzerTest extends GradleTestBase {
 
     @Test
     public void analyze11() throws Exception {
-        final JavaAnalyzer analyzer = new JavaAnalyzer();
+        final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8", project.getSourceDirectories());
         final String cp = getClasspath();
 
         List<File> files = new ArrayList<>();
@@ -286,7 +285,7 @@ public class JavaAnalyzerTest extends GradleTestBase {
 
         final String tmp = System.getProperty("java.io.tmpdir");
 
-        traceIt(() -> {
+        timeIt(() -> {
             final CompileResult compileResult = analyzer.analyzeAndCompile(files, cp, tmp, true);
             compileResult.getSources().values().forEach(Source::dump);
             return compileResult;
@@ -299,7 +298,7 @@ public class JavaAnalyzerTest extends GradleTestBase {
 
     @Test
     public void analyze12() throws Exception {
-        final JavaAnalyzer analyzer = new JavaAnalyzer();
+        final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8", project.getSourceDirectories());
         final String cp = getClasspath();
         List<File> files = new ArrayList<>();
         final File file = new File("./src/test/java/meghanada/GenArray1.java").getCanonicalFile();
@@ -307,7 +306,7 @@ public class JavaAnalyzerTest extends GradleTestBase {
 
         final String tmp = System.getProperty("java.io.tmpdir");
 
-        traceIt(() -> {
+        timeIt(() -> {
             final CompileResult compileResult = analyzer.analyzeAndCompile(files, cp, tmp, true);
             compileResult.getSources().values().forEach(Source::dump);
             return compileResult;
@@ -320,7 +319,7 @@ public class JavaAnalyzerTest extends GradleTestBase {
 
     @Test
     public void analyze13() throws Exception {
-        final JavaAnalyzer analyzer = new JavaAnalyzer();
+        final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8", project.getSourceDirectories());
         final String cp = getClasspath();
         List<File> files = new ArrayList<>();
         final File file = new File("./src/test/java/meghanada/L1.java").getCanonicalFile();
@@ -328,7 +327,7 @@ public class JavaAnalyzerTest extends GradleTestBase {
 
         final String tmp = System.getProperty("java.io.tmpdir");
 
-        traceIt(() -> {
+        timeIt(() -> {
             final CompileResult compileResult = analyzer.analyzeAndCompile(files, cp, tmp, true);
             compileResult.getSources().values().forEach(Source::dump);
             return compileResult;
@@ -341,15 +340,16 @@ public class JavaAnalyzerTest extends GradleTestBase {
 
     @Test
     public void analyze14() throws Exception {
-        final JavaAnalyzer analyzer = new JavaAnalyzer();
+        final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8", project.getSourceDirectories());
         final String cp = getClasspath();
+
         List<File> files = new ArrayList<>();
         final File file = new File("./src/test/java/meghanada/SelfRef1.java").getCanonicalFile();
         files.add(file);
 
         final String tmp = System.getProperty("java.io.tmpdir");
 
-        traceIt(() -> {
+        timeIt(() -> {
             final CompileResult compileResult = analyzer.analyzeAndCompile(files, cp, tmp, true);
             compileResult.getSources().values().forEach(Source::dump);
             return compileResult;
@@ -362,7 +362,7 @@ public class JavaAnalyzerTest extends GradleTestBase {
 
     @Test
     public void analyzeAll() throws Exception {
-        final JavaAnalyzer analyzer = new JavaAnalyzer();
+        final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8", project.getSourceDirectories());
         final String cp = getClasspath();
 
         List<File> files = Files.walk(new File("./src/main/java").toPath(), FileVisitOption.FOLLOW_LINKS)
@@ -385,7 +385,7 @@ public class JavaAnalyzerTest extends GradleTestBase {
         });
 
         timeIt(() -> {
-            final CompileResult compileResult = analyzer.analyzeAndCompile(files, cp, tmp, true);
+            final CompileResult compileResult = analyzer.analyzeAndCompile(files, cp, tmp, false);
             compileResult.getSources().values().forEach(Source::dump);
             return compileResult;
         });
@@ -399,6 +399,7 @@ public class JavaAnalyzerTest extends GradleTestBase {
     }
 
     private String getClasspath() throws IOException {
+
         final List<String> classpath = getSystemJars()
                 .stream()
                 .map(file1 -> {
