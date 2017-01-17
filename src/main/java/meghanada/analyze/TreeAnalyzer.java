@@ -357,20 +357,30 @@ public class TreeAnalyzer {
                 this.analyzeParsedTree(statement, src, endPosTable);
             }
 
+        } else if (tree instanceof JCTree.JCSynchronized) {
+            final JCTree.JCSynchronized jcSynchronized = (JCTree.JCSynchronized) tree;
+            final JCTree.JCExpression expression = jcSynchronized.getExpression();
+            if (expression != null) {
+                this.analyzeParsedTree(expression, src, endPosTable);
+            }
+            final JCTree.JCBlock block = jcSynchronized.getBlock();
+            if (block != null) {
+                this.analyzeParsedTree(block, src, endPosTable);
+            }
         } else if (tree instanceof JCTree.JCAssert) {
 
-            JCTree.JCAssert jcAssert = (JCTree.JCAssert) tree;
-            JCTree.JCExpression condition = jcAssert.getCondition();
+            final JCTree.JCAssert jcAssert = (JCTree.JCAssert) tree;
+            final JCTree.JCExpression condition = jcAssert.getCondition();
             if (condition != null) {
                 this.analyzeParsedTree(condition, src, endPosTable);
             }
-            JCTree.JCExpression detail = jcAssert.getDetail();
+            final JCTree.JCExpression detail = jcAssert.getDetail();
             if (detail != null) {
                 this.analyzeParsedTree(detail, src, endPosTable);
             }
 
         } else {
-            log.warn("@@ unknown tree class={} expr={}", tree.getClass(), tree);
+            log.warn("@@ unknown tree class={} expr={} filePath={}", tree.getClass(), tree, src.filePath);
         }
 
         log.traceExit(entryMessage);

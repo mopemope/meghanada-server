@@ -340,6 +340,27 @@ public class JavaAnalyzerTest extends GradleTestBase {
     }
 
     @Test
+    public void analyze14() throws Exception {
+        final JavaAnalyzer analyzer = new JavaAnalyzer();
+        final String cp = getClasspath();
+        List<File> files = new ArrayList<>();
+        final File file = new File("./src/test/java/meghanada/SelfRef1.java").getCanonicalFile();
+        files.add(file);
+
+        final String tmp = System.getProperty("java.io.tmpdir");
+
+        traceIt(() -> {
+            final CompileResult compileResult = analyzer.analyzeAndCompile(files, cp, tmp, true);
+            compileResult.getSources().values().forEach(Source::dump);
+            return compileResult;
+        });
+
+        timeIt(() -> {
+            return analyzer.analyzeAndCompile(files, cp, tmp, true);
+        });
+    }
+
+    @Test
     public void analyzeAll() throws Exception {
         final JavaAnalyzer analyzer = new JavaAnalyzer();
         final String cp = getClasspath();
@@ -348,6 +369,12 @@ public class JavaAnalyzerTest extends GradleTestBase {
                 .filter(path -> path.toFile().isFile())
                 .map(Path::toFile)
                 .collect(Collectors.toList());
+        List<File> testFiles = Files.walk(new File("./src/test/java").toPath(), FileVisitOption.FOLLOW_LINKS)
+                .filter(path -> path.toFile().isFile())
+                .map(Path::toFile)
+                .collect(Collectors.toList());
+
+        files.addAll(testFiles);
 
         final String tmp = System.getProperty("java.io.tmpdir");
 
