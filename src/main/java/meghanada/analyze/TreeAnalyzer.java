@@ -638,10 +638,10 @@ public class TreeAnalyzer {
                 this.analyzeParsedTree(methodInvocation, src, endPosTable);
             } else if (expressionKind.equals(Tree.Kind.POSTFIX_DECREMENT) ||
                     expressionKind.equals(Tree.Kind.POSTFIX_INCREMENT)) {
-
+            } else if (expressionKind.equals(Tree.Kind.PREFIX_DECREMENT) ||
+                    expressionKind.equals(Tree.Kind.PREFIX_INCREMENT)) {
             } else if (expressionKind.equals(Tree.Kind.PLUS_ASSIGNMENT) ||
                     expressionKind.equals(Tree.Kind.MINUS_ASSIGNMENT)) {
-
             } else {
                 log.warn("expressionKind {}", expressionKind);
 
