@@ -401,6 +401,18 @@ public class TreeAnalyzer {
             if (statement != null) {
                 this.analyzeParsedTree(statement, src, endPosTable);
             }
+        } else if (tree instanceof JCTree.JCTypeApply) {
+            final JCTree.JCTypeApply typeApply = (JCTree.JCTypeApply) tree;
+            final JCTree type = typeApply.getType();
+            if (type != null) {
+                this.analyzeParsedTree(type, src, endPosTable);
+            }
+        } else if (tree instanceof JCTree.JCAssignOp) {
+            final JCTree.JCAssignOp assignOp = (JCTree.JCAssignOp) tree;
+            final JCTree.JCExpression expression = assignOp.getExpression();
+            if (expression != null) {
+                this.analyzeParsedTree(expression, src, endPosTable);
+            }
         } else if (tree instanceof JCTree.JCSkip) {
             // skip
         } else {
@@ -710,6 +722,13 @@ public class TreeAnalyzer {
                     }
                 } else {
                     log.warn("XXXX_ASSIGNMENT expressionKind:{} tree:{}", expressionKind, expressionTree.getClass());
+                }
+            } else if (expressionKind.equals(Tree.Kind.NEW_CLASS)) {
+                if (expressionTree instanceof JCTree.JCNewClass) {
+                    final JCTree.JCNewClass newClass = (JCTree.JCNewClass) expressionTree;
+                    this.analyzeParsedTree(newClass, src, endPosTable);
+                } else {
+                    log.warn("NEW_CLASS expressionKind:{} tree:{}", expressionKind, expressionTree.getClass());
                 }
             } else {
                 log.warn("expressionKind:{} tree:{}", expressionKind, expressionTree.getClass());
