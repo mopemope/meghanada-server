@@ -17,6 +17,7 @@ import javax.tools.*;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.net.URI;
 import java.nio.charset.Charset;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -129,20 +130,36 @@ public class JavaAnalyzer {
             final Map<File, Map<String, String>> checksum = config.getAllChecksumMap();
             final File checksumFile = FileUtils.getSettingFile(JavaAnalyzer.COMPILE_CHECKSUM);
             final Map<String, String> finalChecksumMap = checksum.getOrDefault(checksumFile, new ConcurrentHashMap<>());
+            final Set<File> problemFiles = new HashSet<>();
 
             compileResult.getDiagnostics().forEach(diagnostic -> {
                 final JavaFileObject javaFileObject = diagnostic.getSource();
+                if (javaFileObject == null) {
+                    // WARN etc
+                    return;
+                }
                 try {
-                    final File file = new File(javaFileObject.toUri()).getCanonicalFile();
-                    if (file.exists() && !sourceMap.containsKey(file)) {
-                        JavaSourceLoader.writeCache(sourceMap.get(file));
-                    } else {
-                        finalChecksumMap.remove(file.getAbsolutePath());
+                    final URI uri = javaFileObject.toUri();
+                    final File problemFile = new File(uri).getCanonicalFile();
+                    if (diagnostic.getKind().equals(Diagnostic.Kind.ERROR)) {
+                        problemFiles.add(problemFile);
+                        finalChecksumMap.remove(problemFile.getAbsolutePath());
                     }
                 } catch (IOException e) {
                     throw new UncheckedIOException(e);
                 }
             });
+
+            for (final Source source : sourceMap.values()) {
+                if (!problemFiles.contains(source.getFile())) {
+                    try {
+                        JavaSourceLoader.writeCache(source);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+            ;
             FileUtils.writeMapSetting(finalChecksumMap, checksumFile);
             checksum.put(checksumFile, finalChecksumMap);
         }

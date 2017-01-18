@@ -264,11 +264,12 @@ public class TreeAnalyzer {
 
             final JCTree.JCNewArray newArray = (JCTree.JCNewArray) tree;
             final JCTree.JCExpression type = newArray.getType();
-            this.analyzeParsedTree(type, src, endPosTable);
-
-            final List<JCTree.JCExpression> initializers = newArray.getInitializers();
-            if (initializers != null) {
-                initializers.forEach(wrapIOConsumer(jcExpression -> {
+            if (type != null) {
+                this.analyzeParsedTree(type, src, endPosTable);
+            }
+            final List<JCTree.JCExpression> initializes = newArray.getInitializers();
+            if (initializes != null) {
+                initializes.forEach(wrapIOConsumer(jcExpression -> {
                     this.analyzeParsedTree(jcExpression, src, endPosTable);
                 }));
             }
@@ -378,7 +379,30 @@ public class TreeAnalyzer {
             if (detail != null) {
                 this.analyzeParsedTree(detail, src, endPosTable);
             }
-
+        } else if (tree instanceof JCTree.JCArrayTypeTree) {
+            final JCTree.JCArrayTypeTree arrayTypeTree = (JCTree.JCArrayTypeTree) tree;
+            final JCTree type = arrayTypeTree.getType();
+            if (type != null) {
+                this.analyzeParsedTree(type, src, endPosTable);
+            }
+        } else if (tree instanceof JCTree.JCDoWhileLoop) {
+            final JCTree.JCDoWhileLoop doWhileLoop = (JCTree.JCDoWhileLoop) tree;
+            final JCTree.JCExpression condition = doWhileLoop.getCondition();
+            if (condition != null) {
+                this.analyzeParsedTree(condition, src, endPosTable);
+            }
+            final JCTree.JCStatement statement = doWhileLoop.getStatement();
+            if (statement != null) {
+                this.analyzeParsedTree(statement, src, endPosTable);
+            }
+        } else if (tree instanceof JCTree.JCLabeledStatement) {
+            final JCTree.JCLabeledStatement labeledStatement = (JCTree.JCLabeledStatement) tree;
+            final JCTree.JCStatement statement = labeledStatement.getStatement();
+            if (statement != null) {
+                this.analyzeParsedTree(statement, src, endPosTable);
+            }
+        } else if (tree instanceof JCTree.JCSkip) {
+            // skip
         } else {
             log.warn("@@ unknown tree class={} expr={} filePath={}", tree.getClass(), tree, src.filePath);
         }
@@ -631,19 +655,64 @@ public class TreeAnalyzer {
                 final JCTree.JCAssign assign = (JCTree.JCAssign) expressionTree;
                 final JCTree.JCExpression lhs = assign.lhs;
                 final JCTree.JCExpression rhs = assign.rhs;
-                this.analyzeParsedTree(lhs, src, endPosTable);
-                this.analyzeParsedTree(rhs, src, endPosTable);
+                if (lhs != null) {
+                    this.analyzeParsedTree(lhs, src, endPosTable);
+                }
+                if (rhs != null) {
+                    this.analyzeParsedTree(rhs, src, endPosTable);
+                }
             } else if (expressionKind.equals(Tree.Kind.METHOD_INVOCATION)) {
                 final JCTree.JCMethodInvocation methodInvocation = (JCTree.JCMethodInvocation) expressionTree;
                 this.analyzeParsedTree(methodInvocation, src, endPosTable);
             } else if (expressionKind.equals(Tree.Kind.POSTFIX_DECREMENT) ||
                     expressionKind.equals(Tree.Kind.POSTFIX_INCREMENT)) {
+                if (expressionTree instanceof JCTree.JCUnary) {
+                    final JCTree.JCUnary jcUnary = (JCTree.JCUnary) expressionTree;
+                    final JCTree.JCExpression args = jcUnary.getExpression();
+                    if (args != null) {
+                        this.analyzeParsedTree(args, src, endPosTable);
+                    }
+                } else {
+                    log.warn("POSTFIX_XXXXX expressionKind:{} tree:{}", expressionKind, expressionTree.getClass());
+                }
+
             } else if (expressionKind.equals(Tree.Kind.PREFIX_DECREMENT) ||
                     expressionKind.equals(Tree.Kind.PREFIX_INCREMENT)) {
+                if (expressionTree instanceof JCTree.JCUnary) {
+                    final JCTree.JCUnary jcUnary = (JCTree.JCUnary) expressionTree;
+                    final JCTree.JCExpression args = jcUnary.getExpression();
+                    if (args != null) {
+                        this.analyzeParsedTree(args, src, endPosTable);
+                    }
+                } else {
+                    log.warn("PREFIX_XXXXX expressionKind:{} tree:{}", expressionKind, expressionTree.getClass());
+                }
             } else if (expressionKind.equals(Tree.Kind.PLUS_ASSIGNMENT) ||
-                    expressionKind.equals(Tree.Kind.MINUS_ASSIGNMENT)) {
+                    expressionKind.equals(Tree.Kind.MINUS_ASSIGNMENT) ||
+                    expressionKind.equals(Tree.Kind.AND_ASSIGNMENT) ||
+                    expressionKind.equals(Tree.Kind.OR_ASSIGNMENT) ||
+                    expressionKind.equals(Tree.Kind.XOR_ASSIGNMENT) ||
+                    expressionKind.equals(Tree.Kind.DIVIDE_ASSIGNMENT) ||
+                    expressionKind.equals(Tree.Kind.LEFT_SHIFT_ASSIGNMENT) ||
+                    expressionKind.equals(Tree.Kind.RIGHT_SHIFT_ASSIGNMENT) ||
+                    expressionKind.equals(Tree.Kind.UNSIGNED_RIGHT_SHIFT_ASSIGNMENT) ||
+                    expressionKind.equals(Tree.Kind.REMAINDER_ASSIGNMENT) ||
+                    expressionKind.equals(Tree.Kind.MULTIPLY_ASSIGNMENT)) {
+                if (expressionTree instanceof JCTree.JCAssignOp) {
+                    final JCTree.JCAssignOp assignOp = (JCTree.JCAssignOp) expressionTree;
+                    final JCTree.JCExpression lhs = assignOp.lhs;
+                    final JCTree.JCExpression rhs = assignOp.rhs;
+                    if (lhs != null) {
+                        this.analyzeParsedTree(lhs, src, endPosTable);
+                    }
+                    if (rhs != null) {
+                        this.analyzeParsedTree(rhs, src, endPosTable);
+                    }
+                } else {
+                    log.warn("XXXX_ASSIGNMENT expressionKind:{} tree:{}", expressionKind, expressionTree.getClass());
+                }
             } else {
-                log.warn("expressionKind {}", expressionKind);
+                log.warn("expressionKind:{} tree:{}", expressionKind, expressionTree.getClass());
 
             }
 
