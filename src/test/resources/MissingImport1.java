@@ -27,7 +27,7 @@ public class MissingImport1 extends File {
         return null;
     }
 
-    public List<MethodCallSymbol> getMethodCalls() throws IOException {
+    public List<MethodCall> getMethodCalls() throws IOException {
         return null;
     }
 }

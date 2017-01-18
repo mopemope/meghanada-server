@@ -51,7 +51,7 @@ public class JavaAnalyzer {
         if (!tempOut.exists() && !tempOut.mkdirs()) {
             log.warn("fail mkdirs path:{}", tempOut);
         }
-
+        // TODO delegate src filter
         final List<File> compileFiles = force ? files : getCompileTargets(files, this.sourceRoots, tempOut);
 
         if (compileFiles.isEmpty()) {
@@ -60,7 +60,9 @@ public class JavaAnalyzer {
             return new CompileResult(true, analyzedMap);
         }
 
-        final List<File> targets = getFinalTargets(compileFiles);
+        final List<File> targets = compileFiles;
+
+        // final List<File> targets = getFinalTargets(compileFiles);
 
         log.trace("start compile classpath={} files={} output={}", classpath, targets, out);
 

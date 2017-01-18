@@ -274,7 +274,7 @@ public class CachedASMReflector {
             final String className = index.getName().toLowerCase();
             return className.contains(lower);
         } else {
-            return index.getName().equals(keyword);
+            return index.getName().equals(keyword) || index.getDeclaration().equals(keyword);
         }
     }
 

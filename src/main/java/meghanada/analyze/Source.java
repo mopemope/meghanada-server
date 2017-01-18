@@ -21,7 +21,7 @@ public class Source {
     // K: className V: FQCN
     public final Map<String, String> importClass = new HashMap<>(8);
     public final Map<String, String> staticImportClass = new HashMap<>(8);
-    public final Set<String> imported = new HashSet<>(8);
+    public final Set<String> unused = new HashSet<>(8);
     public final Set<String> unknown = new HashSet<>(8);
     public final List<ClassScope> classScopes = new ArrayList<>(1);
     public final Deque<ClassScope> currentClassScope = new ArrayDeque<>(1);
@@ -41,15 +41,15 @@ public class Source {
     public void addImport(final String fqcn) {
         final String className = ClassNameUtils.getSimpleName(fqcn);
         this.importClass.putIfAbsent(className, fqcn);
-        this.imported.add(fqcn);
-        log.trace("imported class {}", fqcn);
+        this.unused.add(fqcn);
+        log.trace("unused class {}", fqcn);
     }
 
     public void addStaticImport(final String method, final String clazz) {
         final String className = ClassNameUtils.getSimpleName(clazz);
         this.importClass.putIfAbsent(className, clazz);
         this.staticImportClass.putIfAbsent(method, clazz);
-        log.trace("static imported class {} {}", clazz, method);
+        log.trace("static unused class {} {}", clazz, method);
     }
 
     public void startClass(final ClassScope classScope) {
@@ -288,11 +288,12 @@ public class Source {
         // search missing imports
         final Map<String, List<String>> ask = new HashMap<>();
 
-        log.debug("unknown class:{} ", this.unknown);
-        for (String clazzName : this.unknown) {
-            log.debug("search unknown {} ...", clazzName);
-            final Collection<? extends CandidateUnit> findUnits = reflector.searchClasses(clazzName, false, false);
-            log.debug("find CandidateUnit {}", findUnits);
+        log.debug("unknown class size:{} classes:{}", this.unknown.size(), this.unknown);
+        for (final String clazzName : this.unknown) {
+            final String searchWord = ClassNameUtils.removeTypeAndArray(clazzName);
+            log.debug("search unknown class : {} ...", searchWord);
+            final Collection<? extends CandidateUnit> findUnits = reflector.searchClasses(searchWord, false, false);
+            log.debug("find candidate units : {}", findUnits);
 
             if (findUnits.size() == 0) {
                 continue;
@@ -324,4 +325,71 @@ public class Source {
             reflector.invalidate(cs.getFQCN());
         }
     }
+
+    public List<String> optimizeImports() {
+        // shallow copy
+        Map<String, String> importMap = new HashMap<>(this.importClass);
+
+        log.debug("unused:{}", this.unused);
+        // remove unused
+        this.unused.forEach(k -> {
+            importMap.values().remove(k);
+        });
+        log.debug("importMap:{}", importMap);
+
+        final Map<String, List<String>> missingImport = this.searchMissingImport(importMap, false);
+        log.debug("missingImport:{}", missingImport);
+
+        if (missingImport.size() > 0) {
+            // fail
+            return Collections.emptyList();
+        }
+
+        // create optimize import
+        // 1. count import pkg
+        // 2. sort
+        final Map<String, List<String>> optimizeMap = new HashMap<>();
+        importMap.values()
+                .forEach(fqcn -> {
+                    String pkg1 = ClassNameUtils.getPackage(fqcn);
+                    if (pkg1.startsWith("java.lang")) {
+                        return;
+                    }
+                    if (optimizeMap.containsKey(pkg1)) {
+                        List<String> list = optimizeMap.get(pkg1);
+                        list.add(fqcn);
+                    } else {
+                        List<String> list = new ArrayList<>();
+                        list.add(fqcn);
+                        optimizeMap.put(pkg1, list);
+                    }
+                });
+
+        final List<String> imports = optimizeMap.values().stream()
+                .map(strings -> {
+                    if (strings.size() >= 5) {
+                        final String sample = strings.get(0);
+                        final String pkg = ClassNameUtils.getPackage(sample);
+                        final List<String> result = new ArrayList<>();
+                        result.add(pkg + ".*");
+                        return result;
+                    }
+                    return strings;
+                }).flatMap(Collection::stream)
+                .sorted((o1, o2) -> {
+                    if (o1.startsWith("java.") && o2.startsWith("java.")) {
+                        return o1.compareTo(o2);
+                    } else if (o1.startsWith("java.")) {
+                        return 1;
+                    } else if (o2.startsWith("java.")) {
+                        return -1;
+                    } else {
+                        return o1.compareTo(o2);
+                    }
+                }).collect(Collectors.toList());
+
+        log.debug("optimize imports:{}", imports);
+        return imports;
+    }
+
 }

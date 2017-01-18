@@ -1,5 +1,6 @@
 package meghanada.analyze;
 
+import com.google.common.base.Joiner;
 import com.sun.source.tree.CompilationUnitTree;
 import com.sun.source.tree.ExpressionTree;
 import com.sun.source.tree.Tree;
@@ -22,9 +23,10 @@ import javax.lang.model.element.Name;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
-import java.util.HashMap;
+import java.util.ArrayList;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.StreamSupport;
 
 import static meghanada.utils.FunctionUtils.wrapIOConsumer;
@@ -36,8 +38,11 @@ public class TreeAnalyzer {
     private Source analyzeCompilationUnitTree(final CompilationUnitTree cut, final Source src) {
         final ExpressionTree packageExpr = cut.getPackageName();
         log.trace("file={}", src.getFile());
-        final String packageName = packageExpr.toString();
-        src.packageName = packageName;
+        if (packageExpr == null) {
+            src.packageName = "";
+        } else {
+            src.packageName = packageExpr.toString();
+        }
         final EndPosTable endPositions = ((JCTree.JCCompilationUnit) cut).endPositions;
         cut.getImports().forEach(imp -> {
 
@@ -75,13 +80,17 @@ public class TreeAnalyzer {
                 final int startPos = classDecl.getPreferredPosition();
                 final int endPos = classDecl.getEndPosition(endPositions);
 
+                final JCTree.JCExpression extendsClause = classDecl.getExtendsClause();
+                if (extendsClause != null) {
+                    this.analyzeParsedTree(extendsClause, src, endPositions);
+                }
                 final Name simpleName = classDecl.getSimpleName();
                 final Range range = Range.create(src, startPos + 1, endPos);
 
                 final int nameStart = startPos + 6;
                 final Range nameRange = Range.create(src, nameStart, nameStart + simpleName.length());
 
-                final String fqcn = packageName + "." + simpleName.toString();
+                final String fqcn = src.packageName + "." + simpleName.toString();
                 final ClassScope classScope = new ClassScope(fqcn, nameRange, startPos, range);
                 log.trace("class={}", classScope);
 
@@ -730,6 +739,16 @@ public class TreeAnalyzer {
                 } else {
                     log.warn("NEW_CLASS expressionKind:{} tree:{}", expressionKind, expressionTree.getClass());
                 }
+            } else if (expressionKind.equals(Tree.Kind.ERRONEOUS)) {
+                if (expressionTree instanceof JCTree.JCErroneous) {
+                    final JCTree.JCErroneous erroneous = (JCTree.JCErroneous) expressionTree;
+                    final List<? extends JCTree> errorTrees = erroneous.getErrorTrees();
+                    if (errorTrees != null) {
+                        errorTrees.forEach(wrapIOConsumer(tree -> {
+                            this.analyzeParsedTree(tree, src, endPosTable);
+                        }));
+                    }
+                }
             } else {
                 log.warn("expressionKind:{} tree:{}", expressionKind, expressionTree.getClass());
 
@@ -879,7 +898,8 @@ public class TreeAnalyzer {
         } else {
             String nm = ident.toString();
             final Variable variable = new Variable(nm, preferredPos, range);
-            Optional<ClassScope> currentClass = src.getCurrentClass();
+            final Optional<ClassScope> currentClass = src.getCurrentClass();
+
             if (currentClass.isPresent()) {
                 final String className = currentClass.get().name;
                 if (ClassNameUtils.getSimpleName(className).equals(nm)) {
@@ -888,6 +908,13 @@ public class TreeAnalyzer {
                     return;
                 }
             }
+
+            if (src.importClass.containsKey(nm)) {
+                variable.fqcn = this.markFQCN(src, src.importClass.get(nm));
+                src.getCurrentScope().ifPresent(scope -> scope.addVariable(variable));
+                return;
+            }
+
             src.classScopes.forEach(classScope -> {
                 final String className = currentClass.get().name;
                 if (ClassNameUtils.getSimpleName(className).equals(nm)) {
@@ -895,6 +922,7 @@ public class TreeAnalyzer {
                     src.getCurrentScope().ifPresent(scope -> scope.addVariable(variable));
                 }
             });
+            this.markFQCN(src, nm);
         }
     }
 
@@ -905,22 +933,22 @@ public class TreeAnalyzer {
         final Range nameRange = Range.create(src, preferredPos, preferredPos + name.length());
         final Range range = Range.create(src, preferredPos, endPos);
 
-        src.getCurrentClass().ifPresent(wrapIOConsumer(classScope -> {
+        src.getCurrentClass().ifPresent(wrapIOConsumer((ClassScope classScope) -> {
             String methodName = name;
             boolean isConstructor = false;
             String returnFQCN = "";
 
             if (!name.equals("<init>")) {
                 // set return type
-                final JCTree returnType = md.getReturnType();
-                if (returnType != null) {
-                    final Type type = returnType.type;
+                final JCTree returnTypeExpr = md.getReturnType();
+                if (returnTypeExpr != null) {
+                    final Type type = returnTypeExpr.type;
                     if (type != null) {
                         final String fqcn = type.toString();
                         log.trace("method return={}", fqcn);
                         returnFQCN = fqcn;
                     } else {
-                        returnFQCN = returnType.toString();
+                        returnFQCN = resolveTypeFromImport(src, returnTypeExpr);
                     }
                 }
             } else {
@@ -954,7 +982,8 @@ public class TreeAnalyzer {
 
             // set exceptions
             md.getThrows().forEach(expr -> {
-
+                final String ex = resolveTypeFromImport(src, expr);
+                this.markFQCN(src, ex);
             });
 
             final JCTree.JCBlock body = md.getBody();
@@ -966,6 +995,47 @@ public class TreeAnalyzer {
 
         }));
 
+    }
+
+    private String resolveTypeFromImport(final Source src, final JCTree tree) {
+
+        if (tree instanceof JCTree.JCTypeApply) {
+            final JCTree.JCTypeApply typeApply = (JCTree.JCTypeApply) tree;
+            String methodReturn = typeApply.getType().toString();
+            methodReturn = src.importClass.getOrDefault(methodReturn, methodReturn);
+
+            final List<JCTree.JCExpression> typeArguments = typeApply.getTypeArguments();
+            if (typeArguments != null) {
+                final java.util.List<String> temp = new ArrayList<>();
+                for (final JCTree.JCExpression e : typeArguments) {
+                    String typeArgType = e.toString();
+                    typeArgType = src.importClass.getOrDefault(typeArgType, typeArgType);
+                    temp.add(typeArgType);
+                }
+                final String join = Joiner.on(",").join(temp);
+                if (!join.isEmpty()) {
+                    methodReturn = methodReturn + "<" + join + ">";
+                }
+            }
+            return methodReturn;
+        } else if (tree instanceof JCTree.JCFieldAccess) {
+            return tree.toString();
+        } else if (tree instanceof JCTree.JCIdent) {
+            final String ident = tree.toString();
+            return src.importClass.getOrDefault(ident, ident);
+        } else if (tree instanceof JCTree.JCPrimitiveTypeTree) {
+            return tree.toString();
+        } else if (tree instanceof JCTree.JCArrayTypeTree) {
+            final JCTree.JCArrayTypeTree arrayTypeTree = (JCTree.JCArrayTypeTree) tree;
+            final JCTree type = arrayTypeTree.getType();
+            if (type != null) {
+                final String k = type.toString();
+                return src.importClass.getOrDefault(k, k) + "[]";
+            }
+        } else {
+            log.warn("tree={} {}", tree, tree.getClass());
+        }
+        return tree.toString();
     }
 
     private void analyzeVariableDecl(final JCTree.JCVariableDecl vd, final Source src, final int preferredPos, final int endPos, final EndPosTable endPosTable) {
@@ -1002,51 +1072,63 @@ public class TreeAnalyzer {
 
             final ExpressionScope expressionScope = new ExpressionScope(preferredPos, range);
             blockScope.startExpression(expressionScope);
-            try {
-                final Variable variable = new Variable(name.toString(), preferredPos, range);
 
-                if (vd.getTag().equals(JCTree.Tag.VARDEF)) {
-                    variable.def = true;
+            if (typeTree instanceof JCTree.JCTypeUnion) {
+                final JCTree.JCTypeUnion union = (JCTree.JCTypeUnion) typeTree;
+                for (final JCTree.JCExpression expression : union.getTypeAlternatives()) {
+                    String type = expression.toString();
+                    final Variable variable = new Variable(name.toString(), preferredPos, range);
+                    type = src.importClass.getOrDefault(type, type);
+                    variable.fqcn = this.markFQCN(src, type);
+                    src.getCurrentScope().ifPresent(scope -> scope.addVariable(variable));
                 }
-                if (src.isParameter) {
-                    variable.parameter = true;
-                }
+            } else {
+                try {
+                    final Variable variable = new Variable(name.toString(), preferredPos, range);
 
-                if (typeTree instanceof JCTree.JCExpression) {
-                    final JCTree.JCExpression expression = (JCTree.JCExpression) typeTree;
-                    final Type type = expression.type;
+                    if (vd.getTag().equals(JCTree.Tag.VARDEF)) {
+                        variable.def = true;
+                    }
+                    if (src.isParameter) {
+                        variable.parameter = true;
+                    }
 
-                    if (type == null && expression instanceof JCTree.JCIdent) {
-                        final JCTree.JCIdent ident = (JCTree.JCIdent) expression;
-                        final String nm = ident.getName().toString();
-                        final String identClazz = src.importClass.get(nm);
-                        if (identClazz != null) {
-                            variable.fqcn = this.markFQCN(src, identClazz);
+                    if (typeTree instanceof JCTree.JCExpression) {
+                        final JCTree.JCExpression expression = (JCTree.JCExpression) typeTree;
+                        final Type type = expression.type;
+
+                        if (type == null && expression instanceof JCTree.JCIdent) {
+                            final JCTree.JCIdent ident = (JCTree.JCIdent) expression;
+                            final String nm = ident.getName().toString();
+                            final String identClazz = src.importClass.get(nm);
+                            if (identClazz != null) {
+                                variable.fqcn = this.markFQCN(src, identClazz);
+                            } else {
+                                log.warn("typeTree:{}", typeTree);
+                            }
                         } else {
-                            log.warn("typeTree:{}", typeTree);
+                            final String fqcn = resolveTypeFromImport(src, expression);
+                            variable.fqcn = this.markFQCN(src, fqcn);
                         }
                     } else {
-                        this.toFQCNString(type).ifPresent(fqcn -> {
-                            variable.fqcn = this.markFQCN(src, fqcn);
-                        });
+                        log.warn("typeTree:{} vd:{}", typeTree, vd);
                     }
-                } else {
-                    log.warn("typeTree:{} vd:{}", typeTree, vd);
-                }
-                src.getCurrentScope().ifPresent(scope -> scope.addVariable(variable));
-                if (initializer != null) {
-                    this.analyzeParsedTree(initializer, src, endPosTable);
-                }
-            } finally {
-                blockScope.endExpression();
-            }
 
+                    src.getCurrentScope().ifPresent(scope -> scope.addVariable(variable));
+
+                    if (initializer != null) {
+                        this.analyzeParsedTree(initializer, src, endPosTable);
+                    }
+                } finally {
+                    blockScope.endExpression();
+                }
+            }
         }));
     }
 
 
     public Map<File, Source> analyze(final Iterable<? extends CompilationUnitTree> parsed) {
-        final Map<File, Source> analyzedMap = new HashMap<>();
+        final Map<File, Source> analyzedMap = new ConcurrentHashMap<>();
 
         if (log.isDebugEnabled()) {
             parsed.forEach(wrapIOConsumer(cut -> {
@@ -1142,12 +1224,27 @@ public class TreeAnalyzer {
     }
 
     private String markFQCN(final Source src, final String fqcn) {
-        if (!src.importClass.containsValue(fqcn)) {
-            src.unknown.add(fqcn);
+        if (fqcn.equals("void") ||
+                fqcn.startsWith("capture of") ||
+                fqcn.equals("any") ||
+                fqcn.equals("<any>")) {
+            return fqcn;
+        }
+
+        final CachedASMReflector reflector = CachedASMReflector.getInstance();
+        final String simpleName = ClassNameUtils.removeTypeAndArray(fqcn);
+
+        ClassNameUtils.parseTypeParameter(fqcn).forEach(s -> {
+            markFQCN(src, s);
+        });
+
+        if (!src.importClass.containsValue(simpleName) && !reflector.getGlobalClassIndex().containsKey(simpleName)) {
+            // log.debug("add unknown={} fqcn={}", simpleName, fqcn);
+            src.unknown.add(simpleName);
         } else {
             // contains
-            if (src.unknown.contains(fqcn)) {
-                src.unknown.remove(fqcn);
+            if (src.unused.contains(simpleName)) {
+                src.unused.remove(simpleName);
             }
         }
         return fqcn;
