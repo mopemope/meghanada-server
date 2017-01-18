@@ -63,6 +63,7 @@ public class MavenProject extends Project {
             final File logFile = File.createTempFile("meghanada-cp", ".log");
             logFile.deleteOnExit();
             final String logPath = logFile.getCanonicalPath();
+            this.runMvn("dependency:resolve");
             this.runMvn("dependency:build-classpath", String.format("-Dmdep.outputFile=%s", logPath));
             final String cpTxt = Files.readFirstLine(logFile, Charset.forName("UTF-8"));
             final String[] depends = cpTxt.split(File.pathSeparator);
