@@ -7,7 +7,6 @@ import com.sun.tools.javac.parser.FuzzyParserFactory;
 import com.sun.tools.javac.util.Context;
 import meghanada.config.Config;
 import meghanada.session.JavaSourceLoader;
-import meghanada.utils.ClassNameUtils;
 import meghanada.utils.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -21,7 +20,6 @@ import java.net.URI;
 import java.nio.charset.Charset;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 
 public class JavaAnalyzer {
 
@@ -39,7 +37,7 @@ public class JavaAnalyzer {
         log.debug("Compiler settings compileSource:{} compileTarget:{}", this.compileSource, this.compileTarget);
     }
 
-    public CompileResult analyzeAndCompile(final List<File> files, final String classpath, final String out, boolean force) throws IOException {
+    public CompileResult analyzeAndCompile(final List<File> files, final String classpath, final String out) throws IOException {
 
         if (files == null || files.isEmpty()) {
             final Map<File, Source> analyzedMap = new HashMap<>();
@@ -51,22 +49,8 @@ public class JavaAnalyzer {
         if (!tempOut.exists() && !tempOut.mkdirs()) {
             log.warn("fail mkdirs path:{}", tempOut);
         }
-        // TODO delegate src filter
-        final List<File> compileFiles = force ? files : getCompileTargets(files, this.sourceRoots, tempOut);
-
-        if (compileFiles.isEmpty()) {
-            final Map<File, Source> analyzedMap = new HashMap<>();
-            log.warn("compileFiles isEmpty");
-            return new CompileResult(true, analyzedMap);
-        }
-
-        final List<File> targets = compileFiles;
-
-        // final List<File> targets = getFinalTargets(compileFiles);
-
-        log.trace("start compile classpath={} files={} output={}", classpath, targets, out);
-
-        return this.runAnalyzeAndCompile(classpath, out, targets);
+        log.trace("start compile classpath={} files={} output={}", classpath, files, out);
+        return this.runAnalyzeAndCompile(classpath, out, files);
     }
 
     private List<File> getFinalTargets(final List<File> compileFiles) {
@@ -172,76 +156,6 @@ public class JavaAnalyzer {
         final JavacTaskImpl javacTaskImpl = (JavacTaskImpl) compilerTask;
         final Context context = javacTaskImpl.getContext();
         FuzzyParserFactory.instance(context);
-    }
-
-    private boolean hasClassFile(String path, Set<File> sourceRoots, File out) throws IOException {
-        if (sourceRoots == null) {
-            return false;
-        }
-        for (final File rootFile : sourceRoots) {
-            final String root = rootFile.getCanonicalPath();
-            if (path.startsWith(root)) {
-                // find
-                final String src = path.substring(root.length());
-                final String classFile = ClassNameUtils.replace(src, ".java", ".class");
-                final File file = new File(out, classFile);
-                return file.exists();
-            }
-        }
-        return false;
-    }
-
-    private List<File> getCompileTargets(final List<File> files, final Set<File> sourceRoots, final File output) throws IOException {
-
-        final File checksumFile = FileUtils.getSettingFile(JavaAnalyzer.COMPILE_CHECKSUM);
-        final Map<File, Map<String, String>> checksum = Config.load().getAllChecksumMap();
-
-        if (!checksum.containsKey(checksumFile)) {
-            Map<String, String> checksumMap = new ConcurrentHashMap<>(64);
-            if (checksumFile.exists()) {
-                checksumMap = new ConcurrentHashMap<>(FileUtils.readMapSetting(checksumFile));
-            }
-            checksum.put(checksumFile, checksumMap);
-        }
-
-        final Map<String, String> finalChecksumMap = checksum.get(checksumFile);
-        final List<File> fileList = files
-                .parallelStream()
-                .filter(f -> {
-                    if (!FileUtils.isJavaFile(f)) {
-                        return false;
-                    }
-                    try {
-                        final String path = f.getCanonicalPath();
-                        final String md5sum = FileUtils.md5sum(f);
-                        if (!this.hasClassFile(path, sourceRoots, output)) {
-                            return true;
-                        }
-
-                        if (finalChecksumMap.containsKey(path)) {
-                            // compare checksum
-                            final String prevSum = finalChecksumMap.get(path);
-                            if (md5sum.equals(prevSum)) {
-                                // not modify
-                                return false;
-                            }
-                            // update
-                            finalChecksumMap.put(path, md5sum);
-                        } else {
-                            // save checksum
-                            finalChecksumMap.put(path, md5sum);
-                        }
-                    } catch (IOException e) {
-                        throw new UncheckedIOException(e);
-                    }
-                    return true;
-                }).collect(Collectors.toList());
-
-        FileUtils.writeMapSetting(finalChecksumMap, checksumFile);
-        checksum.put(checksumFile, finalChecksumMap);
-        log.debug("remove unmodified {} -> {}", files.size(), fileList.size());
-        log.debug("modified : {}", fileList);
-        return fileList;
     }
 
 }

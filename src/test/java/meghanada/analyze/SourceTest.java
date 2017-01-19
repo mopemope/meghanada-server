@@ -66,7 +66,7 @@ public class SourceTest extends GradleTestBase {
         final String tmp = System.getProperty("java.io.tmpdir");
 
         final Source source = debugIt(() -> {
-            final CompileResult compileResult = analyzer.analyzeAndCompile(files, cp, tmp, true);
+            final CompileResult compileResult = analyzer.analyzeAndCompile(files, cp, tmp);
             return compileResult.getSources().get(file);
         });
 

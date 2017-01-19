@@ -19,6 +19,8 @@ import java.security.DigestInputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 import java.util.zip.DeflaterOutputStream;
 import java.util.zip.InflaterInputStream;
 
@@ -240,4 +242,86 @@ public final class FileUtils {
         }
         return Optional.empty();
     }
+
+    public static boolean hasClassFile(String path, Set<File> sourceRoots, File out) throws IOException {
+        if (sourceRoots == null) {
+            return false;
+        }
+        for (final File rootFile : sourceRoots) {
+            final String root = rootFile.getCanonicalPath();
+            if (path.startsWith(root)) {
+                // find
+                final String src = path.substring(root.length());
+                final String classFile = ClassNameUtils.replace(src, ".java", ".class");
+                final File file = new File(out, classFile);
+                return file.exists();
+            }
+        }
+        return false;
+    }
+
+    private static List<File> addPackagePrivate(final List<File> compileFiles) {
+        final Set<File> temp = Collections.newSetFromMap(new ConcurrentHashMap<File, Boolean>());
+
+        compileFiles.parallelStream().forEach(file -> {
+            if (file.isFile()) {
+                final List<File> list = FileUtils.listJavaFiles(file.getParentFile());
+                temp.addAll(list);
+            } else {
+                final List<File> list = FileUtils.listJavaFiles(file);
+                temp.addAll(list);
+            }
+        });
+
+        // TODO caller
+
+        compileFiles.addAll(temp);
+        return compileFiles;
+    }
+
+    public static List<File> getModifiedSources(final String filePath, final List<File> sourceFiles, final Set<File> sourceRoots, final File output) throws IOException {
+
+        final File checksumFile = FileUtils.getSettingFile(filePath);
+        final Config config = Config.load();
+        final Map<String, String> finalChecksumMap = config.getChecksumMap(checksumFile);
+
+        final List<File> fileList = sourceFiles
+                .parallelStream()
+                .filter(f -> {
+                    if (!FileUtils.isJavaFile(f)) {
+                        return false;
+                    }
+                    try {
+                        final String path = f.getCanonicalPath();
+                        final String md5sum = FileUtils.md5sum(f);
+                        if (!FileUtils.hasClassFile(path, sourceRoots, output)) {
+                            return true;
+                        }
+
+                        if (finalChecksumMap.containsKey(path)) {
+                            // compare checksum
+                            final String prevSum = finalChecksumMap.get(path);
+                            if (md5sum.equals(prevSum)) {
+                                // not modify
+                                return false;
+                            }
+                            // update
+                            finalChecksumMap.put(path, md5sum);
+                        } else {
+                            // save checksum
+                            finalChecksumMap.put(path, md5sum);
+                        }
+                    } catch (IOException e) {
+                        throw new UncheckedIOException(e);
+                    }
+                    return true;
+                }).collect(Collectors.toList());
+
+        FileUtils.writeMapSetting(finalChecksumMap, checksumFile);
+        config.getAllChecksumMap().put(checksumFile, finalChecksumMap);
+        log.debug("remove unmodified {} To {}", sourceFiles.size(), fileList.size());
+        log.debug("modified : {}", fileList);
+        return addPackagePrivate(fileList);
+    }
+
 }

@@ -203,7 +203,12 @@ public abstract class Project {
     public CompileResult compileJava(final boolean force) throws IOException {
         List<File> files = this.collectJavaFiles(this.getSourceDirectories());
         if (files != null && !files.isEmpty()) {
-            return getJavaAnalyzer().analyzeAndCompile(files, this.allClasspath(), this.output.getCanonicalPath(), force);
+            files = force ? files : FileUtils.getModifiedSources(JavaAnalyzer.COMPILE_CHECKSUM,
+                    files,
+                    this.getAllSources(),
+                    this.output);
+
+            return getJavaAnalyzer().analyzeAndCompile(files, this.allClasspath(), output.getCanonicalPath());
         }
         return new CompileResult(true);
     }
@@ -211,9 +216,38 @@ public abstract class Project {
     public CompileResult compileTestJava(final boolean force) throws IOException {
         List<File> files = this.collectJavaFiles(this.getTestSourceDirectories());
         if (files != null && !files.isEmpty()) {
-            return getJavaAnalyzer().analyzeAndCompile(files, this.allClasspath(), this.testOutput.getCanonicalPath(), force);
+            files = force ? files : FileUtils.getModifiedSources(JavaAnalyzer.COMPILE_CHECKSUM,
+                    files,
+                    this.getAllSources(),
+                    this.testOutput);
+
+            return getJavaAnalyzer().analyzeAndCompile(files, this.allClasspath(), testOutput.getCanonicalPath());
         }
         return new CompileResult(true);
+    }
+
+    public CompileResult parseFile(final File file) throws IOException {
+        boolean isTest = false;
+        String filepath = file.getCanonicalPath();
+        for (File source : this.getTestSourceDirectories()) {
+            String testPath = source.getCanonicalPath();
+            if (filepath.startsWith(testPath)) {
+                isTest = true;
+                break;
+            }
+        }
+        String output;
+        if (isTest) {
+            output = this.testOutput.getCanonicalPath();
+        } else {
+            output = this.output.getCanonicalPath();
+        }
+        if (FileUtils.filterFile(file)) {
+            List<File> files = new ArrayList<>();
+            files.add(file);
+            return getJavaAnalyzer().analyzeAndCompile(files, this.allClasspath(), output);
+        }
+        return new CompileResult(false);
     }
 
     public CompileResult compileFile(final File file, final boolean force) throws IOException {
@@ -233,9 +267,13 @@ public abstract class Project {
             output = this.output.getCanonicalPath();
         }
         if (FileUtils.filterFile(file)) {
-            final List<File> files = new ArrayList<>();
+            List<File> files = new ArrayList<>();
             files.add(file);
-            return getJavaAnalyzer().analyzeAndCompile(files, this.allClasspath(), output, force);
+            files = force ? files : FileUtils.getModifiedSources(JavaAnalyzer.COMPILE_CHECKSUM,
+                    files,
+                    this.getAllSources(),
+                    new File(output));
+            return getJavaAnalyzer().analyzeAndCompile(files, this.allClasspath(), output);
         }
         return new CompileResult(false);
     }
@@ -258,11 +296,15 @@ public abstract class Project {
             output = this.output.getCanonicalPath();
         }
 
-        final List<File> filesList = files.stream()
+        List<File> filesList = files.stream()
                 .filter(FileUtils::filterFile)
                 .collect(Collectors.toList());
 
-        return getJavaAnalyzer().analyzeAndCompile(filesList, this.allClasspath(), output, force);
+        filesList = force ? filesList : FileUtils.getModifiedSources(JavaAnalyzer.COMPILE_CHECKSUM,
+                files,
+                this.getAllSources(),
+                new File(output));
+        return getJavaAnalyzer().analyzeAndCompile(filesList, this.allClasspath(), output);
     }
 
     public File getProjectRoot() {

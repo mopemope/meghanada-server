@@ -66,13 +66,13 @@ public class JavaAnalyzerTest extends GradleTestBase {
         final String tmp = System.getProperty("java.io.tmpdir");
 
         timeIt(() -> {
-            final CompileResult compileResult = analyzer.analyzeAndCompile(files, cp, tmp, true);
+            final CompileResult compileResult = analyzer.analyzeAndCompile(files, cp, tmp);
             compileResult.getSources().values().forEach(Source::dump);
             return compileResult;
         });
 
         timeIt(() -> {
-            return analyzer.analyzeAndCompile(files, cp, tmp, true);
+            return analyzer.analyzeAndCompile(files, cp, tmp);
         });
     }
 
@@ -88,13 +88,13 @@ public class JavaAnalyzerTest extends GradleTestBase {
         final String tmp = System.getProperty("java.io.tmpdir");
 
         timeIt(() -> {
-            final CompileResult compileResult = analyzer.analyzeAndCompile(files, cp, tmp, true);
+            final CompileResult compileResult = analyzer.analyzeAndCompile(files, cp, tmp);
             compileResult.getSources().values().forEach(Source::dump);
             return compileResult;
         });
 
         timeIt(() -> {
-            return analyzer.analyzeAndCompile(files, cp, tmp, true);
+            return analyzer.analyzeAndCompile(files, cp, tmp);
         });
     }
 
@@ -110,13 +110,13 @@ public class JavaAnalyzerTest extends GradleTestBase {
         final String tmp = System.getProperty("java.io.tmpdir");
 
         timeIt(() -> {
-            final CompileResult compileResult = analyzer.analyzeAndCompile(files, cp, tmp, true);
+            final CompileResult compileResult = analyzer.analyzeAndCompile(files, cp, tmp);
             compileResult.getSources().values().forEach(Source::dump);
             return compileResult;
         });
 
         timeIt(() -> {
-            return analyzer.analyzeAndCompile(files, cp, tmp, true);
+            return analyzer.analyzeAndCompile(files, cp, tmp);
         });
     }
 
@@ -132,13 +132,13 @@ public class JavaAnalyzerTest extends GradleTestBase {
         final String tmp = System.getProperty("java.io.tmpdir");
 
         timeIt(() -> {
-            final CompileResult compileResult = analyzer.analyzeAndCompile(files, cp, tmp, true);
+            final CompileResult compileResult = analyzer.analyzeAndCompile(files, cp, tmp);
             compileResult.getSources().values().forEach(Source::dump);
             return compileResult;
         });
 
         timeIt(() -> {
-            return analyzer.analyzeAndCompile(files, cp, tmp, true);
+            return analyzer.analyzeAndCompile(files, cp, tmp);
         });
     }
 
@@ -154,13 +154,13 @@ public class JavaAnalyzerTest extends GradleTestBase {
         final String tmp = System.getProperty("java.io.tmpdir");
 
         timeIt(() -> {
-            final CompileResult compileResult = analyzer.analyzeAndCompile(files, cp, tmp, true);
+            final CompileResult compileResult = analyzer.analyzeAndCompile(files, cp, tmp);
             compileResult.getSources().values().forEach(Source::dump);
             return compileResult;
         });
 
         timeIt(() -> {
-            return analyzer.analyzeAndCompile(files, cp, tmp, true);
+            return analyzer.analyzeAndCompile(files, cp, tmp);
         });
     }
 
@@ -176,13 +176,13 @@ public class JavaAnalyzerTest extends GradleTestBase {
         final String tmp = System.getProperty("java.io.tmpdir");
 
         timeIt(() -> {
-            final CompileResult compileResult = analyzer.analyzeAndCompile(files, cp, tmp, true);
+            final CompileResult compileResult = analyzer.analyzeAndCompile(files, cp, tmp);
             compileResult.getSources().values().forEach(Source::dump);
             return compileResult;
         });
 
         timeIt(() -> {
-            return analyzer.analyzeAndCompile(files, cp, tmp, true);
+            return analyzer.analyzeAndCompile(files, cp, tmp);
         });
     }
 
@@ -198,13 +198,13 @@ public class JavaAnalyzerTest extends GradleTestBase {
         final String tmp = System.getProperty("java.io.tmpdir");
 
         timeIt(() -> {
-            final CompileResult compileResult = analyzer.analyzeAndCompile(files, cp, tmp, true);
+            final CompileResult compileResult = analyzer.analyzeAndCompile(files, cp, tmp);
             compileResult.getSources().values().forEach(Source::dump);
             return compileResult;
         });
 
         timeIt(() -> {
-            return analyzer.analyzeAndCompile(files, cp, tmp, true);
+            return analyzer.analyzeAndCompile(files, cp, tmp);
         });
     }
 
@@ -220,13 +220,13 @@ public class JavaAnalyzerTest extends GradleTestBase {
         final String tmp = System.getProperty("java.io.tmpdir");
 
         timeIt(() -> {
-            final CompileResult compileResult = analyzer.analyzeAndCompile(files, cp, tmp, true);
+            final CompileResult compileResult = analyzer.analyzeAndCompile(files, cp, tmp);
             compileResult.getSources().values().forEach(Source::dump);
             return compileResult;
         });
 
         timeIt(() -> {
-            return analyzer.analyzeAndCompile(files, cp, tmp, true);
+            return analyzer.analyzeAndCompile(files, cp, tmp);
         });
     }
 
@@ -242,13 +242,13 @@ public class JavaAnalyzerTest extends GradleTestBase {
         final String tmp = System.getProperty("java.io.tmpdir");
 
         timeIt(() -> {
-            final CompileResult compileResult = analyzer.analyzeAndCompile(files, cp, tmp, true);
+            final CompileResult compileResult = analyzer.analyzeAndCompile(files, cp, tmp);
             compileResult.getSources().values().forEach(Source::dump);
             return compileResult;
         });
 
         timeIt(() -> {
-            return analyzer.analyzeAndCompile(files, cp, tmp, true);
+            return analyzer.analyzeAndCompile(files, cp, tmp);
         });
     }
 
@@ -264,13 +264,13 @@ public class JavaAnalyzerTest extends GradleTestBase {
         final String tmp = System.getProperty("java.io.tmpdir");
 
         timeIt(() -> {
-            final CompileResult compileResult = analyzer.analyzeAndCompile(files, cp, tmp, true);
+            final CompileResult compileResult = analyzer.analyzeAndCompile(files, cp, tmp);
             compileResult.getSources().values().forEach(Source::dump);
             return compileResult;
         });
 
         timeIt(() -> {
-            return analyzer.analyzeAndCompile(files, cp, tmp, true);
+            return analyzer.analyzeAndCompile(files, cp, tmp);
         });
     }
 
@@ -286,13 +286,13 @@ public class JavaAnalyzerTest extends GradleTestBase {
         final String tmp = System.getProperty("java.io.tmpdir");
 
         timeIt(() -> {
-            final CompileResult compileResult = analyzer.analyzeAndCompile(files, cp, tmp, true);
+            final CompileResult compileResult = analyzer.analyzeAndCompile(files, cp, tmp);
             compileResult.getSources().values().forEach(Source::dump);
             return compileResult;
         });
 
         timeIt(() -> {
-            return analyzer.analyzeAndCompile(files, cp, tmp, true);
+            return analyzer.analyzeAndCompile(files, cp, tmp);
         });
     }
 
@@ -307,13 +307,13 @@ public class JavaAnalyzerTest extends GradleTestBase {
         final String tmp = System.getProperty("java.io.tmpdir");
 
         timeIt(() -> {
-            final CompileResult compileResult = analyzer.analyzeAndCompile(files, cp, tmp, true);
+            final CompileResult compileResult = analyzer.analyzeAndCompile(files, cp, tmp);
             compileResult.getSources().values().forEach(Source::dump);
             return compileResult;
         });
 
         timeIt(() -> {
-            return analyzer.analyzeAndCompile(files, cp, tmp, true);
+            return analyzer.analyzeAndCompile(files, cp, tmp);
         });
     }
 
@@ -328,13 +328,13 @@ public class JavaAnalyzerTest extends GradleTestBase {
         final String tmp = System.getProperty("java.io.tmpdir");
 
         timeIt(() -> {
-            final CompileResult compileResult = analyzer.analyzeAndCompile(files, cp, tmp, true);
+            final CompileResult compileResult = analyzer.analyzeAndCompile(files, cp, tmp);
             compileResult.getSources().values().forEach(Source::dump);
             return compileResult;
         });
 
         timeIt(() -> {
-            return analyzer.analyzeAndCompile(files, cp, tmp, true);
+            return analyzer.analyzeAndCompile(files, cp, tmp);
         });
     }
 
@@ -350,13 +350,13 @@ public class JavaAnalyzerTest extends GradleTestBase {
         final String tmp = System.getProperty("java.io.tmpdir");
 
         timeIt(() -> {
-            final CompileResult compileResult = analyzer.analyzeAndCompile(files, cp, tmp, true);
+            final CompileResult compileResult = analyzer.analyzeAndCompile(files, cp, tmp);
             compileResult.getSources().values().forEach(Source::dump);
             return compileResult;
         });
 
         timeIt(() -> {
-            return analyzer.analyzeAndCompile(files, cp, tmp, true);
+            return analyzer.analyzeAndCompile(files, cp, tmp);
         });
     }
 
@@ -379,19 +379,19 @@ public class JavaAnalyzerTest extends GradleTestBase {
         final String tmp = System.getProperty("java.io.tmpdir");
 
         timeIt(() -> {
-            final CompileResult compileResult = analyzer.analyzeAndCompile(files, cp, tmp, true);
+            final CompileResult compileResult = analyzer.analyzeAndCompile(files, cp, tmp);
             compileResult.getSources().values().forEach(Source::dump);
             return compileResult;
         });
 
         timeIt(() -> {
-            final CompileResult compileResult = analyzer.analyzeAndCompile(files, cp, tmp, false);
+            final CompileResult compileResult = analyzer.analyzeAndCompile(files, cp, tmp);
             compileResult.getSources().values().forEach(Source::dump);
             return compileResult;
         });
 
         timeIt(() -> {
-            final CompileResult compileResult = analyzer.analyzeAndCompile(files, cp, tmp, false);
+            final CompileResult compileResult = analyzer.analyzeAndCompile(files, cp, tmp);
             compileResult.getSources().values().forEach(Source::dump);
             return compileResult;
         });

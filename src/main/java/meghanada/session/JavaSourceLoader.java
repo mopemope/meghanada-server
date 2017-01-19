@@ -20,7 +20,6 @@ import org.apache.logging.log4j.Logger;
 import java.io.*;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.zip.DeflaterOutputStream;
 import java.util.zip.InflaterInputStream;
 
@@ -99,22 +98,12 @@ public class JavaSourceLoader extends CacheLoader<File, Source> {
         final Config config = Config.load();
 
         if (!config.useSourceCache()) {
-            final CompileResult compileResult = project.compileFile(file, true);
+            final CompileResult compileResult = project.parseFile(file);
             return compileResult.getSources().get(file);
         }
 
         final File checksumFile = FileUtils.getSettingFile(JavaAnalyzer.COMPILE_CHECKSUM);
-        final Map<File, Map<String, String>> checksum = Config.load().getAllChecksumMap();
-
-        if (!checksum.containsKey(checksumFile)) {
-            Map<String, String> checksumMap = new ConcurrentHashMap<>(64);
-            if (checksumFile.exists()) {
-                checksumMap = new ConcurrentHashMap<>(FileUtils.readMapSetting(checksumFile));
-            }
-            checksum.put(checksumFile, checksumMap);
-        }
-
-        final Map<String, String> finalChecksumMap = checksum.get(checksumFile);
+        final Map<String, String> finalChecksumMap = config.getChecksumMap(checksumFile);
 
         final String path = file.getCanonicalPath();
         final String md5sum = FileUtils.md5sum(file);
@@ -136,7 +125,7 @@ public class JavaSourceLoader extends CacheLoader<File, Source> {
             finalChecksumMap.put(path, md5sum);
         }
 
-        final CompileResult compileResult = project.compileFile(file.getCanonicalFile(), true);
+        final CompileResult compileResult = project.parseFile(file.getCanonicalFile());
         final Source source = compileResult.getSources().get(file.getCanonicalFile());
         FileUtils.writeMapSetting(finalChecksumMap, checksumFile);
         return writeCache(source);

@@ -2,6 +2,7 @@ package meghanada.config;
 
 import com.google.common.base.Stopwatch;
 import com.typesafe.config.ConfigFactory;
+import meghanada.utils.FileUtils;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -10,11 +11,13 @@ import org.apache.logging.log4j.core.config.Configuration;
 import org.apache.logging.log4j.core.config.LoggerConfig;
 
 import java.io.File;
+import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class Config {
 
@@ -232,7 +235,14 @@ public class Config {
         return checksumMap;
     }
 
-    public Map<String, String> getChecksumMap(final File file) {
+    public Map<String, String> getChecksumMap(final File file) throws IOException {
+        if (!this.checksumMap.containsKey(file)) {
+            Map<String, String> checksumMap = new ConcurrentHashMap<>(64);
+            if (file.exists()) {
+                checksumMap = new ConcurrentHashMap<>(FileUtils.readMapSetting(file));
+            }
+            this.checksumMap.put(file, checksumMap);
+        }
         return checksumMap.get(file);
     }
 
