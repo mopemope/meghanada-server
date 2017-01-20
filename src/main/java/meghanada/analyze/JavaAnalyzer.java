@@ -74,7 +74,8 @@ public class JavaAnalyzer {
                     compilationUnits);
 
             final JavacTask javacTask = (JavacTask) compilerTask;
-            this.replaceParser(compilerTask);
+            
+            // this.replaceParser(compilerTask);
 
             final Iterable<? extends CompilationUnitTree> parsedIter = javacTask.parse();
             final Iterable<? extends Element> analyzed = javacTask.analyze();
