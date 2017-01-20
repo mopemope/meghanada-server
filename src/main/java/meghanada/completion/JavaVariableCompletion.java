@@ -29,7 +29,7 @@ public class JavaVariableCompletion {
 
     public LocalVariable localVariable(final File file, final int line) throws ExecutionException {
         final Source source = this.sourceCache.get(file);
-        AccessSymbol accessSymbol = source.getExpressionReturn(line);
+        final AccessSymbol accessSymbol = source.getExpressionReturn(line);
         if (accessSymbol != null && accessSymbol.returnType != null) {
             return createLocalVariable(accessSymbol, accessSymbol.returnType);
         }

@@ -147,7 +147,7 @@ public class JavaCompletion {
 
                 while (size > 0 && startColumn-- > 0) {
                     for (AccessSymbol accessSymbol : targets) {
-                        if (accessSymbol.match(line, startColumn)) {
+                        if (accessSymbol.match(line, startColumn) && accessSymbol.returnType != null) {
                             return reflect(pkg, accessSymbol.returnType, prefix);
                         }
                     }

@@ -26,6 +26,7 @@ public class JavaAnalyzer {
     public static final String COMPILE_CHECKSUM = "compile_checksum.dat";
     private static final Logger log = LogManager.getLogger(JavaAnalyzer.class);
     private final JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
+    private final TreeAnalyzer treeAnalyzer = new TreeAnalyzer();
     private final Set<File> sourceRoots;
     private String compileSource = "1.8";
     private String compileTarget = "1.8";
@@ -53,25 +54,6 @@ public class JavaAnalyzer {
         return this.runAnalyzeAndCompile(classpath, out, files);
     }
 
-    private List<File> getFinalTargets(final List<File> compileFiles) {
-        final Set<File> temp = Collections.newSetFromMap(new ConcurrentHashMap<File, Boolean>());
-
-        compileFiles.parallelStream().forEach(file -> {
-            if (file.isFile()) {
-                final List<File> list = FileUtils.listJavaFiles(file.getParentFile());
-                temp.addAll(list);
-            } else {
-                final List<File> list = FileUtils.listJavaFiles(file);
-                temp.addAll(list);
-            }
-        });
-
-        // TODO caller
-
-        return new ArrayList<>(temp);
-    }
-
-
     private CompileResult runAnalyzeAndCompile(final String classpath, final String out, List<File> compileFiles) throws IOException {
 
         try (StandardJavaFileManager fileManager = compiler.getStandardFileManager(null, null, Charset.forName("UTF-8"))) {
@@ -97,55 +79,59 @@ public class JavaAnalyzer {
             final Iterable<? extends CompilationUnitTree> parsedIter = javacTask.parse();
             final Iterable<? extends Element> analyzed = javacTask.analyze();
 
-            final TreeAnalyzer treeAnalyzer = new TreeAnalyzer();
-            final Map<File, Source> analyzedMap = treeAnalyzer.analyze(parsedIter);
+            final List<Diagnostic<? extends JavaFileObject>> diagnostics = diagnosticCollector.getDiagnostics();
+            final Set<File> errorFiles = this.getErrorFiles(diagnostics);
+
+            final Map<File, Source> analyzedMap = treeAnalyzer.analyze(parsedIter, errorFiles);
+
             final Iterable<? extends JavaFileObject> generate = javacTask.generate();
 
-            final List<Diagnostic<? extends JavaFileObject>> diagnostics = diagnosticCollector.getDiagnostics();
-            // TODO check success
-            boolean success = diagnostics == null || diagnostics.size() == 0;
+            boolean success = errorFiles.size() == 0;
             final CompileResult compileResult = new CompileResult(success, analyzedMap, diagnostics);
-            return this.updateCache(compileResult);
+            return this.updateCache(compileResult, errorFiles);
         }
     }
 
-    private CompileResult updateCache(final CompileResult compileResult) throws IOException {
+    private Set<File> getErrorFiles(final List<Diagnostic<? extends JavaFileObject>> diagnostics) {
+        final Set<File> temp = Collections.newSetFromMap(new ConcurrentHashMap<File, Boolean>());
+        diagnostics.forEach(diagnostic -> {
+            final Diagnostic.Kind kind = diagnostic.getKind();
+            final JavaFileObject fileObject = diagnostic.getSource();
+            if (fileObject != null && kind.equals(Diagnostic.Kind.ERROR)) {
+                final URI uri = fileObject.toUri();
+                try {
+                    temp.add(new File(uri.normalize()).getCanonicalFile());
+                } catch (IOException e) {
+                    throw new UncheckedIOException(e);
+                }
+            }
+        });
+
+        return temp;
+    }
+
+    private CompileResult updateCache(final CompileResult compileResult, final Set<File> errorFiles) throws IOException {
         final Config config = Config.load();
         if (config.useSourceCache()) {
             final Map<File, Source> sourceMap = compileResult.getSources();
             final Map<File, Map<String, String>> checksum = config.getAllChecksumMap();
             final File checksumFile = FileUtils.getSettingFile(JavaAnalyzer.COMPILE_CHECKSUM);
             final Map<String, String> finalChecksumMap = checksum.getOrDefault(checksumFile, new ConcurrentHashMap<>());
-            final Set<File> problemFiles = new HashSet<>();
-
-            compileResult.getDiagnostics().forEach(diagnostic -> {
-                final JavaFileObject javaFileObject = diagnostic.getSource();
-                if (javaFileObject == null) {
-                    // WARN etc
-                    return;
-                }
-                try {
-                    final URI uri = javaFileObject.toUri();
-                    final File problemFile = new File(uri).getCanonicalFile();
-                    if (diagnostic.getKind().equals(Diagnostic.Kind.ERROR)) {
-                        problemFiles.add(problemFile);
-                        finalChecksumMap.remove(problemFile.getAbsolutePath());
-                    }
-                } catch (IOException e) {
-                    throw new UncheckedIOException(e);
-                }
-            });
 
             for (final Source source : sourceMap.values()) {
-                if (!problemFiles.contains(source.getFile())) {
+                final File file = source.getFile();
+                if (!errorFiles.contains(file)) {
                     try {
                         JavaSourceLoader.writeCache(source);
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
+                } else {
+                    // error
+                    finalChecksumMap.remove(file.getCanonicalPath());
+                    // TODO delete older cache ?
                 }
             }
-            ;
             FileUtils.writeMapSetting(finalChecksumMap, checksumFile);
             checksum.put(checksumFile, finalChecksumMap);
         }

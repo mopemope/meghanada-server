@@ -26,6 +26,7 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.StreamSupport;
 
@@ -34,6 +35,12 @@ import static meghanada.utils.FunctionUtils.wrapIOConsumer;
 public class TreeAnalyzer {
 
     private static final Logger log = LogManager.getLogger(TreeAnalyzer.class);
+
+    private final Map<String, String> standardClasses;
+
+    public TreeAnalyzer() {
+        this.standardClasses = CachedASMReflector.getInstance().getStandardClasses();
+    }
 
     private Source analyzeCompilationUnitTree(final CompilationUnitTree cut, final Source src) {
         final ExpressionTree packageExpr = cut.getPackageName();
@@ -587,9 +594,17 @@ public class TreeAnalyzer {
                     final JCTree.JCIdent ident = (JCTree.JCIdent) expression;
                     final String nm = ident.getName().toString();
                     final String clazz = src.importClass.get(nm);
-                    methodCall.declaringClass = this.markFQCN(src, clazz);
+                    if (clazz != null) {
+                        methodCall.declaringClass = this.markFQCN(src, clazz);
+                    } else {
+                        if (src.isReportUnknown()) {
+                            log.warn("unknown ident class expression={} {} {}", expression, expression.getClass(), src.filePath);
+                        }
+                    }
                 } else {
-                    log.warn("????");
+                    if (src.isReportUnknown()) {
+                        log.warn("unknown expression expression={} {}", expression, expression.getClass(), src.filePath);
+                    }
                 }
             } else {
                 this.toFQCNString(owner).ifPresent(fqcn -> {
@@ -602,9 +617,17 @@ public class TreeAnalyzer {
                     final JCTree.JCIdent ident = (JCTree.JCIdent) expression;
                     final String nm = ident.getName().toString();
                     final String clazz = src.importClass.get(nm);
-                    methodCall.returnType = this.markFQCN(src, clazz);
+                    if (clazz != null) {
+                        methodCall.returnType = this.markFQCN(src, clazz);
+                    } else {
+                        if (src.isReportUnknown()) {
+                            log.warn("unknown ident class expression={} {} {}", expression, expression.getClass(), src.filePath);
+                        }
+                    }
                 } else {
-                    log.warn("????");
+                    if (src.isReportUnknown()) {
+                        log.warn("unknown expression expression={} {}", expression, expression.getClass(), src.filePath);
+                    }
                 }
             } else {
                 this.toFQCNString(returnType).ifPresent(fqcn -> {
@@ -769,9 +792,9 @@ public class TreeAnalyzer {
         final Name identifier = fieldAccess.getIdentifier();
         final Range range = Range.create(src, preferredPos + 1, endPos);
         if (sym == null) {
-            final FieldAccess fa = new FieldAccess(identifier.toString(), preferredPos + 1, range);
-            // TODO
-            log.warn("sym is null");
+            if (src.isReportUnknown()) {
+                log.warn("unknown fieldAccess sym is null fieldAccess:{} {}", fieldAccess, src.filePath);
+            }
             return;
         }
 
@@ -1104,14 +1127,18 @@ public class TreeAnalyzer {
                             if (identClazz != null) {
                                 variable.fqcn = this.markFQCN(src, identClazz);
                             } else {
-                                log.warn("typeTree:{}", typeTree);
+                                if (src.isReportUnknown()) {
+                                    log.warn("unknown ident class expression={} {} {}", expression, expression.getClass(), src.filePath);
+                                }
                             }
                         } else {
                             final String fqcn = resolveTypeFromImport(src, expression);
                             variable.fqcn = this.markFQCN(src, fqcn);
                         }
                     } else {
-                        log.warn("typeTree:{} vd:{}", typeTree, vd);
+                        if (src.isReportUnknown()) {
+                            log.warn("unknown typeTree class expression={} {}", typeTree, src.filePath);
+                        }
                     }
 
                     src.getCurrentScope().ifPresent(scope -> scope.addVariable(variable));
@@ -1127,28 +1154,32 @@ public class TreeAnalyzer {
     }
 
 
-    public Map<File, Source> analyze(final Iterable<? extends CompilationUnitTree> parsed) {
+    public Map<File, Source> analyze(final Iterable<? extends CompilationUnitTree> parsed, final Set<File> errorFiles) {
         final Map<File, Source> analyzedMap = new ConcurrentHashMap<>();
 
         if (log.isDebugEnabled()) {
             parsed.forEach(wrapIOConsumer(cut -> {
-                this.analyzeUnit(analyzedMap, cut);
+                this.analyzeUnit(analyzedMap, cut, errorFiles);
             }));
-
         } else {
             StreamSupport.stream(parsed.spliterator(), true).forEach(wrapIOConsumer(cut -> {
-                this.analyzeUnit(analyzedMap, cut);
+                this.analyzeUnit(analyzedMap, cut, errorFiles);
             }));
         }
 
         return analyzedMap;
     }
 
-    private void analyzeUnit(Map<File, Source> analyzedMap, CompilationUnitTree cut) throws IOException {
+    private void analyzeUnit(final Map<File, Source> analyzedMap, final CompilationUnitTree cut, final Set<File> errorFiles) throws IOException {
         final URI uri = cut.getSourceFile().toUri();
         final File file = new File(uri.normalize());
         final String path = file.getCanonicalPath();
         final Source source = new Source(path);
+
+        source.importClass.putAll(this.standardClasses);
+        if (errorFiles.contains(file)) {
+            source.hasCompileError = true;
+        }
         final EntryMessage entryMessage = log.traceEntry("---------- analyze file:{} ----------", file);
         this.analyzeCompilationUnitTree(cut, source);
         log.traceExit(entryMessage);
@@ -1249,4 +1280,5 @@ public class TreeAnalyzer {
         }
         return fqcn;
     }
+
 }

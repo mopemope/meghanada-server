@@ -17,6 +17,7 @@ import java.util.stream.Collectors;
 
 public class Source {
 
+    public static final String REPORT_UNKNOWN_TREE = "report-unknown-tree";
     private static final Logger log = LogManager.getLogger(Source.class);
     // K: className V: FQCN
     public final Map<String, String> importClass = new HashMap<>(8);
@@ -30,6 +31,8 @@ public class Source {
     public List<LineRange> lineRange;
     // temp flag
     public boolean isParameter;
+
+    public boolean hasCompileError;
 
     public Source() {
     }
@@ -390,6 +393,17 @@ public class Source {
 
         log.debug("optimize imports:{}", imports);
         return imports;
+    }
+
+    public boolean isReportUnknown() {
+        if (this.hasCompileError) {
+            return false;
+        }
+        final String key = System.getProperty(REPORT_UNKNOWN_TREE);
+        if (key != null && key.equals("true")) {
+            return true;
+        }
+        return false;
     }
 
 }

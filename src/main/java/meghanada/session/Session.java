@@ -375,9 +375,8 @@ public class Session {
             return Collections.emptyList();
         }
 
-        Source source = parseJavaSource(file);
-        // TODO
-        return new ArrayList<>();
+        final Source source = parseJavaSource(file);
+        return source.optimizeImports();
     }
 
     public synchronized Map<String, List<String>> searchMissingImport(String path) throws ExecutionException {

@@ -384,15 +384,29 @@ public class JavaAnalyzerTest extends GradleTestBase {
             return compileResult;
         });
 
-        timeIt(() -> {
-            final CompileResult compileResult = analyzer.analyzeAndCompile(files, cp, tmp);
-            compileResult.getSources().values().forEach(Source::dump);
-            return compileResult;
-        });
+    }
+
+    @Test
+    public void analyzeFail() throws Exception {
+        final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8", project.getSourceDirectories());
+        final String cp = getSystemClasspath();
+
+        List<File> files = Files.walk(new File("./src/main/java").toPath(), FileVisitOption.FOLLOW_LINKS)
+                .filter(path -> path.toFile().isFile())
+                .map(Path::toFile)
+                .collect(Collectors.toList());
+        List<File> testFiles = Files.walk(new File("./src/test/java").toPath(), FileVisitOption.FOLLOW_LINKS)
+                .filter(path -> path.toFile().isFile())
+                .map(Path::toFile)
+                .collect(Collectors.toList());
+        files.addAll(testFiles);
+
+        // System.setProperty(Source.REPORT_UNKNOWN_TREE, "true");
+        final String tmp = System.getProperty("java.io.tmpdir");
 
         timeIt(() -> {
             final CompileResult compileResult = analyzer.analyzeAndCompile(files, cp, tmp);
-            compileResult.getSources().values().forEach(Source::dump);
+            // compileResult.getSources().values().forEach(Source::dump);
             return compileResult;
         });
 
@@ -417,6 +431,25 @@ public class JavaAnalyzerTest extends GradleTestBase {
                 throw new UncheckedIOException(e);
             }
         });
+
+        final String out = getOutputDir().getCanonicalPath();
+        classpath.add(out);
+        classpath.add(getTestOutputDir().getCanonicalPath());
+
+        return String.join(File.pathSeparator, classpath);
+    }
+
+    private String getSystemClasspath() throws IOException {
+
+        final List<String> classpath = getSystemJars()
+                .stream()
+                .map(file1 -> {
+                    try {
+                        return file1.getCanonicalPath();
+                    } catch (IOException e) {
+                        throw new UncheckedIOException(e);
+                    }
+                }).collect(Collectors.toList());
 
         final String out = getOutputDir().getCanonicalPath();
         classpath.add(out);
