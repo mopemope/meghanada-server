@@ -4,7 +4,6 @@ import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.ByteBufferInput;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
-import com.esotericsoftware.kryo.pool.KryoCallback;
 import com.esotericsoftware.kryo.pool.KryoPool;
 import com.google.common.base.Stopwatch;
 import com.google.common.cache.CacheLoader;
@@ -199,16 +198,12 @@ class MemberCacheLoader extends CacheLoader<String, List<MemberDescriptor>> {
 
     }
 
-    private List<MemberDescriptor> loadFromCache(String fqcn, File in) throws FileNotFoundException {
+    private ArrayList loadFromCache(String fqcn, File in) throws FileNotFoundException {
         if (in.exists()) {
             final Stopwatch stopwatch = Stopwatch.createStarted();
             try (Input input = new Input(new InflaterInputStream(new ByteBufferInput(new FileInputStream(in), 8192)))) {
-                return this.kryoPool.run(new KryoCallback<List<MemberDescriptor>>() {
-                    @SuppressWarnings("unchecked")
-                    @Override
-                    public List<MemberDescriptor> execute(Kryo kryo) {
-                        return kryo.readObject(input, ArrayList.class);
-                    }
+                return this.kryoPool.run(kryo -> {
+                    return kryo.readObject(input, ArrayList.class);
                 });
             } finally {
                 log.trace("load from cache file:{} elapsed:{}", fqcn, stopwatch.stop());

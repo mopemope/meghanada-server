@@ -5,9 +5,6 @@ import com.sun.source.util.JavacTask;
 import com.sun.tools.javac.api.JavacTaskImpl;
 import com.sun.tools.javac.parser.FuzzyParserFactory;
 import com.sun.tools.javac.util.Context;
-import meghanada.config.Config;
-import meghanada.session.JavaSourceLoader;
-import meghanada.utils.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -24,6 +21,8 @@ import java.util.concurrent.ConcurrentHashMap;
 public class JavaAnalyzer {
 
     public static final String COMPILE_CHECKSUM = "compile_checksum.dat";
+    public static final String CALLER = "source_caller.dat";
+
     private static final Logger log = LogManager.getLogger(JavaAnalyzer.class);
     private final JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
     private final TreeAnalyzer treeAnalyzer = new TreeAnalyzer();

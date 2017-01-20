@@ -1,10 +1,8 @@
 package meghanada.session;
 
-import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.ByteBufferInput;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
-import com.esotericsoftware.kryo.pool.KryoCallback;
 import com.google.common.base.Joiner;
 import com.google.common.cache.CacheLoader;
 import meghanada.analyze.CompileResult;
@@ -79,22 +77,18 @@ public class JavaSourceLoader extends CacheLoader<File, Source> {
         file.getParentFile().mkdirs();
 
         log.debug("write file:{}", file);
-        reflector.getKryoPool().run(new KryoCallback<Source>() {
-            @Override
-            public Source execute(Kryo kryo) {
-                try (final Output output = new Output(new DeflaterOutputStream(new BufferedOutputStream(new FileOutputStream(file), 8192)))) {
-                    kryo.writeObject(output, source);
-                    return source;
-                } catch (FileNotFoundException e) {
-                    throw new UncheckedIOException(e);
-                }
+        reflector.getKryoPool().run(kryo -> {
+            try (final Output output = new Output(new DeflaterOutputStream(new BufferedOutputStream(new FileOutputStream(file), 8192)))) {
+                kryo.writeObject(output, source);
+                return source;
+            } catch (FileNotFoundException e) {
+                throw new UncheckedIOException(e);
             }
         });
         return source;
     }
 
     public static synchronized Source removeCache(final Source source) throws IOException {
-        final CachedASMReflector reflector = CachedASMReflector.getInstance();
         final File sourceFile = source.getFile();
         final Config config = Config.load();
         final String dir = config.getProjectCacheDir();

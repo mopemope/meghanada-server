@@ -53,6 +53,13 @@ public class GradleProjectTest {
 //        }
     }
 
+    @Test
+    public void testCompile1() throws Exception {
+        this.project.parseProject();
+        this.project.compileJava(false);
+        this.project.compileJava(false);
+    }
+
 //    @Ignore
 //    @Test
 //    public void testRunTask2() throws Exception {

@@ -201,7 +201,7 @@ public class ProjectSerializer extends Serializer<Project> {
                     project.id = (String) o;
                 }
             }
-
+            project.loadCaller();
             return project;
         } catch (IOException ex) {
             throw new UncheckedIOException(ex);

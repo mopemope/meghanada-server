@@ -1,6 +1,9 @@
 package meghanada.project;
 
 import com.esotericsoftware.kryo.DefaultSerializer;
+import com.esotericsoftware.kryo.io.ByteBufferInput;
+import com.esotericsoftware.kryo.io.Input;
+import com.esotericsoftware.kryo.io.Output;
 import com.google.common.base.Joiner;
 import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableSet;
@@ -9,20 +12,21 @@ import meghanada.analyze.CompileResult;
 import meghanada.analyze.JavaAnalyzer;
 import meghanada.analyze.Source;
 import meghanada.config.Config;
+import meghanada.reflect.asm.CachedASMReflector;
 import meghanada.session.JavaSourceLoader;
+import meghanada.utils.ClassNameUtils;
 import meghanada.utils.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.UncheckedIOException;
+import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
+import java.util.zip.DeflaterOutputStream;
+import java.util.zip.InflaterInputStream;
 
 @DefaultSerializer(ProjectSerializer.class)
 public abstract class Project {
@@ -56,6 +60,7 @@ public abstract class Project {
     protected String compileSource = "1.8";
     protected String compileTarget = "1.8";
     protected String id;
+    protected Map<String, Set<String>> callerMap = new ConcurrentHashMap<>();
 
     private JavaAnalyzer javaAnalyzer;
     private String cachedClasspath;
@@ -203,28 +208,44 @@ public abstract class Project {
 
     }
 
-    public CompileResult compileJava(final boolean force) throws IOException {
+    public CompileResult compileJava(boolean force) throws IOException {
         List<File> files = this.collectJavaFiles(this.getSourceDirectories());
         if (files != null && !files.isEmpty()) {
+            if (callerMap.size() == 0) {
+                force = true;
+            }
+            final File callerFile = FileUtils.getSettingFile(JavaAnalyzer.CALLER);
+            if (force && callerFile.exists()) {
+                callerFile.delete();
+            }
             files = force ? files : FileUtils.getModifiedSources(JavaAnalyzer.COMPILE_CHECKSUM,
                     files,
                     this.getAllSources(),
                     this.output);
 
+            files = addDepends(this.getAllSources(), files);
             final CompileResult compileResult = getJavaAnalyzer().analyzeAndCompile(files, this.allClasspath(), output.getCanonicalPath());
             return this.updateSourceCache(compileResult);
         }
         return new CompileResult(true);
     }
 
-    public CompileResult compileTestJava(final boolean force) throws IOException {
+    public CompileResult compileTestJava(boolean force) throws IOException {
         List<File> files = this.collectJavaFiles(this.getTestSourceDirectories());
         if (files != null && !files.isEmpty()) {
+            if (callerMap.size() == 0) {
+                force = true;
+            }
+            final File callerFile = FileUtils.getSettingFile(JavaAnalyzer.CALLER);
+            if (force && callerFile.exists()) {
+                callerFile.delete();
+            }
+
             files = force ? files : FileUtils.getModifiedSources(JavaAnalyzer.COMPILE_CHECKSUM,
                     files,
                     this.getAllSources(),
                     this.testOutput);
-
+            files = addDepends(this.getAllSources(), files);
             final CompileResult compileResult = getJavaAnalyzer().analyzeAndCompile(files, this.allClasspath(), testOutput.getCanonicalPath());
             return this.updateSourceCache(compileResult);
         }
@@ -274,10 +295,12 @@ public abstract class Project {
         if (FileUtils.filterFile(file)) {
             List<File> files = new ArrayList<>();
             files.add(file);
+
             files = force ? files : FileUtils.getModifiedSources(JavaAnalyzer.COMPILE_CHECKSUM,
                     files,
                     this.getAllSources(),
                     new File(output));
+            files = addDepends(this.getAllSources(), files);
             final CompileResult compileResult = getJavaAnalyzer().analyzeAndCompile(files, this.allClasspath(), output);
             return this.updateSourceCache(compileResult);
 
@@ -311,6 +334,7 @@ public abstract class Project {
                 files,
                 this.getAllSources(),
                 new File(output));
+        filesList = addDepends(this.getAllSources(), filesList);
         final CompileResult compileResult = getJavaAnalyzer().analyzeAndCompile(filesList, this.allClasspath(), output);
         return this.updateSourceCache(compileResult);
     }
@@ -526,13 +550,31 @@ public abstract class Project {
     private CompileResult updateSourceCache(final CompileResult compileResult) throws IOException {
         final Config config = Config.load();
         if (config.useSourceCache()) {
+
             final Set<File> errorFiles = compileResult.getErrorFiles();
             final Map<File, Source> sourceMap = compileResult.getSources();
             final Map<File, Map<String, String>> checksum = config.getAllChecksumMap();
+
             final File checksumFile = FileUtils.getSettingFile(JavaAnalyzer.COMPILE_CHECKSUM);
             final Map<String, String> finalChecksumMap = checksum.getOrDefault(checksumFile, new ConcurrentHashMap<>());
 
             for (final Source source : sourceMap.values()) {
+
+                source.getClassScopes().forEach(cs -> {
+                    final String fqcn = cs.getFQCN();
+                    source.importClass.values().forEach(s -> {
+                        if (this.callerMap.containsKey(s)) {
+                            final Set<String> set = this.callerMap.get(s);
+                            set.add(fqcn);
+                            this.callerMap.put(s, set);
+                        } else {
+                            final Set<String> set = new HashSet<>();
+                            set.add(fqcn);
+                            this.callerMap.put(s, set);
+                        }
+                    });
+                });
+
                 final File file = source.getFile();
                 if (!errorFiles.contains(file)) {
                     try {
@@ -549,7 +591,69 @@ public abstract class Project {
             FileUtils.writeMapSetting(finalChecksumMap, checksumFile);
             checksum.put(checksumFile, finalChecksumMap);
         }
+        this.writeCaller();
         return compileResult;
+    }
+
+    private List<File> addDepends(final Set<File> sourceRoots, final List<File> files) {
+        final Set<File> temp = Collections.newSetFromMap(new ConcurrentHashMap<File, Boolean>());
+        temp.addAll(files);
+        temp.addAll(FileUtils.getPackagePrivateSource(files));
+
+        sourceRoots.parallelStream().forEach(root -> {
+            try {
+                final String rootPath = root.getCanonicalPath();
+                files.parallelStream().forEach(file -> {
+                    try {
+                        final String path = file.getCanonicalPath();
+                        if (path.startsWith(rootPath)) {
+                            final String p = path.substring(rootPath.length() + 1, path.length() - 5);
+                            final String importClass = ClassNameUtils.replace(p, File.separator, ".");
+                            if (callerMap.containsKey(importClass)) {
+                                FileUtils.getSourceFile(importClass, sourceRoots).ifPresent(temp::add);
+                            }
+                        }
+                    } catch (IOException e) {
+                        throw new UncheckedIOException(e);
+                    }
+                });
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+        });
+
+        return new ArrayList<>(temp);
+    }
+
+    private synchronized void writeCaller() {
+        final File callerFile = FileUtils.getSettingFile(JavaAnalyzer.CALLER);
+        final CachedASMReflector reflector = CachedASMReflector.getInstance();
+        reflector.getKryoPool().run(kryo -> {
+            try (final Output output = new Output(new DeflaterOutputStream(new BufferedOutputStream(new FileOutputStream(callerFile), 8192)))) {
+                kryo.writeObject(output, callerMap);
+                return callerMap;
+            } catch (FileNotFoundException e) {
+                throw new UncheckedIOException(e);
+            }
+        });
+    }
+
+    synchronized void loadCaller() {
+        final File callerFile = FileUtils.getSettingFile(JavaAnalyzer.CALLER);
+        if (!callerFile.exists()) {
+            return;
+        }
+
+        final CachedASMReflector reflector = CachedASMReflector.getInstance();
+        this.callerMap = reflector.getKryoPool().run(kryo -> {
+            try (Input input = new Input(new InflaterInputStream(new ByteBufferInput(new FileInputStream(callerFile), 8192)))) {
+                @SuppressWarnings("unchecked")
+                Map<String, Set<String>> map = kryo.readObject(input, ConcurrentHashMap.class);
+                return map;
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+        });
     }
 
 }

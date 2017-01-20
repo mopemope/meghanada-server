@@ -3,7 +3,6 @@ package meghanada.reflect.asm;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
-import com.esotericsoftware.kryo.pool.KryoCallback;
 import com.esotericsoftware.kryo.pool.KryoPool;
 import com.google.common.base.Splitter;
 import com.google.common.cache.CacheBuilder;
@@ -407,29 +406,23 @@ public class CachedASMReflector {
         outFile2.getParentFile().mkdirs();
 
         // ClassIndex
-        this.kryoPool.run(new KryoCallback<ClassIndex>() {
-            @Override
-            public ClassIndex execute(Kryo kryo) {
-                try (final Output out = new Output(new FileOutputStream(outFile1))) {
-                    kryo.writeObject(out, classIndex);
-                } catch (FileNotFoundException e) {
-                    throw new UncheckedIOException(e);
-                }
-                return classIndex;
+        this.kryoPool.run(kryo -> {
+            try (final Output out = new Output(new FileOutputStream(outFile1))) {
+                kryo.writeObject(out, classIndex);
+            } catch (FileNotFoundException e) {
+                throw new UncheckedIOException(e);
             }
+            return classIndex;
         });
 
         // Members
-        this.kryoPool.run(new KryoCallback<List<MemberDescriptor>>() {
-            @Override
-            public List<MemberDescriptor> execute(Kryo kryo) {
-                try (final Output output = new Output(new DeflaterOutputStream(new BufferedOutputStream(new FileOutputStream(outFile2), 8192)))) {
-                    kryo.writeObject(output, members);
-                } catch (IOException e) {
-                    throw new UncheckedIOException(e);
-                }
-                return members;
+        this.kryoPool.run(kryo -> {
+            try (final Output output = new Output(new DeflaterOutputStream(new BufferedOutputStream(new FileOutputStream(outFile2), 8192)))) {
+                kryo.writeObject(output, members);
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
             }
+            return members;
         });
     }
 
@@ -437,14 +430,11 @@ public class CachedASMReflector {
         final File in = this.getClassCacheFile(fqcn, root);
         if (in.exists()) {
 
-            return this.kryoPool.run(new KryoCallback<ClassIndex>() {
-                @Override
-                public ClassIndex execute(final Kryo kryo) {
-                    try (final Input input = new Input(new FileInputStream(in))) {
-                        return kryo.readObject(input, ClassIndex.class);
-                    } catch (FileNotFoundException e) {
-                        throw new UncheckedIOException(e);
-                    }
+            return this.kryoPool.run(kryo -> {
+                try (final Input input = new Input(new FileInputStream(in))) {
+                    return kryo.readObject(input, ClassIndex.class);
+                } catch (FileNotFoundException e) {
+                    throw new UncheckedIOException(e);
                 }
             });
         }

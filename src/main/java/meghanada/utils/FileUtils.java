@@ -10,10 +10,7 @@ import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.message.EntryMessage;
 
 import java.io.*;
-import java.nio.file.FileVisitResult;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.SimpleFileVisitor;
+import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.security.DigestInputStream;
 import java.security.MessageDigest;
@@ -260,7 +257,15 @@ public final class FileUtils {
         return false;
     }
 
-    private static List<File> addPackagePrivate(final List<File> compileFiles) {
+    private static List<File> getJavaSource(final File root) throws IOException {
+        return Files.walk(root.toPath(), FileVisitOption.FOLLOW_LINKS)
+                .filter(path -> path.toFile().isFile() && path.endsWith(".java"))
+                .map(Path::toFile)
+                .collect(Collectors.toList());
+
+    }
+
+    public static List<File> getPackagePrivateSource(final List<File> compileFiles) {
         final Set<File> temp = Collections.newSetFromMap(new ConcurrentHashMap<File, Boolean>());
 
         compileFiles.parallelStream().forEach(file -> {
@@ -271,12 +276,9 @@ public final class FileUtils {
                 final List<File> list = FileUtils.listJavaFiles(file);
                 temp.addAll(list);
             }
+
         });
-
-        // TODO caller
-
-        compileFiles.addAll(temp);
-        return compileFiles;
+        return new ArrayList<>(temp);
     }
 
     public static List<File> getModifiedSources(final String filePath, final List<File> sourceFiles, final Set<File> sourceRoots, final File output) throws IOException {
@@ -321,7 +323,7 @@ public final class FileUtils {
         config.getAllChecksumMap().put(checksumFile, finalChecksumMap);
         log.debug("remove unmodified {} To {}", sourceFiles.size(), fileList.size());
         log.debug("modified : {}", fileList);
-        return addPackagePrivate(fileList);
+        return fileList;
     }
 
 }

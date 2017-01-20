@@ -144,6 +144,17 @@ public class GradleProject extends Project {
                 this.testSources.add(new File("src/test/java"));
             }
 
+            if (this.output == null) {
+                final String buildDir = new File(this.projectRoot, "build").getCanonicalPath();
+                String build = Joiner.on(File.separator).join(buildDir, "classes", "main");
+                this.output = this.normalize(build);
+            }
+            if (this.testOutput == null) {
+                final String buildDir = new File(this.projectRoot, "build").getCanonicalPath();
+                String build = Joiner.on(File.separator).join(buildDir, "classes", "test");
+                this.testOutput = this.normalize(build);
+            }
+
             log.debug("sources {}", this.sources);
             log.debug("resources {}", this.resources);
             log.debug("output {}", this.output);
