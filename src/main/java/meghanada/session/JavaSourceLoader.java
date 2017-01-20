@@ -65,7 +65,7 @@ public class JavaSourceLoader extends CacheLoader<File, Source> {
 
     }
 
-    public static Source writeCache(final Source source) throws IOException {
+    public static synchronized Source writeCache(final Source source) throws IOException {
         final CachedASMReflector reflector = CachedASMReflector.getInstance();
         final File sourceFile = source.getFile();
         final Config config = Config.load();
@@ -90,6 +90,20 @@ public class JavaSourceLoader extends CacheLoader<File, Source> {
                 }
             }
         });
+        return source;
+    }
+
+    public static synchronized Source removeCache(final Source source) throws IOException {
+        final CachedASMReflector reflector = CachedASMReflector.getInstance();
+        final File sourceFile = source.getFile();
+        final Config config = Config.load();
+        final String dir = config.getProjectCacheDir();
+        final File root = new File(dir);
+        final String javaVersion = config.getJavaVersion();
+        final String path = FileUtils.toHashedPath(sourceFile, ".dat");
+        final String out = Joiner.on(File.separator).join(javaVersion, "source", path);
+        final File file = new File(root, out);
+        file.delete();
         return source;
     }
 

@@ -74,7 +74,7 @@ public class JavaAnalyzer {
                     compilationUnits);
 
             final JavacTask javacTask = (JavacTask) compilerTask;
-            
+
             // this.replaceParser(compilerTask);
 
             final Iterable<? extends CompilationUnitTree> parsedIter = javacTask.parse();
@@ -88,8 +88,7 @@ public class JavaAnalyzer {
             final Iterable<? extends JavaFileObject> generate = javacTask.generate();
 
             boolean success = errorFiles.size() == 0;
-            final CompileResult compileResult = new CompileResult(success, analyzedMap, diagnostics);
-            return this.updateCache(compileResult, errorFiles);
+            return new CompileResult(success, analyzedMap, diagnostics, errorFiles);
         }
     }
 
@@ -109,34 +108,6 @@ public class JavaAnalyzer {
         });
 
         return temp;
-    }
-
-    private CompileResult updateCache(final CompileResult compileResult, final Set<File> errorFiles) throws IOException {
-        final Config config = Config.load();
-        if (config.useSourceCache()) {
-            final Map<File, Source> sourceMap = compileResult.getSources();
-            final Map<File, Map<String, String>> checksum = config.getAllChecksumMap();
-            final File checksumFile = FileUtils.getSettingFile(JavaAnalyzer.COMPILE_CHECKSUM);
-            final Map<String, String> finalChecksumMap = checksum.getOrDefault(checksumFile, new ConcurrentHashMap<>());
-
-            for (final Source source : sourceMap.values()) {
-                final File file = source.getFile();
-                if (!errorFiles.contains(file)) {
-                    try {
-                        JavaSourceLoader.writeCache(source);
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                } else {
-                    // error
-                    finalChecksumMap.remove(file.getCanonicalPath());
-                    // TODO delete older cache ?
-                }
-            }
-            FileUtils.writeMapSetting(finalChecksumMap, checksumFile);
-            checksum.put(checksumFile, finalChecksumMap);
-        }
-        return compileResult;
     }
 
     private void replaceParser(final JavaCompiler.CompilationTask compilerTask) {

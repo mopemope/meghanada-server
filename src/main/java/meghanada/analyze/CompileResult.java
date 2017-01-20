@@ -3,10 +3,7 @@ package meghanada.analyze;
 import javax.tools.Diagnostic;
 import javax.tools.JavaFileObject;
 import java.io.File;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class CompileResult {
@@ -14,6 +11,7 @@ public class CompileResult {
     private final boolean success;
     private final Map<File, Source> sources;
     private List<Diagnostic<? extends JavaFileObject>> diagnostics = new ArrayList<>();
+    private Set<File> errorFiles = new HashSet<>();
 
     public CompileResult(final boolean success) {
         this(success, new HashMap<>());
@@ -24,9 +22,13 @@ public class CompileResult {
         this.sources = sources;
     }
 
-    public CompileResult(final boolean success, final Map<File, Source> sources, List<Diagnostic<? extends JavaFileObject>> diagnostics) {
+    public CompileResult(final boolean success,
+                         final Map<File, Source> sources,
+                         final List<Diagnostic<? extends JavaFileObject>> diagnostics,
+                         final Set<File> errorFiles) {
         this(success, sources);
         this.diagnostics = new ArrayList<>(diagnostics);
+        this.errorFiles = errorFiles;
     }
 
     public boolean isSuccess() {
@@ -53,5 +55,9 @@ public class CompileResult {
 
     public Map<File, Source> getSources() {
         return sources;
+    }
+
+    public Set<File> getErrorFiles() {
+        return errorFiles;
     }
 }

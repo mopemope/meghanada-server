@@ -7,7 +7,9 @@ import com.google.common.collect.ImmutableSet;
 import com.typesafe.config.ConfigFactory;
 import meghanada.analyze.CompileResult;
 import meghanada.analyze.JavaAnalyzer;
+import meghanada.analyze.Source;
 import meghanada.config.Config;
+import meghanada.session.JavaSourceLoader;
 import meghanada.utils.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -19,6 +21,7 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 @DefaultSerializer(ProjectSerializer.class)
@@ -208,7 +211,8 @@ public abstract class Project {
                     this.getAllSources(),
                     this.output);
 
-            return getJavaAnalyzer().analyzeAndCompile(files, this.allClasspath(), output.getCanonicalPath());
+            final CompileResult compileResult = getJavaAnalyzer().analyzeAndCompile(files, this.allClasspath(), output.getCanonicalPath());
+            return this.updateSourceCache(compileResult);
         }
         return new CompileResult(true);
     }
@@ -221,7 +225,8 @@ public abstract class Project {
                     this.getAllSources(),
                     this.testOutput);
 
-            return getJavaAnalyzer().analyzeAndCompile(files, this.allClasspath(), testOutput.getCanonicalPath());
+            final CompileResult compileResult = getJavaAnalyzer().analyzeAndCompile(files, this.allClasspath(), testOutput.getCanonicalPath());
+            return this.updateSourceCache(compileResult);
         }
         return new CompileResult(true);
     }
@@ -273,7 +278,9 @@ public abstract class Project {
                     files,
                     this.getAllSources(),
                     new File(output));
-            return getJavaAnalyzer().analyzeAndCompile(files, this.allClasspath(), output);
+            final CompileResult compileResult = getJavaAnalyzer().analyzeAndCompile(files, this.allClasspath(), output);
+            return this.updateSourceCache(compileResult);
+
         }
         return new CompileResult(false);
     }
@@ -304,7 +311,8 @@ public abstract class Project {
                 files,
                 this.getAllSources(),
                 new File(output));
-        return getJavaAnalyzer().analyzeAndCompile(filesList, this.allClasspath(), output);
+        final CompileResult compileResult = getJavaAnalyzer().analyzeAndCompile(filesList, this.allClasspath(), output);
+        return this.updateSourceCache(compileResult);
     }
 
     public File getProjectRoot() {
@@ -514,4 +522,34 @@ public abstract class Project {
     public void setId(String id) {
         this.id = id;
     }
+
+    private CompileResult updateSourceCache(final CompileResult compileResult) throws IOException {
+        final Config config = Config.load();
+        if (config.useSourceCache()) {
+            final Set<File> errorFiles = compileResult.getErrorFiles();
+            final Map<File, Source> sourceMap = compileResult.getSources();
+            final Map<File, Map<String, String>> checksum = config.getAllChecksumMap();
+            final File checksumFile = FileUtils.getSettingFile(JavaAnalyzer.COMPILE_CHECKSUM);
+            final Map<String, String> finalChecksumMap = checksum.getOrDefault(checksumFile, new ConcurrentHashMap<>());
+
+            for (final Source source : sourceMap.values()) {
+                final File file = source.getFile();
+                if (!errorFiles.contains(file)) {
+                    try {
+                        JavaSourceLoader.writeCache(source);
+                    } catch (IOException e) {
+                        throw new UncheckedIOException(e);
+                    }
+                } else {
+                    // error
+                    finalChecksumMap.remove(file.getCanonicalPath());
+                    JavaSourceLoader.removeCache(source);
+                }
+            }
+            FileUtils.writeMapSetting(finalChecksumMap, checksumFile);
+            checksum.put(checksumFile, finalChecksumMap);
+        }
+        return compileResult;
+    }
+
 }

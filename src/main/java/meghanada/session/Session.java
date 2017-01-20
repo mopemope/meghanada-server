@@ -6,6 +6,7 @@ import com.esotericsoftware.kryo.io.Output;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.LoadingCache;
 import meghanada.analyze.CompileResult;
+import meghanada.analyze.JavaAnalyzer;
 import meghanada.analyze.Source;
 import meghanada.completion.JavaCompletion;
 import meghanada.completion.JavaVariableCompletion;
@@ -31,6 +32,7 @@ import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
@@ -616,5 +618,4 @@ public class Session {
     public InputStream runTask(List<String> args) throws Exception {
         return getCurrentProject().runTask(args);
     }
-
 }
