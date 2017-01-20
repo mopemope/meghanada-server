@@ -14,7 +14,7 @@ Some planned and implemented features:
 * `Gradle` and `Maven` project support
 * Run build tool task
 * Compile your project
-* Analyze java source
+* Analyze java source (hooks into build)
 * Code completion
 * Optimize import
 * Jump declaration
@@ -64,11 +64,13 @@ usage: meghanada server
 java -jar path/to/meghanada.jar
 ```
 
-Recommend settings jvm args
+Recommend settings jvm args.
 
 ```
 java -XX:+UseConcMarkSweepGC -XX:SoftRefLRUPolicyMSPerMB=50 -Xverify:none -Xms256m -Dfile.encoding=UTF-8 -jar path/to/meghanada.jar
 ```
+
+Meghanada-Server is required JDK 8 (not JRE). It used Compiler API.
 
 ## Project
 
@@ -85,11 +87,6 @@ TODO
 * Write `.meghanada.conf` on project root.
 
 TODO
-
-## Plan
-
-* Support lambda expression
-* Support method refrence
 
 ## License
 
