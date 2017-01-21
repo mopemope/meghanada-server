@@ -17,6 +17,7 @@ public class Variable {
 
     public boolean def;
     public boolean parameter;
+    public boolean isField;
 
     public Variable() {
 
@@ -35,6 +36,7 @@ public class Variable {
                 .add("name", name)
                 .add("fqcn", fqcn)
                 .add("range", range)
+                .add("isField", isField)
                 .add("def", def)
                 .add("parameter", parameter)
                 .add("pos", pos)

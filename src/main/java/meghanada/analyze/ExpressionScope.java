@@ -11,6 +11,7 @@ public class ExpressionScope extends Scope {
     private static final Logger log = LogManager.getLogger(ExpressionScope.class);
 
     public AccessSymbol expressionReturn;
+    public boolean isField;
 
     public ExpressionScope() {
 
@@ -18,6 +19,7 @@ public class ExpressionScope extends Scope {
 
     public ExpressionScope(final int pos, final Range range) {
         super(pos, range);
+
     }
 
     @Override
@@ -25,7 +27,6 @@ public class ExpressionScope extends Scope {
         final Integer endCol = super.range.end.column;
         final Integer endLine = super.range.end.line;
         final Position mcsEnd = mcs.range.end;
-
         if (mcsEnd.column + 1 == endCol && mcsEnd.line == endLine) {
             this.expressionReturn = mcs;
         }
@@ -69,4 +70,11 @@ public class ExpressionScope extends Scope {
         return log.traceExit(aReturn);
     }
 
+    @Override
+    public Variable addVariable(final Variable variable) {
+        if (isField) {
+            variable.isField = true;
+        }
+        return super.addVariable(variable);
+    }
 }

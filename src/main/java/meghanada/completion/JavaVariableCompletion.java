@@ -48,7 +48,7 @@ public class JavaVariableCompletion {
         final List<String> fromTypes = this.fromType(accessSymbol, returnType);
         candidates.addAll(fromTypes);
 
-        // 2. add method or field name
+        // 2. add method or isField name
         final List<String> fromNames = this.fromName(accessSymbol);
         candidates.addAll(fromNames);
 

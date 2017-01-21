@@ -70,6 +70,35 @@ public class JavaCompletionTest extends GradleTestBase {
         assertEquals(units.size(), 18);
     }
 
+    @Test
+    public void testCompletion5() throws Exception {
+        JavaCompletion completion = getCompletion();
+        File file = new File("./src/main/java/meghanada/analyze/ExpressionScope.java");
+        final Collection<? extends CandidateUnit> staticLog = debugIt(() -> {
+            return completion.completionAt(file, 17, 4, "lo");
+        });
+        staticLog.forEach(a -> System.out.println(a.getDeclaration()));
+        assertEquals(staticLog.size(), 1);
+
+        final Collection<? extends CandidateUnit> pos = debugIt(() -> {
+            return completion.completionAt(file, 17, 8, "po");
+        });
+        pos.forEach(a -> System.out.println(a.getDeclaration()));
+        assertEquals(pos.size(), 1);
+    }
+
+    @Test
+    public void testCompletion6() throws Exception {
+        JavaCompletion completion = getCompletion();
+        File file = new File("./src/main/java/meghanada/analyze/ExpressionScope.java");
+        final Collection<? extends CandidateUnit> logMethod = debugIt(() -> {
+            return completion.completionAt(file, 17, 4, "*log#");
+        });
+        logMethod.forEach(a -> System.out.println(a.getDeclaration()));
+        assertEquals(logMethod.size(), 369);
+
+    }
+
     private JavaCompletion getCompletion() throws Exception {
         return new JavaCompletion(CacheBuilder.newBuilder()
                 .maximumSize(256)

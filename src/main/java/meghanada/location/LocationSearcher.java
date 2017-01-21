@@ -142,7 +142,7 @@ public class LocationSearcher {
                         ns.range.begin.line,
                         ns.range.begin.column))
                 .orElseGet(() -> {
-                    // field
+                    // isField
                     final TypeScope ts = source.getTypeScope(line);
                     if (ts == null) {
                         return null;

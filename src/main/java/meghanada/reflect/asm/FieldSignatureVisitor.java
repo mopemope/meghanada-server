@@ -17,7 +17,7 @@ class FieldSignatureVisitor extends SignatureVisitor {
     private final List<String> classTypeParameters;
     private final String name;
     private final Deque<TypeInfo> currentType = new ArrayDeque<>(2);
-    // field typeParameters
+    // isField typeParameters
     private Set<String> typeParameters;
     // main type
     private TypeInfo typeInfo;

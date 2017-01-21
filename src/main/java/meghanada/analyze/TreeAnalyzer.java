@@ -694,6 +694,9 @@ public class TreeAnalyzer {
             final Range range = Range.create(src, preferredPos, endPos);
 
             final ExpressionScope expressionScope = new ExpressionScope(preferredPos, range);
+            if (blockScope instanceof ClassScope) {
+                expressionScope.isField = true;
+            }
             blockScope.startExpression(expressionScope);
             if (expressionKind.equals(Tree.Kind.ASSIGNMENT)) {
                 final JCTree.JCAssign assign = (JCTree.JCAssign) expressionTree;
@@ -1094,6 +1097,9 @@ public class TreeAnalyzer {
             final Range range = Range.create(src, preferredPos, endPos);
 
             final ExpressionScope expressionScope = new ExpressionScope(preferredPos, range);
+            if (blockScope instanceof ClassScope) {
+                expressionScope.isField = true;
+            }
             blockScope.startExpression(expressionScope);
 
             if (typeTree instanceof JCTree.JCTypeUnion) {

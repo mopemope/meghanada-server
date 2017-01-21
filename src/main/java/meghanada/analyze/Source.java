@@ -258,7 +258,7 @@ public class Source {
     public List<MemberDescriptor> getAllMember() {
         final List<MemberDescriptor> memberDescriptors = new ArrayList<>();
         for (final TypeScope typeScope : this.classScopes) {
-            List<MemberDescriptor> result = typeScope.getMemberDescriptors();
+            final List<MemberDescriptor> result = typeScope.getMemberDescriptors();
             if (result != null) {
                 memberDescriptors.addAll(result);
             }
