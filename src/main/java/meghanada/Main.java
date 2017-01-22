@@ -16,7 +16,7 @@ import java.io.IOException;
 
 public class Main {
 
-    public static final String VERSION = "0.3.0";
+    public static final String VERSION = "0.3.1";
 
     private static Logger log = LogManager.getLogger(Main.class);
 
