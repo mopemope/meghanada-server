@@ -62,9 +62,8 @@ public abstract class Project {
     protected String compileSource = "1.8";
     protected String compileTarget = "1.8";
     protected String id;
-    protected Map<String, Set<String>> callerMap = new ConcurrentHashMap<>();
-    protected Map<String, Project> subProjects = new HashMap<>();
     protected List<Project> dependencyProjects = new ArrayList<>();
+    protected Map<String, Set<String>> callerMap = new ConcurrentHashMap<>();
 
     private JavaAnalyzer javaAnalyzer;
     private String cachedClasspath;

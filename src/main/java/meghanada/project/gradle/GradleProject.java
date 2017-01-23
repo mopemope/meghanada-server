@@ -24,6 +24,7 @@ public class GradleProject extends Project {
 
     private static final Logger log = LogManager.getLogger(GradleProject.class);
     private final File rootProject;
+    private final Map<String, File> projects = new HashMap<>();
 
     public GradleProject(File projectRoot) throws IOException {
         super(projectRoot);
@@ -143,9 +144,7 @@ public class GradleProject extends Project {
 
                 } else {
                     log.debug("load sub module. name:{} projectRoot:{}", projectName, moduleProjectRoot);
-                    Session.findProject(moduleProjectRoot).ifPresent(project -> {
-                        super.subProjects.put(projectName, project);
-                    });
+                    this.projects.put(projectName, moduleProjectRoot);
                 }
             }
 
@@ -305,13 +304,20 @@ public class GradleProject extends Project {
         }
 
         this.dependencyProjects = modDeps.stream()
-                .filter(name -> subProjects.containsKey(name))
+                .filter(projects::containsKey)
                 .map(name -> {
-                    final Project project = subProjects.get(name);
-                    final File file = project.getOutputDirectory();
-                    final ProjectDependency dependency = new ProjectDependency(name, "COMPILE", "", file);
-                    dependencies.add(dependency);
-                    return project;
+                    final File root = projects.get(name);
+                    try {
+                        final Optional<Project> p = Session.findProject(root);
+                        final Project project = p.get();
+                        final File file = project.getOutputDirectory();
+                        final ProjectDependency dependency = new ProjectDependency(name, "COMPILE", "", file);
+                        dependencies.add(dependency);
+                        return project;
+                    } catch (IOException e) {
+                        throw new UncheckedIOException(e);
+                    }
+
                 })
                 .collect(Collectors.toList());
         return dependencies;
