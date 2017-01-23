@@ -12,6 +12,7 @@ import org.apache.logging.log4j.core.config.LoggerConfig;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.net.URISyntaxException;
 import java.util.Collections;
 import java.util.HashMap;
@@ -166,7 +167,16 @@ public class Config {
     }
 
     public String getProjectSettingDir() {
-        return c.getString("project-setting-dir");
+        final String root = System.getProperty("project.root");
+        try {
+            if (root != null && !root.isEmpty()) {
+                return new File(root, ".meghanada").getCanonicalPath();
+            } else {
+                return c.getString("project-setting-dir");
+            }
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 
     public String getProjectCacheDir() {

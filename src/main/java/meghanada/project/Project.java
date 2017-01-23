@@ -49,6 +49,8 @@ public abstract class Project {
     private static final String INCLUDE_FILE = "include-file";
     private static final String EXCLUDE_FILE = "exclude-file";
 
+    public static Set<String> loadedProjectID = new HashSet<>();
+
     protected File projectRoot;
     protected Set<ProjectDependency> dependencies = new HashSet<>();
     protected Set<File> sources = new HashSet<>();
@@ -61,6 +63,8 @@ public abstract class Project {
     protected String compileTarget = "1.8";
     protected String id;
     protected Map<String, Set<String>> callerMap = new ConcurrentHashMap<>();
+    protected Map<String, Project> subProjects = new HashMap<>();
+    protected List<Project> dependencyProjects = new ArrayList<>();
 
     private JavaAnalyzer javaAnalyzer;
     private String cachedClasspath;
@@ -209,6 +213,17 @@ public abstract class Project {
     }
 
     public CompileResult compileJava(boolean force) throws IOException {
+
+        for (final Project p : dependencyProjects) {
+            // TODO need report ?
+            final CompileResult compileResult = p.compileJava(force);
+            if (log.isDebugEnabled() && !compileResult.isSuccess()) {
+                log.warn("{}", compileResult.getDiagnosticsSummary());
+            }
+        }
+
+        System.setProperty("project.root", this.getProjectRoot().getCanonicalPath());
+
         List<File> files = this.collectJavaFiles(this.getSourceDirectories());
         if (files != null && !files.isEmpty()) {
             if (callerMap.size() == 0) {
@@ -231,6 +246,13 @@ public abstract class Project {
     }
 
     public CompileResult compileTestJava(boolean force) throws IOException {
+        for (final Project p : dependencyProjects) {
+            // TODO need report ?
+            final CompileResult compileResult = p.compileTestJava(force);
+            if (log.isDebugEnabled() && !compileResult.isSuccess()) {
+                log.warn("{}", compileResult.getDiagnosticsSummary());
+            }
+        }
         List<File> files = this.collectJavaFiles(this.getTestSourceDirectories());
         if (files != null && !files.isEmpty()) {
             if (callerMap.size() == 0) {
@@ -389,7 +411,11 @@ public abstract class Project {
     public abstract InputStream runTask(List<String> args) throws IOException;
 
     public InputStream runJUnit(String test) throws IOException {
-        return runUnitTest(test);
+        try {
+            return runUnitTest(test);
+        } finally {
+            System.setProperty("project.root", this.projectRoot.getCanonicalPath());
+        }
     }
 
     private InputStream runUnitTest(String... tests) throws IOException {
@@ -522,6 +548,7 @@ public abstract class Project {
         }
         // log.debug("Merged Project:{}", this);
 
+        // freeze
         this.sources = new ImmutableSet.Builder<File>().addAll(this.sources).build();
         log.debug("sources {}", this.getSourceDirectories());
         this.resources = new ImmutableSet.Builder<File>().addAll(this.resources).build();
@@ -543,8 +570,10 @@ public abstract class Project {
         return id;
     }
 
-    public void setId(String id) {
+    public void setId(final String id) {
         this.id = id;
+        log.trace("loadedProjectID={}", Project.loadedProjectID);
+        Project.loadedProjectID.add(id);
     }
 
     private CompileResult updateSourceCache(final CompileResult compileResult) throws IOException {
@@ -656,4 +685,7 @@ public abstract class Project {
         });
     }
 
+    public List<Project> getDependencyProjects() {
+        return dependencyProjects;
+    }
 }

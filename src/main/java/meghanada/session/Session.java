@@ -6,7 +6,6 @@ import com.esotericsoftware.kryo.io.Output;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.LoadingCache;
 import meghanada.analyze.CompileResult;
-import meghanada.analyze.JavaAnalyzer;
 import meghanada.analyze.Source;
 import meghanada.completion.JavaCompletion;
 import meghanada.completion.JavaVariableCompletion;
@@ -25,6 +24,7 @@ import meghanada.utils.ClassNameUtils;
 import meghanada.utils.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.message.EntryMessage;
 import org.objenesis.strategy.StdInstantiatorStrategy;
 
 import java.io.*;
@@ -32,7 +32,6 @@ import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
@@ -77,19 +76,19 @@ public class Session {
 
     private static Session createSession(File root) throws IOException {
         root = root.getCanonicalFile();
-        final Project project = findProject(root);
-        if (project == null) {
-            throw new IllegalArgumentException("Project Not Found");
-        }
-        return new Session(project);
+        final Optional<Project> result = findProject(root);
+        assert result != null;
+        return result.map(Session::new)
+                .orElseThrow(() -> new IllegalArgumentException("Project Not Found"));
+
     }
 
-    private static Project findProject(File base) throws IOException {
+    public static Optional<Project> findProject(File base) throws IOException {
         while (true) {
 
             log.debug("finding project from '{}' ...", base);
             if (base.getPath().equals("/")) {
-                return null;
+                return Optional.empty();
             }
 
             // challenge
@@ -116,51 +115,66 @@ public class Session {
         }
     }
 
-    private static Project loadProject(final File projectRoot, final String targetFile) throws IOException {
+    private static Optional<Project> loadProject(final File projectRoot, final String targetFile) throws IOException {
+        final EntryMessage entryMessage = log.traceEntry("projectRoot={} targetFile={}", projectRoot, targetFile);
+        final String projectRootPath = projectRoot.getCanonicalPath();
+        System.setProperty("project.root", projectRootPath);
 
-        System.setProperty("project.root", projectRoot.getCanonicalPath());
+        try {
+            final Config config = Config.load();
+            final String projectSettingDir = config.getProjectSettingDir();
 
-        final Config config = Config.load();
-        final String projectSettingDir = config.getProjectSettingDir();
-        final File settingFile = new File(projectSettingDir);
-        if (!settingFile.exists()) {
-            settingFile.mkdirs();
-        }
-        final String id = FileUtils.findProjectID(projectRoot, targetFile);
+            final File settingFile = new File(projectSettingDir);
+            if (!settingFile.exists()) {
+                settingFile.mkdirs();
+            }
+            final String id = FileUtils.findProjectID(projectRoot, targetFile);
+            if (Project.loadedProjectID.contains(id)) {
+                // loaded skip
+                log.traceExit(entryMessage);
+                System.setProperty("project.root", projectRootPath);
+                return Optional.empty();
+            }
 
-        log.debug("project ID={}", id);
-        if (config.useFastBoot()) {
+            log.trace("project projectID={} projectRoot={}", id, projectRoot);
 
-            final File projectCache = new File(projectSettingDir, PROJECT_CACHE);
+            if (config.useFastBoot()) {
 
-            if (projectCache.exists()) {
-                final Project tempProject = Session.readProjectCache(projectCache);
-                if (tempProject != null && tempProject.getId().equals(id)) {
-                    tempProject.setId(id);
-                    log.debug("load from cache project={}", tempProject);
-                    log.info("current project projectRoot:{}", tempProject.getProjectRoot());
-                    return tempProject.mergeFromProjectConfig();
+                final File projectCache = new File(projectSettingDir, PROJECT_CACHE);
+
+                if (projectCache.exists()) {
+                    final Project tempProject = Session.readProjectCache(projectCache);
+                    if (tempProject != null && tempProject.getId().equals(id)) {
+                        tempProject.setId(id);
+                        log.debug("load from cache project={}", tempProject);
+                        log.info("read project projectRoot:{}", tempProject.getProjectRoot());
+                        log.traceExit(entryMessage);
+                        return Optional.of(tempProject.mergeFromProjectConfig());
+                    }
                 }
             }
-        }
 
-        Project project;
-        if (targetFile.equals(GRADLE_PROJECT_FILE)) {
-            project = new GradleProject(projectRoot);
-        } else if (targetFile.equals(MVN_PROJECT_FILE)) {
-            project = new MavenProject(projectRoot);
-        } else {
-            project = new MeghanadaProject(projectRoot);
-        }
-        project.setId(id);
+            Project project;
+            if (targetFile.equals(GRADLE_PROJECT_FILE)) {
+                project = new GradleProject(projectRoot);
+            } else if (targetFile.equals(MVN_PROJECT_FILE)) {
+                project = new MavenProject(projectRoot);
+            } else {
+                project = new MeghanadaProject(projectRoot);
+            }
+            project.setId(id);
 
-        final Project parsed = project.parseProject();
-        if (config.useFastBoot()) {
-            final File projectCache = new File(projectSettingDir, PROJECT_CACHE);
-            Session.writeProjectCache(parsed, projectCache);
+            final Project parsed = project.parseProject();
+            if (config.useFastBoot()) {
+                final File projectCache = new File(projectSettingDir, PROJECT_CACHE);
+                Session.writeProjectCache(parsed, projectCache);
+            }
+            log.info("read project projectRoot:{}", project.getProjectRoot());
+            log.traceExit(entryMessage);
+            return Optional.of(parsed.mergeFromProjectConfig());
+        } finally {
+            System.setProperty("project.root", projectRootPath);
         }
-        log.info("current project projectRoot:{}", project.getProjectRoot());
-        return parsed.mergeFromProjectConfig();
     }
 
     public static List<File> getSystemJars() throws IOException {
@@ -217,17 +231,23 @@ public class Session {
             return false;
         }
         if (currentProject instanceof GradleProject) {
-            this.currentProject = loadProject(projectRoot, GRADLE_PROJECT_FILE);
-            this.projects.put(projectRoot, this.currentProject);
-            return true;
+            return loadProject(projectRoot, GRADLE_PROJECT_FILE).map(project -> {
+                this.currentProject = project;
+                this.projects.put(projectRoot, this.currentProject);
+                return true;
+            }).orElse(false);
         } else if (currentProject instanceof MavenProject) {
-            this.currentProject = loadProject(projectRoot, MVN_PROJECT_FILE);
+            return loadProject(projectRoot, MVN_PROJECT_FILE).map(project -> {
+                this.currentProject = project;
+                this.projects.put(projectRoot, this.currentProject);
+                return true;
+            }).orElse(false);
+        }
+        return loadProject(projectRoot, Config.MEGHANADA_CONF_FILE).map(project -> {
+            this.currentProject = project;
             this.projects.put(projectRoot, this.currentProject);
             return true;
-        }
-        this.currentProject = loadProject(projectRoot, Config.MEGHANADA_CONF_FILE);
-        this.projects.put(projectRoot, this.currentProject);
-        return true;
+        }).orElse(false);
     }
 
     private File findProjectRoot(File base) throws IOException {
@@ -434,6 +454,7 @@ public class Session {
             this.sourceCache.invalidate(f);
         });
     }
+
     public Collection<File> getDependentJars() {
         return getCurrentProject()
                 .getDependencies()

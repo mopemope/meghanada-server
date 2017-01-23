@@ -58,17 +58,19 @@ public class JavaAnalyzer {
         try (StandardJavaFileManager fileManager = compiler.getStandardFileManager(null, null, Charset.forName("UTF-8"))) {
             final Iterable<? extends JavaFileObject> compilationUnits = fileManager.getJavaFileObjectsFromFiles(compileFiles);
             final DiagnosticCollector<JavaFileObject> diagnosticCollector = new DiagnosticCollector<>();
+            final List<String> compileOptions = Arrays.asList(
+                    "-cp", classpath,
+                    "-g", "-deprecation",
+                    "-d", out,
+                    "-source", this.compileSource,
+                    "-target", this.compileTarget,
+                    "-encoding", "UTF-8"
+            );
+            log.debug("use compile options {}", compileOptions);
             final JavaCompiler.CompilationTask compilerTask = compiler.getTask(null,
                     fileManager,
                     diagnosticCollector,
-                    Arrays.asList(
-                            "-cp", classpath,
-                            "-g", "-deprecation",
-                            "-d", out,
-                            "-source", this.compileSource,
-                            "-target", this.compileTarget,
-                            "-encoding", "UTF-8"
-                    ),
+                    compileOptions,
                     null,
                     compilationUnits);
 
