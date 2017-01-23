@@ -430,6 +430,7 @@ public class Session {
         if (!FileUtils.isJavaFile(file)) {
             return false;
         }
+        this.sourceCache.invalidate(file);
         parseJavaSource(file);
         return true;
     }
@@ -437,17 +438,17 @@ public class Session {
     public synchronized CompileResult compileFile(final String path) throws IOException {
         // java file only
         final File file = normalize(path);
-        final CompileResult result = currentProject.compileFile(file, true);
+        final CompileResult result = currentProject.compileFileNoCache(file, true);
         this.invalidSouceCache(result);
         return result;
     }
 
     public synchronized CompileResult compileProject() throws IOException {
-        final Project prj = this.getCurrentProject();
-        CompileResult result = prj.compileJava(false);
+        final Project project = this.getCurrentProject();
+        CompileResult result = project.compileJava(false);
         this.invalidSouceCache(result);
         if (result.isSuccess()) {
-            result = prj.compileTestJava(false);
+            result = project.compileTestJava(false);
             this.invalidSouceCache(result);
         }
         return result;

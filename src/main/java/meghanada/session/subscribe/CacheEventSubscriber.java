@@ -31,12 +31,12 @@ public class CacheEventSubscriber extends AbstractSubscriber {
 
         boolean result = timeItF("project analyze and compile elapsed:{}", () -> {
             try {
-                final CompileResult compileResult = project.compileJava(false);
+                final CompileResult compileResult = project.compileJava(false, true);
                 if (!compileResult.isSuccess()) {
                     log.warn("Compile Error : {}", compileResult.getDiagnosticsSummary());
                 }
 
-                final CompileResult testCompileResult = project.compileTestJava(false);
+                final CompileResult testCompileResult = project.compileTestJava(false, true);
                 if (!testCompileResult.isSuccess()) {
                     log.warn("Test Compile Error : {}", testCompileResult.getDiagnosticsSummary());
                 }
@@ -50,6 +50,10 @@ public class CacheEventSubscriber extends AbstractSubscriber {
         reflector.addClasspath(session.getDependentJars());
         reflector.addClasspath(project.getOutputDirectory());
         reflector.addClasspath(project.getTestOutputDirectory());
+        for (final Project dependency : project.getDependencyProjects()) {
+            reflector.addClasspath(dependency.getOutputDirectory());
+            reflector.addClasspath(dependency.getTestOutputDirectory());
+        }
 
         final Stopwatch stopwatch = Stopwatch.createStarted();
         reflector.createClassIndexes();

@@ -213,22 +213,28 @@ public abstract class Project {
     }
 
     public CompileResult compileJava(boolean force) throws IOException {
+        return compileJava(force, false);
+    }
+
+    public CompileResult compileJava(boolean force, final boolean fullBuild) throws IOException {
         final Set<Project> lazyLoad = new HashSet<>();
 
-        for (final Project p : this.dependencyProjects) {
-            if (p.equals(this)) {
-                // skip
-                continue;
-            }
-            final Set<Project> dependencyProjects = p.getDependencyProjects();
-            if (dependencyProjects.contains(this)) {
-                lazyLoad.add(p);
-                continue;
-            }
-            final CompileResult compileResult = p.compileJava(force);
-            if (!compileResult.isSuccess()) {
-                log.warn("dependency module compile error {}", p.getProjectRoot());
-                log.warn("{}", compileResult.getDiagnosticsSummary());
+        if (fullBuild) {
+            for (final Project p : this.dependencyProjects) {
+                if (p.equals(this)) {
+                    // skip
+                    continue;
+                }
+                final Set<Project> dependencyProjects = p.getDependencyProjects();
+                if (dependencyProjects.contains(this)) {
+                    lazyLoad.add(p);
+                    continue;
+                }
+                final CompileResult compileResult = p.compileJava(force);
+                if (!compileResult.isSuccess()) {
+                    log.warn("dependency module compile error {}", p.getProjectRoot());
+                    log.warn("{}", compileResult.getDiagnosticsSummary());
+                }
             }
         }
 
@@ -272,22 +278,28 @@ public abstract class Project {
     }
 
     public CompileResult compileTestJava(boolean force) throws IOException {
+        return compileTestJava(force, false);
+    }
+
+    public CompileResult compileTestJava(boolean force, final boolean fullBuild) throws IOException {
         final Set<Project> lazyLoad = new HashSet<>();
 
-        for (final Project p : dependencyProjects) {
-            if (p.equals(this)) {
-                // skip
-                continue;
-            }
-            final Set<Project> dependencyProjects = p.getDependencyProjects();
-            if (dependencyProjects.contains(this)) {
-                lazyLoad.add(p);
-                continue;
-            }
-            final CompileResult compileResult = p.compileTestJava(force);
-            if (!compileResult.isSuccess()) {
-                log.warn("dependency module test compile error {}", p.getProjectRoot());
-                log.warn("{}", compileResult.getDiagnosticsSummary());
+        if (fullBuild) {
+            for (final Project p : dependencyProjects) {
+                if (p.equals(this)) {
+                    // skip
+                    continue;
+                }
+                final Set<Project> dependencyProjects = p.getDependencyProjects();
+                if (dependencyProjects.contains(this)) {
+                    lazyLoad.add(p);
+                    continue;
+                }
+                final CompileResult compileResult = p.compileTestJava(force);
+                if (!compileResult.isSuccess()) {
+                    log.warn("dependency module test compile error {}", p.getProjectRoot());
+                    log.warn("{}", compileResult.getDiagnosticsSummary());
+                }
             }
         }
 
@@ -352,7 +364,7 @@ public abstract class Project {
         return new CompileResult(false);
     }
 
-    public CompileResult compileFile(final File file, final boolean force) throws IOException {
+    public CompileResult compileFileNoCache(final File file, final boolean force) throws IOException {
         boolean isTest = false;
         String filepath = file.getCanonicalPath();
         for (File source : this.getTestSourceDirectories()) {
@@ -377,14 +389,12 @@ public abstract class Project {
                     this.getAllSources(),
                     new File(output));
             files = addDepends(this.getAllSources(), files);
-            final CompileResult compileResult = getJavaAnalyzer().analyzeAndCompile(files, this.allClasspath(), output);
-            return this.updateSourceCache(compileResult);
-
+            return getJavaAnalyzer().analyzeAndCompile(files, this.allClasspath(), output);
         }
         return new CompileResult(false);
     }
 
-    public CompileResult compileFile(final List<File> files, final boolean force) throws IOException {
+    public CompileResult compileFileNoCache(final List<File> files, final boolean force) throws IOException {
         boolean isTest = false;
         // sampling
         String filepath = files.get(0).getCanonicalPath();
@@ -411,8 +421,7 @@ public abstract class Project {
                 this.getAllSources(),
                 new File(output));
         filesList = addDepends(this.getAllSources(), filesList);
-        final CompileResult compileResult = getJavaAnalyzer().analyzeAndCompile(filesList, this.allClasspath(), output);
-        return this.updateSourceCache(compileResult);
+        return getJavaAnalyzer().analyzeAndCompile(filesList, this.allClasspath(), output);
     }
 
     public File getProjectRoot() {
