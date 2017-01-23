@@ -107,9 +107,10 @@ public class TreeAnalyzer {
                 }));
                 final Optional<ClassScope> endClass = src.endClass();
                 log.trace("class={}", endClass);
-
+            } else if (td instanceof JCTree.JCSkip) {
+                // skip
             } else {
-                log.warn("unknown td={}", td);
+                log.warn("unknown td={} {}", td, td.getClass());
             }
         }));
         return src;

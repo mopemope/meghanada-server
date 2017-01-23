@@ -143,11 +143,10 @@ public class GradleProject extends Project {
                     }
 
                 } else {
-                    log.debug("load sub module. name:{} projectRoot:{}", projectName, moduleProjectRoot);
+                    log.trace("load sub module. name:{} projectRoot:{}", projectName, moduleProjectRoot);
                     this.projects.put(projectName, moduleProjectRoot);
                 }
             }
-
             return this;
         } catch (IOException e) {
             throw new ProjectParseException(e);
@@ -294,16 +293,16 @@ public class GradleProject extends Project {
 
                 final ProjectDependency projectDependency = new ProjectDependency(id, scope, version, file);
                 dependencies.add(projectDependency);
+            } else if (dependency instanceof IdeaModuleDependency) {
+                final String name = ((IdeaModuleDependency) dependency).getTargetModuleName();
+                log.debug("find module dependency name={}", name);
+                modDeps.add(name);
             } else {
-                if (dependency instanceof IdeaModuleDependency) {
-                    final String name = ((IdeaModuleDependency) dependency).getTargetModuleName();
-                    log.debug("depend project name:{}", name);
-                    modDeps.add(name);
-                }
+                log.warn("dep ??? class={}", dependency.getClass());
             }
         }
 
-        this.dependencyProjects = modDeps.stream()
+        final List<Project> modules = modDeps.stream()
                 .filter(projects::containsKey)
                 .map(name -> {
                     final File root = projects.get(name);
@@ -313,6 +312,7 @@ public class GradleProject extends Project {
                         final File file = project.getOutputDirectory();
                         final ProjectDependency dependency = new ProjectDependency(name, "COMPILE", "", file);
                         dependencies.add(dependency);
+                        log.debug("load module dependency name={}", name);
                         return project;
                     } catch (IOException e) {
                         throw new UncheckedIOException(e);
@@ -320,6 +320,7 @@ public class GradleProject extends Project {
 
                 })
                 .collect(Collectors.toList());
+        this.dependencyProjects.addAll(modules);
         return dependencies;
     }
 

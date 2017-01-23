@@ -561,6 +561,7 @@ public abstract class Project {
         log.debug("test resources {}", this.getTestResourceDirectories());
 
         log.debug("test output {}", this.getTestOutputDirectory());
+        log.debug("dependencyProjects output {}", this.dependencyProjects);
 
         return this;
     }
