@@ -5,6 +5,7 @@ import com.sun.source.util.JavacTask;
 import com.sun.tools.javac.api.JavacTaskImpl;
 import com.sun.tools.javac.parser.FuzzyParserFactory;
 import com.sun.tools.javac.util.Context;
+import meghanada.config.Config;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -86,8 +87,9 @@ public class JavaAnalyzer {
 
             final Map<File, Source> analyzedMap = treeAnalyzer.analyze(parsedIter, errorFiles);
 
-            final Iterable<? extends JavaFileObject> generate = javacTask.generate();
-
+            if (!Config.load().useExternalBuilder()) {
+                final Iterable<? extends JavaFileObject> generate = javacTask.generate();
+            }
             boolean success = errorFiles.size() == 0;
             return new CompileResult(success, analyzedMap, diagnostics, errorFiles);
         }
