@@ -143,13 +143,18 @@ public class Session {
                 final File projectCache = new File(projectSettingDir, PROJECT_CACHE);
 
                 if (projectCache.exists()) {
-                    final Project tempProject = Session.readProjectCache(projectCache);
-                    if (tempProject != null && tempProject.getId().equals(id)) {
-                        tempProject.setId(id);
-                        log.debug("load from cache project={}", tempProject);
-                        log.info("read project projectRoot:{}", tempProject.getProjectRoot());
-                        log.traceExit(entryMessage);
-                        return Optional.of(tempProject.mergeFromProjectConfig());
+                    try {
+                        final Project tempProject = Session.readProjectCache(projectCache);
+                        if (tempProject != null && tempProject.getId().equals(id)) {
+                            tempProject.setId(id);
+                            log.debug("load from cache project={}", tempProject);
+                            log.info("read project projectRoot:{}", tempProject.getProjectRoot());
+                            log.traceExit(entryMessage);
+                            return Optional.of(tempProject.mergeFromProjectConfig());
+                        }
+                    } catch (Exception ex) {
+                        // delete broken cache
+                        projectCache.delete();
                     }
                 }
             }
@@ -202,7 +207,7 @@ public class Session {
         }
     }
 
-    private static Project readProjectCache(final File cacheFile) {
+    private static Project readProjectCache(final File cacheFile) throws IOException {
         final Kryo kryo = new Kryo();
         kryo.setInstantiatorStrategy(new StdInstantiatorStrategy());
 
@@ -213,8 +218,6 @@ public class Session {
                 return (Project) o;
             }
             return null;
-        } catch (FileNotFoundException e) {
-            throw new UncheckedIOException(e);
         }
     }
 
