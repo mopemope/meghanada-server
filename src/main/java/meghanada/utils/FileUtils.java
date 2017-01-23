@@ -295,11 +295,11 @@ public final class FileUtils {
                     }
                     try {
                         final String path = f.getCanonicalPath();
-                        final String md5sum = FileUtils.md5sum(f);
                         if (!FileUtils.hasClassFile(path, sourceRoots, output)) {
                             return true;
                         }
 
+                        final String md5sum = FileUtils.md5sum(f);
                         if (finalChecksumMap.containsKey(path)) {
                             // compare checksum
                             final String prevSum = finalChecksumMap.get(path);

@@ -7,8 +7,8 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.io.File;
-import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static meghanada.config.Config.debugIt;
 import static meghanada.config.Config.timeIt;
@@ -52,7 +52,7 @@ public class GradleProjectTest {
             return this.project.parseProject();
         });
 
-        final List<Project> projects = project.getDependencyProjects();
+        final Set<Project> projects = project.getDependencyProjects();
         System.out.println(projects.size());
         for (Project p : projects) {
             System.out.println(p);

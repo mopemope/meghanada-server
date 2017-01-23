@@ -17,7 +17,6 @@ import org.gradle.tooling.model.idea.*;
 
 import java.io.*;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @DefaultSerializer(ProjectSerializer.class)
 public class GradleProject extends Project {
@@ -25,6 +24,7 @@ public class GradleProject extends Project {
     private static final Logger log = LogManager.getLogger(GradleProject.class);
     private final File rootProject;
     private final Map<String, File> projects = new HashMap<>();
+    private List<String> lazyLoadModule = new ArrayList<>();
 
     public GradleProject(File projectRoot) throws IOException {
         super(projectRoot);
@@ -144,7 +144,23 @@ public class GradleProject extends Project {
 
                 } else {
                     log.trace("load sub module. name:{} projectRoot:{}", projectName, moduleProjectRoot);
-                    this.projects.put(projectName, moduleProjectRoot);
+                    this.projects.putIfAbsent(projectName, moduleProjectRoot);
+                }
+            }
+
+            for (final String name : this.lazyLoadModule) {
+                if (projects.containsKey(name)) {
+                    this.loadModule(name);
+                } else {
+                    final String[] split = name.split("-");
+                    if (split.length > 0) {
+                        final String nm = split[split.length - 1];
+                        if (projects.containsKey(nm)) {
+                            this.loadModule(nm);
+                        } else {
+                            log.warn("fail load module={}", name);
+                        }
+                    }
                 }
             }
             return this;
@@ -153,6 +169,24 @@ public class GradleProject extends Project {
         } finally {
             projectConnection.close();
         }
+    }
+
+    private void loadModule(final String name) throws IOException {
+        final File root = projects.get(name);
+        final Optional<Project> p = Session.findProject(root);
+        p.ifPresent(project -> {
+
+            final File outputFile = project.getOutputDirectory();
+            final ProjectDependency output = new ProjectDependency(name, "COMPILE", "", outputFile);
+            dependencies.add(output);
+
+            final File testOutputFile = project.getTestOutputDirectory();
+            final ProjectDependency testOutput = new ProjectDependency(name + "Test", "COMPILE", "", testOutputFile);
+            dependencies.add(testOutput);
+
+            this.dependencyProjects.add(project);
+            log.debug("load module dependency name={}", name);
+        });
     }
 
     private ProjectConnection getProjectConnection() {
@@ -266,9 +300,8 @@ public class GradleProject extends Project {
         return result;
     }
 
-    private Set<ProjectDependency> getDependency(final IdeaModule ideaModule) {
+    private Set<ProjectDependency> getDependency(final IdeaModule ideaModule) throws IOException {
         final Set<ProjectDependency> dependencies = new HashSet<>();
-        final List<String> modDeps = new ArrayList<>();
 
         for (final IdeaDependency dependency : ideaModule.getDependencies().getAll()) {
             if (dependency instanceof IdeaSingleEntryLibraryDependency) {
@@ -294,33 +327,20 @@ public class GradleProject extends Project {
                 final ProjectDependency projectDependency = new ProjectDependency(id, scope, version, file);
                 dependencies.add(projectDependency);
             } else if (dependency instanceof IdeaModuleDependency) {
-                final String name = ((IdeaModuleDependency) dependency).getTargetModuleName();
-                log.debug("find module dependency name={}", name);
-                modDeps.add(name);
+                final IdeaModuleDependency moduleDependency = (IdeaModuleDependency) dependency;
+                final String targetModuleName = moduleDependency.getTargetModuleName();
+                log.debug("find module dependency name={}", targetModuleName);
+
+                if (projects.containsKey(targetModuleName)) {
+                    this.loadModule(targetModuleName);
+                } else {
+                    this.lazyLoadModule.add(targetModuleName);
+                }
             } else {
                 log.warn("dep ??? class={}", dependency.getClass());
             }
         }
 
-        final List<Project> modules = modDeps.stream()
-                .filter(projects::containsKey)
-                .map(name -> {
-                    final File root = projects.get(name);
-                    try {
-                        final Optional<Project> p = Session.findProject(root);
-                        final Project project = p.get();
-                        final File file = project.getOutputDirectory();
-                        final ProjectDependency dependency = new ProjectDependency(name, "COMPILE", "", file);
-                        dependencies.add(dependency);
-                        log.debug("load module dependency name={}", name);
-                        return project;
-                    } catch (IOException e) {
-                        throw new UncheckedIOException(e);
-                    }
-
-                })
-                .collect(Collectors.toList());
-        this.dependencyProjects.addAll(modules);
         return dependencies;
     }
 

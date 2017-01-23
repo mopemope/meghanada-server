@@ -129,11 +129,12 @@ public class Session {
                 settingFile.mkdirs();
             }
             final String id = FileUtils.findProjectID(projectRoot, targetFile);
-            if (Project.loadedProjectID.contains(id)) {
+            if (Project.loadedProject.containsKey(id)) {
                 // loaded skip
+                final Project project = Project.loadedProject.get(id);
                 log.traceExit(entryMessage);
                 System.setProperty("project.root", projectRootPath);
-                return Optional.empty();
+                return Optional.of(project);
             }
 
             log.trace("project projectID={} projectRoot={}", id, projectRoot);
@@ -148,7 +149,7 @@ public class Session {
                         if (tempProject != null && tempProject.getId().equals(id)) {
                             tempProject.setId(id);
                             log.debug("load from cache project={}", tempProject);
-                            log.info("read project projectRoot:{}", tempProject.getProjectRoot());
+                            log.info("load project from cache. projectRoot:{}", tempProject.getProjectRoot());
                             log.traceExit(entryMessage);
                             return Optional.of(tempProject.mergeFromProjectConfig());
                         }
@@ -174,7 +175,7 @@ public class Session {
                 final File projectCache = new File(projectSettingDir, PROJECT_CACHE);
                 Session.writeProjectCache(parsed, projectCache);
             }
-            log.info("read project projectRoot:{}", project.getProjectRoot());
+            log.info("load project projectRoot:{}", project.getProjectRoot());
             log.traceExit(entryMessage);
             return Optional.of(parsed.mergeFromProjectConfig());
         } finally {

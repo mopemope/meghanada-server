@@ -13,7 +13,6 @@ import org.apache.logging.log4j.Logger;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.util.List;
 import java.util.Set;
 
 public class ProjectSerializer extends Serializer<Project> {
@@ -99,7 +98,7 @@ public class ProjectSerializer extends Serializer<Project> {
             kryo.writeClassAndObject(output, project.id);
 
             // protected List<Project> dependencyProjects;
-            final List<Project> dependencyProjects = project.dependencyProjects;
+            final Set<Project> dependencyProjects = project.dependencyProjects;
             output.writeInt(dependencyProjects.size(), true);
             for (final Project p : dependencyProjects) {
                 kryo.writeClassAndObject(output, p);
@@ -215,7 +214,9 @@ public class ProjectSerializer extends Serializer<Project> {
                 final int size = input.readInt(true);
                 for (int i = 0; i < size; i++) {
                     final Project p = (Project) kryo.readClassAndObject(input);
-                    project.dependencyProjects.add(p);
+                    if (p != null) {
+                        project.dependencyProjects.add(p);
+                    }
                 }
             }
 

@@ -6,6 +6,7 @@ import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.google.common.base.Joiner;
 import com.google.common.base.MoreObjects;
+import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableSet;
 import com.typesafe.config.ConfigFactory;
 import meghanada.analyze.CompileResult;
@@ -49,7 +50,7 @@ public abstract class Project {
     private static final String INCLUDE_FILE = "include-file";
     private static final String EXCLUDE_FILE = "exclude-file";
 
-    public static Set<String> loadedProjectID = new HashSet<>();
+    public static Map<String, Project> loadedProject = new HashMap<>();
 
     protected File projectRoot;
     protected Set<ProjectDependency> dependencies = new HashSet<>();
@@ -62,7 +63,7 @@ public abstract class Project {
     protected String compileSource = "1.8";
     protected String compileTarget = "1.8";
     protected String id;
-    protected List<Project> dependencyProjects = new ArrayList<>();
+    protected Set<Project> dependencyProjects = new HashSet<>();
     protected Map<String, Set<String>> callerMap = new ConcurrentHashMap<>();
 
     private JavaAnalyzer javaAnalyzer;
@@ -188,10 +189,10 @@ public abstract class Project {
     }
 
     private List<File> collectJavaFiles(Set<File> sourceDirs) throws IOException {
-        return sourceDirs.stream()
+        return sourceDirs.parallelStream()
                 .filter(File::exists)
                 .map(this::collectJavaFiles)
-                .flatMap(Collection::stream)
+                .flatMap(Collection::parallelStream)
                 .filter(FileUtils::filterFile)
                 .collect(Collectors.toList());
     }
@@ -212,11 +213,21 @@ public abstract class Project {
     }
 
     public CompileResult compileJava(boolean force) throws IOException {
+        final Set<Project> lazyLoad = new HashSet<>();
 
-        for (final Project p : dependencyProjects) {
-            // TODO need report ?
+        for (final Project p : this.dependencyProjects) {
+            if (p.equals(this)) {
+                // skip
+                continue;
+            }
+            final Set<Project> dependencyProjects = p.getDependencyProjects();
+            if (dependencyProjects.contains(this)) {
+                lazyLoad.add(p);
+                continue;
+            }
             final CompileResult compileResult = p.compileJava(force);
-            if (log.isDebugEnabled() && !compileResult.isSuccess()) {
+            if (!compileResult.isSuccess()) {
+                log.warn("dependency module compile error {}", p.getProjectRoot());
                 log.warn("{}", compileResult.getDiagnosticsSummary());
             }
         }
@@ -239,19 +250,47 @@ public abstract class Project {
 
             files = addDepends(this.getAllSources(), files);
             final CompileResult compileResult = getJavaAnalyzer().analyzeAndCompile(files, this.allClasspath(), output.getCanonicalPath());
+
+            for (final Project p : lazyLoad) {
+                if (p.equals(this)) {
+                    // skip
+                    continue;
+                }
+                final Set<Project> dependencyProjects = p.getDependencyProjects();
+                if (dependencyProjects.contains(this)) {
+                    continue;
+                }
+                final CompileResult tempCR = p.compileJava(force);
+                if (!tempCR.isSuccess()) {
+                    log.warn("dependency module compile error {}", p.getProjectRoot());
+                    log.warn("{}", tempCR.getDiagnosticsSummary());
+                }
+            }
             return this.updateSourceCache(compileResult);
         }
         return new CompileResult(true);
     }
 
     public CompileResult compileTestJava(boolean force) throws IOException {
+        final Set<Project> lazyLoad = new HashSet<>();
+
         for (final Project p : dependencyProjects) {
-            // TODO need report ?
+            if (p.equals(this)) {
+                // skip
+                continue;
+            }
+            final Set<Project> dependencyProjects = p.getDependencyProjects();
+            if (dependencyProjects.contains(this)) {
+                lazyLoad.add(p);
+                continue;
+            }
             final CompileResult compileResult = p.compileTestJava(force);
-            if (log.isDebugEnabled() && !compileResult.isSuccess()) {
+            if (!compileResult.isSuccess()) {
+                log.warn("dependency module test compile error {}", p.getProjectRoot());
                 log.warn("{}", compileResult.getDiagnosticsSummary());
             }
         }
+
         List<File> files = this.collectJavaFiles(this.getTestSourceDirectories());
         if (files != null && !files.isEmpty()) {
             if (callerMap.size() == 0) {
@@ -268,6 +307,22 @@ public abstract class Project {
                     this.testOutput);
             files = addDepends(this.getAllSources(), files);
             final CompileResult compileResult = getJavaAnalyzer().analyzeAndCompile(files, this.allClasspath(), testOutput.getCanonicalPath());
+
+            for (final Project p : lazyLoad) {
+                if (p.equals(this)) {
+                    // skip
+                    continue;
+                }
+                final Set<Project> dependencyProjects = p.getDependencyProjects();
+                if (dependencyProjects.contains(this)) {
+                    continue;
+                }
+                final CompileResult tempCR = p.compileTestJava(force);
+                if (!tempCR.isSuccess()) {
+                    log.warn("dependency module test compile error {}", p.getProjectRoot());
+                    log.warn("{}", tempCR.getDiagnosticsSummary());
+                }
+            }
             return this.updateSourceCache(compileResult);
         }
         return new CompileResult(true);
@@ -572,8 +627,7 @@ public abstract class Project {
 
     public void setId(final String id) {
         this.id = id;
-        log.trace("loadedProjectID={}", Project.loadedProjectID);
-        Project.loadedProjectID.add(id);
+        Project.loadedProject.put(id, this);
     }
 
     private CompileResult updateSourceCache(final CompileResult compileResult) throws IOException {
@@ -685,7 +739,20 @@ public abstract class Project {
         });
     }
 
-    public List<Project> getDependencyProjects() {
-        return dependencyProjects;
+    public Set<Project> getDependencyProjects() {
+        return this.dependencyProjects;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Project project = (Project) o;
+        return com.google.common.base.Objects.equal(projectRoot, project.projectRoot);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hashCode(projectRoot);
     }
 }
