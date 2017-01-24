@@ -74,7 +74,7 @@ public class GradleProject extends Project {
                 super.compileTarget = targetLevel;
             } catch (UnsupportedMethodException e) {
                 // through
-                log.catching(e);
+                log.warn(e.getMessage());
             }
             log.trace("load project main module name:{} projectRoot:{}", ideaProject.getName(), this.projectRoot);
 
