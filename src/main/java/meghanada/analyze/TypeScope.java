@@ -72,7 +72,7 @@ public class TypeScope extends MethodScope {
             return scope.getMethodCall(line);
         }
         return super.methodCalls.stream()
-                .filter(methodCallSymbol -> methodCallSymbol.containsLine(line))
+                .filter(mc -> mc.containsLine(line))
                 .collect(Collectors.toList());
     }
 

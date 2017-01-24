@@ -126,16 +126,10 @@ public class JavaSourceLoader extends CacheLoader<File, Source> {
                     return source.get();
                 }
             }
-            // update
-            finalChecksumMap.put(path, md5sum);
-        } else {
-            // save checksum
-            finalChecksumMap.put(path, md5sum);
         }
 
         final CompileResult compileResult = project.parseFile(file.getCanonicalFile());
         final Source source = compileResult.getSources().get(file.getCanonicalFile());
-        FileUtils.writeMapSetting(finalChecksumMap, checksumFile);
         return writeCache(source);
     }
 

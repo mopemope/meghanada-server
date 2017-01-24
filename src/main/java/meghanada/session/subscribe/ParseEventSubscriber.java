@@ -53,7 +53,7 @@ public class ParseEventSubscriber extends AbstractSubscriber {
 
     }
 
-    private void parseFile(final Session session, final File file) throws ExecutionException, IOException {
+    private void parseFile(final Session session, final File file) throws IOException, ExecutionException {
         session.parseFile(file.getCanonicalPath());
     }
 }

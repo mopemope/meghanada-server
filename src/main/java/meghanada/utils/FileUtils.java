@@ -285,7 +285,7 @@ public final class FileUtils {
 
         final File checksumFile = FileUtils.getSettingFile(filePath);
         final Config config = Config.load();
-        final Map<String, String> finalChecksumMap = config.getChecksumMap(checksumFile);
+        final Map<String, String> map = config.getChecksumMap(checksumFile);
 
         final List<File> fileList = sourceFiles
                 .parallelStream()
@@ -300,18 +300,18 @@ public final class FileUtils {
                         }
 
                         final String md5sum = FileUtils.md5sum(f);
-                        if (finalChecksumMap.containsKey(path)) {
+                        if (map.containsKey(path)) {
                             // compare checksum
-                            final String prevSum = finalChecksumMap.get(path);
+                            final String prevSum = map.get(path);
                             if (md5sum.equals(prevSum)) {
                                 // not modify
                                 return false;
                             }
                             // update
-                            finalChecksumMap.put(path, md5sum);
+                            map.put(path, md5sum);
                         } else {
                             // save checksum
-                            finalChecksumMap.put(path, md5sum);
+                            map.put(path, md5sum);
                         }
                     } catch (IOException e) {
                         throw new UncheckedIOException(e);
@@ -319,8 +319,8 @@ public final class FileUtils {
                     return true;
                 }).collect(Collectors.toList());
 
-        FileUtils.writeMapSetting(finalChecksumMap, checksumFile);
-        config.getAllChecksumMap().put(checksumFile, finalChecksumMap);
+        FileUtils.writeMapSetting(map, checksumFile);
+        config.getAllChecksumMap().put(checksumFile, map);
         log.debug("remove unmodified {} To {}", sourceFiles.size(), fileList.size());
         log.trace("modified : {}", fileList);
         return fileList;

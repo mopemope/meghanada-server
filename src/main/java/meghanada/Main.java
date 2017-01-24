@@ -32,6 +32,8 @@ public class Main {
         final String version = getVersion();
         System.setProperty("meghanada-server.version", version);
 
+        Thread.setDefaultUncaughtExceptionHandler((t, e) -> log.error("uncaughtException {}", e));
+
         final Options options = buildOptions();
 
         final CommandLineParser parser = new DefaultParser();
@@ -46,6 +48,7 @@ public class Main {
             System.out.println(version);
             return;
         }
+
 
         System.setProperty("home", Config.getInstalledPath().getParentFile().getCanonicalPath());
 
@@ -62,6 +65,7 @@ public class Main {
             final LoggerContext context = (LoggerContext) LogManager.getContext(false);
             final Configuration configuration = context.getConfiguration();
             final LoggerConfig loggerConfig = configuration.getLoggerConfig(LogManager.ROOT_LOGGER_NAME);
+
             loggerConfig.setLevel(Level.TRACE);
             context.updateLoggers();
             System.setProperty("log-level", "TRACE");

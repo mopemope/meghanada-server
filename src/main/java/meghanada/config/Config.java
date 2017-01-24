@@ -15,7 +15,6 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URISyntaxException;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -31,7 +30,7 @@ public class Config {
     private List<String> includeList;
     private List<String> excludeList;
 
-    private Map<File, Map<String, String>> checksumMap = new HashMap<>();
+    private Map<File, Map<String, String>> checksumMap = new ConcurrentHashMap<>();
 
     private Config() {
         this.c = ConfigFactory.load();
