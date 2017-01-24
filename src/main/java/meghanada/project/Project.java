@@ -230,7 +230,8 @@ public abstract class Project {
                     lazyLoad.add(p);
                     continue;
                 }
-                final CompileResult compileResult = p.compileJava(force);
+                System.setProperty("project.root", p.getProjectRoot().getCanonicalPath());
+                final CompileResult compileResult = p.compileJava(force, true);
                 if (!compileResult.isSuccess()) {
                     log.warn("dependency module compile error {}", p.getProjectRoot());
                     log.warn("{}", compileResult.getDiagnosticsSummary());
@@ -262,16 +263,26 @@ public abstract class Project {
                     // skip
                     continue;
                 }
+
                 final Set<Project> dependencyProjects = p.getDependencyProjects();
+                System.setProperty("project.root", p.getProjectRoot().getCanonicalPath());
                 if (dependencyProjects.contains(this)) {
-                    continue;
-                }
-                final CompileResult tempCR = p.compileJava(force);
-                if (!tempCR.isSuccess()) {
-                    log.warn("dependency module compile error {}", p.getProjectRoot());
-                    log.warn("{}", tempCR.getDiagnosticsSummary());
+                    dependencyProjects.remove(this);
+                    final CompileResult tempCR = p.compileJava(force, fullBuild);
+                    if (!tempCR.isSuccess()) {
+                        log.warn("dependency module compile error {}", p.getProjectRoot());
+                        log.warn("{}", tempCR.getDiagnosticsSummary());
+                    }
+                    dependencyProjects.add(this);
+                } else {
+                    final CompileResult tempCR = p.compileJava(force, fullBuild);
+                    if (!tempCR.isSuccess()) {
+                        log.warn("dependency module compile error {}", p.getProjectRoot());
+                        log.warn("{}", tempCR.getDiagnosticsSummary());
+                    }
                 }
             }
+            System.setProperty("project.root", this.getProjectRoot().getCanonicalPath());
             return this.updateSourceCache(compileResult);
         }
         return new CompileResult(true);
@@ -295,7 +306,8 @@ public abstract class Project {
                     lazyLoad.add(p);
                     continue;
                 }
-                final CompileResult compileResult = p.compileTestJava(force);
+                System.setProperty("project.root", p.getProjectRoot().getCanonicalPath());
+                final CompileResult compileResult = p.compileTestJava(force, true);
                 if (!compileResult.isSuccess()) {
                     log.warn("dependency module test compile error {}", p.getProjectRoot());
                     log.warn("{}", compileResult.getDiagnosticsSummary());
@@ -303,6 +315,7 @@ public abstract class Project {
             }
         }
 
+        System.setProperty("project.root", this.getProjectRoot().getCanonicalPath());
         List<File> files = this.collectJavaFiles(this.getTestSourceDirectories());
         if (files != null && !files.isEmpty()) {
             if (callerMap.size() == 0) {
@@ -326,15 +339,24 @@ public abstract class Project {
                     continue;
                 }
                 final Set<Project> dependencyProjects = p.getDependencyProjects();
+                System.setProperty("project.root", p.getProjectRoot().getCanonicalPath());
                 if (dependencyProjects.contains(this)) {
-                    continue;
-                }
-                final CompileResult tempCR = p.compileTestJava(force);
-                if (!tempCR.isSuccess()) {
-                    log.warn("dependency module test compile error {}", p.getProjectRoot());
-                    log.warn("{}", tempCR.getDiagnosticsSummary());
+                    dependencyProjects.remove(this);
+                    final CompileResult tempCR = p.compileTestJava(force, fullBuild);
+                    if (!tempCR.isSuccess()) {
+                        log.warn("dependency module test compile error {}", p.getProjectRoot());
+                        log.warn("{}", tempCR.getDiagnosticsSummary());
+                    }
+                    dependencyProjects.add(this);
+                } else {
+                    final CompileResult tempCR = p.compileTestJava(force, fullBuild);
+                    if (!tempCR.isSuccess()) {
+                        log.warn("dependency module test compile error {}", p.getProjectRoot());
+                        log.warn("{}", tempCR.getDiagnosticsSummary());
+                    }
                 }
             }
+            System.setProperty("project.root", this.getProjectRoot().getCanonicalPath());
             return this.updateSourceCache(compileResult);
         }
         return new CompileResult(true);
