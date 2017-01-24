@@ -63,7 +63,7 @@ public class JavaSourceLoader extends CacheLoader<File, Source> {
 
     }
 
-    public static synchronized Source writeCache(final Source source) throws IOException {
+    public static synchronized Source writeSourceCache(final Source source) throws IOException {
         final CachedASMReflector reflector = CachedASMReflector.getInstance();
         final File sourceFile = source.getFile();
         final Config config = Config.load();
@@ -88,7 +88,7 @@ public class JavaSourceLoader extends CacheLoader<File, Source> {
         return source;
     }
 
-    public static synchronized Source removeCache(final Source source) throws IOException {
+    public static synchronized Source removeSourceCache(final Source source) throws IOException {
         final File sourceFile = source.getFile();
         final Config config = Config.load();
         final String dir = config.getProjectCacheDir();
@@ -121,16 +121,20 @@ public class JavaSourceLoader extends CacheLoader<File, Source> {
             if (md5sum.equals(prevSum)) {
                 // not modify
                 // load from cache
-                final Optional<Source> source = loadFromCache(file);
-                if (source.isPresent()) {
-                    return source.get();
+                try {
+                    final Optional<Source> source = loadFromCache(file);
+                    if (source.isPresent()) {
+                        return source.get();
+                    }
+                } catch (Exception ex) {
+                    // broken
                 }
             }
         }
 
         final CompileResult compileResult = project.parseFile(file.getCanonicalFile());
         final Source source = compileResult.getSources().get(file.getCanonicalFile());
-        return writeCache(source);
+        return writeSourceCache(source);
     }
 
 }

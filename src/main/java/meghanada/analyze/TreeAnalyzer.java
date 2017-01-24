@@ -37,9 +37,11 @@ public class TreeAnalyzer {
     private static final Logger log = LogManager.getLogger(TreeAnalyzer.class);
 
     private final Map<String, String> standardClasses;
+    private final CachedASMReflector cachedASMReflector;
 
     public TreeAnalyzer() {
-        this.standardClasses = CachedASMReflector.getInstance().getStandardClasses();
+        this.cachedASMReflector = CachedASMReflector.getInstance();
+        this.standardClasses = this.cachedASMReflector.getStandardClasses();
     }
 
     private Source analyzeCompilationUnitTree(final CompilationUnitTree cut, final Source src) {
@@ -57,8 +59,7 @@ public class TreeAnalyzer {
             final String simpleName = ClassNameUtils.getSimpleName(importClass);
             if (simpleName.equals("*")) {
                 // wild
-                final CachedASMReflector reflector = CachedASMReflector.getInstance();
-                Map<String, String> symbols = reflector.getPackageClasses(importClass);
+                Map<String, String> symbols = this.cachedASMReflector.getPackageClasses(importClass);
                 for (final String entry : symbols.values()) {
                     src.addImport(entry);
                 }
@@ -1269,20 +1270,25 @@ public class TreeAnalyzer {
             return fqcn;
         }
 
-        final CachedASMReflector reflector = CachedASMReflector.getInstance();
         final String simpleName = ClassNameUtils.removeTypeAndArray(fqcn);
-
+        if (ClassNameUtils.isPrimitive(simpleName)) {
+            return fqcn;
+        }
         ClassNameUtils.parseTypeParameter(fqcn).forEach(s -> {
             markFQCN(src, s);
         });
 
-        if (!src.importClass.containsValue(simpleName) && !reflector.getGlobalClassIndex().containsKey(simpleName)) {
-            // log.debug("add unknown={} fqcn={}", simpleName, fqcn);
+        if (!src.importClass.containsValue(simpleName) && !this.cachedASMReflector.getGlobalClassIndex().containsKey(simpleName)) {
             src.unknown.add(simpleName);
         } else {
             // contains
             if (src.unused.contains(simpleName)) {
                 src.unused.remove(simpleName);
+            }
+
+            final File classFile = cachedASMReflector.getClassFile(simpleName);
+            if (classFile == null || !classFile.getName().endsWith(".jar")) {
+                src.usingClasses.add(simpleName);
             }
         }
         return fqcn;

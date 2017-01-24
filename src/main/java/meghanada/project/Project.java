@@ -670,13 +670,13 @@ public abstract class Project {
             final Map<File, Map<String, String>> checksum = config.getAllChecksumMap();
 
             final File checksumFile = FileUtils.getSettingFile(JavaAnalyzer.COMPILE_CHECKSUM);
-            final Map<String, String> finalChecksumMap = checksum.getOrDefault(checksumFile, new ConcurrentHashMap<>());
+            final Map<String, String> checksumMap = checksum.getOrDefault(checksumFile, new ConcurrentHashMap<>());
 
             for (final Source source : sourceMap.values()) {
 
                 source.getClassScopes().forEach(cs -> {
                     final String fqcn = cs.getFQCN();
-                    source.importClass.values().forEach(s -> {
+                    source.usingClasses.forEach(s -> {
                         if (this.callerMap.containsKey(s)) {
                             final Set<String> set = this.callerMap.get(s);
                             set.add(fqcn);
@@ -690,20 +690,23 @@ public abstract class Project {
                 });
 
                 final File file = source.getFile();
+                final String path = file.getCanonicalPath();
                 if (!errorFiles.contains(file)) {
                     try {
-                        JavaSourceLoader.writeCache(source);
+                        final String md5sum = FileUtils.md5sum(file);
+                        checksumMap.put(path, md5sum);
+                        JavaSourceLoader.writeSourceCache(source);
                     } catch (IOException e) {
                         throw new UncheckedIOException(e);
                     }
                 } else {
                     // error
-                    finalChecksumMap.remove(file.getCanonicalPath());
-                    JavaSourceLoader.removeCache(source);
+                    checksumMap.remove(path);
+                    JavaSourceLoader.removeSourceCache(source);
                 }
             }
-            FileUtils.writeMapSetting(finalChecksumMap, checksumFile);
-            checksum.put(checksumFile, finalChecksumMap);
+            FileUtils.writeMapSetting(checksumMap, checksumFile);
+            checksum.put(checksumFile, checksumMap);
         }
         this.writeCaller();
         return compileResult;
