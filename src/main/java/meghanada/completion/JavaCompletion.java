@@ -43,7 +43,7 @@ public class JavaCompletion {
             // search symbol
             return this.completionSymbols(source, line, prefix);
         } catch (Exception e) {
-            log.error(e.getMessage(), e);
+            log.catching(e);
             return Collections.emptyList();
         }
     }

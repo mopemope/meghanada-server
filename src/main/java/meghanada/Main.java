@@ -32,7 +32,9 @@ public class Main {
         final String version = getVersion();
         System.setProperty("meghanada-server.version", version);
 
-        Thread.setDefaultUncaughtExceptionHandler((t, e) -> log.error("uncaughtException {}", e));
+        Thread.setDefaultUncaughtExceptionHandler((t, e) -> {
+            log.catching(e);
+        });
 
         final Options options = buildOptions();
 
@@ -61,6 +63,7 @@ public class Main {
             System.setProperty("log-level", "DEBUG");
             log.debug("set verbose flag(DEBUG)");
         }
+
         if (cmd.hasOption("vv")) {
             final LoggerContext context = (LoggerContext) LogManager.getContext(false);
             final Configuration configuration = context.getConfiguration();
@@ -71,6 +74,7 @@ public class Main {
             System.setProperty("log-level", "TRACE");
             log.debug("set verbose flag(TRACE)");
         }
+
         if (cmd.hasOption("gradle-version")) {
             final String gradleVersion = cmd.getOptionValue("gradle-version", "");
             if (!version.isEmpty()) {

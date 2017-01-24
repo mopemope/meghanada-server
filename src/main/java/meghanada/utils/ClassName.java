@@ -28,7 +28,7 @@ public final class ClassName {
 
     public String toFQCN(String ownPkg, BiMap<String, String> classes) {
 
-        CachedASMReflector cachedASMReflector = CachedASMReflector.getInstance();
+        final CachedASMReflector cachedASMReflector = CachedASMReflector.getInstance();
         final String name = this.getName();
 
         if (cachedASMReflector.containsFQCN(name)) {

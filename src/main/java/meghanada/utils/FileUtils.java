@@ -321,6 +321,7 @@ public final class FileUtils {
 
         FileUtils.writeMapSetting(map, checksumFile);
         config.getAllChecksumMap().put(checksumFile, map);
+
         log.debug("remove unmodified {} To {}", sourceFiles.size(), fileList.size());
         log.trace("modified : {}", fileList);
         return fileList;
