@@ -764,4 +764,14 @@ public abstract class Project {
     public int hashCode() {
         return Objects.hashCode(projectRoot);
     }
+
+    public void clearCache() throws IOException {
+        for (final Project p : this.dependencyProjects) {
+            p.clearCache();
+        }
+        System.setProperty("project.root", this.projectRoot.getCanonicalPath());
+        final Config config = Config.load();
+        final String projectSettingDir = config.getProjectSettingDir();
+        FileUtils.deleteFile(new File(projectSettingDir), false);
+    }
 }

@@ -192,13 +192,6 @@ public class Session {
                 .collect(Collectors.toList());
     }
 
-    public static boolean clearCache() throws IOException {
-        final String projectSettingDir = Config.load().getProjectSettingDir();
-        log.debug("clear cache projectCacheDir:{}", projectSettingDir);
-        FileUtils.deleteFile(new File(projectSettingDir), false);
-        return true;
-    }
-
     private static void writeProjectCache(final Project project, final File cacheFile) {
         final Kryo kryo = new Kryo();
         try (final Output out = new Output(new FileOutputStream(cacheFile))) {
@@ -220,6 +213,11 @@ public class Session {
             }
             return null;
         }
+    }
+
+    public boolean clearCache() throws IOException {
+        this.currentProject.clearCache();
+        return true;
     }
 
     private boolean searchAndChangeProject(final File base) throws IOException {

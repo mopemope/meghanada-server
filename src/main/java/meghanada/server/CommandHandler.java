@@ -218,7 +218,7 @@ public class CommandHandler {
 
     public void clearCache() {
         try {
-            final boolean result = Session.clearCache();
+            final boolean result = this.session.clearCache();
             final String out = formatter.clearCache(result);
             writer.write(out);
             writer.newLine();
