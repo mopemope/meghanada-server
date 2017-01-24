@@ -371,11 +371,11 @@ public class Session {
         return false;
     }
 
-    public synchronized LocalVariable localVariable(final String path, final int line) throws ExecutionException {
+    public synchronized Optional<LocalVariable> localVariable(final String path, final int line) throws ExecutionException {
         // java file only
         final File file = normalize(path);
         if (!FileUtils.isJavaFile(file)) {
-            return new LocalVariable("", Collections.emptyList());
+            return Optional.of(new LocalVariable("", Collections.emptyList()));
         }
         return getVariableCompletion().localVariable(file, line);
     }

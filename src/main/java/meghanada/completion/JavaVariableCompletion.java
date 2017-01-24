@@ -12,9 +12,12 @@ import org.atteo.evo.inflector.English;
 import java.io.File;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
+import java.util.stream.Collectors;
 
 public class JavaVariableCompletion {
+
     private static Logger log = LogManager.getLogger(JavaCompletion.class);
+
     private static String[] pluralClass = new String[]{
             "List",
             "Set",
@@ -27,18 +30,18 @@ public class JavaVariableCompletion {
         this.sourceCache = sourceCache;
     }
 
-    public LocalVariable localVariable(final File file, final int line) throws ExecutionException {
+    public Optional<LocalVariable> localVariable(final File file, final int line) throws ExecutionException {
         final Source source = this.sourceCache.get(file);
         final AccessSymbol accessSymbol = source.getExpressionReturn(line);
         if (accessSymbol != null && accessSymbol.returnType != null) {
             return createLocalVariable(accessSymbol, accessSymbol.returnType);
         }
-        return null;
+        return Optional.empty();
     }
 
-    LocalVariable createLocalVariable(final AccessSymbol accessSymbol, final String returnType) {
+    Optional<LocalVariable> createLocalVariable(final AccessSymbol accessSymbol, final String returnType) {
         if (returnType.equals("void")) {
-            return new LocalVariable(returnType, new ArrayList<>());
+            return Optional.of(new LocalVariable(returnType, new ArrayList<>()));
         }
 
         // completion
@@ -57,10 +60,16 @@ public class JavaVariableCompletion {
             final String initial = fromInitial(returnType);
             candidates.add(initial);
         }
-        return new LocalVariable(returnType, candidates);
+
+        final List<String> results = candidates.stream()
+                .map(s -> {
+                    return StringUtils.removePattern(s, "[<> ,$.]");
+                }).collect(Collectors.toList());
+
+        return Optional.of(new LocalVariable(returnType, results));
     }
 
-    private List<String> fromType(final AccessSymbol accessSymbol, final String returnType) {
+    private List<String> fromType(final AccessSymbol symbol, final String returnType) {
         Set<String> names = new HashSet<>();
 
         final String simpleName = ClassNameUtils.getSimpleName(returnType);
@@ -93,7 +102,7 @@ public class JavaVariableCompletion {
     }
 
     private List<String> fromName(final AccessSymbol accessSymbol) {
-        Set<String> names = new HashSet<>();
+        final Set<String> names = new HashSet<>();
 
         String name = accessSymbol.name;
         if (name.startsWith("get")) {
@@ -138,7 +147,7 @@ public class JavaVariableCompletion {
         if (ClassNameUtils.isArray(returnType)) {
             return log.traceExit(true);
         }
-        for (String cls : pluralClass) {
+        for (final String cls : pluralClass) {
             if (returnType.endsWith(cls)) {
                 return log.traceExit(true);
             }

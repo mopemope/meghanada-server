@@ -1,7 +1,6 @@
 package meghanada.server;
 
 import meghanada.analyze.CompileResult;
-import meghanada.completion.LocalVariable;
 import meghanada.location.Location;
 import meghanada.reflect.CandidateUnit;
 import meghanada.session.Session;
@@ -16,6 +15,8 @@ import java.nio.charset.Charset;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+
+import static meghanada.utils.FunctionUtils.wrapIOConsumer;
 
 public class CommandHandler {
 
@@ -231,11 +232,10 @@ public class CommandHandler {
     public void localVariable(final String path, final String line) {
         final int lineInt = Integer.parseInt(line);
         try {
-            final LocalVariable lv = session.localVariable(path, lineInt);
-            if (lv != null) {
+            session.localVariable(path, lineInt).ifPresent(wrapIOConsumer(lv -> {
                 final String out = formatter.localVariable(lv);
                 writer.write(out);
-            }
+            }));
             writer.newLine();
         } catch (Exception e) {
             throw new RuntimeException(e);
