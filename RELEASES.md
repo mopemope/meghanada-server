@@ -1,3 +1,11 @@
+# Version 0.4.0 (2017-01-25)
+
+## Highlights
+
+* Improve gradle integration. build with dependency modules (experimental)
+* Improve incremental build.
+* Fix some cache bugs.
+
 # Version 0.3.1 (2017-01-21)
 
 ## Highlights
