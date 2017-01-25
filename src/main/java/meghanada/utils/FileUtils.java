@@ -8,8 +8,10 @@ import meghanada.reflect.asm.CachedASMReflector;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.message.EntryMessage;
+import org.jboss.forge.roaster.Roaster;
 
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.security.DigestInputStream;
@@ -325,6 +327,21 @@ public final class FileUtils {
         log.debug("remove unmodified {} To {}", sourceFiles.size(), fileList.size());
         log.trace("modified : {}", fileList);
         return fileList;
+    }
+
+    public static String readFile(String path) throws IOException {
+        final byte[] encoded = Files.readAllBytes(Paths.get(path));
+        return new String(encoded, StandardCharsets.UTF_8);
+    }
+
+    public static String formatJavaFile(final Properties properties, final String path) throws IOException {
+        final String content = readFile(path);
+        final String formatted = Roaster.format(properties, content);
+        Files.write(Paths.get(path),
+                formatted.getBytes(StandardCharsets.UTF_8),
+                StandardOpenOption.WRITE,
+                StandardOpenOption.TRUNCATE_EXISTING);
+        return formatted;
     }
 
 }

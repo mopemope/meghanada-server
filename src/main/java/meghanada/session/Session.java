@@ -642,4 +642,10 @@ public class Session {
     public InputStream runTask(List<String> args) throws Exception {
         return getCurrentProject().runTask(args);
     }
+
+    public String format(final String path) throws IOException {
+        final Project project = getCurrentProject();
+        FileUtils.formatJavaFile(project.getFormatProperties(), path);
+        return path;
+    }
 }

@@ -14,7 +14,7 @@ plugins {
 
 ext {
     group = 'meghanada'
-    serverVersion = '0.4.0'
+    serverVersion = '0.5.0'
 
     longVersion = "$serverVersion-${grgit.head().abbreviatedId}"
     date = new Date().format("yyyy-MM-dd'T'HH:mm:ssZ")
@@ -91,7 +91,8 @@ dependencies {
     compile 'com.typesafe:config:1.3.1'
     compile 'org.atteo:evo-inflector:1.2.2'
     compile 'junit:junit:4.12'
-
+    compile 'org.jboss.forge.roaster:roaster-api:2.19.4.Final'
+    compile 'org.jboss.forge.roaster:roaster-jdt:2.19.4.Final'
 }
 
 test {

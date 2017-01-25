@@ -14,10 +14,11 @@ import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
-import java.util.concurrent.*;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 
 import static com.leacox.motif.MatchesAny.any;
@@ -178,6 +179,12 @@ public class EmacsServer implements Server {
                     // cp : Compile Project
                     // usage: cp
                     handler.compileProject();
+                    return true;
+                })
+                .when(headTail(eq("fc"), any())).get(args -> {
+                    // fc : Format code
+                    // usage: fc <filepath>
+                    handler.format(args.get(0));
                     return true;
                 })
                 .when(headTail(eq("di"), any())).get(args -> {

@@ -241,4 +241,16 @@ public class CommandHandler {
             throw new RuntimeException(e);
         }
     }
+
+    public void format(String path) {
+        try {
+            path = new File(path).getCanonicalPath();
+            session.format(path);
+            writer.write(formatter.format(path));
+            writer.newLine();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
 }

@@ -1,3 +1,9 @@
+# Version 0.5.0 (2017-01-XX)
+
+## Highlights
+
+* Add code format command.
+
 # Version 0.4.0 (2017-01-25)
 
 ## Highlights

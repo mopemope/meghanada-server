@@ -199,4 +199,9 @@ public class SexpOutputFormatter implements OutputFormatter {
 
         return sb.toString();
     }
+
+    @Override
+    public String format(String path) {
+        return doubleQuote(path);
+    }
 }

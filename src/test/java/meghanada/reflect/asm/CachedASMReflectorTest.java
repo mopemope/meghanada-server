@@ -51,9 +51,9 @@ public class CachedASMReflectorTest extends GradleTestBase {
         System.out.println(stopwatch.stop());
         // candidateUnits.forEach(u -> System.out.println(u.getDeclaration()));
         if (isOpenJDK) {
-            assertEquals(215, candidateUnits.size());
+            assertEquals(237, candidateUnits.size());
         } else {
-            assertEquals(235, candidateUnits.size());
+            assertEquals(257, candidateUnits.size());
         }
     }
 

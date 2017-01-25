@@ -38,7 +38,8 @@ class ASMReflector {
             "org.omg",
             "org.ietf.",
             "org.jcp.",
-            "netscape"
+            "netscape",
+            "org.jboss.forge.roaster._shade.org.eclipse.core.internal"
     };
 
     private static Logger log = LogManager.getLogger(ASMReflector.class);

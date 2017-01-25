@@ -36,4 +36,6 @@ public interface OutputFormatter {
     String clearCache(boolean result);
 
     String localVariable(LocalVariable lv);
+
+    String format(String path);
 }

@@ -19,6 +19,8 @@ import meghanada.utils.ClassNameUtils;
 import meghanada.utils.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.jboss.forge.roaster._shade.org.eclipse.jdt.core.JavaCore;
+import org.jboss.forge.roaster._shade.org.eclipse.jdt.core.formatter.DefaultCodeFormatterConstants;
 
 import java.io.*;
 import java.nio.file.Files;
@@ -71,6 +73,7 @@ public abstract class Project {
     private String cachedAllClasspath;
 
     private String[] prevTest;
+    private Properties formatProperties;
 
     public Project(File projectRoot) throws IOException {
         this.projectRoot = projectRoot;
@@ -798,5 +801,35 @@ public abstract class Project {
         final Config config = Config.load();
         final String projectSettingDir = config.getProjectSettingDir();
         FileUtils.deleteFile(new File(projectSettingDir), false);
+    }
+
+    public Properties readFormatProperties() {
+        // TODO read from file
+
+        // default
+        Properties properties;
+
+        properties = new Properties();
+
+        // Default
+        properties.setProperty(DefaultCodeFormatterConstants.FORMATTER_BLANK_LINES_AFTER_IMPORTS, "1");
+        properties.setProperty(DefaultCodeFormatterConstants.FORMATTER_LINE_SPLIT, "120");
+        properties.setProperty(DefaultCodeFormatterConstants.FORMATTER_TAB_CHAR, "space");
+        properties.setProperty(DefaultCodeFormatterConstants.FORMATTER_TAB_SIZE, "4");
+        return properties;
+    }
+
+    public Properties getFormatProperties() {
+        if (this.formatProperties != null) {
+            return this.formatProperties;
+        }
+        Properties properties = readFormatProperties();
+        // merge
+        properties.setProperty(JavaCore.COMPILER_SOURCE, this.getCompileSource());
+        properties.setProperty(JavaCore.COMPILER_COMPLIANCE, this.getCompileSource());
+        properties.setProperty(JavaCore.COMPILER_CODEGEN_TARGET_PLATFORM, this.getCompileSource());
+
+        this.formatProperties = properties;
+        return this.formatProperties;
     }
 }

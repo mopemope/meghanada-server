@@ -344,4 +344,5 @@ public class GradleProject extends Project {
         return dependencies;
     }
 
+
 }
