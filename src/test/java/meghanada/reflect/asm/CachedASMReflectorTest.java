@@ -2,6 +2,7 @@ package meghanada.reflect.asm;
 
 import com.google.common.base.Stopwatch;
 import meghanada.GradleTestBase;
+import meghanada.cache.GlobalCache;
 import meghanada.reflect.CandidateUnit;
 import meghanada.reflect.MemberDescriptor;
 import org.junit.Ignore;
@@ -99,7 +100,7 @@ public class CachedASMReflectorTest extends GradleTestBase {
         }
         {
             String fqcn = "java.lang.String";
-            cachedASMReflector.invalidate(fqcn);
+            GlobalCache.getInstance().invalidateMemberDescriptors(fqcn);
             stopwatch.start();
             List<MemberDescriptor> memberDescriptors = cachedASMReflector.reflect(fqcn);
             System.out.println(stopwatch.stop());

@@ -27,7 +27,7 @@ import static meghanada.utils.FunctionUtils.wrapIO;
 import static meghanada.utils.FunctionUtils.wrapIOConsumer;
 
 
-class ASMReflector {
+public class ASMReflector {
 
     private static final String[] filterPackage = new String[]{
             "sun.",
@@ -59,7 +59,7 @@ class ASMReflector {
         return asmReflector;
     }
 
-    static String toPrimitive(final char c) {
+    public static String toPrimitive(final char c) {
         switch (c) {
             case 'B':
                 return "byte";
@@ -84,7 +84,7 @@ class ASMReflector {
         }
     }
 
-    static String toModifier(final int access, final boolean hasDefault) {
+    public static String toModifier(final int access, final boolean hasDefault) {
         StringBuilder sb = new StringBuilder();
         if ((Opcodes.ACC_PRIVATE & access) > 0) {
             sb.append("private ");
@@ -229,7 +229,7 @@ class ASMReflector {
         }
     }
 
-    List<MemberDescriptor> reflectAll(final InheritanceInfo info) throws IOException {
+    public List<MemberDescriptor> reflectAll(final InheritanceInfo info) throws IOException {
 
         final Map<String, List<MemberDescriptor>> collect = info.classFileMap
                 .entrySet()
@@ -494,7 +494,7 @@ class ASMReflector {
         return classAnalyzeVisitor;
     }
 
-    InheritanceInfo getReflectInfo(final Map<ClassIndex, File> index, final String fqcn) {
+    public InheritanceInfo getReflectInfo(final Map<ClassIndex, File> index, final String fqcn) {
         final InheritanceInfo info = new InheritanceInfo(fqcn);
         this.getReflectInfo(index, fqcn, info);
         info.inherit = info.inherit.stream().distinct().collect(Collectors.toList());

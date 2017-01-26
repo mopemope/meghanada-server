@@ -2,6 +2,7 @@ package meghanada.analyze;
 
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Strings;
+import meghanada.cache.GlobalCache;
 import meghanada.reflect.CandidateUnit;
 import meghanada.reflect.MemberDescriptor;
 import meghanada.reflect.asm.CachedASMReflector;
@@ -327,8 +328,9 @@ public class Source {
 
     public void invalidateCache() {
         final CachedASMReflector reflector = CachedASMReflector.getInstance();
+        final GlobalCache globalCache = GlobalCache.getInstance();
         for (final ClassScope cs : this.classScopes) {
-            reflector.invalidate(cs.getFQCN());
+            globalCache.invalidateMemberDescriptors(cs.getFQCN());
         }
     }
 

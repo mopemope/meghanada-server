@@ -1,7 +1,7 @@
 package meghanada.reflect.asm;
 
-import com.esotericsoftware.kryo.io.Input;
 import com.google.common.base.MoreObjects;
+import meghanada.cache.GlobalCache;
 import meghanada.reflect.CandidateUnit;
 import meghanada.reflect.MethodDescriptor;
 import meghanada.reflect.MethodParameter;
@@ -208,24 +208,17 @@ class MethodAnalyzeVisitor extends MethodVisitor {
     private boolean tryGetParameterName(final String className, final String name) {
         // log.debug("search {}", name);
         final String path = ClassNameUtils.replace(className, ".", "/");
-        try (InputStream in = getClass().getResourceAsStream("/params/" + path + ".param")) {
+        try (final InputStream in = getClass().getResourceAsStream("/params/" + path + ".param")) {
             if (in == null) {
                 return false;
             }
 
-            final CachedASMReflector reflector = CachedASMReflector.getInstance();
-            final MethodParameterNames mn = reflector.getKryoPool().run(kryo -> {
-                try (Input input = new Input(in)) {
-                    return kryo.readObject(input, MethodParameterNames.class);
-                }
-            });
-
+            final GlobalCache globalCache = GlobalCache.getInstance();
+            final MethodParameterNames mn = globalCache.readCacheFromInputStream(in, MethodParameterNames.class);
             final List<List<ParameterName>> pmsList = mn.names.get(name);
-
             if (pmsList == null) {
                 return false;
             }
-
             final boolean result = this.searchParameterNames(pmsList);
             if (result) {
                 return true;

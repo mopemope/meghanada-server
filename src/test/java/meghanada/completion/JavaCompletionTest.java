@@ -1,10 +1,8 @@
 package meghanada.completion;
 
-import com.google.common.cache.CacheBuilder;
 import meghanada.GradleTestBase;
 import meghanada.reflect.CandidateUnit;
 import meghanada.reflect.asm.CachedASMReflector;
-import meghanada.session.JavaSourceLoader;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -100,9 +98,7 @@ public class JavaCompletionTest extends GradleTestBase {
     }
 
     private JavaCompletion getCompletion() throws Exception {
-        return new JavaCompletion(CacheBuilder.newBuilder()
-                .maximumSize(256)
-                .build(new JavaSourceLoader(getProject())));
+        return new JavaCompletion(getProject());
     }
 
 }

@@ -1,6 +1,5 @@
 package meghanada.server.emacs;
 
-import com.google.common.util.concurrent.UncheckedExecutionException;
 import meghanada.server.CommandHandler;
 import meghanada.server.OutputFormatter;
 import meghanada.server.Server;
@@ -75,7 +74,7 @@ public class EmacsServer implements Server {
                 if (this.session != null) {
                     this.session.shutdown(3);
                 }
-            } catch (IOException e) {
+            } catch (Exception e) {
                 log.catching(e);
             }
         }
@@ -91,11 +90,12 @@ public class EmacsServer implements Server {
             final Future<?> future = acceptConnection(conn);
             futures.add(future);
         }
+
         futures.forEach((future) -> {
             try {
                 future.get();
             } catch (InterruptedException | ExecutionException e) {
-                throw new UncheckedExecutionException(e);
+                log.catching(e);
             }
         });
     }

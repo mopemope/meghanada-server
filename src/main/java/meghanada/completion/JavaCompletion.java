@@ -2,7 +2,9 @@ package meghanada.completion;
 
 import com.google.common.cache.LoadingCache;
 import meghanada.analyze.*;
+import meghanada.cache.GlobalCache;
 import meghanada.config.Config;
+import meghanada.project.Project;
 import meghanada.reflect.CandidateUnit;
 import meghanada.reflect.ClassIndex;
 import meghanada.reflect.FieldDescriptor;
@@ -13,6 +15,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
@@ -21,17 +24,30 @@ public class JavaCompletion {
 
     private static Logger log = LogManager.getLogger(JavaCompletion.class);
 
-    private LoadingCache<File, Source> sourceCache;
+    private Project project;
 
-    public JavaCompletion(LoadingCache<File, Source> sourceCache) {
-        this.sourceCache = sourceCache;
+    public JavaCompletion(final Project project) {
+        this.project = project;
+    }
+
+    public Project getProject() {
+        return project;
+    }
+
+    public void setProject(Project project) {
+        this.project = project;
+    }
+
+    private Source getSource(final File file) throws IOException, ExecutionException {
+        final GlobalCache globalCache = GlobalCache.getInstance();
+        return globalCache.getSource(this.getProject(), file.getCanonicalFile());
     }
 
     public Collection<? extends CandidateUnit> completionAt(File file, int line, int column, String prefix) {
 
         log.debug("line={} column={} prefix={}", line, column, prefix);
         try {
-            final Source source = this.sourceCache.get(file);
+            final Source source = this.getSource(file);
             // check type
             if (prefix.startsWith("*")) {
                 // special command
@@ -282,8 +298,9 @@ public class JavaCompletion {
     }
 
     private Collection<? extends CandidateUnit> completionPackage() {
-        log.debug("sourceCache:{}", this.sourceCache.asMap());
-        return this.sourceCache.asMap()
+        final GlobalCache globalCache = GlobalCache.getInstance();
+        final LoadingCache<File, Source> sourceCache = globalCache.getSourceCache(this.getProject());
+        return sourceCache.asMap()
                 .values()
                 .stream()
                 .map(source -> ClassIndex.createPackage(source.packageName))

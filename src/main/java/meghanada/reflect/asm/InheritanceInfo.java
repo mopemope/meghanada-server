@@ -8,7 +8,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-class InheritanceInfo {
+public class InheritanceInfo {
 
     final String targetClass;
     List<String> inherit = new ArrayList<>(8);

@@ -1,28 +1,26 @@
-package meghanada.session;
+package meghanada.cache;
 
-import com.esotericsoftware.kryo.io.ByteBufferInput;
-import com.esotericsoftware.kryo.io.Input;
-import com.esotericsoftware.kryo.io.Output;
 import com.google.common.base.Joiner;
 import com.google.common.cache.CacheLoader;
+import com.google.common.cache.RemovalCause;
+import com.google.common.cache.RemovalListener;
+import com.google.common.cache.RemovalNotification;
 import meghanada.analyze.CompileResult;
 import meghanada.analyze.JavaAnalyzer;
 import meghanada.analyze.Source;
 import meghanada.config.Config;
 import meghanada.project.Project;
-import meghanada.reflect.asm.CachedASMReflector;
 import meghanada.utils.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
 import java.util.Map;
 import java.util.Optional;
-import java.util.zip.DeflaterOutputStream;
-import java.util.zip.InflaterInputStream;
 
 
-public class JavaSourceLoader extends CacheLoader<File, Source> {
+public class JavaSourceLoader extends CacheLoader<File, Source> implements RemovalListener<File, Source> {
 
     private static final Logger log = LogManager.getLogger(JavaSourceLoader.class);
 
@@ -32,8 +30,37 @@ public class JavaSourceLoader extends CacheLoader<File, Source> {
         this.project = project;
     }
 
-    public static Optional<Source> loadFromCache(final File sourceFile) throws IOException {
-        final CachedASMReflector reflector = CachedASMReflector.getInstance();
+    public Source writeSourceCache(final Source source) throws IOException {
+        final File sourceFile = source.getFile();
+        final Config config = Config.load();
+        final String dir = config.getProjectCacheDir();
+        final File root = new File(dir);
+        final String javaVersion = config.getJavaVersion();
+        final String path = FileUtils.toHashedPath(sourceFile, ".dat");
+        final String out = Joiner.on(File.separator).join(javaVersion, "source", path);
+        final File file = new File(root, out);
+
+        file.getParentFile().mkdirs();
+
+        log.debug("write file:{}", file);
+        GlobalCache.getInstance().writeCacheToFile(file, source);
+        return source;
+    }
+
+    public Source removeSourceCache(final Source source) throws IOException {
+        final File sourceFile = source.getFile();
+        final Config config = Config.load();
+        final String dir = config.getProjectCacheDir();
+        final File root = new File(dir);
+        final String javaVersion = config.getJavaVersion();
+        final String path = FileUtils.toHashedPath(sourceFile, ".dat");
+        final String out = Joiner.on(File.separator).join(javaVersion, "source", path);
+        final File file = new File(root, out);
+        file.delete();
+        return source;
+    }
+
+    private Optional<Source> loadFromCache(final File sourceFile) throws IOException {
 
         final Config config = Config.load();
         final String dir = config.getProjectCacheDir();
@@ -48,57 +75,8 @@ public class JavaSourceLoader extends CacheLoader<File, Source> {
         }
 
         log.debug("load file:{}", file);
-        try {
-            final Source source = reflector.getKryoPool().run(kryo -> {
-                try (Input input = new Input(new InflaterInputStream(new ByteBufferInput(new FileInputStream(file), 8192)))) {
-                    return kryo.readObject(input, Source.class);
-                } catch (IOException e) {
-                    throw new UncheckedIOException(e);
-                }
-            });
-            return Optional.ofNullable(source);
-        } catch (UncheckedIOException e) {
-            throw new IOException(e);
-        }
-
-    }
-
-    public static synchronized Source writeSourceCache(final Source source) throws IOException {
-        final CachedASMReflector reflector = CachedASMReflector.getInstance();
-        final File sourceFile = source.getFile();
-        final Config config = Config.load();
-        final String dir = config.getProjectCacheDir();
-        final File root = new File(dir);
-        final String javaVersion = config.getJavaVersion();
-        final String path = FileUtils.toHashedPath(sourceFile, ".dat");
-        final String out = Joiner.on(File.separator).join(javaVersion, "source", path);
-        final File file = new File(root, out);
-
-        file.getParentFile().mkdirs();
-
-        log.debug("write file:{}", file);
-        reflector.getKryoPool().run(kryo -> {
-            try (final Output output = new Output(new DeflaterOutputStream(new BufferedOutputStream(new FileOutputStream(file), 8192)))) {
-                kryo.writeObject(output, source);
-                return source;
-            } catch (FileNotFoundException e) {
-                throw new UncheckedIOException(e);
-            }
-        });
-        return source;
-    }
-
-    public static synchronized Source removeSourceCache(final Source source) throws IOException {
-        final File sourceFile = source.getFile();
-        final Config config = Config.load();
-        final String dir = config.getProjectCacheDir();
-        final File root = new File(dir);
-        final String javaVersion = config.getJavaVersion();
-        final String path = FileUtils.toHashedPath(sourceFile, ".dat");
-        final String out = Joiner.on(File.separator).join(javaVersion, "source", path);
-        final File file = new File(root, out);
-        file.delete();
-        return source;
+        final Source source = GlobalCache.getInstance().readCacheFromFile(file, Source.class);
+        return Optional.ofNullable(source);
     }
 
     @Override
@@ -122,19 +100,43 @@ public class JavaSourceLoader extends CacheLoader<File, Source> {
                 // not modify
                 // load from cache
                 try {
-                    final Optional<Source> source = loadFromCache(file);
+                    final Optional<Source> source = this.loadFromCache(file);
                     if (source.isPresent()) {
                         return source.get();
                     }
-                } catch (Exception ex) {
-                    // broken
+                } catch (Exception e) {
+                    log.catching(e);
                 }
             }
         }
 
         final CompileResult compileResult = project.parseFile(file.getCanonicalFile());
-        final Source source = compileResult.getSources().get(file.getCanonicalFile());
-        return writeSourceCache(source);
+        return compileResult.getSources().get(file.getCanonicalFile());
     }
 
+    @Override
+    public void onRemoval(RemovalNotification<File, Source> notification) {
+        final RemovalCause cause = notification.getCause();
+
+        final Config config = Config.load();
+        if (config.useSourceCache()) {
+            if (cause.equals(RemovalCause.EXPIRED) ||
+                    cause.equals(RemovalCause.SIZE) ||
+                    cause.equals(RemovalCause.REPLACED)) {
+                final Source source = notification.getValue();
+                try {
+                    writeSourceCache(source);
+                } catch (Exception e) {
+                    log.catching(e);
+                }
+            } else if (cause.equals(RemovalCause.EXPLICIT)) {
+                final Source source = notification.getValue();
+                try {
+                    removeSourceCache(source);
+                } catch (Exception e) {
+                    log.catching(e);
+                }
+            }
+        }
+    }
 }

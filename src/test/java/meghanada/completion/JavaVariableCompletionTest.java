@@ -1,11 +1,9 @@
 package meghanada.completion;
 
-import com.google.common.cache.CacheBuilder;
 import meghanada.GradleTestBase;
 import meghanada.analyze.MethodCall;
 import meghanada.analyze.Range;
 import meghanada.reflect.asm.CachedASMReflector;
-import meghanada.session.JavaSourceLoader;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -112,9 +110,7 @@ public class JavaVariableCompletionTest extends GradleTestBase {
     }
 
     private JavaVariableCompletion getCompilation() throws Exception {
-        return new JavaVariableCompletion(CacheBuilder.newBuilder()
-                .maximumSize(256)
-                .build(new JavaSourceLoader(GradleTestBase.getProject())));
+        return new JavaVariableCompletion(GradleTestBase.getProject());
     }
 
 }

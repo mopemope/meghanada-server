@@ -1,20 +1,17 @@
 package meghanada.project;
 
 import com.esotericsoftware.kryo.DefaultSerializer;
-import com.esotericsoftware.kryo.io.ByteBufferInput;
-import com.esotericsoftware.kryo.io.Input;
-import com.esotericsoftware.kryo.io.Output;
 import com.google.common.base.Joiner;
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.util.concurrent.UncheckedExecutionException;
 import com.typesafe.config.ConfigFactory;
 import meghanada.analyze.CompileResult;
 import meghanada.analyze.JavaAnalyzer;
 import meghanada.analyze.Source;
+import meghanada.cache.GlobalCache;
 import meghanada.config.Config;
-import meghanada.reflect.asm.CachedASMReflector;
-import meghanada.session.JavaSourceLoader;
 import meghanada.utils.ClassNameUtils;
 import meghanada.utils.FileUtils;
 import org.apache.logging.log4j.LogManager;
@@ -22,14 +19,15 @@ import org.apache.logging.log4j.Logger;
 import org.jboss.forge.roaster._shade.org.eclipse.jdt.core.JavaCore;
 import org.jboss.forge.roaster._shade.org.eclipse.jdt.core.formatter.DefaultCodeFormatterConstants;
 
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
-import java.util.zip.DeflaterOutputStream;
-import java.util.zip.InflaterInputStream;
 
 @DefaultSerializer(ProjectSerializer.class)
 public abstract class Project {
@@ -666,6 +664,7 @@ public abstract class Project {
 
     private CompileResult updateSourceCache(final CompileResult compileResult) throws IOException {
         final Config config = Config.load();
+        final GlobalCache globalCache = GlobalCache.getInstance();
         if (config.useSourceCache()) {
 
             final Set<File> errorFiles = compileResult.getErrorFiles();
@@ -692,20 +691,24 @@ public abstract class Project {
                     });
                 });
 
-                final File file = source.getFile();
-                final String path = file.getCanonicalPath();
-                if (!errorFiles.contains(file)) {
+                final File sourceFile = source.getFile();
+                final String path = sourceFile.getCanonicalPath();
+                if (!errorFiles.contains(sourceFile)) {
+                    final String md5sum = FileUtils.md5sum(sourceFile);
+                    checksumMap.put(path, md5sum);
                     try {
-                        final String md5sum = FileUtils.md5sum(file);
-                        checksumMap.put(path, md5sum);
-                        JavaSourceLoader.writeSourceCache(source);
-                    } catch (IOException e) {
-                        throw new UncheckedIOException(e);
+                        globalCache.replaceSource(this, source);
+                    } catch (Exception e) {
+                        throw new UncheckedExecutionException(e);
                     }
                 } else {
                     // error
                     checksumMap.remove(path);
-                    JavaSourceLoader.removeSourceCache(source);
+                    try {
+                        globalCache.invalidateSource(this, sourceFile);
+                    } catch (Exception e) {
+                        throw new UncheckedExecutionException(e);
+                    }
                 }
             }
             FileUtils.writeMapSetting(checksumMap, checksumFile);
@@ -747,15 +750,7 @@ public abstract class Project {
 
     private synchronized void writeCaller() {
         final File callerFile = FileUtils.getSettingFile(JavaAnalyzer.CALLER);
-        final CachedASMReflector reflector = CachedASMReflector.getInstance();
-        reflector.getKryoPool().run(kryo -> {
-            try (final Output output = new Output(new DeflaterOutputStream(new BufferedOutputStream(new FileOutputStream(callerFile), 8192)))) {
-                kryo.writeObject(output, callerMap);
-                return callerMap;
-            } catch (FileNotFoundException e) {
-                throw new UncheckedIOException(e);
-            }
-        });
+        GlobalCache.getInstance().writeCacheToFile(callerFile, callerMap);
     }
 
     synchronized void loadCaller() {
@@ -764,16 +759,10 @@ public abstract class Project {
             return;
         }
 
-        final CachedASMReflector reflector = CachedASMReflector.getInstance();
-        this.callerMap = reflector.getKryoPool().run(kryo -> {
-            try (Input input = new Input(new InflaterInputStream(new ByteBufferInput(new FileInputStream(callerFile), 8192)))) {
-                @SuppressWarnings("unchecked")
-                Map<String, Set<String>> map = kryo.readObject(input, ConcurrentHashMap.class);
-                return map;
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
-            }
-        });
+        @SuppressWarnings("unchecked")
+        final Map<String, Set<String>> map =
+                GlobalCache.getInstance().readCacheFromFile(callerFile, ConcurrentHashMap.class);
+        this.callerMap = map;
     }
 
     public Set<Project> getDependencyProjects() {

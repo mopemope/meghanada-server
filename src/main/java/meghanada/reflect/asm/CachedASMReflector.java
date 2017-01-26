@@ -1,77 +1,58 @@
 package meghanada.reflect.asm;
 
-import com.esotericsoftware.kryo.Kryo;
-import com.esotericsoftware.kryo.io.Input;
-import com.esotericsoftware.kryo.io.Output;
-import com.esotericsoftware.kryo.pool.KryoPool;
 import com.google.common.base.Splitter;
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.UncheckedExecutionException;
+import meghanada.cache.GlobalCache;
 import meghanada.config.Config;
 import meghanada.reflect.CandidateUnit;
 import meghanada.reflect.ClassIndex;
 import meghanada.reflect.MemberDescriptor;
 import meghanada.reflect.MethodDescriptor;
-import meghanada.reflect.names.MethodParameterNames;
 import meghanada.utils.ClassName;
 import meghanada.utils.ClassNameUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import java.util.zip.DeflaterOutputStream;
 
 import static meghanada.utils.FunctionUtils.wrapIOConsumer;
 
 
 public class CachedASMReflector {
 
-    public static final int CACHE_SIZE = 1024 * 4;
+    public static final int BASE_CACHE_SIZE = 1024;
     private static final Logger log = LogManager.getLogger(CachedASMReflector.class);
 
     private static final Pattern PACKAGE_RE = Pattern.compile("\\.\\*");
     private static CachedASMReflector cachedASMReflector;
 
-    private final Map<String, ClassIndex> globalClassIndex = new ConcurrentHashMap<>(CACHE_SIZE * 8);
+    private final Map<String, ClassIndex> globalClassIndex = new ConcurrentHashMap<>(BASE_CACHE_SIZE * 8);
 
     // Key:FQCN Val:JarFile
-    private final Map<String, File> classFileMap = new ConcurrentHashMap<>(CACHE_SIZE * 8);
+    private final Map<String, File> classFileMap = new ConcurrentHashMap<>(BASE_CACHE_SIZE * 8);
 
-    private final Map<ClassIndex, File> reflectIndex = new ConcurrentHashMap<>(CACHE_SIZE * 8);
+    private final Map<ClassIndex, File> reflectIndex = new ConcurrentHashMap<>(BASE_CACHE_SIZE * 8);
 
     private final List<File> jars = new ArrayList<>(32);
     private final List<File> directories = new ArrayList<>(4);
-    private final LoadingCache<String, List<MemberDescriptor>> memberCache;
-    private final KryoPool kryoPool;
 
     private Map<String, String> standardClasses;
 
     private CachedASMReflector() {
-        this.memberCache = CacheBuilder.newBuilder()
-                .initialCapacity(64)
-                .maximumSize(256)
-                .expireAfterAccess(30, TimeUnit.MINUTES)
-                .build(new MemberCacheLoader(this.classFileMap, reflectIndex));
-
-        this.kryoPool = new KryoPool.Builder(() -> {
-            final Kryo kryo = new Kryo();
-            kryo.register(ClassIndex.class);
-            kryo.register(MemberDescriptor.class);
-            kryo.register(MethodParameterNames.class);
-            return kryo;
-        }).softReferences().build();
+        final GlobalCache globalCache = GlobalCache.getInstance();
+        globalCache.setupMemberCache(this.classFileMap, this.reflectIndex);
     }
 
     public static CachedASMReflector getInstance() {
@@ -79,10 +60,6 @@ public class CachedASMReflector {
             cachedASMReflector = new CachedASMReflector();
         }
         return cachedASMReflector;
-    }
-
-    public KryoPool getKryoPool() {
-        return kryoPool;
     }
 
     public void addClasspath(final Collection<File> depends) {
@@ -277,29 +254,24 @@ public class CachedASMReflector {
         }
     }
 
-    public void invalidate(final String name) {
-        this.memberCache.invalidate(name);
-    }
-
     public List<MemberDescriptor> reflect(final String className) {
         final ClassName cn = new ClassName(className);
         // check type parameter
         final String classWithoutTP = cn.getName();
-        List<MemberDescriptor> members;
+        final GlobalCache globalCache = GlobalCache.getInstance();
         try {
-            members = this.memberCache.get(classWithoutTP);
+            final List<MemberDescriptor> members = globalCache.getMemberDescriptors(classWithoutTP)
+                    .stream()
+                    .map(MemberDescriptor::clone)
+                    .collect(Collectors.toList());
+
+            if (cn.hasTypeParameter()) {
+                return this.replaceMembers(classWithoutTP, className, members);
+            }
+            return members;
         } catch (ExecutionException e) {
             throw new UncheckedExecutionException(e);
         }
-        members = members.stream()
-                .map(MemberDescriptor::clone)
-                .collect(Collectors.toList());
-
-        if (cn.hasTypeParameter()) {
-            return this.replaceMembers(classWithoutTP, className, members);
-        }
-
-        return members;
     }
 
     private List<MemberDescriptor> replaceMembers(final String classWithoutTP, final String className, final List<MemberDescriptor> members) {
@@ -406,37 +378,16 @@ public class CachedASMReflector {
         outFile2.getParentFile().mkdirs();
 
         // ClassIndex
-        this.kryoPool.run(kryo -> {
-            try (final Output out = new Output(new FileOutputStream(outFile1))) {
-                kryo.writeObject(out, classIndex);
-            } catch (FileNotFoundException e) {
-                throw new UncheckedIOException(e);
-            }
-            return classIndex;
-        });
-
-        // Members
-        this.kryoPool.run(kryo -> {
-            try (final Output output = new Output(new DeflaterOutputStream(new BufferedOutputStream(new FileOutputStream(outFile2), 8192)))) {
-                kryo.writeObject(output, members);
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
-            }
-            return members;
-        });
+        final GlobalCache globalCache = GlobalCache.getInstance();
+        globalCache.writeCacheToFile(outFile1, classIndex);
+        globalCache.writeCacheToFile(outFile2, members);
     }
 
     private ClassIndex readClassIndexFromCache(final String fqcn, final File root) throws IOException {
         final File in = this.getClassCacheFile(fqcn, root);
         if (in.exists()) {
-
-            return this.kryoPool.run(kryo -> {
-                try (final Input input = new Input(new FileInputStream(in))) {
-                    return kryo.readObject(input, ClassIndex.class);
-                } catch (FileNotFoundException e) {
-                    throw new UncheckedIOException(e);
-                }
-            });
+            final GlobalCache globalCache = GlobalCache.getInstance();
+            return globalCache.readCacheFromFile(in, ClassIndex.class);
         }
         return null;
     }

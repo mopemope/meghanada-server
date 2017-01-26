@@ -1,9 +1,7 @@
 package meghanada.location;
 
-import com.google.common.cache.CacheBuilder;
 import meghanada.GradleTestBase;
 import meghanada.reflect.asm.CachedASMReflector;
-import meghanada.session.JavaSourceLoader;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -28,9 +26,7 @@ public class LocationSearcherTest extends GradleTestBase {
         if (searcher != null) {
             return searcher;
         }
-        searcher = new LocationSearcher(getSourceDir(), CacheBuilder.newBuilder()
-                .maximumSize(256)
-                .build(new JavaSourceLoader(getProject())));
+        searcher = new LocationSearcher(getProject());
         return searcher;
     }
 
@@ -40,10 +36,10 @@ public class LocationSearcherTest extends GradleTestBase {
         LocationSearcher locationSearcher = getSearcher();
         {
             Location result = debugIt(() -> {
-                return locationSearcher.searchDeclaration(f, 81, 18, "result");
+                return locationSearcher.searchDeclaration(f, 74, 18, "result");
             });
             assertNotNull(result);
-            assertEquals(79, result.getLine());
+            assertEquals(72, result.getLine());
             assertEquals(33, result.getColumn());
         }
     }
@@ -56,7 +52,7 @@ public class LocationSearcherTest extends GradleTestBase {
             //     private static Project findProject(File base) throws IOException
             Location result = debugIt(() -> locationSearcher.searchDeclaration(f, 95, 37, "base"));
             assertNotNull(result);
-            assertEquals(86, result.getLine());
+            assertEquals(79, result.getLine());
             assertEquals(54, result.getColumn());
         }
     }
@@ -70,7 +66,7 @@ public class LocationSearcherTest extends GradleTestBase {
             return locationSearcher.searchDeclaration(f, 214, 18, "currentProject");
         });
         assertNotNull(result);
-        assertEquals(52, result.getLine());
+        assertEquals(49, result.getLine());
         assertEquals(21, result.getColumn());
     }
 
@@ -79,11 +75,11 @@ public class LocationSearcherTest extends GradleTestBase {
         File f = new File("./src/main/java/meghanada/session/Session.java");
         LocationSearcher locationSearcher = getSearcher();
         Location result = timeIt(() -> {
-            return locationSearcher.searchDeclaration(f, 390, 31, "parseJavaSource");
+            return locationSearcher.searchDeclaration(f, 402, 31, "parseJavaSource");
         });
 
         assertNotNull(result);
-        assertEquals(421, result.getLine());
+        assertEquals(433, result.getLine());
         assertEquals(20, result.getColumn());
     }
 
@@ -93,10 +89,10 @@ public class LocationSearcherTest extends GradleTestBase {
         LocationSearcher locationSearcher = getSearcher();
         {
             // return source.searchMissingImport();
-            Location result = locationSearcher.searchDeclaration(f, 414, 24, "searchMissingImport");
+            Location result = locationSearcher.searchDeclaration(f, 426, 24, "searchMissingImport");
             assertNotNull(result);
             assertTrue(result.getPath().contains("Source.java"));
-            assertEquals(286, result.getLine());
+            assertEquals(287, result.getLine());
             assertEquals(38, result.getColumn());
         }
     }
@@ -124,7 +120,7 @@ public class LocationSearcherTest extends GradleTestBase {
             Location result = timeIt(() -> searcher.searchDeclaration(f, 372, 15, "Source"));
             assertNotNull(result);
             assertTrue(result.getPath().contains("Source.java"));
-            assertEquals(18, result.getLine());
+            assertEquals(19, result.getLine());
             assertEquals(14, result.getColumn());
         }
     }

@@ -3,10 +3,9 @@ package meghanada.session;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.LoadingCache;
 import meghanada.analyze.CompileResult;
 import meghanada.analyze.Source;
+import meghanada.cache.GlobalCache;
 import meghanada.completion.JavaCompletion;
 import meghanada.completion.JavaVariableCompletion;
 import meghanada.completion.LocalVariable;
@@ -33,7 +32,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -47,26 +45,21 @@ public class Session {
 
     private static final Pattern SWITCH_TEST_RE = Pattern.compile("Test.java", Pattern.LITERAL);
     private static final Pattern SWITCH_JAVA_RE = Pattern.compile(".java", Pattern.LITERAL);
-    private final LoadingCache<File, Source> sourceCache;
     private final SessionEventBus sessionEventBus;
     private Project currentProject;
+
     private JavaCompletion completion;
     private JavaVariableCompletion variableCompletion;
     private LocationSearcher locationSearcher;
+
     private Deque<Location> jumpDecHistory = new ArrayDeque<>(16);
     private boolean started;
     private HashMap<File, Project> projects = new HashMap<>();
 
     private Session(final Project currentProject) {
         this.currentProject = currentProject;
-        this.sourceCache = CacheBuilder.newBuilder()
-                .maximumSize(16)
-                .expireAfterAccess(15, TimeUnit.MINUTES)
-                .build(new JavaSourceLoader(currentProject));
-
         this.sessionEventBus = new SessionEventBus(this);
         this.started = false;
-        this.locationSearcher = new LocationSearcher(currentProject.getAllSources(), this.sourceCache);
         this.projects.put(currentProject.getProjectRoot(), currentProject);
     }
 
@@ -227,27 +220,40 @@ public class Session {
             // not change
             return false;
         }
+
         if (this.projects.containsKey(projectRoot)) {
             // loaded project
             this.currentProject = this.projects.get(projectRoot);
+            this.getLocationSearcher().setProject(this.getCurrentProject());
+            this.getVariableCompletion().setProject(this.getCurrentProject());
             return false;
         }
+
         if (currentProject instanceof GradleProject) {
             return loadProject(projectRoot, GRADLE_PROJECT_FILE).map(project -> {
                 this.currentProject = project;
                 this.projects.put(projectRoot, this.currentProject);
+                this.getLocationSearcher().setProject(this.getCurrentProject());
+                this.getVariableCompletion().setProject(this.getCurrentProject());
+                this.getCompletion().setProject(this.getCurrentProject());
                 return true;
             }).orElse(false);
         } else if (currentProject instanceof MavenProject) {
             return loadProject(projectRoot, MVN_PROJECT_FILE).map(project -> {
                 this.currentProject = project;
                 this.projects.put(projectRoot, this.currentProject);
+                this.getLocationSearcher().setProject(this.getCurrentProject());
+                this.getVariableCompletion().setProject(this.getCurrentProject());
+                this.getCompletion().setProject(this.getCurrentProject());
                 return true;
             }).orElse(false);
         }
         return loadProject(projectRoot, Config.MEGHANADA_CONF_FILE).map(project -> {
             this.currentProject = project;
             this.projects.put(projectRoot, this.currentProject);
+            this.getLocationSearcher().setProject(this.getCurrentProject());
+            this.getVariableCompletion().setProject(this.getCurrentProject());
+            this.getCompletion().setProject(this.getCurrentProject());
             return true;
         }).orElse(false);
     }
@@ -316,9 +322,7 @@ public class Session {
 
     public void shutdown(int timeout) {
         log.debug("session shutdown ...");
-
         this.sessionEventBus.shutdown(timeout);
-
         log.debug("session shutdown done");
     }
 
@@ -326,16 +330,23 @@ public class Session {
         return currentProject;
     }
 
+    public LocationSearcher getLocationSearcher() {
+        if (this.locationSearcher == null) {
+            this.locationSearcher = new LocationSearcher(this.getCurrentProject());
+        }
+        return locationSearcher;
+    }
+
     private JavaCompletion getCompletion() {
         if (this.completion == null) {
-            this.completion = new JavaCompletion(this.sourceCache);
+            this.completion = new JavaCompletion(this.getCurrentProject());
         }
         return this.completion;
     }
 
     public JavaVariableCompletion getVariableCompletion() {
         if (this.variableCompletion == null) {
-            this.variableCompletion = new JavaVariableCompletion(this.sourceCache);
+            this.variableCompletion = new JavaVariableCompletion(this.getCurrentProject());
         }
         return variableCompletion;
     }
@@ -359,7 +370,8 @@ public class Session {
                     this.sessionEventBus.requestClassCache();
                 } else {
                     // load source
-                    this.sourceCache.get(file);
+                    final GlobalCache globalCache = GlobalCache.getInstance();
+                    globalCache.getSource(this.getCurrentProject(), file);
                 }
                 return true;
             } catch (Exception e) {
@@ -371,7 +383,7 @@ public class Session {
         return false;
     }
 
-    public synchronized Optional<LocalVariable> localVariable(final String path, final int line) throws ExecutionException {
+    public synchronized Optional<LocalVariable> localVariable(final String path, final int line) throws ExecutionException, IOException {
         // java file only
         final File file = normalize(path);
         if (!FileUtils.isJavaFile(file)) {
@@ -419,7 +431,8 @@ public class Session {
     }
 
     private Source parseJavaSource(final File file) throws ExecutionException {
-        return this.sourceCache.get(file);
+        final GlobalCache globalCache = GlobalCache.getInstance();
+        return globalCache.getSource(this.getCurrentProject(), file);
     }
 
     public synchronized boolean parseFile(final String path) throws ExecutionException {
@@ -428,8 +441,9 @@ public class Session {
         if (!FileUtils.isJavaFile(file)) {
             return false;
         }
-        this.sourceCache.invalidate(file);
-        parseJavaSource(file);
+        final GlobalCache globalCache = GlobalCache.getInstance();
+        globalCache.invalidateSource(this.getCurrentProject(), file);
+        this.parseJavaSource(file);
         return true;
     }
 
@@ -453,8 +467,14 @@ public class Session {
     }
 
     private void invalidSouceCache(final CompileResult compileResult) {
+        final GlobalCache globalCache = GlobalCache.getInstance();
+
         compileResult.getSources().forEach((f, s) -> {
-            this.sourceCache.invalidate(f);
+            try {
+                globalCache.invalidateSource(getCurrentProject(), f);
+            } catch (Exception e) {
+                log.catching(e);
+            }
         });
     }
 
@@ -620,7 +640,7 @@ public class Session {
     }
 
     public synchronized Location jumpDeclaration(final String path, final int line, final int column, final String symbol) throws ExecutionException, IOException {
-        Location location = locationSearcher.searchDeclaration(new File(path), line, column, symbol);
+        Location location = this.getLocationSearcher().searchDeclaration(new File(path), line, column, symbol);
         if (location != null) {
             Location backLocation = new Location(path, line, column);
             this.jumpDecHistory.addLast(backLocation);
@@ -633,10 +653,6 @@ public class Session {
 
     public synchronized Location backDeclaration() {
         return this.jumpDecHistory.pollLast();
-    }
-
-    public LoadingCache<File, Source> getSourceCache() {
-        return sourceCache;
     }
 
     public InputStream runTask(List<String> args) throws Exception {

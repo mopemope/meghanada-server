@@ -1,10 +1,7 @@
 package meghanada.utils;
 
-import com.esotericsoftware.kryo.io.ByteBufferInput;
-import com.esotericsoftware.kryo.io.Input;
-import com.esotericsoftware.kryo.io.Output;
+import meghanada.cache.GlobalCache;
 import meghanada.config.Config;
-import meghanada.reflect.asm.CachedASMReflector;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.message.EntryMessage;
@@ -20,8 +17,6 @@ import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
-import java.util.zip.DeflaterOutputStream;
-import java.util.zip.InflaterInputStream;
 
 public final class FileUtils {
 
@@ -176,38 +171,15 @@ public final class FileUtils {
         return new File(dir, fileName);
     }
 
+    @SuppressWarnings("unchecked")
     public static synchronized Map<String, String> readMapSetting(final File inFile) throws IOException {
-        final CachedASMReflector reflector = CachedASMReflector.getInstance();
-        try {
-            return reflector.getKryoPool().run(kryo -> {
-                try (Input input = new Input(new InflaterInputStream(new ByteBufferInput(new FileInputStream(inFile), 8192)))) {
-                    @SuppressWarnings("unchecked")
-                    Map<String, String> map = kryo.readObject(input, HashMap.class);
-                    return map;
-                } catch (IOException e) {
-                    throw new UncheckedIOException(e);
-                }
-            });
-        } catch (UncheckedIOException e) {
-            throw new IOException(e);
-        }
+        final GlobalCache globalCache = GlobalCache.getInstance();
+        return globalCache.readCacheFromFile(inFile, HashMap.class);
     }
 
     public static synchronized void writeMapSetting(final Map<String, String> map, final File outFile) throws IOException {
-        final CachedASMReflector reflector = CachedASMReflector.getInstance();
-
-        try {
-            reflector.getKryoPool().run(kryo -> {
-                try (final Output output = new Output(new DeflaterOutputStream(new BufferedOutputStream(new FileOutputStream(outFile), 8192)))) {
-                    kryo.writeObject(output, map);
-                    return map;
-                } catch (IOException e) {
-                    throw new UncheckedIOException(e);
-                }
-            });
-        } catch (UncheckedIOException e) {
-            throw new IOException(e);
-        }
+        final GlobalCache globalCache = GlobalCache.getInstance();
+        globalCache.writeCacheToFile(outFile, map);
     }
 
     public static String toHashedPath(final File f, String suffix) throws IOException {
@@ -219,9 +191,8 @@ public final class FileUtils {
             throw new RuntimeException(e);
         }
         md.update(path.getBytes("UTF-8"));
-        byte[] digest = md.digest();
-
-        StringBuilder sb = new StringBuilder();
+        final byte[] digest = md.digest();
+        final StringBuilder sb = new StringBuilder();
         for (final int b : digest) {
             sb.append(Character.forDigit(b >> 4 & 0xF, 16));
             sb.append(Character.forDigit(b & 0xF, 16));

@@ -1,8 +1,9 @@
 package meghanada.completion;
 
-import com.google.common.cache.LoadingCache;
 import meghanada.analyze.AccessSymbol;
 import meghanada.analyze.Source;
+import meghanada.cache.GlobalCache;
+import meghanada.project.Project;
 import meghanada.utils.ClassNameUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
@@ -10,6 +11,7 @@ import org.apache.logging.log4j.Logger;
 import org.atteo.evo.inflector.English;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
@@ -24,14 +26,27 @@ public class JavaVariableCompletion {
             "Collections"
     };
 
-    private LoadingCache<File, Source> sourceCache;
+    private Project project;
 
-    public JavaVariableCompletion(LoadingCache<File, Source> sourceCache) {
-        this.sourceCache = sourceCache;
+    public JavaVariableCompletion(final Project project) {
+        this.project = project;
     }
 
-    public Optional<LocalVariable> localVariable(final File file, final int line) throws ExecutionException {
-        final Source source = this.sourceCache.get(file);
+    public Project getProject() {
+        return project;
+    }
+
+    public void setProject(Project project) {
+        this.project = project;
+    }
+
+    private Source getSource(final File file) throws IOException, ExecutionException {
+        final GlobalCache globalCache = GlobalCache.getInstance();
+        return globalCache.getSource(this.getProject(), file.getCanonicalFile());
+    }
+
+    public Optional<LocalVariable> localVariable(final File file, final int line) throws ExecutionException, IOException {
+        final Source source = this.getSource(file);
         final AccessSymbol accessSymbol = source.getExpressionReturn(line);
         if (accessSymbol != null && accessSymbol.returnType != null) {
             return createLocalVariable(accessSymbol, accessSymbol.returnType);

@@ -1,8 +1,9 @@
 package meghanada.location;
 
-import com.google.common.cache.LoadingCache;
 import com.google.common.util.concurrent.UncheckedExecutionException;
 import meghanada.analyze.*;
+import meghanada.cache.GlobalCache;
+import meghanada.project.Project;
 import meghanada.reflect.ClassIndex;
 import meghanada.reflect.asm.CachedASMReflector;
 import org.apache.logging.log4j.LogManager;
@@ -18,20 +19,30 @@ import java.util.concurrent.ExecutionException;
 public class LocationSearcher {
 
     private static Logger log = LogManager.getLogger(LocationSearcher.class);
-
-    private final Set<File> sources;
-    private final LoadingCache<File, Source> sourceCache;
     private final List<LocationSearchFunction> locationSearchFunctions;
+    private Project project;
 
 
-    public LocationSearcher(Set<File> sources, LoadingCache<File, Source> sourceCache) {
-        this.sources = sources;
-        this.sourceCache = sourceCache;
+    public LocationSearcher(final Project project) {
         this.locationSearchFunctions = this.getLocationSearchFunctions();
+        this.project = project;
+    }
+
+    public Project getProject() {
+        return project;
+    }
+
+    public void setProject(Project project) {
+        this.project = project;
+    }
+
+    private Source getSource(final File file) throws IOException, ExecutionException {
+        final GlobalCache globalCache = GlobalCache.getInstance();
+        return globalCache.getSource(this.getProject(), file.getCanonicalFile());
     }
 
     public Location searchDeclaration(final File file, final int line, final int column, final String symbol) throws ExecutionException, IOException {
-        final Source source = this.sourceCache.get(file.getCanonicalFile());
+        final Source source = this.getSource(file);
         log.trace("search symbol {}", symbol);
 
         return this.locationSearchFunctions.stream()
@@ -67,9 +78,9 @@ public class LocationSearcher {
             }
 
             for (final String targetFqcn : searchTargets) {
-                final Optional<Location> location = existsFQCN(this.sources, targetFqcn).flatMap(f -> {
+                final Optional<Location> location = existsFQCN(this.getProject().getAllSources(), targetFqcn).flatMap(f -> {
                     try {
-                        final Source declaringClassSrc = this.sourceCache.get(f.getCanonicalFile());
+                        final Source declaringClassSrc = this.getSource(f);
                         final String path = declaringClassSrc.getFile().getPath();
                         return declaringClassSrc.getClassScopes()
                                 .stream()
@@ -110,9 +121,9 @@ public class LocationSearcher {
         }
         final String searchFQCN = fqcn;
 
-        final Location location = existsFQCN(this.sources, fqcn).flatMap(f -> {
+        final Location location = existsFQCN(this.getProject().getAllSources(), fqcn).flatMap(f -> {
             try {
-                final Source declaringClassSrc = this.sourceCache.get(f);
+                final Source declaringClassSrc = this.getSource(f);
                 final String path = declaringClassSrc.getFile().getPath();
                 return declaringClassSrc
                         .getClassScopes()
@@ -123,7 +134,7 @@ public class LocationSearcher {
                                 cs.getNameRange().begin.column))
                         .findFirst();
 
-            } catch (ExecutionException e) {
+            } catch (Exception e) {
                 throw new UncheckedExecutionException(e);
             }
         }).orElse(null);
@@ -182,9 +193,9 @@ public class LocationSearcher {
                     }
 
                     for (final String targetFqcn : searchTargets) {
-                        final Optional<Location> location = existsFQCN(this.sources, targetFqcn).flatMap(f -> {
+                        final Optional<Location> location = existsFQCN(this.getProject().getAllSources(), targetFqcn).flatMap(f -> {
                             try {
-                                final Source declaringClassSrc = this.sourceCache.get(f);
+                                final Source declaringClassSrc = this.getSource(f);
                                 final String path = declaringClassSrc.getFile().getPath();
                                 return declaringClassSrc
                                         .getClassScopes()
@@ -197,7 +208,7 @@ public class LocationSearcher {
                                                 ns.range.begin.line,
                                                 ns.range.begin.column))
                                         .findFirst();
-                            } catch (ExecutionException e) {
+                            } catch (Exception e) {
                                 throw new UncheckedExecutionException(e);
                             }
                         });
@@ -219,7 +230,7 @@ public class LocationSearcher {
     }
 
     private File toFile(final File root, final String fqcn) {
-        String path = fqcn.replace(".", File.separator) + ".java";
+        final String path = fqcn.replace(".", File.separator) + ".java";
         return new File(root, path);
     }
 }
