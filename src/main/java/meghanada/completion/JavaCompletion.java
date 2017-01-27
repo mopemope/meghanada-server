@@ -135,7 +135,7 @@ public class JavaCompletion {
                 final String prefix = searchWord.substring(prefixIdx + 1);
                 // return methods of prefix class
                 final String fqcn = searchWord.substring(classIdx + 1, prefixIdx);
-                return reflect(pkg, fqcn, prefix);
+                return reflectWithFQCN(pkg, fqcn, prefix);
             }
             // chained method completion
 
@@ -204,6 +204,22 @@ public class JavaCompletion {
             return !declaration.contains("static") && !cu.getType().equals("CONSTRUCTOR");
         }
         return declaration.contains("static");
+    }
+
+    private boolean publicFilter(final CandidateUnit cu, final String target) {
+
+        final String name = cu.getName().toLowerCase();
+        if (target != null
+                && !target.isEmpty()
+                && !name.contains(target)) {
+            return false;
+        }
+
+        final String declaration = cu.getDeclaration();
+        if (!declaration.contains("public")) {
+            return false;
+        }
+        return true;
     }
 
     private boolean packageFilter(final CandidateUnit cu, final boolean isStatic, final boolean withCONSTRUCTOR, final String target) {
@@ -469,6 +485,14 @@ public class JavaCompletion {
         return doReflect(fqcn)
                 .stream()
                 .filter(md -> this.privateFilter(md, withConstructor, target))
+                .collect(Collectors.toSet());
+    }
+
+    private Collection<MemberDescriptor> reflectWithFQCN(final String ownPackage, final String fqcn, final String prefix) {
+        final String target = prefix.toLowerCase();
+        return doReflect(fqcn)
+                .stream()
+                .filter(md -> this.publicFilter(md, target))
                 .collect(Collectors.toSet());
     }
 

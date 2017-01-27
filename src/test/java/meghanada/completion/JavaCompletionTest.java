@@ -97,6 +97,18 @@ public class JavaCompletionTest extends GradleTestBase {
 
     }
 
+    @Test
+    public void testCompletion7() throws Exception {
+        JavaCompletion completion = getCompletion();
+        File file = new File("./src/main/java/meghanada/analyze/ExpressionScope.java");
+        final Collection<? extends CandidateUnit> logMethod = debugIt(() -> {
+            return completion.completionAt(file, 17, 4, "*method:java.lang.System#");
+        });
+        logMethod.forEach(a -> System.out.println(a.getDeclaration()));
+        assertEquals(logMethod.size(), 39);
+
+    }
+
     private JavaCompletion getCompletion() throws Exception {
         return new JavaCompletion(getProject());
     }
