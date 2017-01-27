@@ -465,9 +465,10 @@ public class JavaCompletion {
     }
 
     private Collection<MemberDescriptor> reflectSelf(final String fqcn, final boolean withConstructor, final String prefix) {
+        final String target = prefix.toLowerCase();
         return doReflect(fqcn)
                 .stream()
-                .filter(md -> this.privateFilter(md, withConstructor, prefix))
+                .filter(md -> this.privateFilter(md, withConstructor, target))
                 .collect(Collectors.toSet());
     }
 
