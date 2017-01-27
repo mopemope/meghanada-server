@@ -64,19 +64,16 @@ public class JavaCompletion {
         }
     }
 
-    private Collection<? extends CandidateUnit> annotationCompletion(final Source source, final int line, final int column, final String prefix) {
+    private Collection<? extends CandidateUnit> annotationCompletion(final Source source, final int line,
+                                                                     final int column, final String prefix) {
         final boolean useFuzzySearch = Config.load().useClassFuzzySearch();
         String classPrefix = prefix.substring(1);
         List<ClassIndex> result;
         if (useFuzzySearch) {
-            result = CachedASMReflector
-                    .getInstance()
-                    .fuzzySearchAnnotations(classPrefix.toLowerCase());
+            result = CachedASMReflector.getInstance().fuzzySearchAnnotations(classPrefix.toLowerCase());
 
         } else {
-            result = CachedASMReflector
-                    .getInstance()
-                    .searchAnnotations(classPrefix.toLowerCase());
+            result = CachedASMReflector.getInstance().searchAnnotations(classPrefix.toLowerCase());
         }
         result.forEach(classIndex -> {
             classIndex.name = "@" + classIndex.name;
@@ -88,28 +85,26 @@ public class JavaCompletion {
         return CachedASMReflector.getInstance().reflect(fqcn);
     }
 
-    private Collection<? extends CandidateUnit> completionThis(final Source source, final int line, final String prefix) throws ExecutionException {
+    private Collection<? extends CandidateUnit> completionThis(final Source source, final int line, final String prefix)
+            throws ExecutionException {
         final String fqcn = source.getTypeScope(line).getFQCN();
         return this.reflectSelf(fqcn, false, prefix);
     }
 
-    private Collection<? extends CandidateUnit> completionSuper(final Source source, final int line, final String prefix) throws ExecutionException {
+    private Collection<? extends CandidateUnit> completionSuper(final Source source, final int line, final String prefix)
+            throws ExecutionException {
         final TypeScope typeScope = source.getTypeScope(line);
         final String fqcn = typeScope.getFQCN();
-        return doReflect(fqcn)
-                .stream()
-                .filter(md -> {
-                    if (md.getDeclaringClass().equals(fqcn)) {
-                        return false;
-                    }
-                    return !(prefix != null
-                            && !prefix.isEmpty()
-                            && !md.getName().toLowerCase().startsWith(prefix));
-                })
-                .collect(Collectors.toList());
+        return doReflect(fqcn).stream().filter(md -> {
+            if (md.getDeclaringClass().equals(fqcn)) {
+                return false;
+            }
+            return !(prefix != null && !prefix.isEmpty() && !md.getName().toLowerCase().startsWith(prefix));
+        }).collect(Collectors.toList());
     }
 
-    private Collection<? extends CandidateUnit> specialCompletion(final Source source, final int line, final int column, final String searchWord) throws ExecutionException {
+    private Collection<? extends CandidateUnit> specialCompletion(final Source source, final int line,
+                                                                  final int column, final String searchWord) throws ExecutionException {
 
         // special command
         final boolean useFuzzySearch = Config.load().useClassFuzzySearch();
@@ -184,12 +179,11 @@ public class JavaCompletion {
         return this.completionFieldsOrMethods(source, line, searchWord.substring(1), "");
     }
 
-    private boolean publicFilter(final CandidateUnit cu, final boolean isStatic, final boolean withCONSTRUCTOR, final String target) {
+    private boolean publicFilter(final CandidateUnit cu, final boolean isStatic, final boolean withCONSTRUCTOR,
+                                 final String target) {
 
         final String name = cu.getName().toLowerCase();
-        if (target != null
-                && !target.isEmpty()
-                && !name.contains(target)) {
+        if (target != null && !target.isEmpty() && !name.contains(target)) {
             return false;
         }
 
@@ -209,9 +203,10 @@ public class JavaCompletion {
     private boolean publicFilter(final CandidateUnit cu, final String target) {
 
         final String name = cu.getName().toLowerCase();
-        if (target != null
-                && !target.isEmpty()
-                && !name.contains(target)) {
+        if (target != null && !target.isEmpty() && !name.contains(target)) {
+            return false;
+        }
+        if (cu.getType().equals("CONSTRUCTOR")) {
             return false;
         }
 
@@ -222,12 +217,11 @@ public class JavaCompletion {
         return true;
     }
 
-    private boolean packageFilter(final CandidateUnit cu, final boolean isStatic, final boolean withCONSTRUCTOR, final String target) {
+    private boolean packageFilter(final CandidateUnit cu, final boolean isStatic, final boolean withCONSTRUCTOR,
+                                  final String target) {
         final String name = cu.getName().toLowerCase();
 
-        if (target != null
-                && !target.isEmpty()
-                && !name.contains(target)) {
+        if (target != null && !target.isEmpty() && !name.contains(target)) {
             return false;
         }
         final String declaration = cu.getDeclaration();
@@ -243,16 +237,15 @@ public class JavaCompletion {
         return declaration.contains("static");
     }
 
-    private boolean privateFilter(final CandidateUnit cu, final boolean isStatic, final boolean withCONSTRUCTOR, final String target) {
+    private boolean privateFilter(final CandidateUnit cu, final boolean isStatic, final boolean withCONSTRUCTOR,
+                                  final String target) {
 
         final String name = cu.getName().toLowerCase();
         if (cu.getType().equals("FIELD") && name.startsWith("this$")) {
             return false;
         }
 
-        if (target != null
-                && !target.isEmpty()
-                && !name.contains(target)) {
+        if (target != null && !target.isEmpty() && !name.contains(target)) {
             return false;
         }
 
@@ -273,42 +266,33 @@ public class JavaCompletion {
             return false;
         }
 
-        if (target != null
-                && !target.isEmpty()
-                && !name.contains(target)) {
+        if (target != null && !target.isEmpty() && !name.contains(target)) {
             return false;
         }
 
         return withCONSTRUCTOR || !cu.getType().equals("CONSTRUCTOR");
     }
 
-    private Collection<? extends CandidateUnit> publicReflect(final String fqcn, final boolean isStatic, final boolean withCONSTRUCTOR, final String target) {
-        return doReflect(fqcn)
-                .stream()
-                .filter(md -> this.publicFilter(md, isStatic, withCONSTRUCTOR, target))
+    private Collection<? extends CandidateUnit> publicReflect(final String fqcn, final boolean isStatic,
+                                                              final boolean withCONSTRUCTOR, final String target) {
+        return doReflect(fqcn).stream().filter(md -> this.publicFilter(md, isStatic, withCONSTRUCTOR, target))
                 .collect(Collectors.toSet());
     }
 
-    private Collection<? extends CandidateUnit> packageReflect(final String fqcn, final boolean noStatic, final boolean withCONSTRUCTOR, final String target) {
-        return doReflect(fqcn)
-                .stream()
-                .filter(md -> this.packageFilter(md, noStatic, withCONSTRUCTOR, target))
+    private Collection<? extends CandidateUnit> packageReflect(final String fqcn, final boolean noStatic,
+                                                               final boolean withCONSTRUCTOR, final String target) {
+        return doReflect(fqcn).stream().filter(md -> this.packageFilter(md, noStatic, withCONSTRUCTOR, target))
                 .collect(Collectors.toSet());
     }
 
-    private Collection<? extends CandidateUnit> privateReflect(final String fqcn, final boolean noStatic, final boolean withCONSTRUCTOR, final String target) {
-        return doReflect(fqcn)
-                .stream()
-                .filter(md -> this.privateFilter(md, noStatic, withCONSTRUCTOR, target))
+    private Collection<? extends CandidateUnit> privateReflect(final String fqcn, final boolean noStatic,
+                                                               final boolean withCONSTRUCTOR, final String target) {
+        return doReflect(fqcn).stream().filter(md -> this.privateFilter(md, noStatic, withCONSTRUCTOR, target))
                 .collect(Collectors.toSet());
     }
 
     private Collection<? extends CandidateUnit> completionConstructors(final Source source) throws ExecutionException {
-        return source.importClass
-                .values()
-                .parallelStream()
-                .map(this::doReflect)
-                .flatMap(Collection::parallelStream)
+        return source.importClass.values().parallelStream().map(this::doReflect).flatMap(Collection::parallelStream)
                 .filter(md -> md.getType().equals(CandidateUnit.MemberType.CONSTRUCTOR.name()))
                 .collect(Collectors.toSet());
     }
@@ -316,14 +300,12 @@ public class JavaCompletion {
     private Collection<? extends CandidateUnit> completionPackage() {
         final GlobalCache globalCache = GlobalCache.getInstance();
         final LoadingCache<File, Source> sourceCache = globalCache.getSourceCache(this.getProject());
-        return sourceCache.asMap()
-                .values()
-                .stream()
-                .map(source -> ClassIndex.createPackage(source.packageName))
+        return sourceCache.asMap().values().stream().map(source -> ClassIndex.createPackage(source.packageName))
                 .collect(Collectors.toSet());
     }
 
-    private Collection<? extends CandidateUnit> completionSymbols(final Source source, final int line, final String prefix) throws ExecutionException {
+    private Collection<? extends CandidateUnit> completionSymbols(final Source source, final int line,
+                                                                  final String prefix) throws ExecutionException {
         final List<CandidateUnit> result = new ArrayList<>(32);
 
         // prefix search
@@ -332,10 +314,7 @@ public class JavaCompletion {
         final String fqcn = source.getTypeScope(line).getFQCN();
 
         // add this member
-        this.reflectSelf(fqcn, true, prefix)
-                .stream()
-                .filter(c -> c.getName().startsWith(prefix))
-                .forEach(result::add);
+        this.reflectSelf(fqcn, true, prefix).stream().filter(c -> c.getName().startsWith(prefix)).forEach(result::add);
 
         if (fqcn.contains(ClassNameUtils.INNER_MARK)) {
             // add parent
@@ -346,9 +325,7 @@ public class JavaCompletion {
                     break;
                 }
                 parentClass = parentClass.substring(0, i);
-                this.reflectSelf(parentClass, true, prefix)
-                        .stream()
-                        .filter(c -> c.getName().startsWith(prefix))
+                this.reflectSelf(parentClass, true, prefix).stream().filter(c -> c.getName().startsWith(prefix))
                         .forEach(result::add);
             }
         }
@@ -392,7 +369,8 @@ public class JavaCompletion {
         return result;
     }
 
-    private Collection<? extends CandidateUnit> completionFieldsOrMethods(final Source source, final int line, final String var, final String target) throws ExecutionException {
+    private Collection<? extends CandidateUnit> completionFieldsOrMethods(final Source source, final int line,
+                                                                          final String var, final String target) throws ExecutionException {
 
         // completionAt methods or fields
         if (var.equals("this")) {
@@ -409,8 +387,7 @@ public class JavaCompletion {
             // completion static method
             String fqcn = source.importClass.get(var);
             if (fqcn != null) {
-                if (!fqcn.contains(".")
-                        && ownPackage != null) {
+                if (!fqcn.contains(".") && ownPackage != null) {
                     fqcn = ownPackage + "." + fqcn;
                 }
 
@@ -419,7 +396,8 @@ public class JavaCompletion {
                 res.addAll(result);
 
                 // add inner class
-                final Collection<? extends CandidateUnit> inners = CachedASMReflector.getInstance().searchInnerClasses(fqcn);
+                final Collection<? extends CandidateUnit> inners = CachedASMReflector.getInstance().searchInnerClasses(
+                        fqcn);
                 res.addAll(inners);
 
                 if (!res.isEmpty()) {
@@ -443,15 +421,13 @@ public class JavaCompletion {
         {
             for (final ClassScope cs : source.getClassScopes()) {
                 final String fqcn = cs.getFQCN();
-                final Optional<MemberDescriptor> fieldResult = this.reflectSelf(fqcn, true, target)
-                        .stream()
+                final Optional<MemberDescriptor> fieldResult = this.reflectSelf(fqcn, true, target).stream()
                         .filter(c -> {
                             if (c instanceof FieldDescriptor) {
                                 return c.getName().equals(var);
                             }
                             return false;
-                        })
-                        .findFirst();
+                        }).findFirst();
                 if (fieldResult.isPresent()) {
                     final MemberDescriptor memberDescriptor = fieldResult.orElse(null);
                     final String returnType = memberDescriptor.getRawReturnType();
@@ -472,7 +448,8 @@ public class JavaCompletion {
         return Collections.emptySet();
     }
 
-    private Collection<? extends CandidateUnit> reflect(final String ownPackage, final String fqcn, final boolean isStatic, final boolean withConstructor, final String prefix) {
+    private Collection<? extends CandidateUnit> reflect(final String ownPackage, final String fqcn,
+                                                        final boolean isStatic, final boolean withConstructor, final String prefix) {
         if (fqcn.startsWith(ownPackage)) {
             // package
             return this.packageReflect(fqcn, isStatic, withConstructor, prefix);
@@ -480,20 +457,16 @@ public class JavaCompletion {
         return this.publicReflect(fqcn, isStatic, withConstructor, prefix);
     }
 
-    private Collection<MemberDescriptor> reflectSelf(final String fqcn, final boolean withConstructor, final String prefix) {
+    private Collection<MemberDescriptor> reflectSelf(final String fqcn, final boolean withConstructor,
+                                                     final String prefix) {
         final String target = prefix.toLowerCase();
-        return doReflect(fqcn)
-                .stream()
-                .filter(md -> this.privateFilter(md, withConstructor, target))
+        return doReflect(fqcn).stream().filter(md -> this.privateFilter(md, withConstructor, target))
                 .collect(Collectors.toSet());
     }
 
     private Collection<MemberDescriptor> reflectWithFQCN(final String ownPackage, final String fqcn, final String prefix) {
         final String target = prefix.toLowerCase();
-        return doReflect(fqcn)
-                .stream()
-                .filter(md -> this.publicFilter(md, target))
-                .collect(Collectors.toSet());
+        return doReflect(fqcn).stream().filter(md -> this.publicFilter(md, target)).collect(Collectors.toSet());
     }
 
     private Collection<? extends CandidateUnit> reflect(final String ownPackage, final String fqcn, final String prefix) {
