@@ -42,7 +42,7 @@ public class JavaAnalyzer {
 
         if (files == null || files.isEmpty()) {
             final Map<File, Source> analyzedMap = new HashMap<>();
-            log.warn("compile targets is empty");
+            log.debug("compile targets is empty");
             return new CompileResult(true, analyzedMap);
         }
 
