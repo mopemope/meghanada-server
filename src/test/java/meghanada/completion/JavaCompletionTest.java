@@ -109,6 +109,18 @@ public class JavaCompletionTest extends GradleTestBase {
 
     }
 
+    @Test
+    public void testCompletion8() throws Exception {
+        JavaCompletion completion = getCompletion();
+        File file = new File("./src/main/java/meghanada/project/gradle/GradleProject.java");
+        final Collection<? extends CandidateUnit> logMethod = debugIt(() -> {
+            return completion.completionAt(file, 31, 4, "lo");
+        });
+        logMethod.forEach(a -> System.out.println(a.getDeclaration()));
+        assertEquals(4, logMethod.size());
+
+    }
+
     private JavaCompletion getCompletion() throws Exception {
         return new JavaCompletion(getProject());
     }
