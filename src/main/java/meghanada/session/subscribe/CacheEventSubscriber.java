@@ -47,6 +47,7 @@ public class CacheEventSubscriber extends AbstractSubscriber {
             return true;
         });
 
+        final Stopwatch stopwatch = Stopwatch.createStarted();
         reflector.addClasspath(session.getDependentJars());
         reflector.addClasspath(project.getOutputDirectory());
         reflector.addClasspath(project.getTestOutputDirectory());
@@ -54,9 +55,7 @@ public class CacheEventSubscriber extends AbstractSubscriber {
             reflector.addClasspath(dependency.getOutputDirectory());
             reflector.addClasspath(dependency.getTestOutputDirectory());
         }
-
-        final Stopwatch stopwatch = Stopwatch.createStarted();
         reflector.createClassIndexes();
-        log.info("done index size:{} elapsed:{}", reflector.getGlobalClassIndex().size(), stopwatch.stop());
+        log.info("class index size:{} elapsed:{}", reflector.getGlobalClassIndex().size(), stopwatch.stop());
     }
 }
