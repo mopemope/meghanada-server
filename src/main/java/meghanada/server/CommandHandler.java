@@ -1,6 +1,7 @@
 package meghanada.server;
 
 import meghanada.analyze.CompileResult;
+import meghanada.completion.LocalVariable;
 import meghanada.location.Location;
 import meghanada.reflect.CandidateUnit;
 import meghanada.session.Session;
@@ -15,7 +16,9 @@ import java.nio.charset.Charset;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
+import static meghanada.config.Config.timeIt;
 import static meghanada.utils.FunctionUtils.wrapIOConsumer;
 
 public class CommandHandler {
@@ -47,7 +50,7 @@ public class CommandHandler {
     public void diagnostics(String path) {
         try {
             path = new File(path).getCanonicalPath();
-            final CompileResult compileResult = session.compileProject();
+            final CompileResult compileResult = timeIt(session::compileProject);
             final String out = outputFormatter.diagnostics(compileResult, path);
             writer.write(out);
             writer.newLine();
@@ -56,11 +59,13 @@ public class CommandHandler {
         }
     }
 
-    public void compile(String path) {
+    public void compile(final String path) {
         try {
-            path = new File(path).getCanonicalPath();
-            final CompileResult compileResult = session.compileFile(path);
-            final String out = outputFormatter.compile(compileResult, path);
+            final String canonicalPath = new File(path).getCanonicalPath();
+            final CompileResult compileResult = timeIt(() -> {
+                return session.compileFile(canonicalPath);
+            });
+            final String out = outputFormatter.compile(compileResult, canonicalPath);
             writer.write(out);
             writer.newLine();
         } catch (Exception e) {
@@ -70,7 +75,7 @@ public class CommandHandler {
 
     public void compileProject() {
         try {
-            final CompileResult compileResult = session.compileProject();
+            final CompileResult compileResult = timeIt(session::compileProject);
             final String out = outputFormatter.compileProject(compileResult);
             writer.write(out);
             writer.newLine();
@@ -84,9 +89,12 @@ public class CommandHandler {
         try {
             int lineInt = Integer.parseInt(line);
             int columnInt = Integer.parseInt(column);
-            final Collection<? extends CandidateUnit> units = session.completionAt(path, lineInt, columnInt, prefix);
+            final Collection<? extends CandidateUnit> units = timeIt(() -> {
+                return session.completionAt(path, lineInt,
+                        columnInt,
+                        prefix);
+            });
             final String out = outputFormatter.autocomplete(units);
-
             writer.write(out);
             writer.newLine();
         } catch (Exception e) {
@@ -122,7 +130,10 @@ public class CommandHandler {
 
     public void addImport(String path, String fqcn) {
         try {
-            boolean result = session.addImport(path, fqcn);
+            boolean result = timeIt(() -> {
+                return session.addImport(path, fqcn);
+            });
+
             final String out = outputFormatter.addImport(result);
             writer.write(out);
             writer.newLine();
@@ -134,7 +145,9 @@ public class CommandHandler {
 
     public void optimizeImport(String path) {
         try {
-            final List<String> result = session.optimizeImport(path);
+            final List<String> result = timeIt(() -> {
+                return session.optimizeImport(path);
+            });
             final String out = outputFormatter.optimizeImport(result);
             writer.write(out);
             writer.newLine();
@@ -145,7 +158,9 @@ public class CommandHandler {
 
     public void importAll(String path) {
         try {
-            final Map<String, List<String>> result = session.searchMissingImport(path);
+            final Map<String, List<String>> result = timeIt(() -> {
+                return session.searchMissingImport(path);
+            });
             final String out = outputFormatter.importAll(result);
             writer.write(out);
             writer.newLine();
@@ -178,7 +193,9 @@ public class CommandHandler {
         int lineInt = Integer.parseInt(line);
         int columnInt = Integer.parseInt(col);
         try {
-            Location location = session.jumpDeclaration(path, lineInt, columnInt, symbol);
+            final Location location = timeIt(() -> {
+                return session.jumpDeclaration(path, lineInt, columnInt, symbol);
+            });
             if (location != null) {
                 String out = outputFormatter.jumpDeclaration(location);
                 writer.write(out);
@@ -232,7 +249,10 @@ public class CommandHandler {
     public void localVariable(final String path, final String line) {
         final int lineInt = Integer.parseInt(line);
         try {
-            session.localVariable(path, lineInt).ifPresent(wrapIOConsumer(lv -> {
+            final Optional<LocalVariable> localVariable = timeIt(() -> {
+                return session.localVariable(path, lineInt);
+            });
+            localVariable.ifPresent(wrapIOConsumer(lv -> {
                 final String out = outputFormatter.localVariable(lv);
                 writer.write(out);
             }));
@@ -244,9 +264,12 @@ public class CommandHandler {
 
     public void formatCode(String path) {
         try {
-            path = new File(path).getCanonicalPath();
-            session.formatCode(path);
-            writer.write(outputFormatter.formatCode(path));
+            final String canonicalPath = new File(path).getCanonicalPath();
+            final boolean result = timeIt(() -> {
+                session.formatCode(canonicalPath);
+                return true;
+            });
+            writer.write(outputFormatter.formatCode(canonicalPath));
             writer.newLine();
         } catch (Exception e) {
             throw new RuntimeException(e);
