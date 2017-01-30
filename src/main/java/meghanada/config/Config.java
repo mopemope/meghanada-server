@@ -2,6 +2,7 @@ package meghanada.config;
 
 import com.google.common.base.Stopwatch;
 import com.typesafe.config.ConfigFactory;
+import meghanada.project.Project;
 import meghanada.utils.FileUtils;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
@@ -166,7 +167,7 @@ public class Config {
     }
 
     public String getProjectSettingDir() {
-        final String root = System.getProperty("project.root");
+        final String root = System.getProperty(Project.PROJECT_ROOT_KEY);
         try {
             if (root != null && !root.isEmpty()) {
                 return new File(root, ".meghanada").getCanonicalPath();

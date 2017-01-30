@@ -37,5 +37,5 @@ public interface OutputFormatter {
 
     String localVariable(LocalVariable lv);
 
-    String format(String path);
+    String formatCode(String path);
 }

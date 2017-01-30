@@ -24,19 +24,19 @@ public class CommandHandler {
 
     private final Session session;
     private final BufferedWriter writer;
-    private final OutputFormatter formatter;
+    private final OutputFormatter outputFormatter;
 
     public CommandHandler(Session session, BufferedWriter writer, OutputFormatter formatter) {
         this.session = session;
         this.writer = writer;
-        this.formatter = formatter;
+        this.outputFormatter = formatter;
     }
 
     public void changeProject(String path) {
         try {
             path = new File(path).getCanonicalPath();
             final boolean result = session.changeProject(path);
-            final String out = formatter.changeProject(result);
+            final String out = outputFormatter.changeProject(result);
             writer.write(out);
             writer.newLine();
         } catch (Exception e) {
@@ -48,7 +48,7 @@ public class CommandHandler {
         try {
             path = new File(path).getCanonicalPath();
             final CompileResult compileResult = session.compileProject();
-            final String out = formatter.diagnostics(compileResult, path);
+            final String out = outputFormatter.diagnostics(compileResult, path);
             writer.write(out);
             writer.newLine();
         } catch (Exception e) {
@@ -60,7 +60,7 @@ public class CommandHandler {
         try {
             path = new File(path).getCanonicalPath();
             final CompileResult compileResult = session.compileFile(path);
-            final String out = formatter.compile(compileResult, path);
+            final String out = outputFormatter.compile(compileResult, path);
             writer.write(out);
             writer.newLine();
         } catch (Exception e) {
@@ -71,7 +71,7 @@ public class CommandHandler {
     public void compileProject() {
         try {
             final CompileResult compileResult = session.compileProject();
-            final String out = formatter.compileProject(compileResult);
+            final String out = outputFormatter.compileProject(compileResult);
             writer.write(out);
             writer.newLine();
         } catch (Exception e) {
@@ -85,7 +85,7 @@ public class CommandHandler {
             int lineInt = Integer.parseInt(line);
             int columnInt = Integer.parseInt(column);
             final Collection<? extends CandidateUnit> units = session.completionAt(path, lineInt, columnInt, prefix);
-            final String out = formatter.autocomplete(units);
+            final String out = outputFormatter.autocomplete(units);
 
             writer.write(out);
             writer.newLine();
@@ -112,7 +112,7 @@ public class CommandHandler {
     public void parse(String path) {
         try {
             boolean result = session.parseFile(path);
-            final String out = formatter.parse(result);
+            final String out = outputFormatter.parse(result);
             writer.write(out);
             writer.newLine();
         } catch (Exception e) {
@@ -123,7 +123,7 @@ public class CommandHandler {
     public void addImport(String path, String fqcn) {
         try {
             boolean result = session.addImport(path, fqcn);
-            final String out = formatter.addImport(result);
+            final String out = outputFormatter.addImport(result);
             writer.write(out);
             writer.newLine();
         } catch (Exception e) {
@@ -135,7 +135,7 @@ public class CommandHandler {
     public void optimizeImport(String path) {
         try {
             final List<String> result = session.optimizeImport(path);
-            final String out = formatter.optimizeImport(result);
+            final String out = outputFormatter.optimizeImport(result);
             writer.write(out);
             writer.newLine();
         } catch (Exception e) {
@@ -146,7 +146,7 @@ public class CommandHandler {
     public void importAll(String path) {
         try {
             final Map<String, List<String>> result = session.searchMissingImport(path);
-            final String out = formatter.importAll(result);
+            final String out = outputFormatter.importAll(result);
             writer.write(out);
             writer.newLine();
         } catch (Exception e) {
@@ -157,7 +157,7 @@ public class CommandHandler {
     public void switchTest(String path) {
         try {
             final String openPath = session.switchTest(path);
-            final String out = formatter.switchTest(openPath);
+            final String out = outputFormatter.switchTest(openPath);
             writer.write(out);
             writer.newLine();
         } catch (Exception e) {
@@ -180,7 +180,7 @@ public class CommandHandler {
         try {
             Location location = session.jumpDeclaration(path, lineInt, columnInt, symbol);
             if (location != null) {
-                String out = formatter.jumpDeclaration(location);
+                String out = outputFormatter.jumpDeclaration(location);
                 writer.write(out);
             }
             writer.newLine();
@@ -194,7 +194,7 @@ public class CommandHandler {
         Location location = session.backDeclaration();
         try {
             if (location != null) {
-                String out = formatter.jumpDeclaration(location);
+                String out = outputFormatter.jumpDeclaration(location);
                 writer.write(out);
             }
             writer.newLine();
@@ -220,7 +220,7 @@ public class CommandHandler {
     public void clearCache() {
         try {
             final boolean result = this.session.clearCache();
-            final String out = formatter.clearCache(result);
+            final String out = outputFormatter.clearCache(result);
             writer.write(out);
             writer.newLine();
         } catch (IOException e) {
@@ -233,7 +233,7 @@ public class CommandHandler {
         final int lineInt = Integer.parseInt(line);
         try {
             session.localVariable(path, lineInt).ifPresent(wrapIOConsumer(lv -> {
-                final String out = formatter.localVariable(lv);
+                final String out = outputFormatter.localVariable(lv);
                 writer.write(out);
             }));
             writer.newLine();
@@ -242,11 +242,11 @@ public class CommandHandler {
         }
     }
 
-    public void format(String path) {
+    public void formatCode(String path) {
         try {
             path = new File(path).getCanonicalPath();
-            session.format(path);
-            writer.write(formatter.format(path));
+            session.formatCode(path);
+            writer.write(outputFormatter.formatCode(path));
             writer.newLine();
         } catch (Exception e) {
             throw new RuntimeException(e);

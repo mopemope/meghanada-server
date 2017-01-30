@@ -33,8 +33,9 @@ import java.util.stream.Collectors;
 public abstract class Project {
 
     public static final String DEFAULT_PATH = File.separator + "src" + File.separator + "main" + File.separator;
+    public static final String FORMETTER_FILE_KEY = "meghanada.formatter.file";
+    public static final String PROJECT_ROOT_KEY = "project.root";
     private static final Logger log = LogManager.getLogger(Project.class);
-
     private static final String JAVA_HOME = "java-home";
     private static final String JAVA_VERSION = "java-version";
     private static final String COMPILE_SOURCE = "compile-source";
@@ -49,7 +50,7 @@ public abstract class Project {
     private static final String TEST_OUTPUT = "test-output";
     private static final String INCLUDE_FILE = "include-file";
     private static final String EXCLUDE_FILE = "exclude-file";
-
+    private static final String FORMATTER_FILE = "meghanadaFormatter.properties";
     public static Map<String, Project> loadedProject = new HashMap<>();
 
     protected File projectRoot;
@@ -75,7 +76,11 @@ public abstract class Project {
 
     public Project(File projectRoot) throws IOException {
         this.projectRoot = projectRoot;
-        System.setProperty("project.root", this.projectRoot.getCanonicalPath());
+        System.setProperty(PROJECT_ROOT_KEY, this.projectRoot.getCanonicalPath());
+        final File file = new File(projectRoot, FORMATTER_FILE);
+        if (file.exists()) {
+            System.setProperty(FORMETTER_FILE_KEY, file.getCanonicalPath());
+        }
     }
 
     public abstract Project parseProject() throws ProjectParseException;
@@ -231,7 +236,7 @@ public abstract class Project {
                     lazyLoad.add(p);
                     continue;
                 }
-                System.setProperty("project.root", p.getProjectRoot().getCanonicalPath());
+                System.setProperty(PROJECT_ROOT_KEY, p.getProjectRoot().getCanonicalPath());
                 final CompileResult compileResult = p.compileJava(force, true);
                 if (!compileResult.isSuccess()) {
                     log.warn("dependency module compile error {}", p.getProjectRoot());
@@ -240,7 +245,7 @@ public abstract class Project {
             }
         }
 
-        System.setProperty("project.root", this.getProjectRoot().getCanonicalPath());
+        System.setProperty(PROJECT_ROOT_KEY, this.getProjectRoot().getCanonicalPath());
 
         List<File> files = this.collectJavaFiles(this.getSourceDirectories());
         if (files != null && !files.isEmpty()) {
@@ -266,7 +271,7 @@ public abstract class Project {
                 }
 
                 final Set<Project> dependencyProjects = p.getDependencyProjects();
-                System.setProperty("project.root", p.getProjectRoot().getCanonicalPath());
+                System.setProperty(PROJECT_ROOT_KEY, p.getProjectRoot().getCanonicalPath());
                 if (dependencyProjects.contains(this)) {
                     dependencyProjects.remove(this);
                     final CompileResult tempCR = p.compileJava(force, fullBuild);
@@ -283,7 +288,7 @@ public abstract class Project {
                     }
                 }
             }
-            System.setProperty("project.root", this.getProjectRoot().getCanonicalPath());
+            System.setProperty(PROJECT_ROOT_KEY, this.getProjectRoot().getCanonicalPath());
             return this.updateSourceCache(compileResult);
         }
         return new CompileResult(true);
@@ -307,7 +312,7 @@ public abstract class Project {
                     lazyLoad.add(p);
                     continue;
                 }
-                System.setProperty("project.root", p.getProjectRoot().getCanonicalPath());
+                System.setProperty(PROJECT_ROOT_KEY, p.getProjectRoot().getCanonicalPath());
                 final CompileResult compileResult = p.compileTestJava(force, true);
                 if (!compileResult.isSuccess()) {
                     log.warn("dependency module test compile error {}", p.getProjectRoot());
@@ -316,7 +321,7 @@ public abstract class Project {
             }
         }
 
-        System.setProperty("project.root", this.getProjectRoot().getCanonicalPath());
+        System.setProperty(PROJECT_ROOT_KEY, this.getProjectRoot().getCanonicalPath());
         List<File> files = this.collectJavaFiles(this.getTestSourceDirectories());
         if (files != null && !files.isEmpty()) {
             if (callerMap.size() == 0) {
@@ -340,7 +345,7 @@ public abstract class Project {
                     continue;
                 }
                 final Set<Project> dependencyProjects = p.getDependencyProjects();
-                System.setProperty("project.root", p.getProjectRoot().getCanonicalPath());
+                System.setProperty(PROJECT_ROOT_KEY, p.getProjectRoot().getCanonicalPath());
                 if (dependencyProjects.contains(this)) {
                     dependencyProjects.remove(this);
                     final CompileResult tempCR = p.compileTestJava(force, fullBuild);
@@ -357,7 +362,7 @@ public abstract class Project {
                     }
                 }
             }
-            System.setProperty("project.root", this.getProjectRoot().getCanonicalPath());
+            System.setProperty(PROJECT_ROOT_KEY, this.getProjectRoot().getCanonicalPath());
             return this.updateSourceCache(compileResult);
         }
         return new CompileResult(true);
@@ -500,7 +505,7 @@ public abstract class Project {
         try {
             return runUnitTest(test);
         } finally {
-            System.setProperty("project.root", this.projectRoot.getCanonicalPath());
+            System.setProperty(PROJECT_ROOT_KEY, this.projectRoot.getCanonicalPath());
         }
     }
 
@@ -786,26 +791,40 @@ public abstract class Project {
         for (final Project p : this.dependencyProjects) {
             p.clearCache();
         }
-        System.setProperty("project.root", this.projectRoot.getCanonicalPath());
+        System.setProperty(PROJECT_ROOT_KEY, this.projectRoot.getCanonicalPath());
         final Config config = Config.load();
         final String projectSettingDir = config.getProjectSettingDir();
         FileUtils.deleteFile(new File(projectSettingDir), false);
     }
 
     public Properties readFormatProperties() {
-        // TODO read from file
-
+        final Properties fileProperties = readFormatPropertiesFromFile();
+        if (fileProperties != null) {
+            return fileProperties;
+        }
         // default
-        Properties properties;
-
-        properties = new Properties();
-
+        final Properties properties = new Properties();
         // Default
         properties.setProperty(DefaultCodeFormatterConstants.FORMATTER_BLANK_LINES_AFTER_IMPORTS, "1");
         properties.setProperty(DefaultCodeFormatterConstants.FORMATTER_LINE_SPLIT, "120");
         properties.setProperty(DefaultCodeFormatterConstants.FORMATTER_TAB_CHAR, "space");
         properties.setProperty(DefaultCodeFormatterConstants.FORMATTER_TAB_SIZE, "4");
         return properties;
+    }
+
+    private Properties readFormatPropertiesFromFile() {
+        final String val = System.getProperty(FORMETTER_FILE_KEY);
+        if (val != null) {
+            final File file = new File(val);
+            try {
+                final Properties prop = FileUtils.loadPropertiesFile(file);
+                log.info("load formatter rule from {}", val);
+                return prop;
+            } catch (IOException e) {
+                log.catching(e);
+            }
+        }
+        return null;
     }
 
     public Properties getFormatProperties() {

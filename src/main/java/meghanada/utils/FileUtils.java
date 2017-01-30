@@ -315,4 +315,14 @@ public final class FileUtils {
         return formatted;
     }
 
+    public static Properties loadPropertiesFile(final File file) throws IOException {
+        if (!file.exists()) {
+            return null;
+        }
+        try (final FileInputStream in = new FileInputStream(file)) {
+            final Properties properties = new Properties();
+            properties.load(in);
+            return properties;
+        }
+    }
 }

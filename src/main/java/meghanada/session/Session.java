@@ -111,7 +111,7 @@ public class Session {
     private static Optional<Project> loadProject(final File projectRoot, final String targetFile) throws IOException {
         final EntryMessage entryMessage = log.traceEntry("projectRoot={} targetFile={}", projectRoot, targetFile);
         final String projectRootPath = projectRoot.getCanonicalPath();
-        System.setProperty("project.root", projectRootPath);
+        System.setProperty(Project.PROJECT_ROOT_KEY, projectRootPath);
 
         try {
             final Config config = Config.load();
@@ -126,7 +126,7 @@ public class Session {
                 // loaded skip
                 final Project project = Project.loadedProject.get(id);
                 log.traceExit(entryMessage);
-                System.setProperty("project.root", projectRootPath);
+                System.setProperty(Project.PROJECT_ROOT_KEY, projectRootPath);
                 return Optional.of(project);
             }
 
@@ -172,7 +172,7 @@ public class Session {
             log.traceExit(entryMessage);
             return Optional.of(parsed.mergeFromProjectConfig());
         } finally {
-            System.setProperty("project.root", projectRootPath);
+            System.setProperty(Project.PROJECT_ROOT_KEY, projectRootPath);
         }
     }
 
@@ -659,7 +659,7 @@ public class Session {
         return getCurrentProject().runTask(args);
     }
 
-    public String format(final String path) throws IOException {
+    public String formatCode(final String path) throws IOException {
         final Project project = getCurrentProject();
         FileUtils.formatJavaFile(project.getFormatProperties(), path);
         return path;

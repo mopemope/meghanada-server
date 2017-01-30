@@ -201,7 +201,7 @@ public class SexpOutputFormatter implements OutputFormatter {
     }
 
     @Override
-    public String format(String path) {
+    public String formatCode(String path) {
         return doubleQuote(path);
     }
 }

@@ -184,7 +184,7 @@ public class EmacsServer implements Server {
                 .when(headTail(eq("fc"), any())).get(args -> {
                     // fc : Format code
                     // usage: fc <filepath>
-                    handler.format(args.get(0));
+                    handler.formatCode(args.get(0));
                     return true;
                 })
                 .when(headTail(eq("di"), any())).get(args -> {
