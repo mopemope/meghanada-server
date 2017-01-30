@@ -21,7 +21,7 @@ ext {
     sourceCompatibility = 1.8
 
     gradleVersion = '3.3'
-    log4jVersion = '2.7'
+    log4jVersion = '2.8'
 }
 
 mainClassName = "meghanada.Main"
