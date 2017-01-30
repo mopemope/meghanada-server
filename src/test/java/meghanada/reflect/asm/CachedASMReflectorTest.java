@@ -54,7 +54,7 @@ public class CachedASMReflectorTest extends GradleTestBase {
         if (isOpenJDK) {
             assertEquals(245, candidateUnits.size());
         } else {
-            assertEquals(245, candidateUnits.size());
+            assertEquals(265, candidateUnits.size());
         }
     }
 
@@ -81,7 +81,6 @@ public class CachedASMReflectorTest extends GradleTestBase {
         assertEquals(128, map.size());
         // System.out.println(map);
     }
-
 
     @Test
     public void testReflectJavaLangString() throws Exception {
@@ -177,9 +176,9 @@ public class CachedASMReflectorTest extends GradleTestBase {
         {
             String fqcn = "com.esotericsoftware.kryo.Kryo";
             List<MemberDescriptor> memberDescriptors = cachedASMReflector.reflect(fqcn);
-//            for (MemberDescriptor md : memberDescriptors) {
-//                System.out.println(md);
-//            }
+            // for (MemberDescriptor md : memberDescriptors) {
+            // System.out.println(md);
+            // }
             memberDescriptors.forEach(md -> System.out.println(md.getDisplayDeclaration()));
             assertEquals(83, memberDescriptors.size());
         }
@@ -193,9 +192,9 @@ public class CachedASMReflectorTest extends GradleTestBase {
         {
             String fqcn = "java.util.Iterator<Map.Entry<WatchKey, Path>>";
             List<MemberDescriptor> memberDescriptors = cachedASMReflector.reflect(fqcn);
-//            for (MemberDescriptor md : memberDescriptors) {
-//                System.out.println(md);
-//            }
+            // for (MemberDescriptor md : memberDescriptors) {
+            // System.out.println(md);
+            // }
             memberDescriptors.forEach(memberDescriptor -> System.out.println(memberDescriptor.getDeclaration()));
             assertEquals(15, memberDescriptors.size());
         }
@@ -236,8 +235,9 @@ public class CachedASMReflectorTest extends GradleTestBase {
             });
             memberDescriptors.forEach(md -> {
                 System.out.println(md.getDisplayDeclaration());
-                // System.out.println(md.getDeclaringClass() + " # " + md.getDisplayDeclaration());
-            });
+                // System.out.println(md.getDeclaringClass() + " # " +
+                // md.getDisplayDeclaration());
+                });
             assertEquals(59, memberDescriptors.size());
         }
 
