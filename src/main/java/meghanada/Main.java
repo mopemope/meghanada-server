@@ -16,7 +16,7 @@ import java.io.IOException;
 
 public class Main {
 
-    public static final String VERSION = "0.5.0";
+    public static final String VERSION = "0.6.0";
 
     private static Logger log = LogManager.getLogger(Main.class);
 
@@ -50,7 +50,6 @@ public class Main {
             System.out.println(version);
             return;
         }
-
 
         System.setProperty("home", Config.getInstalledPath().getParentFile().getCanonicalPath());
 
@@ -103,7 +102,8 @@ public class Main {
         server.startServer();
     }
 
-    private static Server createServer(final String host, final int port, final String projectRoot, final String fmt) throws IOException {
+    private static Server createServer(final String host, final int port, final String projectRoot, final String fmt)
+            throws IOException {
         return new EmacsServer(host, port, projectRoot);
     }
 
