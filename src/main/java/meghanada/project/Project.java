@@ -4,6 +4,7 @@ import com.esotericsoftware.kryo.DefaultSerializer;
 import com.google.common.base.Joiner;
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Objects;
+import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.util.concurrent.UncheckedExecutionException;
 import com.typesafe.config.ConfigFactory;
@@ -262,7 +263,11 @@ public abstract class Project {
                     this.output);
 
             files = addDepends(this.getAllSources(), files);
+
+            final String projectName = this.getProjectRoot().getName();
+            final Stopwatch stopwatch = Stopwatch.createStarted();
             final CompileResult compileResult = getJavaAnalyzer().analyzeAndCompile(files, this.allClasspath(), output.getCanonicalPath());
+            log.info("project {}: compile(java) {} files. elapsed:{}", projectName, files.size(), stopwatch.stop());
 
             for (final Project p : lazyLoad) {
                 if (p.equals(this)) {
@@ -337,7 +342,10 @@ public abstract class Project {
                     this.getAllSources(),
                     this.testOutput);
             files = addDepends(this.getAllSources(), files);
+            final String projectName = this.getProjectRoot().getName();
+            final Stopwatch stopwatch = Stopwatch.createStarted();
             final CompileResult compileResult = getJavaAnalyzer().analyzeAndCompile(files, this.allClasspath(), testOutput.getCanonicalPath());
+            log.info("project {}: compile(test) {} files. elapsed:{}", projectName, files.size(), stopwatch.stop());
 
             for (final Project p : lazyLoad) {
                 if (p.equals(this)) {
@@ -726,7 +734,6 @@ public abstract class Project {
     private List<File> addDepends(final Set<File> sourceRoots, final List<File> files) {
         final Set<File> temp = Collections.newSetFromMap(new ConcurrentHashMap<File, Boolean>());
         temp.addAll(files);
-        temp.addAll(FileUtils.getPackagePrivateSource(files));
 
         sourceRoots.parallelStream().forEach(root -> {
             try {
