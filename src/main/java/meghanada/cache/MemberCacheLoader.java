@@ -103,7 +103,7 @@ public class MemberCacheLoader extends CacheLoader<String, List<MemberDescriptor
 
         // this.writeFileCache(fqcn, memberDescriptors);
         log.trace("load fqcn:{} elapsed:{}", fqcn, stopwatch.stop());
-        GlobalCache.getInstance().writeCacheToFile(this.cacheChecksumFile, this.cacheChecksum);
+        GlobalCache.getInstance().asyncWriteCache(this.cacheChecksumFile, this.cacheChecksum);
         return memberDescriptors;
     }
 

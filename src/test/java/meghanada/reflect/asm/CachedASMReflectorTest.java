@@ -354,7 +354,7 @@ public class CachedASMReflectorTest extends GradleTestBase {
 
         {
             String fqcn = "meghanada.SelfRef2";
-            List<MemberDescriptor> memberDescriptors = traceIt(() -> {
+            List<MemberDescriptor> memberDescriptors = timeIt(() -> {
                 return cachedASMReflector.reflect(fqcn);
             });
             memberDescriptors.forEach(m -> System.out.println(m.getDisplayDeclaration()));

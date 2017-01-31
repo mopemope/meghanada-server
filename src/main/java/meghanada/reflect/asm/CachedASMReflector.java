@@ -379,8 +379,8 @@ public class CachedASMReflector {
 
         // ClassIndex
         final GlobalCache globalCache = GlobalCache.getInstance();
-        globalCache.writeCacheToFile(outFile1, classIndex);
-        globalCache.writeCacheToFile(outFile2, members);
+        globalCache.asyncWriteCache(outFile1, classIndex);
+        globalCache.asyncWriteCache(outFile2, members);
     }
 
     private ClassIndex readClassIndexFromCache(final String fqcn, final File root) throws IOException {

@@ -755,7 +755,7 @@ public abstract class Project {
 
     private synchronized void writeCaller() {
         final File callerFile = FileUtils.getSettingFile(JavaAnalyzer.CALLER);
-        GlobalCache.getInstance().writeCacheToFile(callerFile, callerMap);
+        GlobalCache.getInstance().asyncWriteCache(callerFile, callerMap);
     }
 
     synchronized void loadCaller() {

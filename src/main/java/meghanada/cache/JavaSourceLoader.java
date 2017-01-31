@@ -43,7 +43,7 @@ public class JavaSourceLoader extends CacheLoader<File, Source> implements Remov
         file.getParentFile().mkdirs();
 
         log.debug("write file:{}", file);
-        GlobalCache.getInstance().writeCacheToFile(file, source);
+        GlobalCache.getInstance().asyncWriteCache(file, source);
         return source;
     }
 

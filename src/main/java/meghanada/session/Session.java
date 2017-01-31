@@ -1,8 +1,5 @@
 package meghanada.session;
 
-import com.esotericsoftware.kryo.Kryo;
-import com.esotericsoftware.kryo.io.Input;
-import com.esotericsoftware.kryo.io.Output;
 import meghanada.analyze.CompileResult;
 import meghanada.analyze.Source;
 import meghanada.cache.GlobalCache;
@@ -24,9 +21,10 @@ import meghanada.utils.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.message.EntryMessage;
-import org.objenesis.strategy.StdInstantiatorStrategy;
 
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -186,26 +184,13 @@ public class Session {
     }
 
     private static void writeProjectCache(final Project project, final File cacheFile) {
-        final Kryo kryo = new Kryo();
-        try (final Output out = new Output(new FileOutputStream(cacheFile))) {
-            kryo.writeClassAndObject(out, project);
-        } catch (FileNotFoundException e) {
-            throw new UncheckedIOException(e);
-        }
+        final GlobalCache globalCache = GlobalCache.getInstance();
+        globalCache.asyncWriteCache(cacheFile, project);
     }
 
     private static Project readProjectCache(final File cacheFile) throws IOException {
-        final Kryo kryo = new Kryo();
-        kryo.setInstantiatorStrategy(new StdInstantiatorStrategy());
-
-        try (final Input input = new Input(new FileInputStream(cacheFile))) {
-            final Object o = kryo.readClassAndObject(input);
-            log.debug("load project={}", o);
-            if (o != null) {
-                return (Project) o;
-            }
-            return null;
-        }
+        final GlobalCache globalCache = GlobalCache.getInstance();
+        return globalCache.readCacheFromFile(cacheFile, Project.class);
     }
 
     public boolean clearCache() throws IOException {

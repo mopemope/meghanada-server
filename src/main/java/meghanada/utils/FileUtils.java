@@ -179,7 +179,7 @@ public final class FileUtils {
 
     public static synchronized void writeMapSetting(final Map<String, String> map, final File outFile) throws IOException {
         final GlobalCache globalCache = GlobalCache.getInstance();
-        globalCache.writeCacheToFile(outFile, map);
+        globalCache.asyncWriteCache(outFile, map);
     }
 
     public static String toHashedPath(final File f, String suffix) throws IOException {

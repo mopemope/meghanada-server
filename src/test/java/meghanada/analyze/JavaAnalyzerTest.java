@@ -19,7 +19,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import static meghanada.config.Config.timeIt;
-import static meghanada.config.Config.traceIt;
 
 public class JavaAnalyzerTest extends GradleTestBase {
 
@@ -372,7 +371,7 @@ public class JavaAnalyzerTest extends GradleTestBase {
 
         final String tmp = System.getProperty("java.io.tmpdir");
 
-        traceIt(() -> {
+        timeIt(() -> {
             final CompileResult compileResult = analyzer.analyzeAndCompile(files, cp, tmp);
             compileResult.getSources().values().forEach(Source::dump);
             return compileResult;

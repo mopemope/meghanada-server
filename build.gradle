@@ -93,6 +93,7 @@ dependencies {
     compile 'junit:junit:4.12'
     compile 'org.jboss.forge.roaster:roaster-api:2.19.4.Final'
     compile 'org.jboss.forge.roaster:roaster-jdt:2.19.4.Final'
+    compile 'com.github.luben:zstd-jni:1.1.2'
 }
 
 test {

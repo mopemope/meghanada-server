@@ -10,7 +10,8 @@ import org.junit.Test;
 import java.io.File;
 import java.util.Optional;
 
-import static meghanada.config.Config.*;
+import static meghanada.config.Config.debugIt;
+import static meghanada.config.Config.timeIt;
 import static org.junit.Assert.assertEquals;
 
 public class JavaVariableCompletionTest extends GradleTestBase {
@@ -55,7 +56,7 @@ public class JavaVariableCompletionTest extends GradleTestBase {
     @Test
     public void createLocalVariable2() throws Exception {
         JavaVariableCompletion completion = getCompilation();
-        Optional<LocalVariable> olv = traceIt(() -> {
+        Optional<LocalVariable> olv = timeIt(() -> {
             final Range range = new Range(0, 0, 0, 0);
             final Range nameRange = new Range(0, 0, 0, 0);
             final MethodCall mc = new MethodCall("file", "getFileName", 0, nameRange, range);

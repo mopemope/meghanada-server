@@ -5,6 +5,8 @@ import com.esotericsoftware.kryo.io.ByteBufferInput;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.pool.KryoPool;
+import com.github.luben.zstd.ZstdInputStream;
+import com.github.luben.zstd.ZstdOutputStream;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.LoadingCache;
 import com.google.common.util.concurrent.UncheckedExecutionException;
@@ -20,10 +22,7 @@ import java.io.*;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.zip.DeflaterOutputStream;
-import java.util.zip.InflaterInputStream;
+import java.util.concurrent.*;
 
 public class GlobalCache {
 
@@ -33,6 +32,8 @@ public class GlobalCache {
     private Map<File, LoadingCache<File, Source>> sourceCaches;
     private LoadingCache<String, List<MemberDescriptor>> memberCache;
     private boolean isTerminated = false;
+    private ExecutorService executorService = Executors.newCachedThreadPool();
+    private BlockingQueue<CacheRequest> blockingQueue = new LinkedBlockingQueue<>();
 
     private GlobalCache() {
         this.sourceCaches = new HashMap<>();
@@ -43,6 +44,19 @@ public class GlobalCache {
             kryo.register(MethodParameterNames.class);
             return kryo;
         }).softReferences().build();
+
+        executorService.submit(() -> {
+            while (!this.isTerminated) {
+                try {
+                    final CacheRequest cr = blockingQueue.take();
+                    if (cr != null) {
+                        this.writeCacheToFile(cr.getFile(), cr.getTarget());
+                    }
+                } catch (Exception e) {
+                    log.catching(e);
+                }
+            }
+        });
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             try {
@@ -88,6 +102,15 @@ public class GlobalCache {
         this.memberCache.put(fqcn, memberDescriptors);
     }
 
+    public void asyncWriteCache(final File f, final Object o) {
+        final CacheRequest cacheRequest = new CacheRequest(f, o);
+        try {
+            this.blockingQueue.put(cacheRequest);
+        } catch (InterruptedException e) {
+            log.catching(e);
+        }
+    }
+
     public void invalidateMemberDescriptors(final String fqcn) {
         this.memberCache.invalidate(fqcn);
     }
@@ -125,7 +148,7 @@ public class GlobalCache {
 
     public <T> T readCacheFromFile(final File file, final Class<T> type) {
         return getKryoPool().run(kryo -> {
-            try (final Input input = new Input(new InflaterInputStream(new ByteBufferInput(new FileInputStream(file), 8192)))) {
+            try (final Input input = new Input(new ZstdInputStream(new ByteBufferInput(new FileInputStream(file), 8192)))) {
                 return kryo.readObject(input, type);
             } catch (Exception e) {
                 file.delete();
@@ -144,9 +167,10 @@ public class GlobalCache {
         });
     }
 
-    public void writeCacheToFile(final File file, final Object obj) {
+    private void writeCacheToFile(final File file, final Object obj) {
         this.getKryoPool().run(kryo -> {
-            try (final Output output = new Output(new DeflaterOutputStream(new BufferedOutputStream(new FileOutputStream(file), 8192)))) {
+            try (final Output output = new Output(new ZstdOutputStream(new BufferedOutputStream(new FileOutputStream
+                    (file), 8192), 3))) {
                 kryo.writeObject(output, obj);
                 return obj;
             } catch (Exception e) {
@@ -175,5 +199,6 @@ public class GlobalCache {
         });
 
         this.isTerminated = true;
+        this.executorService.shutdown();
     }
 }
