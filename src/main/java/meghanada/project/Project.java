@@ -816,6 +816,7 @@ public abstract class Project {
         properties.setProperty(DefaultCodeFormatterConstants.FORMATTER_LINE_SPLIT, "120");
         properties.setProperty(DefaultCodeFormatterConstants.FORMATTER_TAB_CHAR, "space");
         properties.setProperty(DefaultCodeFormatterConstants.FORMATTER_TAB_SIZE, "4");
+        properties.setProperty(DefaultCodeFormatterConstants.FORMATTER_JOIN_WRAPPED_LINES, "false");
         return properties;
     }
 
