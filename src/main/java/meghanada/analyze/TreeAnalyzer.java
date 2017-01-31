@@ -359,10 +359,34 @@ public class TreeAnalyzer {
 
             final JCTree.JCMemberReference memberReference = (JCTree.JCMemberReference) tree;
             final JCTree.JCExpression expression = memberReference.getQualifierExpression();
+            final com.sun.tools.javac.util.Name name = memberReference.getName();
+            final String methodName = name.toString();
+
             if (expression != null) {
                 this.analyzeParsedTree(expression, src, endPosTable);
+                final Symbol sym = memberReference.sym;
+                if (sym != null) {
+                    // method invoke
+                    final int start = expression.getEndPosition(endPosTable) + 2;
+                    final Range range = Range.create(src, start, start + methodName.length());
+                    final String s = memberReference.toString();
+                    final MethodCall methodCall = new MethodCall(s, methodName, preferredPos + 1, range, range);
+                    final Symbol owner = sym.owner;
+                    if (owner.type != null) {
+                        this.toFQCNString(owner.type).ifPresent(fqcn -> {
+                            methodCall.declaringClass = this.markFQCN(src, fqcn);
+                        });
+                    }
+                    if (sym.type != null) {
+                        this.toFQCNString(sym.type).ifPresent(fqcn -> {
+                            methodCall.returnType = this.markFQCN(src, fqcn);
+                        });
+                    }
+                    src.getCurrentScope().ifPresent(scope -> {
+                        scope.addMethodCall(methodCall);
+                    });
+                }
             }
-            // TODO more ?
 
         } else if (tree instanceof JCTree.JCWhileLoop) {
 
