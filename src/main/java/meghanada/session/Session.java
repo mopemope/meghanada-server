@@ -435,32 +435,16 @@ public class Session {
     public synchronized CompileResult compileFile(final String path) throws IOException {
         // java file only
         final File file = normalize(path);
-        final CompileResult result = currentProject.compileFileNoCache(file, true);
-        this.invalidSouceCache(result);
-        return result;
+        return currentProject.compileFileNoCache(file, true);
     }
 
     public synchronized CompileResult compileProject() throws IOException {
         final Project project = this.getCurrentProject();
         CompileResult result = project.compileJava(false);
-        this.invalidSouceCache(result);
         if (result.isSuccess()) {
             result = project.compileTestJava(false);
-            this.invalidSouceCache(result);
         }
         return result;
-    }
-
-    private void invalidSouceCache(final CompileResult compileResult) {
-        final GlobalCache globalCache = GlobalCache.getInstance();
-
-        compileResult.getSources().forEach((f, s) -> {
-            try {
-                globalCache.invalidateSource(getCurrentProject(), f);
-            } catch (Exception e) {
-                log.catching(e);
-            }
-        });
     }
 
     public Collection<File> getDependentJars() {
