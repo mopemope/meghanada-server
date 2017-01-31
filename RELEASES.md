@@ -1,8 +1,11 @@
-# Version 0.5.0 (2017-01-XX)
+# Version 0.5.0 (2017-01-31)
 
 ## Highlights
 
 * Add code format command.
+* Improve incremental build.
+* Fix method reference bugs.
+* Use zstd compression.
 
 # Version 0.4.0 (2017-01-25)
 
