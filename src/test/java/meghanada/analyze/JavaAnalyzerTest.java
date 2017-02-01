@@ -61,6 +61,7 @@ public class JavaAnalyzerTest extends GradleTestBase {
 
         List<File> files = new ArrayList<>();
         final File file = new File("./src/test/java/meghanada/Gen1.java").getCanonicalFile();
+        assert file.exists();
         files.add(file);
 
         final String tmp = System.getProperty("java.io.tmpdir");
@@ -83,6 +84,7 @@ public class JavaAnalyzerTest extends GradleTestBase {
 
         List<File> files = new ArrayList<>();
         final File file = new File("./src/test/java/meghanada/Gen2.java").getCanonicalFile();
+        assert file.exists();
         files.add(file);
 
         final String tmp = System.getProperty("java.io.tmpdir");
@@ -105,6 +107,7 @@ public class JavaAnalyzerTest extends GradleTestBase {
 
         List<File> files = new ArrayList<>();
         final File file = new File("./src/test/java/meghanada/Gen3.java").getCanonicalFile();
+        assert file.exists();
         files.add(file);
 
         final String tmp = System.getProperty("java.io.tmpdir");
@@ -127,6 +130,7 @@ public class JavaAnalyzerTest extends GradleTestBase {
 
         List<File> files = new ArrayList<>();
         final File file = new File("./src/test/java/meghanada/Gen4.java").getCanonicalFile();
+        assert file.exists();
         files.add(file);
 
         final String tmp = System.getProperty("java.io.tmpdir");
@@ -149,6 +153,7 @@ public class JavaAnalyzerTest extends GradleTestBase {
 
         List<File> files = new ArrayList<>();
         final File file = new File("./src/test/java/meghanada/Gen5.java").getCanonicalFile();
+        assert file.exists();
         files.add(file);
 
         final String tmp = System.getProperty("java.io.tmpdir");
@@ -171,6 +176,7 @@ public class JavaAnalyzerTest extends GradleTestBase {
 
         List<File> files = new ArrayList<>();
         final File file = new File("./src/test/java/meghanada/Gen6.java").getCanonicalFile();
+        assert file.exists();
         files.add(file);
 
         final String tmp = System.getProperty("java.io.tmpdir");
@@ -193,6 +199,7 @@ public class JavaAnalyzerTest extends GradleTestBase {
 
         List<File> files = new ArrayList<>();
         final File file = new File("./src/test/java/meghanada/Gen7.java").getCanonicalFile();
+        assert file.exists();
         files.add(file);
 
         final String tmp = System.getProperty("java.io.tmpdir");
@@ -237,6 +244,7 @@ public class JavaAnalyzerTest extends GradleTestBase {
 
         List<File> files = new ArrayList<>();
         final File file = new File("./src/test/java/meghanada/Gen9.java").getCanonicalFile();
+        assert file.exists();
         files.add(file);
 
         final String tmp = System.getProperty("java.io.tmpdir");
@@ -259,6 +267,7 @@ public class JavaAnalyzerTest extends GradleTestBase {
 
         List<File> files = new ArrayList<>();
         final File file = new File("./src/test/java/meghanada/Gen10.java").getCanonicalFile();
+        assert file.exists();
         files.add(file);
 
         final String tmp = System.getProperty("java.io.tmpdir");
@@ -281,6 +290,7 @@ public class JavaAnalyzerTest extends GradleTestBase {
 
         List<File> files = new ArrayList<>();
         final File file = new File("./src/test/java/meghanada/Gen11.java").getCanonicalFile();
+        assert file.exists();
         files.add(file);
 
         final String tmp = System.getProperty("java.io.tmpdir");
@@ -302,6 +312,7 @@ public class JavaAnalyzerTest extends GradleTestBase {
         final String cp = getClasspath();
         List<File> files = new ArrayList<>();
         final File file = new File("./src/test/java/meghanada/GenArray1.java").getCanonicalFile();
+        assert file.exists();
         files.add(file);
 
         final String tmp = System.getProperty("java.io.tmpdir");
@@ -323,6 +334,7 @@ public class JavaAnalyzerTest extends GradleTestBase {
         final String cp = getClasspath();
         List<File> files = new ArrayList<>();
         final File file = new File("./src/test/java/meghanada/L1.java").getCanonicalFile();
+        assert file.exists();
         files.add(file);
 
         final String tmp = System.getProperty("java.io.tmpdir");
@@ -345,6 +357,7 @@ public class JavaAnalyzerTest extends GradleTestBase {
 
         List<File> files = new ArrayList<>();
         final File file = new File("./src/test/java/meghanada/SelfRef1.java").getCanonicalFile();
+        assert file.exists();
         files.add(file);
 
         final String tmp = System.getProperty("java.io.tmpdir");
@@ -367,6 +380,7 @@ public class JavaAnalyzerTest extends GradleTestBase {
 
         List<File> files = new ArrayList<>();
         final File file = new File("./src/main/java/meghanada/server/CommandHandler.java").getCanonicalFile();
+        assert file.exists();
         files.add(file);
 
         final String tmp = System.getProperty("java.io.tmpdir");
@@ -384,11 +398,14 @@ public class JavaAnalyzerTest extends GradleTestBase {
         final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8", project.getSourceDirectories());
         final String cp = getClasspath();
 
-        List<File> files = Files.walk(new File("./src/main/java").toPath(), FileVisitOption.FOLLOW_LINKS)
+        List<File> files = Files.walk(new File("./src/main/java").getCanonicalFile().toPath(),
+                FileVisitOption.FOLLOW_LINKS)
                 .filter(path -> path.toFile().isFile())
                 .map(Path::toFile)
                 .collect(Collectors.toList());
-        List<File> testFiles = Files.walk(new File("./src/test/java").toPath(), FileVisitOption.FOLLOW_LINKS)
+        
+        List<File> testFiles = Files.walk(new File("./src/test/java").getCanonicalFile().toPath(),
+                FileVisitOption.FOLLOW_LINKS)
                 .filter(path -> path.toFile().isFile())
                 .map(Path::toFile)
                 .collect(Collectors.toList());

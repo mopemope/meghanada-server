@@ -6,6 +6,7 @@ import meghanada.project.Project;
 import meghanada.project.gradle.GradleProject;
 import meghanada.reflect.asm.CachedASMReflector;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.File;
@@ -54,6 +55,7 @@ public class SourceTest extends GradleTestBase {
         return project.getTestOutputDirectory();
     }
 
+    @Ignore
     @Test
     public void testOptimizeImports1() throws Exception {
         final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8", project.getSourceDirectories());

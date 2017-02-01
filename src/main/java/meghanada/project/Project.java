@@ -24,8 +24,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
@@ -34,8 +32,9 @@ import java.util.stream.Collectors;
 public abstract class Project {
 
     public static final String DEFAULT_PATH = File.separator + "src" + File.separator + "main" + File.separator;
-    public static final String FORMETTER_FILE_KEY = "meghanada.formatter.file";
+    public static final String FORMATTER_FILE_KEY = "meghanada.formatter.file";
     public static final String PROJECT_ROOT_KEY = "project.root";
+    public final static Map<String, Project> loadedProject = new HashMap<>();
     private static final Logger log = LogManager.getLogger(Project.class);
     private static final String JAVA_HOME = "java-home";
     private static final String JAVA_VERSION = "java-version";
@@ -52,10 +51,9 @@ public abstract class Project {
     private static final String INCLUDE_FILE = "include-file";
     private static final String EXCLUDE_FILE = "exclude-file";
     private static final String FORMATTER_FILE = "meghanadaFormatter.properties";
-    public static Map<String, Project> loadedProject = new HashMap<>();
-
-    protected File projectRoot;
-    protected Set<ProjectDependency> dependencies = new HashSet<>();
+    protected final File projectRoot;
+    protected final Set<ProjectDependency> dependencies = new HashSet<>();
+    protected final Set<Project> dependencyProjects = new HashSet<>();
     protected Set<File> sources = new HashSet<>();
     protected Set<File> resources = new HashSet<>();
     protected File output;
@@ -65,22 +63,22 @@ public abstract class Project {
     protected String compileSource = "1.8";
     protected String compileTarget = "1.8";
     protected String id;
-    protected Set<Project> dependencyProjects = new HashSet<>();
     protected Map<String, Set<String>> callerMap = new ConcurrentHashMap<>();
-
+    protected boolean isAndroidProject;
+    protected String name;
+    protected String cachedClasspath;
+    protected String cachedAllClasspath;
     private JavaAnalyzer javaAnalyzer;
-    private String cachedClasspath;
-    private String cachedAllClasspath;
-
     private String[] prevTest;
     private Properties formatProperties;
 
-    public Project(File projectRoot) throws IOException {
+    public Project(final File projectRoot) throws IOException {
         this.projectRoot = projectRoot;
+        this.name = projectRoot.getName();
         System.setProperty(PROJECT_ROOT_KEY, this.projectRoot.getCanonicalPath());
         final File file = new File(projectRoot, FORMATTER_FILE);
         if (file.exists()) {
-            System.setProperty(FORMETTER_FILE_KEY, file.getCanonicalPath());
+            System.setProperty(FORMATTER_FILE_KEY, file.getCanonicalPath());
         }
         final Config config = Config.load();
         final boolean clearCacheOnStart = config.clearCacheOnStart();
@@ -132,8 +130,16 @@ public abstract class Project {
         return compileSource;
     }
 
+    public void setCompileSource(String compileSource) {
+        this.compileSource = compileSource;
+    }
+
     public String getCompileTarget() {
         return compileTarget;
+    }
+
+    public void setCompileTarget(String compileTarget) {
+        this.compileTarget = compileTarget;
     }
 
     private JavaAnalyzer getJavaAnalyzer() {
@@ -200,28 +206,13 @@ public abstract class Project {
         }
     }
 
-    private List<File> collectJavaFiles(Set<File> sourceDirs) throws IOException {
+    private List<File> collectJavaFiles(Set<File> sourceDirs) {
         return sourceDirs.parallelStream()
                 .filter(File::exists)
-                .map(this::collectJavaFiles)
+                .map(root -> FileUtils.collectFiles(root, ".java"))
                 .flatMap(Collection::parallelStream)
-                .filter(FileUtils::filterFile)
+//                .filter(FileUtils::filterFile)
                 .collect(Collectors.toList());
-    }
-
-    private List<File> collectJavaFiles(File root) {
-        if (!root.exists()) {
-            return Collections.emptyList();
-        }
-        try {
-            return Files.walk(root.toPath())
-                    .map(Path::toFile)
-                    .filter(FileUtils::isJavaFile)
-                    .collect(Collectors.toList());
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
-
     }
 
     public CompileResult compileJava(boolean force) throws IOException {
@@ -469,7 +460,7 @@ public abstract class Project {
         return projectRoot;
     }
 
-    protected File normalize(String src) {
+    public File normalize(String src) {
         File file = new File(src);
         if (!file.isAbsolute()) {
             file = new File(this.projectRoot, src);
@@ -827,7 +818,7 @@ public abstract class Project {
     }
 
     private Properties readFormatPropertiesFromFile() {
-        final String val = System.getProperty(FORMETTER_FILE_KEY);
+        final String val = System.getProperty(FORMATTER_FILE_KEY);
         if (val != null) {
             final File file = new File(val);
             try {
@@ -853,5 +844,62 @@ public abstract class Project {
 
         this.formatProperties = properties;
         return this.formatProperties;
+    }
+
+    public File getOutput() {
+        return output;
+    }
+
+    public void setOutput(File output) {
+        this.output = output;
+    }
+
+    public Set<File> getSources() {
+        return sources;
+    }
+
+    public void setSources(Set<File> sources) {
+        this.sources = sources;
+    }
+
+    public Set<File> getResources() {
+        return resources;
+    }
+
+    public void setResources(Set<File> resources) {
+        this.resources = resources;
+    }
+
+    public Set<File> getTestSources() {
+        return testSources;
+    }
+
+    public void setTestSources(Set<File> testSources) {
+        this.testSources = testSources;
+    }
+
+    public Set<File> getTestResources() {
+        return testResources;
+    }
+
+    public void setTestResources(Set<File> testResources) {
+        this.testResources = testResources;
+    }
+
+    public File getTestOutput() {
+        return testOutput;
+    }
+
+    public void setTestOutput(File testOutput) {
+        this.testOutput = testOutput;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void resetCachedClasspath() {
+        this.cachedClasspath = null;
+        this.cachedAllClasspath = null;
     }
 }

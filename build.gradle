@@ -38,6 +38,7 @@ repositories {
     maven {
         url 'http://repo.gradle.org/gradle/libs-releases-local'
     }
+    jcenter()
 }
 
 configurations.errorprone {
@@ -94,6 +95,7 @@ dependencies {
     compile 'org.jboss.forge.roaster:roaster-api:2.19.4.Final'
     compile 'org.jboss.forge.roaster:roaster-jdt:2.19.4.Final'
     compile 'com.github.luben:zstd-jni:1.1.2'
+    compile 'com.android.tools.build:gradle:2.2.3'
 }
 
 test {

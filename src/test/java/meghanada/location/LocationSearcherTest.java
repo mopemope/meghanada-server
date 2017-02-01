@@ -32,7 +32,9 @@ public class LocationSearcherTest extends GradleTestBase {
 
     @Test
     public void testJumpVariable1() throws Exception {
-        File f = new File("./src/main/java/meghanada/session/Session.java");
+        File f = new File("./src/main/java/meghanada/session/Session.java").getCanonicalFile();
+        assert f.exists();
+
         LocationSearcher locationSearcher = getSearcher();
         {
             Location result = debugIt(() -> {
@@ -46,7 +48,9 @@ public class LocationSearcherTest extends GradleTestBase {
 
     @Test
     public void testJumpParamVariable1() throws Exception {
-        File f = new File("./src/main/java/meghanada/session/Session.java");
+        File f = new File("./src/main/java/meghanada/session/Session.java").getCanonicalFile();
+        assert f.exists();
+
         LocationSearcher locationSearcher = getSearcher();
         {
             //     private static Project findProject(File base) throws IOException
@@ -59,7 +63,9 @@ public class LocationSearcherTest extends GradleTestBase {
 
     @Test
     public void testJumpField1() throws Exception {
-        File f = new File("./src/main/java/meghanada/session/Session.java");
+        File f = new File("./src/main/java/meghanada/session/Session.java").getCanonicalFile();
+        assert f.exists();
+
         LocationSearcher locationSearcher = getSearcher();
         // Set<File> sources = this.currentProject.getSourceDirectories();
         Location result = timeIt(() -> {
@@ -72,7 +78,9 @@ public class LocationSearcherTest extends GradleTestBase {
 
     @Test
     public void testJumpMethod1() throws Exception {
-        File f = new File("./src/main/java/meghanada/session/Session.java");
+        File f = new File("./src/main/java/meghanada/session/Session.java").getCanonicalFile();
+        assert f.exists();
+
         LocationSearcher locationSearcher = getSearcher();
         Location result = timeIt(() -> {
             return locationSearcher.searchDeclaration(f, 399, 31, "parseJavaSource");
@@ -85,7 +93,9 @@ public class LocationSearcherTest extends GradleTestBase {
 
     @Test
     public void testJumpMethod2() throws Exception {
-        File f = new File("./src/main/java/meghanada/session/Session.java");
+        File f = new File("./src/main/java/meghanada/session/Session.java").getCanonicalFile();
+        assert f.exists();
+
         LocationSearcher locationSearcher = getSearcher();
         {
             // return source.searchMissingImport();
@@ -99,7 +109,9 @@ public class LocationSearcherTest extends GradleTestBase {
 
     @Test
     public void testJumpClass1() throws Exception {
-        File f = new File("./src/main/java/meghanada/session/Session.java");
+        File f = new File("./src/main/java/meghanada/session/Session.java").getCanonicalFile();
+        assert f.exists();
+
         LocationSearcher searcher = getSearcher();
         {
             Location result = timeIt(() -> searcher.searchDeclaration(f, 372, 15, "Source"));
@@ -112,7 +124,9 @@ public class LocationSearcherTest extends GradleTestBase {
 
     @Test
     public void testJumpClass2() throws Exception {
-        File f = new File("./src/main/java/meghanada/reflect/asm/ASMReflector.java");
+        File f = new File("./src/main/java/meghanada/reflect/asm/ASMReflector.java").getCanonicalFile();
+        assert f.exists();
+
         LocationSearcher locationSearcher = getSearcher();
         {
             Location result = locationSearcher.searchDeclaration(f, 199, 20, "ClassAnalyzeVisitor");

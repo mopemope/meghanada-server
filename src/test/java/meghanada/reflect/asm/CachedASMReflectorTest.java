@@ -42,6 +42,7 @@ public class CachedASMReflectorTest extends GradleTestBase {
         assertTrue(9055 <= cachedASMReflector.getGlobalClassIndex().size());
     }
 
+    @Ignore
     @Test
     public void testSearchClasses() throws Exception {
         CachedASMReflector cachedASMReflector = CachedASMReflector.getInstance();
@@ -404,7 +405,7 @@ public class CachedASMReflectorTest extends GradleTestBase {
     @org.junit.Test
     public void testCreateCache() throws Exception {
         CachedASMReflector reflector = CachedASMReflector.getInstance();
-        File root = new File("/tmp/.meghanada/cache");
+        File root = new File("/tmp/.meghanada/cache").getCanonicalFile();
         root.mkdirs();
 
         Stopwatch stopwatch = Stopwatch.createStarted();

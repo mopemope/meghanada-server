@@ -12,7 +12,9 @@ import static org.junit.Assert.assertEquals;
 public class ConfigTest {
 
     private String getProjectRoot() throws IOException {
-        File f = new File("./");
+        File f = new File("./").getCanonicalFile();
+        assert f.exists();
+
         return f.getCanonicalPath();
     }
 

@@ -66,6 +66,22 @@ public final class FileUtils {
         return list;
     }
 
+    public static List<File> collectFiles(final File root, final String ext) {
+        if (!root.exists()) {
+            return Collections.emptyList();
+        }
+        try {
+            return Files.walk(root.toPath())
+                    .map(Path::toFile)
+                    .filter(file -> file.isFile() && file.getName().endsWith(ext))
+                    .collect(Collectors.toList());
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+
+    }
+
+
     public static void deleteFile(final File root, final boolean deleteRoot) throws IOException {
         if (!root.exists()) {
             return;

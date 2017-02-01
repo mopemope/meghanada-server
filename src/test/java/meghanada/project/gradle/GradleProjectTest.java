@@ -7,7 +7,6 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.io.File;
-import java.util.Map;
 import java.util.Set;
 
 import static meghanada.config.Config.debugIt;
@@ -16,21 +15,13 @@ import static meghanada.config.Config.timeIt;
 public class GradleProjectTest {
 
     private Project project;
-
-    private void printEnv() {
-        Map<String, String> env = System.getenv();
-
-        for (Map.Entry<String, String> envEntry : env.entrySet()) {
-            System.out.println(envEntry);
-        }
-    }
-
+    
     @Before
     public void setUp() throws Exception {
         // System.setProperty("log-level", "DEBUG");
         // printEnv();
         if (this.project == null) {
-            this.project = new GradleProject(new File("./"));
+            this.project = new GradleProject(new File("./").getCanonicalFile());
         }
     }
 
@@ -61,10 +52,12 @@ public class GradleProjectTest {
 
     @Test
     public void testCompile1() throws Exception {
-        project.parseProject();
         final CompileResult compileResult = timeIt(() -> {
-            return this.project.compileJava(false);
+            project.parseProject();
+            this.project.compileJava(false);
+            return this.project.compileTestJava(false);
         });
+
         if (!compileResult.isSuccess()) {
             System.out.println(compileResult.getDiagnosticsSummary());
         }

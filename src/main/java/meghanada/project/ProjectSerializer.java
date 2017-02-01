@@ -103,6 +103,10 @@ public class ProjectSerializer extends Serializer<Project> {
             for (final Project p : dependencyProjects) {
                 kryo.writeClassAndObject(output, p);
             }
+            // protected boolean isAndroidProject;
+            kryo.writeClassAndObject(output, project.isAndroidProject);
+            // protected String name;
+            kryo.writeClassAndObject(output, project.name);
 
         } catch (IOException ex) {
             throw new UncheckedIOException(ex);
@@ -219,6 +223,8 @@ public class ProjectSerializer extends Serializer<Project> {
                     }
                 }
             }
+            project.isAndroidProject = input.readBoolean();
+            project.name = input.readString();
 
             project.loadCaller();
             return project;

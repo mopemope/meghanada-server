@@ -27,7 +27,8 @@ public class JavaCompletionTest extends GradleTestBase {
     @Test
     public void testCompletion1() throws Exception {
         JavaCompletion completion = getCompletion();
-        File file = new File("./src/test/java/meghanada/TopClass.java");
+        File file = new File("./src/test/java/meghanada/TopClass.java").getCanonicalFile();
+        assert file.exists();
         final Collection<? extends CandidateUnit> units = debugIt(() -> {
             return completion.completionAt(file, 8, 9, "*this");
         });
@@ -38,7 +39,8 @@ public class JavaCompletionTest extends GradleTestBase {
     @Test
     public void testCompletion2() throws Exception {
         JavaCompletion completion = getCompletion();
-        File file = new File("./src/test/java/meghanada/TopClass.java");
+        File file = new File("./src/test/java/meghanada/TopClass.java").getCanonicalFile();
+        assert file.exists();
         final Collection<? extends CandidateUnit> units = debugIt(() -> {
             return completion.completionAt(file, 14, 9, "*this");
         });
@@ -49,7 +51,9 @@ public class JavaCompletionTest extends GradleTestBase {
     @Test
     public void testCompletion3() throws Exception {
         JavaCompletion completion = getCompletion();
-        File file = new File("./src/test/java/meghanada/TopClass.java");
+        File file = new File("./src/test/java/meghanada/TopClass.java").getCanonicalFile();
+        assert file.exists();
+
         final Collection<? extends CandidateUnit> units = debugIt(() -> {
             return completion.completionAt(file, 8, 9, "fo");
         });
@@ -60,18 +64,21 @@ public class JavaCompletionTest extends GradleTestBase {
     @Test
     public void testCompletion4() throws Exception {
         JavaCompletion completion = getCompletion();
-        File file = new File("./src/test/java/meghanada/TopClass.java");
+        File file = new File("./src/test/java/meghanada/TopClass.java").getCanonicalFile();
+        assert file.exists();
+
         final Collection<? extends CandidateUnit> units = debugIt(() -> {
             return completion.completionAt(file, 8, 9, "@Test");
         });
         units.forEach(a -> System.out.println(a.getDeclaration()));
-        assertEquals(units.size(), 18);
+        assertEquals(22, units.size());
     }
 
     @Test
     public void testCompletion5() throws Exception {
         JavaCompletion completion = getCompletion();
-        File file = new File("./src/main/java/meghanada/analyze/ExpressionScope.java");
+        File file = new File("./src/main/java/meghanada/analyze/ExpressionScope.java").getCanonicalFile();
+        assert file.exists();
         final Collection<? extends CandidateUnit> staticLog = debugIt(() -> {
             return completion.completionAt(file, 17, 4, "lo");
         });
@@ -88,7 +95,8 @@ public class JavaCompletionTest extends GradleTestBase {
     @Test
     public void testCompletion6() throws Exception {
         JavaCompletion completion = getCompletion();
-        File file = new File("./src/main/java/meghanada/analyze/ExpressionScope.java");
+        File file = new File("./src/main/java/meghanada/analyze/ExpressionScope.java").getCanonicalFile();
+        assert file.exists();
         final Collection<? extends CandidateUnit> logMethod = debugIt(() -> {
             return completion.completionAt(file, 17, 4, "*log#");
         });
@@ -100,7 +108,9 @@ public class JavaCompletionTest extends GradleTestBase {
     @Test
     public void testCompletion7() throws Exception {
         JavaCompletion completion = getCompletion();
-        File file = new File("./src/main/java/meghanada/analyze/ExpressionScope.java");
+        File file = new File("./src/main/java/meghanada/analyze/ExpressionScope.java").getCanonicalFile();
+        assert file.exists();
+
         final Collection<? extends CandidateUnit> logMethod = debugIt(() -> {
             return completion.completionAt(file, 17, 4, "*method:java.lang.System#");
         });
@@ -112,7 +122,9 @@ public class JavaCompletionTest extends GradleTestBase {
     @Test
     public void testCompletion8() throws Exception {
         JavaCompletion completion = getCompletion();
-        File file = new File("./src/main/java/meghanada/project/gradle/GradleProject.java");
+        File file = new File("./src/main/java/meghanada/project/gradle/GradleProject.java").getCanonicalFile();
+        assert file.exists();
+
         final Collection<? extends CandidateUnit> logMethod = debugIt(() -> {
             return completion.completionAt(file, 31, 4, "lo");
         });

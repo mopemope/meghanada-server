@@ -15,7 +15,8 @@ public class FileUtilsTest {
     @Test
     public void testMd5sum1() throws Exception {
         final String sum = timeIt(() -> {
-            return FileUtils.md5sum(new File("./src/main/java/meghanada/analyze/JavaAnalyzer.java"));
+            return FileUtils.md5sum(new File("./src/main/java/meghanada/analyze/JavaAnalyzer.java")
+                    .getCanonicalFile());
         });
         System.out.println(sum);
     }
@@ -24,7 +25,7 @@ public class FileUtilsTest {
     public void testMd5sum2() throws Exception {
         final String javaHome = System.getProperty("java.home");
         final String sum = timeIt(() -> {
-            return FileUtils.md5sum(new File(javaHome + "/lib/rt.jar"));
+            return FileUtils.md5sum(new File(javaHome + "/lib/rt.jar").getCanonicalFile());
         });
         System.out.println(sum);
     }
@@ -41,7 +42,9 @@ public class FileUtilsTest {
     @Test
     public void testToHashFile() throws Exception {
         final String res = timeIt(() -> {
-            return FileUtils.toHashedPath(new File("./src/main/java/meghanada/compiler/SimpleJavaCompiler.java"), ".sdat");
+            return FileUtils.toHashedPath(
+                    new File("./src/main/java/meghanada/compiler/SimpleJavaCompiler.java")
+                            .getCanonicalFile(), ".sdat");
         });
         System.out.println(res);
     }

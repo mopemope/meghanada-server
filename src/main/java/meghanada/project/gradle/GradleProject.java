@@ -1,7 +1,9 @@
 package meghanada.project.gradle;
 
+import com.android.builder.model.AndroidProject;
 import com.esotericsoftware.kryo.DefaultSerializer;
 import com.google.common.base.Joiner;
+import meghanada.analyze.CompileResult;
 import meghanada.config.Config;
 import meghanada.project.Project;
 import meghanada.project.ProjectDependency;
@@ -26,12 +28,12 @@ public class GradleProject extends Project {
     private final Map<String, File> projects = new HashMap<>();
     private List<String> lazyLoadModule = new ArrayList<>();
 
-    public GradleProject(File projectRoot) throws IOException {
+    public GradleProject(final File projectRoot) throws IOException {
         super(projectRoot);
-        this.rootProject = this.setRoot(projectRoot);
+        this.rootProject = this.searchRootProject(projectRoot);
     }
 
-    private File setRoot(File dir) throws IOException {
+    private File searchRootProject(File dir) throws IOException {
 
         File result = dir;
         dir = dir.getParentFile();
@@ -61,87 +63,33 @@ public class GradleProject extends Project {
 
     @Override
     public Project parseProject() throws ProjectParseException {
-        final ProjectConnection projectConnection = getProjectConnection();
+        final ProjectConnection connection = getProjectConnection();
         try {
-            final ModelBuilder<IdeaProject> ideaProjectModelBuilder = projectConnection.model(IdeaProject.class);
+            final ModelBuilder<IdeaProject> ideaProjectModelBuilder = connection.model(IdeaProject.class);
             final IdeaProject ideaProject = ideaProjectModelBuilder.get();
+            this.setCompileTarget(ideaProject);
 
-            final IdeaJavaLanguageSettings javaLanguageSettings = ideaProject.getJavaLanguageSettings();
-            try {
-                final String srcLevel = javaLanguageSettings.getLanguageLevel().toString();
-                final String targetLevel = javaLanguageSettings.getTargetBytecodeVersion().toString();
-                super.compileSource = srcLevel;
-                super.compileTarget = targetLevel;
-            } catch (UnsupportedMethodException e) {
-                // through
-                log.warn(e.getMessage());
-            }
             log.trace("load project main module name:{} projectRoot:{}", ideaProject.getName(), this.projectRoot);
 
             for (final IdeaModule ideaModule : ideaProject.getModules().getAll()) {
 
-                org.gradle.tooling.model.GradleProject gradleProject = ideaModule.getGradleProject();
+                final org.gradle.tooling.model.GradleProject gradleProject = ideaModule.getGradleProject();
+                final AndroidProject androidProject = AndroidSupport.getAndroidProject(this.rootProject, gradleProject);
                 final String projectName = gradleProject.getName();
                 final File moduleProjectRoot = gradleProject.getProjectDirectory();
                 log.trace("find project module name:{} projectRoot:{}", projectName, moduleProjectRoot);
 
                 if (moduleProjectRoot.equals(this.getProjectRoot())) {
-                    log.debug("find target project name:{} projectRoot:{}", projectName, projectRoot);
-
-                    if (this.output == null) {
-                        final String buildDir = gradleProject.getBuildDirectory().getCanonicalPath();
-                        String build = Joiner.on(File.separator).join(buildDir, "classes", "main");
-                        this.output = this.normalize(build);
+                    this.name = gradleProject.getPath();
+                    if (androidProject != null) {
+                        // parse android
+                        this.isAndroidProject = true;
+                        final AndroidSupport androidSupport = new AndroidSupport(this);
+                        androidSupport.parseAndroid(gradleProject, androidProject);
+                    } else {
+                        // normal
+                        this.parseIdeaModule(gradleProject, ideaModule);
                     }
-                    if (this.testOutput == null) {
-                        final String buildDir = gradleProject.getBuildDirectory().getCanonicalPath();
-                        String build = Joiner.on(File.separator).join(buildDir, "classes", "test");
-                        this.testOutput = this.normalize(build);
-                    }
-                    final Set<ProjectDependency> dependency = this.getDependency(ideaModule);
-                    final Map<String, Set<File>> sources = this.searchProjectSources(ideaModule);
-                    log.debug("{} sources {}", projectName, sources);
-
-                    this.sources.addAll(sources.get("sources"));
-                    this.resources.addAll(sources.get("resources"));
-                    this.testSources.addAll(sources.get("testSources"));
-                    this.testResources.addAll(sources.get("testResources"));
-                    this.dependencies.addAll(dependency);
-
-                    // merge other project
-                    if (this.sources.isEmpty()) {
-                        this.sources.add(new File("src/main/java"));
-                    }
-                    if (this.testSources.isEmpty()) {
-                        this.testSources.add(new File("src/test/java"));
-                    }
-
-                    if (this.output == null) {
-                        final String buildDir = new File(this.projectRoot, "build").getCanonicalPath();
-                        String build = Joiner.on(File.separator).join(buildDir, "classes", "main");
-                        this.output = this.normalize(build);
-                    }
-                    if (this.testOutput == null) {
-                        final String buildDir = new File(this.projectRoot, "build").getCanonicalPath();
-                        String build = Joiner.on(File.separator).join(buildDir, "classes", "test");
-                        this.testOutput = this.normalize(build);
-                    }
-
-                    log.debug("sources {}", this.sources);
-                    log.debug("resources {}", this.resources);
-                    log.debug("output {}", this.output);
-                    log.debug("test sources {}", this.testSources);
-                    log.debug("test resources {}", this.testResources);
-                    log.debug("test output {}", this.testOutput);
-
-                    for (final ProjectDependency projectDependency : this.getDependencies()) {
-                        log.debug("dependency {}", projectDependency);
-                    }
-
-                    if (this.sources.isEmpty()) {
-                        log.warn("target source is empty. please change working directory to sub project");
-                    }
-
                 } else {
                     log.trace("load sub module. name:{} projectRoot:{}", projectName, moduleProjectRoot);
                     this.projects.putIfAbsent(projectName, moduleProjectRoot);
@@ -163,11 +111,171 @@ public class GradleProject extends Project {
                     }
                 }
             }
+
             return this;
-        } catch (IOException e) {
+        } catch (Exception e) {
             throw new ProjectParseException(e);
         } finally {
-            projectConnection.close();
+            connection.close();
+        }
+    }
+
+    private void setCompileTarget(IdeaProject ideaProject) {
+        final IdeaJavaLanguageSettings javaLanguageSettings = ideaProject.getJavaLanguageSettings();
+        try {
+            final String srcLevel = javaLanguageSettings.getLanguageLevel().toString();
+            final String targetLevel = javaLanguageSettings.getTargetBytecodeVersion().toString();
+            super.compileSource = srcLevel;
+            super.compileTarget = targetLevel;
+        } catch (UnsupportedMethodException e) {
+            log.warn(e.getMessage());
+        }
+    }
+
+    private void parseIdeaModule(final org.gradle.tooling.model.GradleProject gradleProject, final IdeaModule ideaModule) throws IOException {
+        if (this.output == null) {
+            final String buildDir = gradleProject.getBuildDirectory().getCanonicalPath();
+            String build = Joiner.on(File.separator).join(buildDir, "classes", "main");
+            this.output = this.normalize(build);
+        }
+        if (this.testOutput == null) {
+            final String buildDir = gradleProject.getBuildDirectory().getCanonicalPath();
+            String build = Joiner.on(File.separator).join(buildDir, "classes", "test");
+            this.testOutput = this.normalize(build);
+        }
+        final Set<ProjectDependency> dependencies = this.getDependency(ideaModule);
+        final Map<String, Set<File>> sources = this.searchProjectSources(ideaModule);
+
+        this.sources.addAll(sources.get("sources"));
+        this.resources.addAll(sources.get("resources"));
+        this.testSources.addAll(sources.get("testSources"));
+        this.testResources.addAll(sources.get("testResources"));
+        this.dependencies.addAll(dependencies);
+
+        // merge other project
+        if (this.sources.isEmpty()) {
+            final File file = new File(Joiner.on(File.separator).join("src", "main", "java")).getCanonicalFile();
+            this.sources.add(file);
+        }
+        if (this.testSources.isEmpty()) {
+            final File file = new File(Joiner.on(File.separator).join("src", "test", "java")).getCanonicalFile();
+            this.testSources.add(file);
+        }
+
+        if (this.output == null) {
+            final String buildDir = new File(this.getProjectRoot(), "build").getCanonicalPath();
+            String build = Joiner.on(File.separator).join(buildDir, "classes", "main");
+            this.output = this.normalize(build);
+        }
+        if (this.testOutput == null) {
+            final String buildDir = new File(this.getProjectRoot(), "build").getCanonicalPath();
+            String build = Joiner.on(File.separator).join(buildDir, "classes", "test");
+            this.testOutput = this.normalize(build);
+        }
+
+        log.debug("sources {}", this.sources);
+        log.debug("resources {}", this.resources);
+        log.debug("output {}", this.output);
+        log.debug("test sources {}", this.testSources);
+        log.debug("test resources {}", this.testResources);
+        log.debug("test output {}", this.testOutput);
+
+        for (final ProjectDependency projectDependency : this.getDependencies()) {
+            log.debug("dependency {}", projectDependency);
+        }
+
+    }
+
+    private void parseIdeaProject(ProjectConnection projectConnection) throws IOException {
+        final ModelBuilder<IdeaProject> ideaProjectModelBuilder = projectConnection.model(IdeaProject.class);
+        final IdeaProject ideaProject = ideaProjectModelBuilder.get();
+        this.setCompileTarget(ideaProject);
+        log.trace("load project main module name:{} projectRoot:{}", ideaProject.getName(), this.projectRoot);
+
+        for (final IdeaModule ideaModule : ideaProject.getModules().getAll()) {
+
+            org.gradle.tooling.model.GradleProject gradleProject = ideaModule.getGradleProject();
+            final String projectName = gradleProject.getName();
+            final File moduleProjectRoot = gradleProject.getProjectDirectory();
+            log.trace("find project module name:{} projectRoot:{}", projectName, moduleProjectRoot);
+
+            if (moduleProjectRoot.equals(this.getProjectRoot())) {
+                log.debug("find target project name:{} projectRoot:{}", projectName, projectRoot);
+
+                if (this.output == null) {
+                    final String buildDir = gradleProject.getBuildDirectory().getCanonicalPath();
+                    String build = Joiner.on(File.separator).join(buildDir, "classes", "main");
+                    this.output = this.normalize(build);
+                }
+                if (this.testOutput == null) {
+                    final String buildDir = gradleProject.getBuildDirectory().getCanonicalPath();
+                    String build = Joiner.on(File.separator).join(buildDir, "classes", "test");
+                    this.testOutput = this.normalize(build);
+                }
+                final Set<ProjectDependency> dependency = this.getDependency(ideaModule);
+                final Map<String, Set<File>> sources = this.searchProjectSources(ideaModule);
+                log.debug("{} sources {}", projectName, sources);
+
+                this.sources.addAll(sources.get("sources"));
+                this.resources.addAll(sources.get("resources"));
+                this.testSources.addAll(sources.get("testSources"));
+                this.testResources.addAll(sources.get("testResources"));
+                this.dependencies.addAll(dependency);
+
+                // merge other project
+                if (this.sources.isEmpty()) {
+                    this.sources.add(new File("src/main/java"));
+                }
+                if (this.testSources.isEmpty()) {
+                    this.testSources.add(new File("src/test/java"));
+                }
+
+                if (this.output == null) {
+                    final String buildDir = new File(this.projectRoot, "build").getCanonicalPath();
+                    String build = Joiner.on(File.separator).join(buildDir, "classes", "main");
+                    this.output = this.normalize(build);
+                }
+                if (this.testOutput == null) {
+                    final String buildDir = new File(this.projectRoot, "build").getCanonicalPath();
+                    String build = Joiner.on(File.separator).join(buildDir, "classes", "test");
+                    this.testOutput = this.normalize(build);
+                }
+
+                log.debug("sources {}", this.sources);
+                log.debug("resources {}", this.resources);
+                log.debug("output {}", this.output);
+                log.debug("test sources {}", this.testSources);
+                log.debug("test resources {}", this.testResources);
+                log.debug("test output {}", this.testOutput);
+
+                for (final ProjectDependency projectDependency : this.getDependencies()) {
+                    log.debug("dependency {}", projectDependency);
+                }
+
+                if (this.sources.isEmpty()) {
+                    log.warn("target source is empty. please change working directory to sub project");
+                }
+
+            } else {
+                log.trace("load sub module. name:{} projectRoot:{}", projectName, moduleProjectRoot);
+                this.projects.putIfAbsent(projectName, moduleProjectRoot);
+            }
+        }
+
+        for (final String name : this.lazyLoadModule) {
+            if (projects.containsKey(name)) {
+                this.loadModule(name);
+            } else {
+                final String[] split = name.split("-");
+                if (split.length > 0) {
+                    final String nm = split[split.length - 1];
+                    if (projects.containsKey(nm)) {
+                        this.loadModule(nm);
+                    } else {
+                        log.warn("fail load module={}", name);
+                    }
+                }
+            }
         }
     }
 
@@ -344,5 +452,24 @@ public class GradleProject extends Project {
         return dependencies;
     }
 
+    @Override
+    public CompileResult compileJava(boolean force, boolean fullBuild) throws IOException {
+        if (this.isAndroidProject) {
+            new AndroidSupport(this).prepareCompileAndroidJava();
+            return super.compileJava(force, fullBuild);
+        } else {
+            return super.compileJava(force, fullBuild);
+        }
+    }
+
+    @Override
+    public CompileResult compileTestJava(boolean force, boolean fullBuild) throws IOException {
+        if (this.isAndroidProject) {
+            new AndroidSupport(this).prepareCompileAndroidTestJava();
+            return super.compileTestJava(force, fullBuild);
+        } else {
+            return super.compileTestJava(force, fullBuild);
+        }
+    }
 
 }
