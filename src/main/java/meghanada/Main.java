@@ -74,6 +74,10 @@ public class Main {
             log.debug("set verbose flag(TRACE)");
         }
 
+        if (cmd.hasOption("clear-cache")) {
+            System.setProperty("clear-cache-on-start", "true");
+        }
+
         if (cmd.hasOption("gradle-version")) {
             final String gradleVersion = cmd.getOptionValue("gradle-version", "");
             if (!version.isEmpty()) {
@@ -125,6 +129,8 @@ public class Main {
         options.addOption(out);
         final Option gradleVersion = new Option(null, "gradle-version", true, "set use gradle version");
         options.addOption(gradleVersion);
+        final Option clearCache = new Option("c", "clear-cache", false, "clear cache on start");
+        options.addOption(clearCache);
         return options;
     }
 }

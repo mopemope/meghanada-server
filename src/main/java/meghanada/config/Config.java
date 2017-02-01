@@ -241,8 +241,8 @@ public class Config {
         return c.getBoolean("external-builder");
     }
 
-    public boolean analyzeAll() {
-        return c.getBoolean("analyzeCompilationUnitTree-all");
+    public boolean clearCacheOnStart() {
+        return c.getBoolean("clear-cache-on-start");
     }
 
     public Map<File, Map<String, String>> getAllChecksumMap() {

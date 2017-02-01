@@ -82,6 +82,11 @@ public abstract class Project {
         if (file.exists()) {
             System.setProperty(FORMETTER_FILE_KEY, file.getCanonicalPath());
         }
+        final Config config = Config.load();
+        final boolean clearCacheOnStart = config.clearCacheOnStart();
+        if (clearCacheOnStart) {
+            this.clearCache();
+        }
     }
 
     public abstract Project parseProject() throws ProjectParseException;
@@ -801,6 +806,7 @@ public abstract class Project {
         System.setProperty(PROJECT_ROOT_KEY, this.projectRoot.getCanonicalPath());
         final Config config = Config.load();
         final String projectSettingDir = config.getProjectSettingDir();
+        log.info("clear cache {}", projectSettingDir);
         FileUtils.deleteFile(new File(projectSettingDir), false);
     }
 

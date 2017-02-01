@@ -67,15 +67,18 @@ public final class FileUtils {
     }
 
     public static void deleteFile(final File root, final boolean deleteRoot) throws IOException {
+        if (!root.exists()) {
+            return;
+        }
         Files.walkFileTree(root.toPath(), new SimpleFileVisitor<Path>() {
             @Override
-            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+            public FileVisitResult visitFile(final Path file, final BasicFileAttributes attrs) throws IOException {
                 Files.delete(file);
                 return FileVisitResult.CONTINUE;
             }
 
             @Override
-            public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
+            public FileVisitResult postVisitDirectory(final Path dir, final IOException exc) throws IOException {
                 if (deleteRoot) {
                     Files.delete(dir);
                 } else {
