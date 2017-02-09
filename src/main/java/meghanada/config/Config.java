@@ -4,6 +4,7 @@ import com.google.common.base.Stopwatch;
 import com.typesafe.config.ConfigFactory;
 import meghanada.project.Project;
 import meghanada.utils.FileUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -15,6 +16,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URISyntaxException;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -23,6 +25,8 @@ import java.util.concurrent.ConcurrentHashMap;
 public class Config {
 
     public static final String MEGHANADA_CONF_FILE = ".meghanada.conf";
+    public static final String GRADLE_PREPARE_COMPILE_TASK = "gradle-prepare-compile-task";
+    public static final String GRADLE_PREPARE_TEST_COMPILE_TASK = "gradle-prepare-test-compile-task";
     private static Logger log = LogManager.getLogger(Config.class);
     private static Config config;
 
@@ -128,6 +132,24 @@ public class Config {
             log.catching(e);
         }
         return null;
+    }
+
+    public List<String> gradlePrepareCompileTask() {
+        final String tasks = c.getString(GRADLE_PREPARE_COMPILE_TASK);
+        final String[] split = StringUtils.split(tasks, ",");
+        if (split == null) {
+            return Collections.emptyList();
+        }
+        return Arrays.asList(split);
+    }
+
+    public List<String> gradlePrepareTestCompileTask() {
+        final String tasks = c.getString(GRADLE_PREPARE_TEST_COMPILE_TASK);
+        final String[] split = StringUtils.split(tasks, ",");
+        if (split == null) {
+            return Collections.emptyList();
+        }
+        return Arrays.asList(split);
     }
 
     public void setDebug() {

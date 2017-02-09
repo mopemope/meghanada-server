@@ -3,6 +3,7 @@ package meghanada.project.gradle;
 import com.android.builder.model.AndroidProject;
 import com.esotericsoftware.kryo.DefaultSerializer;
 import com.google.common.base.Joiner;
+import com.typesafe.config.ConfigFactory;
 import meghanada.analyze.CompileResult;
 import meghanada.config.Config;
 import meghanada.project.Project;
@@ -10,6 +11,7 @@ import meghanada.project.ProjectDependency;
 import meghanada.project.ProjectParseException;
 import meghanada.project.ProjectSerializer;
 import meghanada.session.Session;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.gradle.tooling.*;
@@ -27,6 +29,8 @@ public class GradleProject extends Project {
     private final File rootProject;
     private final Map<String, File> projects = new HashMap<>();
     private List<String> lazyLoadModule = new ArrayList<>();
+    private List<String> prepareCompileTask = new ArrayList<>();
+    private List<String> prepareTestCompileTask = new ArrayList<>();
 
     public GradleProject(final File projectRoot) throws IOException {
         super(projectRoot);
@@ -454,6 +458,7 @@ public class GradleProject extends Project {
 
     @Override
     public CompileResult compileJava(boolean force, boolean fullBuild) throws IOException {
+        this.runPrepareCompileTask();
         if (this.isAndroidProject) {
             new AndroidSupport(this).prepareCompileAndroidJava();
             return super.compileJava(force, fullBuild);
@@ -462,14 +467,72 @@ public class GradleProject extends Project {
         }
     }
 
+    private void runPrepareCompileTask() {
+        if (!this.prepareCompileTask.isEmpty()) {
+            final ProjectConnection connection = GradleConnector.newConnector()
+                    .forProjectDirectory(this.getProjectRoot())
+                    .connect();
+            try {
+                final String[] tasks = prepareCompileTask.toArray(new String[prepareCompileTask.size()]);
+                final BuildLauncher buildLauncher = connection.newBuild();
+                buildLauncher.forTasks(tasks).run();
+            } finally {
+                connection.close();
+            }
+        }
+    }
+
     @Override
     public CompileResult compileTestJava(boolean force, boolean fullBuild) throws IOException {
+        this.runPrepareTestCompileTask();
         if (this.isAndroidProject) {
             new AndroidSupport(this).prepareCompileAndroidTestJava();
             return super.compileTestJava(force, fullBuild);
         } else {
             return super.compileTestJava(force, fullBuild);
         }
+    }
+
+    private void runPrepareTestCompileTask() {
+        if (!this.prepareTestCompileTask.isEmpty()) {
+            final ProjectConnection connection = GradleConnector.newConnector()
+                    .forProjectDirectory(this.getProjectRoot())
+                    .connect();
+            try {
+                final String[] tasks = prepareTestCompileTask.toArray(new String[prepareTestCompileTask.size()]);
+                final BuildLauncher buildLauncher = connection.newBuild();
+                buildLauncher.forTasks(tasks).run();
+            } finally {
+                connection.close();
+            }
+        }
+    }
+
+    @Override
+    public Project mergeFromProjectConfig() {
+        final Config config1 = Config.load();
+        this.prepareCompileTask.addAll(config1.gradlePrepareCompileTask());
+        this.prepareTestCompileTask.addAll(config1.gradlePrepareTestCompileTask());
+
+        final File configFile = new File(this.projectRoot, Config.MEGHANADA_CONF_FILE);
+        if (configFile.exists()) {
+            final com.typesafe.config.Config config = ConfigFactory.parseFile(configFile);
+            if (config.hasPath(Config.GRADLE_PREPARE_COMPILE_TASK)) {
+                final String val = config.getString(Config.GRADLE_PREPARE_COMPILE_TASK);
+                final String[] vals = StringUtils.split(val, ",");
+                if (vals != null) {
+                    Collections.addAll(this.prepareCompileTask, vals);
+                }
+            }
+            if (config.hasPath(Config.GRADLE_PREPARE_TEST_COMPILE_TASK)) {
+                final String val = config.getString(Config.GRADLE_PREPARE_TEST_COMPILE_TASK);
+                final String[] vals = StringUtils.split(val, ",");
+                if (vals != null) {
+                    Collections.addAll(this.prepareTestCompileTask, vals);
+                }
+            }
+        }
+        return super.mergeFromProjectConfig();
     }
 
 }

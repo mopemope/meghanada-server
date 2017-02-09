@@ -261,6 +261,7 @@ public abstract class Project {
             files = addDepends(this.getAllSources(), files);
 
             final String projectName = this.getProjectRoot().getName();
+            this.prepareCompile(files);
             final Stopwatch stopwatch = Stopwatch.createStarted();
             final CompileResult compileResult = getJavaAnalyzer().analyzeAndCompile(files, this.allClasspath(), output.getCanonicalPath());
             log.info("project {}: compile(java) {} files. elapsed:{}", projectName, files.size(), stopwatch.stop());
@@ -339,6 +340,7 @@ public abstract class Project {
                     this.testOutput);
             files = addDepends(this.getAllSources(), files);
             final String projectName = this.getProjectRoot().getName();
+            this.prepareTestCompile(files);
             final Stopwatch stopwatch = Stopwatch.createStarted();
             final CompileResult compileResult = getJavaAnalyzer().analyzeAndCompile(files, this.allClasspath(), testOutput.getCanonicalPath());
             log.info("project {}: compile(test) {} files. elapsed:{}", projectName, files.size(), stopwatch.stop());
@@ -370,6 +372,12 @@ public abstract class Project {
             return this.updateSourceCache(compileResult);
         }
         return new CompileResult(true);
+    }
+
+    protected void prepareCompile(final List<File> files) {
+    }
+
+    protected void prepareTestCompile(final List<File> files) {
     }
 
     public CompileResult parseFile(final File file) throws IOException {
