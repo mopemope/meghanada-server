@@ -348,9 +348,7 @@ class AndroidSupport {
     }
 
     void prepareCompileAndroidJava() throws IOException {
-        final ProjectConnection connection = GradleConnector.newConnector()
-                .forProjectDirectory(this.project.getProjectRoot())
-                .connect();
+        final ProjectConnection connection = this.project.getProjectConnection();
         try {
             final BuildLauncher buildLauncher = connection.newBuild();
             final String genTask = this.project.getName() + this.genSourceTaskName;
@@ -379,13 +377,12 @@ class AndroidSupport {
     }
 
     void prepareCompileAndroidTestJava() throws IOException {
-        final ProjectConnection connection = GradleConnector.newConnector()
-                .forProjectDirectory(this.project.getProjectRoot())
-                .connect();
+        final ProjectConnection connection = this.project.getProjectConnection();
         try {
             final BuildLauncher buildLauncher = connection.newBuild();
             final String genTestTask = this.project.getName() + genUnitTestTaskName;
             final String genAndroidTestTask = this.project.getName() + genAndroidTestTaskName;
+
             buildLauncher.forTasks(genTestTask, genAndroidTestTask).run();
 
             final int size = this.project.getDependencies().size();

@@ -301,10 +301,9 @@ public class GradleProject extends Project {
         });
     }
 
-    private ProjectConnection getProjectConnection() {
+    public ProjectConnection getProjectConnection() {
         final String gradleVersion = Config.load().getGradleVersion();
         GradleConnector connector;
-
         if (gradleVersion.isEmpty()) {
             connector = GradleConnector.newConnector()
                     .forProjectDirectory(this.rootProject);
@@ -469,9 +468,7 @@ public class GradleProject extends Project {
 
     private void runPrepareCompileTask() {
         if (!this.prepareCompileTask.isEmpty()) {
-            final ProjectConnection connection = GradleConnector.newConnector()
-                    .forProjectDirectory(this.getProjectRoot())
-                    .connect();
+            final ProjectConnection connection = this.getProjectConnection();
             try {
                 final String[] tasks = prepareCompileTask.toArray(new String[prepareCompileTask.size()]);
                 final BuildLauncher buildLauncher = connection.newBuild();
@@ -495,9 +492,7 @@ public class GradleProject extends Project {
 
     private void runPrepareTestCompileTask() {
         if (!this.prepareTestCompileTask.isEmpty()) {
-            final ProjectConnection connection = GradleConnector.newConnector()
-                    .forProjectDirectory(this.getProjectRoot())
-                    .connect();
+            final ProjectConnection connection = this.getProjectConnection();
             try {
                 final String[] tasks = prepareTestCompileTask.toArray(new String[prepareTestCompileTask.size()]);
                 final BuildLauncher buildLauncher = connection.newBuild();

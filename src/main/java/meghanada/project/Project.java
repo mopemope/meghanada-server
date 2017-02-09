@@ -64,7 +64,7 @@ public abstract class Project {
     protected String compileTarget = "1.8";
     protected String id;
     protected Map<String, Set<String>> callerMap = new ConcurrentHashMap<>();
-    protected boolean isAndroidProject;
+    protected Boolean isAndroidProject = false;
     protected String name;
     protected String cachedClasspath;
     protected String cachedAllClasspath;
