@@ -21,6 +21,9 @@ import java.util.stream.Collectors;
 public final class FileUtils {
 
     private static final Logger log = LogManager.getLogger(FileUtils.class);
+    private static final String ALGORITHM_SHA_512 = "SHA-512";
+    private static final String ALGORITHM_MD5 = "MD5";
+    private static final String UTF_8 = "UTF-8";
 
     public static boolean isJavaFile(final File file) {
         return file.getName().endsWith(".java") && file.exists();
@@ -28,24 +31,24 @@ public final class FileUtils {
 
     public static String md5sum(final File file) throws IOException {
         final EntryMessage entryMessage = log.traceEntry("file={}", file);
-        MessageDigest md;
         try {
-            md = MessageDigest.getInstance("MD5");
+            final MessageDigest md = MessageDigest.getInstance(ALGORITHM_MD5);
+            try (InputStream is = Files.newInputStream(file.toPath());
+                 DigestInputStream dis = new DigestInputStream(is, md)) {
+                final byte[] buf = new byte[8192];
+                while (dis.read(buf) != -1) {
+                }
+                final byte[] digest = md.digest();
+                final StringBuilder sb = new StringBuilder();
+                for (final int b : digest) {
+                    sb.append(Character.forDigit(b >> 4 & 0xF, 16));
+                    sb.append(Character.forDigit(b & 0xF, 16));
+                }
+                log.traceExit(entryMessage);
+                return sb.toString();
+            }
         } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException(e);
-        }
-        try (InputStream is = Files.newInputStream(file.toPath());
-             DigestInputStream dis = new DigestInputStream(is, md)) {
-            final byte[] buf = new byte[8192];
-            while (dis.read(buf) != -1) {
-            }
-            final byte[] digest = md.digest();
-            final StringBuilder sb = new StringBuilder();
-            for (final int b : digest) {
-                sb.append(Character.forDigit(b >> 4 & 0xF, 16));
-                sb.append(Character.forDigit(b & 0xF, 16));
-            }
-            return log.traceExit(entryMessage, sb.toString());
         }
     }
 
@@ -139,7 +142,7 @@ public final class FileUtils {
     public static String findProjectID(final File root, final String target) throws IOException {
         MessageDigest md;
         try {
-            md = MessageDigest.getInstance("MD5");
+            md = MessageDigest.getInstance(ALGORITHM_MD5);
         } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException(e);
         }
@@ -201,23 +204,26 @@ public final class FileUtils {
         globalCache.asyncWriteCache(outFile, map);
     }
 
-    public static String toHashedPath(final File f, String suffix) throws IOException {
+    public static String toHashedPath(final File f, final String suffix) throws IOException {
         final String path = f.getCanonicalPath();
-        MessageDigest md;
+        return toHashedPath(path, suffix);
+    }
+
+    public static String toHashedPath(final String path, final String suffix) {
         try {
-            md = MessageDigest.getInstance("SHA-256");
-        } catch (NoSuchAlgorithmException e) {
+            final MessageDigest md = MessageDigest.getInstance(ALGORITHM_SHA_512);
+            md.update(path.getBytes(UTF_8));
+            final byte[] digest = md.digest();
+            final StringBuilder sb = new StringBuilder();
+            for (final int b : digest) {
+                sb.append(Character.forDigit(b >> 4 & 0xF, 16));
+                sb.append(Character.forDigit(b & 0xF, 16));
+            }
+            sb.append(suffix);
+            return sb.toString();
+        } catch (NoSuchAlgorithmException | UnsupportedEncodingException e) {
             throw new RuntimeException(e);
         }
-        md.update(path.getBytes("UTF-8"));
-        final byte[] digest = md.digest();
-        final StringBuilder sb = new StringBuilder();
-        for (final int b : digest) {
-            sb.append(Character.forDigit(b >> 4 & 0xF, 16));
-            sb.append(Character.forDigit(b & 0xF, 16));
-        }
-        sb.append(suffix);
-        return sb.toString();
     }
 
     public static Optional<File> getSourceFile(final String importClass, final Set<File> sourceRoots) {
@@ -273,7 +279,8 @@ public final class FileUtils {
         return new ArrayList<>(temp);
     }
 
-    public static List<File> getModifiedSources(final String filePath, final List<File> sourceFiles, final Set<File> sourceRoots, final File output) throws IOException {
+    public static List<File> getModifiedSources(final String filePath, final List<File> sourceFiles,
+                                                final Set<File> sourceRoots, final File output) throws IOException {
 
         final File checksumFile = FileUtils.getSettingFile(filePath);
         final Config config = Config.load();

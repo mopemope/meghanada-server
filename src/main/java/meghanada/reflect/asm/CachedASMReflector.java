@@ -1,5 +1,6 @@
 package meghanada.reflect.asm;
 
+import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.UncheckedExecutionException;
@@ -11,6 +12,7 @@ import meghanada.reflect.MemberDescriptor;
 import meghanada.reflect.MethodDescriptor;
 import meghanada.utils.ClassName;
 import meghanada.utils.ClassNameUtils;
+import meghanada.utils.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -371,9 +373,14 @@ public class CachedASMReflector {
 
         final String javaVersion = Config.load().getJavaVersion();
         final String rawDeclaration = classIndex.getRawDeclaration();
-        final String path = ClassNameUtils.replace(rawDeclaration, ".", "/");
-        final File outFile1 = new File(root, javaVersion + "/class/" + path + ".dat");
-        final File outFile2 = new File(root, javaVersion + "/member/" + path + ".dat");
+
+        final String path = FileUtils.toHashedPath(rawDeclaration, ".dat");
+        final String out1 = Joiner.on(File.separator).join(javaVersion, "class", path);
+        final String out2 = Joiner.on(File.separator).join(javaVersion, "member", path);
+
+        final File outFile1 = new File(root, out1);
+        final File outFile2 = new File(root, out2);
+
         outFile1.getParentFile().mkdirs();
         outFile2.getParentFile().mkdirs();
 
