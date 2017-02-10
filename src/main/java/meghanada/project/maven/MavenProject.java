@@ -63,18 +63,25 @@ public class MavenProject extends Project {
             final File logFile = File.createTempFile("meghanada-cp", ".log");
             logFile.deleteOnExit();
             final String logPath = logFile.getCanonicalPath();
-            this.runMvn("dependency:resolve");
-            this.runMvn("dependency:build-classpath", String.format("-Dmdep.outputFile=%s", logPath));
-            final String cpTxt = Files.readFirstLine(logFile, Charset.forName("UTF-8"));
-            final String[] depends = cpTxt.split(File.pathSeparator);
+            if (this.runMvn("dependency:resolve") != 0) {
+                throw new ProjectParseException("Could not resolve dependencies. please try 'mvn clean install'");
+            }
+            if (this.runMvn("dependency:build-classpath", String.format("-Dmdep.outputFile=%s", logPath)) != 0) {
+                throw new ProjectParseException("Could not resolve dependencies. please try 'mvn clean install'");
+            }
 
-            for (final String dep : depends) {
-                final File file = new File(dep);
-                final String parentPath = file.getParent();
-                final String version = this.getVersion(parentPath);
-                final String code = this.getArtifactCode(parentPath);
-                final ProjectDependency dependency = new ProjectDependency(code, "COMPILE", version, file);
-                super.dependencies.add(dependency);
+            final String cpTxt = Files.readFirstLine(logFile, Charset.forName("UTF-8"));
+            if (cpTxt != null && !cpTxt.isEmpty()) {
+                final String[] depends = cpTxt.split(File.pathSeparator);
+
+                for (final String dep : depends) {
+                    final File file = new File(dep);
+                    final String parentPath = file.getParent();
+                    final String version = this.getVersion(parentPath);
+                    final String code = this.getArtifactCode(parentPath);
+                    final ProjectDependency dependency = new ProjectDependency(code, "COMPILE", version, file);
+                    super.dependencies.add(dependency);
+                }
             }
 
             final POMParser pomParser = new POMParser(this.projectRoot);
@@ -126,7 +133,7 @@ public class MavenProject extends Project {
         return super.runProcess(mvnCmd);
     }
 
-    private void runMvn(final String... args) throws IOException, InterruptedException {
+    private int runMvn(final String... args) throws IOException, InterruptedException {
         final List<String> cmd = new ArrayList<>();
         cmd.add(this.maven);
         for (String arg : args) {
@@ -147,6 +154,7 @@ public class MavenProject extends Project {
             }
         }
         process.waitFor();
+        return process.exitValue();
     }
 
 
