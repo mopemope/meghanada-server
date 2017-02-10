@@ -383,6 +383,8 @@ public class JavaCompletion {
         log.debug("search '{}' field or method", var);
 
         final String ownPackage = source.packageName;
+        final List<CandidateUnit> res = new ArrayList<>(32);
+
         {
             // completion static method
             String fqcn = source.importClass.get(var);
@@ -391,7 +393,6 @@ public class JavaCompletion {
                     fqcn = ownPackage + "." + fqcn;
                 }
 
-                final List<CandidateUnit> res = new ArrayList<>(32);
                 final Collection<? extends CandidateUnit> result = this.reflect(ownPackage, fqcn, true, false, target);
                 res.addAll(result);
 
@@ -415,9 +416,11 @@ public class JavaCompletion {
                 if (!fqcn.contains(".")) {
                     fqcn = ownPackage + "." + fqcn;
                 }
-                return this.reflect(ownPackage, fqcn, target);
+                final Collection<? extends CandidateUnit> reflect = this.reflect(ownPackage, fqcn, target);
+                res.addAll(reflect);
             }
         }
+
         {
             for (final ClassScope cs : source.getClassScopes()) {
                 final String fqcn = cs.getFQCN();
@@ -431,7 +434,8 @@ public class JavaCompletion {
                 if (fieldResult.isPresent()) {
                     final MemberDescriptor memberDescriptor = fieldResult.orElse(null);
                     final String returnType = memberDescriptor.getRawReturnType();
-                    return reflect(ownPackage, returnType, target);
+                    final Collection<? extends CandidateUnit> reflect = reflect(ownPackage, returnType, target);
+                    res.addAll(reflect);
                 }
             }
         }
@@ -440,12 +444,19 @@ public class JavaCompletion {
             // java.lang
             final String fqcn = "java.lang." + var;
             final Collection<? extends CandidateUnit> result = this.reflect(ownPackage, fqcn, true, false, target);
-            if (!result.isEmpty()) {
-                return result;
-            }
+            res.addAll(result);
         }
 
-        return Collections.emptySet();
+        {
+            final String fqcn = ownPackage + "." + var;
+            final Collection<? extends CandidateUnit> reflectResults = this.reflect(ownPackage, fqcn, true, false, target);
+            res.addAll(reflectResults);
+            final CachedASMReflector reflector = CachedASMReflector.getInstance();
+            final Collection<? extends CandidateUnit> inners = reflector.searchInnerClasses(fqcn);
+            res.addAll(inners);
+        }
+        return res;
+
     }
 
     private Collection<? extends CandidateUnit> reflect(final String ownPackage, final String fqcn,
