@@ -22,17 +22,20 @@ import java.util.List;
 @DefaultSerializer(ProjectSerializer.class)
 public class MavenProject extends Project {
 
+    private static final String PROJECT_FILE = "pom.xml";
+    private static final String REPOSITORY = "repository";
     private static Logger log = LogManager.getLogger(MavenProject.class);
+
     private File pomFile;
-    private String maven = "mvn";
+    private String mavenCmd = "mvn";
 
     public MavenProject(File projectRoot) throws IOException {
         super(projectRoot);
-        this.pomFile = new File(projectRoot, "pom.xml");
+        this.pomFile = new File(projectRoot, PROJECT_FILE);
     }
 
     public void setMavenPath(String maven) {
-        this.maven = maven;
+        this.mavenCmd = maven;
     }
 
     private String getVersion(final String path) {
@@ -44,7 +47,7 @@ public class MavenProject extends Project {
         final String artifactID = parentFile.getName();
 
         String parent = parentFile.getParent();
-        final int i = parent.indexOf("repository");
+        final int i = parent.indexOf(REPOSITORY);
         if (i > 0) {
             parent = parent.substring(i + 10);
         }
@@ -60,14 +63,14 @@ public class MavenProject extends Project {
                 this.setMavenPath(mavenPath);
             }
 
-            final File logFile = File.createTempFile("meghanada-cp", ".log");
+            final File logFile = File.createTempFile("meghanada-maven-classpath", ".log");
             logFile.deleteOnExit();
             final String logPath = logFile.getCanonicalPath();
             if (this.runMvn("dependency:resolve") != 0) {
-                throw new ProjectParseException("Could not resolve dependencies. please try 'mvn clean install'");
+                throw new ProjectParseException("Could not resolve dependencies. please try 'mvn dependency:resolve' or 'mvn install'");
             }
             if (this.runMvn("dependency:build-classpath", String.format("-Dmdep.outputFile=%s", logPath)) != 0) {
-                throw new ProjectParseException("Could not resolve dependencies. please try 'mvn clean install'");
+                throw new ProjectParseException("Could not resolve dependencies. please try 'mvn dependency:resolve' or 'mvn install'");
             }
 
             final String cpTxt = Files.readFirstLine(logFile, Charset.forName("UTF-8"));
@@ -128,14 +131,14 @@ public class MavenProject extends Project {
     @Override
     public InputStream runTask(List<String> args) throws IOException {
         List<String> mvnCmd = new ArrayList<>();
-        mvnCmd.add(this.maven);
+        mvnCmd.add(this.mavenCmd);
         mvnCmd.addAll(args);
         return super.runProcess(mvnCmd);
     }
 
     private int runMvn(final String... args) throws IOException, InterruptedException {
         final List<String> cmd = new ArrayList<>();
-        cmd.add(this.maven);
+        cmd.add(this.mavenCmd);
         for (String arg : args) {
             cmd.add(arg);
         }
