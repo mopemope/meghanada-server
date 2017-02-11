@@ -32,9 +32,9 @@ import java.util.stream.Collectors;
 public abstract class Project {
 
     public static final String DEFAULT_PATH = File.separator + "src" + File.separator + "main" + File.separator;
-    public static final String FORMATTER_FILE_KEY = "meghanada.formatter.file";
     public static final String PROJECT_ROOT_KEY = "project.root";
     public final static Map<String, Project> loadedProject = new HashMap<>();
+    private static final String FORMATTER_FILE_KEY = "meghanada.formatter.file";
     private static final Logger log = LogManager.getLogger(Project.class);
     private static final String JAVA_HOME = "java-home";
     private static final String JAVA_VERSION = "java-version";
@@ -51,6 +51,7 @@ public abstract class Project {
     private static final String INCLUDE_FILE = "include-file";
     private static final String EXCLUDE_FILE = "exclude-file";
     private static final String FORMATTER_FILE = "meghanadaFormatter.properties";
+
     protected final File projectRoot;
     protected final Set<ProjectDependency> dependencies = new HashSet<>();
     protected final Set<Project> dependencyProjects = new HashSet<>();
@@ -809,7 +810,7 @@ public abstract class Project {
         FileUtils.deleteFile(new File(projectSettingDir), false);
     }
 
-    public Properties readFormatProperties() {
+    private Properties readFormatProperties() {
         final Properties fileProperties = readFormatPropertiesFromFile();
         if (fileProperties != null) {
             return fileProperties;
@@ -818,7 +819,7 @@ public abstract class Project {
         final Properties properties = new Properties();
         // Default
         properties.setProperty(DefaultCodeFormatterConstants.FORMATTER_BLANK_LINES_AFTER_IMPORTS, "1");
-        properties.setProperty(DefaultCodeFormatterConstants.FORMATTER_LINE_SPLIT, "120");
+        properties.setProperty(DefaultCodeFormatterConstants.FORMATTER_LINE_SPLIT, "200");
         properties.setProperty(DefaultCodeFormatterConstants.FORMATTER_TAB_CHAR, "space");
         properties.setProperty(DefaultCodeFormatterConstants.FORMATTER_TAB_SIZE, "4");
         properties.setProperty(DefaultCodeFormatterConstants.FORMATTER_JOIN_WRAPPED_LINES, "false");
@@ -844,7 +845,7 @@ public abstract class Project {
         if (this.formatProperties != null) {
             return this.formatProperties;
         }
-        Properties properties = readFormatProperties();
+        final Properties properties = this.readFormatProperties();
         // merge
         properties.setProperty(JavaCore.COMPILER_SOURCE, this.getCompileSource());
         properties.setProperty(JavaCore.COMPILER_COMPLIANCE, this.getCompileSource());
