@@ -103,6 +103,11 @@ public class CachedASMReflector {
                     });
 
         }));
+
+        this.createClassIndexFromDir();
+    }
+
+    public void createClassIndexFromDir() {
         this.directories.stream().parallel().forEach(wrapIOConsumer(file -> {
             if (file.getName().endsWith(".jar") && this.classFileMap.containsValue(file)) {
                 //skip cached jar
@@ -123,7 +128,6 @@ public class CachedASMReflector {
                     });
 
         }));
-
     }
 
     public boolean containsFQCN(String fqcn) {

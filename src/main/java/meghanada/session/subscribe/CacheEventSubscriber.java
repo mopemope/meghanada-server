@@ -18,13 +18,22 @@ public class CacheEventSubscriber extends AbstractSubscriber {
 
     private static Logger log = LogManager.getLogger(CacheEventSubscriber.class);
 
-    public CacheEventSubscriber(SessionEventBus sessionEventBus) {
+    public CacheEventSubscriber(final SessionEventBus sessionEventBus) {
         super(sessionEventBus);
         log.debug("subscribe cache");
     }
 
     @Subscribe
-    public synchronized void on(SessionEventBus.ClassCacheRequest request) throws IOException {
+    public synchronized void on(final SessionEventBus.ClassCacheRequest request) throws IOException {
+        if (request.onlyOutputDir) {
+            final CachedASMReflector reflector = CachedASMReflector.getInstance();
+            reflector.createClassIndexFromDir();
+        } else {
+            this.createFullIndex();
+        }
+    }
+
+    private void createFullIndex() {
         final Session session = super.sessionEventBus.getSession();
         final Project project = session.getCurrentProject();
         final CachedASMReflector reflector = CachedASMReflector.getInstance();

@@ -43,10 +43,13 @@ public class JavaCompletion {
         return globalCache.getSource(this.getProject(), file.getCanonicalFile());
     }
 
-    public Collection<? extends CandidateUnit> completionAt(File file, int line, int column, String prefix) {
+    public Collection<? extends CandidateUnit> completionAt(final File file, int line, int column, String prefix) {
 
         log.debug("line={} column={} prefix={}", line, column, prefix);
         try {
+            if (!file.exists()) {
+                return Collections.emptyList();
+            }
             final Source source = this.getSource(file);
             // check type
             if (prefix.startsWith("*")) {
@@ -311,7 +314,11 @@ public class JavaCompletion {
         // prefix search
         log.debug("Search variables prefix:{} line:{}", prefix, line);
 
-        final String fqcn = source.getTypeScope(line).getFQCN();
+        final TypeScope typeScope = source.getTypeScope(line);
+        if (typeScope == null) {
+            return result;
+        }
+        final String fqcn = typeScope.getFQCN();
 
         // add this member
         this.reflectSelf(fqcn, true, prefix).stream().filter(c -> c.getName().startsWith(prefix)).forEach(result::add);

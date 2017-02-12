@@ -265,7 +265,7 @@ public abstract class Project {
             final String projectName = this.getProjectRoot().getName();
             this.prepareCompile(files);
             final Stopwatch stopwatch = Stopwatch.createStarted();
-            final CompileResult compileResult = getJavaAnalyzer().analyzeAndCompile(files, this.allClasspath(), output.getCanonicalPath());
+            final CompileResult compileResult = clearMemberCache(getJavaAnalyzer().analyzeAndCompile(files, this.allClasspath(), output.getCanonicalPath()));
             log.info("project {}: compile(java) {} files. elapsed:{}", projectName, files.size(), stopwatch.stop());
 
             for (final Project p : lazyLoad) {
@@ -341,7 +341,7 @@ public abstract class Project {
             final String projectName = this.getProjectRoot().getName();
             this.prepareTestCompile(files);
             final Stopwatch stopwatch = Stopwatch.createStarted();
-            final CompileResult compileResult = getJavaAnalyzer().analyzeAndCompile(files, this.allClasspath(), testOutput.getCanonicalPath());
+            final CompileResult compileResult = clearMemberCache(getJavaAnalyzer().analyzeAndCompile(files, this.allClasspath(), testOutput.getCanonicalPath()));
             log.info("project {}: compile(test) {} files. elapsed:{}", projectName, files.size(), stopwatch.stop());
 
             for (final Project p : lazyLoad) {
@@ -425,7 +425,7 @@ public abstract class Project {
 
             files = force ? files : FileUtils.getModifiedSources(files, this.getAllSources(), new File(output));
             files = addDepends(this.getAllSources(), files);
-            return getJavaAnalyzer().analyzeAndCompile(files, this.allClasspath(), output);
+            return clearMemberCache(getJavaAnalyzer().analyzeAndCompile(files, this.allClasspath(), output));
         }
         return new CompileResult(false);
     }
@@ -454,7 +454,7 @@ public abstract class Project {
 
         filesList = force ? filesList : FileUtils.getModifiedSources(files, this.getAllSources(), new File(output));
         filesList = addDepends(this.getAllSources(), filesList);
-        return getJavaAnalyzer().analyzeAndCompile(filesList, this.allClasspath(), output);
+        return clearMemberCache(getJavaAnalyzer().analyzeAndCompile(filesList, this.allClasspath(), output));
     }
 
     public File getProjectRoot() {
@@ -902,5 +902,13 @@ public abstract class Project {
     public void resetCachedClasspath() {
         this.cachedClasspath = null;
         this.cachedAllClasspath = null;
+    }
+
+    public CompileResult clearMemberCache(final CompileResult compileResult) {
+        final Map<File, Source> sourceMap = compileResult.getSources();
+        for (final Source source : sourceMap.values()) {
+            source.invalidateCache();
+        }
+        return compileResult;
     }
 }

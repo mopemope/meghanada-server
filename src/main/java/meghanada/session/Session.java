@@ -347,6 +347,9 @@ public class Session {
 
         if (this.started) {
             try {
+                if (!file.exists()) {
+                    return true;
+                }
                 final boolean changed = this.searchAndChangeProject(file);
                 if (changed) {
                     this.sessionEventBus.requestClassCache();
@@ -426,13 +429,16 @@ public class Session {
         final GlobalCache globalCache = GlobalCache.getInstance();
         globalCache.invalidateSource(this.getCurrentProject(), file);
         this.parseJavaSource(file);
+        this.sessionEventBus.requestClassCache(true);
         return true;
     }
 
     public synchronized CompileResult compileFile(final String path) throws IOException {
         // java file only
         final File file = normalize(path);
-        return currentProject.compileFileNoCache(file, true);
+        final CompileResult compileResult = currentProject.compileFileNoCache(file, true);
+        this.sessionEventBus.requestClassCache(true);
+        return compileResult;
     }
 
     public synchronized CompileResult compileProject() throws IOException {
@@ -441,6 +447,8 @@ public class Session {
         if (result.isSuccess()) {
             result = project.compileTestJava(false);
         }
+        this.sessionEventBus.requestClassCache(true);
+
         return result;
     }
 

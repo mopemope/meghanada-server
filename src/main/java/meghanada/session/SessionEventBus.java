@@ -75,7 +75,11 @@ public class SessionEventBus {
     }
 
     public void requestClassCache() {
-        this.eventBus.post(new ClassCacheRequest(this.session));
+        this.requestClassCache(false);
+    }
+
+    public void requestClassCache(final boolean onlyOutputDir) {
+        this.eventBus.post(new ClassCacheRequest(this.session, onlyOutputDir));
     }
 
     public void requestParse(File file) {
@@ -139,8 +143,11 @@ public class SessionEventBus {
 
     public static class ClassCacheRequest extends IORequest {
 
-        public ClassCacheRequest(final Session session) {
+        public final boolean onlyOutputDir;
+
+        public ClassCacheRequest(final Session session, boolean onlyOutputDir) {
             super(session, null);
+            this.onlyOutputDir = onlyOutputDir;
         }
 
     }

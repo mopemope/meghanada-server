@@ -162,7 +162,8 @@ public class GlobalCache {
                 return kryo.readObject(input, type);
             } catch (Exception e) {
                 file.delete();
-                throw new UncheckedExecutionException(e);
+                log.catching(e);
+                return null;
             }
         });
     }
@@ -172,7 +173,8 @@ public class GlobalCache {
             try (final Input input = new Input(in)) {
                 return kryo.readObject(input, type);
             } catch (Exception e) {
-                throw new UncheckedExecutionException(e);
+                log.catching(e);
+                return null;
             }
         });
     }

@@ -327,7 +327,6 @@ public class Source {
 
 
     public void invalidateCache() {
-        final CachedASMReflector reflector = CachedASMReflector.getInstance();
         final GlobalCache globalCache = GlobalCache.getInstance();
         for (final ClassScope cs : this.classScopes) {
             globalCache.invalidateMemberDescriptors(cs.getFQCN());
