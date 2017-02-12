@@ -341,7 +341,7 @@ public class CachedASMReflector {
                         return;
                     }
 
-                    if (existsClassCache(className, outputRoot)) {
+                    if (existsClassCache(className)) {
                         // log.debug("skip  :{}", className);
                         return;
                     }
@@ -352,46 +352,51 @@ public class CachedASMReflector {
                         final String fqcn = cn.getName();
                         final InheritanceInfo info = asmReflector.getReflectInfo(reflectIndex, fqcn);
                         final List<MemberDescriptor> descriptors = asmReflector.reflectAll(info);
-                        this.writeCache(ci, descriptors, outputRoot);
+                        this.writeCache(ci, descriptors);
                     }
                 }));
     }
 
 
-    private boolean existsClassCache(final String className, final File root) {
-        final File outFile = getClassCacheFile(className, root);
+    private boolean existsClassCache(final String className) {
+        final File outFile = getClassCacheFile(className);
         return outFile.exists();
     }
 
-    private File getClassCacheFile(final String className, final File root) {
-        final String javaVersion = Config.load().getJavaVersion();
-        final String path = ClassNameUtils.replace(className, ".", "/");
-        return new File(root, javaVersion + "/class/" + path + ".dat");
+    private File getClassCacheFile(final String className) {
+
+        final Config config = Config.load();
+        final String dir = config.getProjectSettingDir();
+        final File root = new File(dir);
+        final String path = FileUtils.toHashedPath(className, GlobalCache.CACHE_EXT);
+        final String out1 = Joiner.on(File.separator).join(GlobalCache.CLASS_CACHE_DIR, path);
+        return new File(root, out1);
     }
 
-    public void writeCache(final ClassIndex classIndex, final List<MemberDescriptor> members, final File root) throws FileNotFoundException {
+    public void writeCache(final ClassIndex classIndex, final List<MemberDescriptor> members) throws FileNotFoundException {
+        final Config config = Config.load();
+        final String fqcn = classIndex.getRawDeclaration();
+        final String dir = config.getProjectSettingDir();
+        final File root = new File(dir);
+        final String path = FileUtils.toHashedPath(fqcn, GlobalCache.CACHE_EXT);
 
-        final String javaVersion = Config.load().getJavaVersion();
-        final String rawDeclaration = classIndex.getRawDeclaration();
+        final String out1 = Joiner.on(File.separator).join(GlobalCache.CLASS_CACHE_DIR, path);
+        final String out2 = Joiner.on(File.separator).join(GlobalCache.MEMBER_CACHE_DIR, path);
+        final File file1 = new File(root, out1);
+        final File file2 = new File(root, out2);
 
-        final String path = FileUtils.toHashedPath(rawDeclaration, ".dat");
-        final String out1 = Joiner.on(File.separator).join(javaVersion, "class", path);
-        final String out2 = Joiner.on(File.separator).join(javaVersion, "member", path);
-
-        final File outFile1 = new File(root, out1);
-        final File outFile2 = new File(root, out2);
-
-        outFile1.getParentFile().mkdirs();
-        outFile2.getParentFile().mkdirs();
+        file1.getParentFile().mkdirs();
+        file2.getParentFile().mkdirs();
 
         // ClassIndex
         final GlobalCache globalCache = GlobalCache.getInstance();
-        globalCache.asyncWriteCache(outFile1, classIndex);
-        globalCache.asyncWriteCache(outFile2, members);
+        globalCache.asyncWriteCache(file1, classIndex);
+        globalCache.asyncWriteCache(file2, members);
+
     }
 
-    private ClassIndex readClassIndexFromCache(final String fqcn, final File root) throws IOException {
-        final File in = this.getClassCacheFile(fqcn, root);
+    private ClassIndex readClassIndexFromCache(final String fqcn) throws IOException {
+        final File in = this.getClassCacheFile(fqcn);
         if (in.exists()) {
             final GlobalCache globalCache = GlobalCache.getInstance();
             return globalCache.readCacheFromFile(in, ClassIndex.class);

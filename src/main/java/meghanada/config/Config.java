@@ -27,6 +27,7 @@ public class Config {
     public static final String MEGHANADA_CONF_FILE = ".meghanada.conf";
     public static final String GRADLE_PREPARE_COMPILE_TASK = "gradle-prepare-compile-task";
     public static final String GRADLE_PREPARE_TEST_COMPILE_TASK = "gradle-prepare-test-compile-task";
+    public static final String MEGHANADA_DIR = ".meghanada";
     private static Logger log = LogManager.getLogger(Config.class);
     private static Config config;
 
@@ -58,16 +59,10 @@ public class Config {
         log.debug("java-version:{}", getJavaVersion());
         log.debug("user-home:{}", getUserHomeDir());
         log.debug("project-root-dir:{}", getProjectRootDir());
-        log.debug("root-cache-dir:{}", getRootCacheDir());
         log.debug("project-setting-dir:{}", getProjectSettingDir());
-        log.debug("project-cache-dir:{}", getProjectCacheDir());
         log.debug("fast-boot:{}", useFastBoot());
         log.debug("class-fuzzy-search:{}", useClassFuzzySearch());
 
-        final File cache = new File(getProjectCacheDir());
-        if (!cache.exists()) {
-            cache.mkdirs();
-        }
     }
 
     public static Config load() {
@@ -184,25 +179,17 @@ public class Config {
         return c.getString("java-home");
     }
 
-    public String getRootCacheDir() {
-        return c.getString("root-cache-dir");
-    }
-
     public String getProjectSettingDir() {
         final String root = System.getProperty(Project.PROJECT_ROOT_KEY);
         try {
             if (root != null && !root.isEmpty()) {
-                return new File(root, ".meghanada").getCanonicalPath();
+                return new File(root, MEGHANADA_DIR).getCanonicalPath();
             } else {
                 return c.getString("project-setting-dir");
             }
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
-    }
-
-    public String getProjectCacheDir() {
-        return c.getString("project-cache-dir");
     }
 
     public String getJavaVersion() {

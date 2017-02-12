@@ -26,6 +26,16 @@ import java.util.concurrent.*;
 
 public class GlobalCache {
 
+    public static final String SOURCE_CACHE_DIR = "source";
+    public static final String CLASS_CACHE_DIR = "class";
+    public static final String MEMBER_CACHE_DIR = "member";
+    public static final String DATA_DIR = "data";
+    public static final String SOURCE_CHECKSUM_DATA = "source_checksum";
+    public static final String COMPILE_CHECKSUM_DATA = "compile_checksum";
+    public static final String CALLER_DATA = "source_caller";
+    public static final String PROJECT_DATA = "project";
+
+    public static final String CACHE_EXT = ".dat";
     private static final Logger log = LogManager.getLogger(GlobalCache.class);
     private static GlobalCache globalCache;
     private final KryoPool kryoPool;

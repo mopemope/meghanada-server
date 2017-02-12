@@ -31,6 +31,10 @@ import java.util.stream.Collectors;
 @DefaultSerializer(ProjectSerializer.class)
 public abstract class Project {
 
+    public static final String GRADLE_PROJECT_FILE = "build.gradle";
+    public static final String MVN_PROJECT_FILE = "pom.xml";
+    public static final String PROJECT_CACHE_FILE = "project.dat";
+
     public static final String DEFAULT_PATH = File.separator + "src" + File.separator + "main" + File.separator;
     public static final String PROJECT_ROOT_KEY = "project.root";
     public final static Map<String, Project> loadedProject = new HashMap<>();
@@ -250,14 +254,11 @@ public abstract class Project {
             if (callerMap.size() == 0) {
                 force = true;
             }
-            final File callerFile = FileUtils.getSettingFile(JavaAnalyzer.CALLER);
+            final File callerFile = FileUtils.getProjectDataFile(GlobalCache.CALLER_DATA);
             if (force && callerFile.exists()) {
                 callerFile.delete();
             }
-            files = force ? files : FileUtils.getModifiedSources(JavaAnalyzer.COMPILE_CHECKSUM,
-                    files,
-                    this.getAllSources(),
-                    this.output);
+            files = force ? files : FileUtils.getModifiedSources(files, this.getAllSources(), this.output);
 
             files = addDepends(this.getAllSources(), files);
 
@@ -330,15 +331,12 @@ public abstract class Project {
             if (callerMap.size() == 0) {
                 force = true;
             }
-            final File callerFile = FileUtils.getSettingFile(JavaAnalyzer.CALLER);
+            final File callerFile = FileUtils.getProjectDataFile(GlobalCache.CALLER_DATA);
             if (force && callerFile.exists()) {
                 callerFile.delete();
             }
 
-            files = force ? files : FileUtils.getModifiedSources(JavaAnalyzer.COMPILE_CHECKSUM,
-                    files,
-                    this.getAllSources(),
-                    this.testOutput);
+            files = force ? files : FileUtils.getModifiedSources(files, this.getAllSources(), this.testOutput);
             files = addDepends(this.getAllSources(), files);
             final String projectName = this.getProjectRoot().getName();
             this.prepareTestCompile(files);
@@ -425,10 +423,7 @@ public abstract class Project {
             List<File> files = new ArrayList<>();
             files.add(file);
 
-            files = force ? files : FileUtils.getModifiedSources(JavaAnalyzer.COMPILE_CHECKSUM,
-                    files,
-                    this.getAllSources(),
-                    new File(output));
+            files = force ? files : FileUtils.getModifiedSources(files, this.getAllSources(), new File(output));
             files = addDepends(this.getAllSources(), files);
             return getJavaAnalyzer().analyzeAndCompile(files, this.allClasspath(), output);
         }
@@ -457,10 +452,7 @@ public abstract class Project {
                 .filter(FileUtils::filterFile)
                 .collect(Collectors.toList());
 
-        filesList = force ? filesList : FileUtils.getModifiedSources(JavaAnalyzer.COMPILE_CHECKSUM,
-                files,
-                this.getAllSources(),
-                new File(output));
+        filesList = force ? filesList : FileUtils.getModifiedSources(files, this.getAllSources(), new File(output));
         filesList = addDepends(this.getAllSources(), filesList);
         return getJavaAnalyzer().analyzeAndCompile(filesList, this.allClasspath(), output);
     }
@@ -689,7 +681,7 @@ public abstract class Project {
             final Map<File, Source> sourceMap = compileResult.getSources();
             final Map<File, Map<String, String>> checksum = config.getAllChecksumMap();
 
-            final File checksumFile = FileUtils.getSettingFile(JavaAnalyzer.COMPILE_CHECKSUM);
+            final File checksumFile = FileUtils.getProjectDataFile(GlobalCache.SOURCE_CHECKSUM_DATA);
             final Map<String, String> checksumMap = checksum.getOrDefault(checksumFile, new ConcurrentHashMap<>());
 
             for (final Source source : sourceMap.values()) {
@@ -766,12 +758,12 @@ public abstract class Project {
     }
 
     private synchronized void writeCaller() {
-        final File callerFile = FileUtils.getSettingFile(JavaAnalyzer.CALLER);
+        final File callerFile = FileUtils.getProjectDataFile(GlobalCache.CALLER_DATA);
         GlobalCache.getInstance().asyncWriteCache(callerFile, callerMap);
     }
 
     synchronized void loadCaller() {
-        final File callerFile = FileUtils.getSettingFile(JavaAnalyzer.CALLER);
+        final File callerFile = FileUtils.getProjectDataFile(GlobalCache.CALLER_DATA);
         if (!callerFile.exists()) {
             return;
         }

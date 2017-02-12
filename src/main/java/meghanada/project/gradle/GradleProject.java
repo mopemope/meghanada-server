@@ -51,7 +51,7 @@ public class GradleProject extends Project {
                 break;
             }
 
-            final File gradle = new File(dir, Session.GRADLE_PROJECT_FILE);
+            final File gradle = new File(dir, Project.GRADLE_PROJECT_FILE);
             if (!gradle.exists()) {
                 break;
             }

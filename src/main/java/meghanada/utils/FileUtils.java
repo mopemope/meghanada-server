@@ -184,13 +184,14 @@ public final class FileUtils {
         return properties.getProperty("version");
     }
 
-    public static File getSettingFile(final String fileName) {
+    public static File getProjectDataFile(final String key) {
         final String settingDir = Config.load().getProjectSettingDir();
-        final File dir = new File(settingDir);
-        if (!dir.exists() && !dir.mkdirs()) {
-            log.warn("fail create directory={}", dir);
+        final File root = new File(settingDir, GlobalCache.DATA_DIR);
+        if (!root.exists() && !root.mkdirs()) {
+            log.warn("fail create directory={}", root);
         }
-        return new File(dir, fileName);
+        final String path = FileUtils.toHashedPath(settingDir + ":" + key, GlobalCache.CACHE_EXT);
+        return new File(root, path);
     }
 
     @SuppressWarnings("unchecked")
@@ -279,10 +280,9 @@ public final class FileUtils {
         return new ArrayList<>(temp);
     }
 
-    public static List<File> getModifiedSources(final String filePath, final List<File> sourceFiles,
-                                                final Set<File> sourceRoots, final File output) throws IOException {
+    public static List<File> getModifiedSources(final List<File> sourceFiles, final Set<File> sourceRoots, final File output) throws IOException {
 
-        final File checksumFile = FileUtils.getSettingFile(filePath);
+        final File checksumFile = FileUtils.getProjectDataFile(GlobalCache.SOURCE_CHECKSUM_DATA);
         final Config config = Config.load();
         final Map<String, String> map = config.getChecksumMap(checksumFile);
 

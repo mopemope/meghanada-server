@@ -21,20 +21,15 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class JavaAnalyzer {
 
-    public static final String COMPILE_CHECKSUM = "compile_checksum.dat";
-    public static final String CALLER = "source_caller.dat";
-
     private static final Logger log = LogManager.getLogger(JavaAnalyzer.class);
     private final JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
     private final TreeAnalyzer treeAnalyzer = new TreeAnalyzer();
-    private final Set<File> sourceRoots;
     private String compileSource = "1.8";
     private String compileTarget = "1.8";
 
     public JavaAnalyzer(final String compileSource, final String compileTarget, final Set<File> sourceRoots) {
         this.compileSource = compileSource;
         this.compileTarget = compileTarget;
-        this.sourceRoots = sourceRoots;
         log.debug("Compiler settings compileSource:{} compileTarget:{}", this.compileSource, this.compileTarget);
     }
 

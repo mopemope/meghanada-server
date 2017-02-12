@@ -1,5 +1,6 @@
 package meghanada.cache;
 
+import com.google.common.base.Joiner;
 import com.google.common.base.Stopwatch;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.RemovalCause;
@@ -31,10 +32,8 @@ import static meghanada.utils.FunctionUtils.wrapIOConsumer;
 public class MemberCacheLoader extends CacheLoader<String, List<MemberDescriptor>> implements RemovalListener<String, List<MemberDescriptor>> {
 
     private static final Logger log = LogManager.getLogger(MemberCacheLoader.class);
-    private static final String CLASS_CHECKSUM = "class_checksum.dat";
     private final Map<String, File> classFileMap;
     private final Map<ClassIndex, File> reflectIndex;
-    private final String javaVersion;
     private final Map<String, String> cacheChecksum;
     private final File cacheChecksumFile;
 
@@ -42,9 +41,8 @@ public class MemberCacheLoader extends CacheLoader<String, List<MemberDescriptor
         this.classFileMap = classFileMap;
         this.reflectIndex = reflectIndex;
         Config config = Config.load();
-        this.javaVersion = Config.load().getJavaVersion();
 
-        this.cacheChecksumFile = getChecksumFile();
+        this.cacheChecksumFile = FileUtils.getProjectDataFile(GlobalCache.COMPILE_CHECKSUM_DATA);
         if (this.cacheChecksumFile.exists()) {
             this.cacheChecksum = new ConcurrentHashMap<>(this.readCacheChecksum(this.cacheChecksumFile));
         } else {
@@ -52,24 +50,17 @@ public class MemberCacheLoader extends CacheLoader<String, List<MemberDescriptor
         }
     }
 
-    private File getChecksumFile() {
-        final String settingDir = Config.load().getProjectSettingDir();
-        final File settingFile = new File(settingDir);
-        if (!settingFile.exists()) {
-            settingFile.mkdirs();
-        }
-        return new File(settingFile, CLASS_CHECKSUM);
-    }
-
     @Override
     public List<MemberDescriptor> load(final String className) throws IOException {
 
         final ClassName cn = new ClassName(className);
         final String fqcn = cn.getName();
-        final String path = ClassNameUtils.replace(fqcn, ".", File.separator);
         final Config config = Config.load();
-        final File cacheFilePath = new File(config.getProjectCacheDir(),
-                this.javaVersion + File.pathSeparator + "member" + File.pathSeparator + path + ".dat");
+        final String dir = config.getProjectSettingDir();
+        final File root = new File(dir);
+        final String path = FileUtils.toHashedPath(fqcn, GlobalCache.CACHE_EXT);
+        final String out = Joiner.on(File.separator).join(GlobalCache.MEMBER_CACHE_DIR, path);
+        final File cacheFilePath = new File(root, out);
 
         File classFile = this.classFileMap.get(fqcn);
         if (classFile == null) {
@@ -166,14 +157,14 @@ public class MemberCacheLoader extends CacheLoader<String, List<MemberDescriptor
         final Config config = Config.load();
         reflector.containsClassIndex(fqcn)
                 .map(wrapIO(classIndex -> {
-                    reflector.writeCache(classIndex, list, new File(config.getProjectCacheDir()));
+                    reflector.writeCache(classIndex, list);
                     return true;
                 }))
                 .orElseGet(() -> {
                     final String fqcn2 = ClassNameUtils.replaceInnerMark(fqcn);
                     reflector.containsClassIndex(fqcn2)
                             .ifPresent(wrapIOConsumer(classIndex -> {
-                                reflector.writeCache(classIndex, list, new File(config.getProjectCacheDir()));
+                                reflector.writeCache(classIndex, list);
                             }));
                     return true;
                 });

@@ -22,8 +22,10 @@ import java.util.List;
 @DefaultSerializer(ProjectSerializer.class)
 public class MavenProject extends Project {
 
-    private static final String PROJECT_FILE = "pom.xml";
     private static final String REPOSITORY = "repository";
+    private static final String RESOLVE_TASK = "dependency:resolve";
+    private static final String BUILD_CLASSPATH_TASK = "dependency:build-classpath";
+
     private static Logger log = LogManager.getLogger(MavenProject.class);
 
     private File pomFile;
@@ -31,7 +33,7 @@ public class MavenProject extends Project {
 
     public MavenProject(File projectRoot) throws IOException {
         super(projectRoot);
-        this.pomFile = new File(projectRoot, PROJECT_FILE);
+        this.pomFile = new File(projectRoot, Project.MVN_PROJECT_FILE);
     }
 
     public void setMavenPath(String maven) {
@@ -66,10 +68,10 @@ public class MavenProject extends Project {
             final File logFile = File.createTempFile("meghanada-maven-classpath", ".log");
             logFile.deleteOnExit();
             final String logPath = logFile.getCanonicalPath();
-            if (this.runMvn("dependency:resolve") != 0) {
+            if (this.runMvn(RESOLVE_TASK) != 0) {
                 throw new ProjectParseException("Could not resolve dependencies. please try 'mvn dependency:resolve' or 'mvn install'");
             }
-            if (this.runMvn("dependency:build-classpath", String.format("-Dmdep.outputFile=%s", logPath)) != 0) {
+            if (this.runMvn(BUILD_CLASSPATH_TASK, String.format("-Dmdep.outputFile=%s", logPath)) != 0) {
                 throw new ProjectParseException("Could not resolve dependencies. please try 'mvn dependency:resolve' or 'mvn install'");
             }
 

@@ -6,7 +6,6 @@ import com.google.common.cache.RemovalCause;
 import com.google.common.cache.RemovalListener;
 import com.google.common.cache.RemovalNotification;
 import meghanada.analyze.CompileResult;
-import meghanada.analyze.JavaAnalyzer;
 import meghanada.analyze.Source;
 import meghanada.config.Config;
 import meghanada.project.Project;
@@ -33,11 +32,10 @@ public class JavaSourceLoader extends CacheLoader<File, Source> implements Remov
     public Source writeSourceCache(final Source source) throws IOException {
         final File sourceFile = source.getFile();
         final Config config = Config.load();
-        final String dir = config.getProjectCacheDir();
+        final String dir = config.getProjectSettingDir();
         final File root = new File(dir);
-        final String javaVersion = config.getJavaVersion();
-        final String path = FileUtils.toHashedPath(sourceFile, ".dat");
-        final String out = Joiner.on(File.separator).join(javaVersion, "source", path);
+        final String path = FileUtils.toHashedPath(sourceFile, GlobalCache.CACHE_EXT);
+        final String out = Joiner.on(File.separator).join(GlobalCache.SOURCE_CACHE_DIR, path);
         final File file = new File(root, out);
 
         file.getParentFile().mkdirs();
@@ -50,11 +48,10 @@ public class JavaSourceLoader extends CacheLoader<File, Source> implements Remov
     public Source removeSourceCache(final Source source) throws IOException {
         final File sourceFile = source.getFile();
         final Config config = Config.load();
-        final String dir = config.getProjectCacheDir();
+        final String dir = config.getProjectSettingDir();
         final File root = new File(dir);
-        final String javaVersion = config.getJavaVersion();
-        final String path = FileUtils.toHashedPath(sourceFile, ".dat");
-        final String out = Joiner.on(File.separator).join(javaVersion, "source", path);
+        final String path = FileUtils.toHashedPath(sourceFile, GlobalCache.CACHE_EXT);
+        final String out = Joiner.on(File.separator).join(GlobalCache.SOURCE_CACHE_DIR, path);
         final File file = new File(root, out);
         file.delete();
         return source;
@@ -63,11 +60,10 @@ public class JavaSourceLoader extends CacheLoader<File, Source> implements Remov
     private Optional<Source> loadFromCache(final File sourceFile) throws IOException {
 
         final Config config = Config.load();
-        final String dir = config.getProjectCacheDir();
+        final String dir = config.getProjectSettingDir();
         final File root = new File(dir);
-        final String javaVersion = config.getJavaVersion();
-        final String path = FileUtils.toHashedPath(sourceFile, ".dat");
-        final String out = Joiner.on(File.separator).join(javaVersion, "source", path);
+        final String path = FileUtils.toHashedPath(sourceFile, GlobalCache.CACHE_EXT);
+        final String out = Joiner.on(File.separator).join(GlobalCache.SOURCE_CACHE_DIR, path);
         final File file = new File(root, out);
 
         if (!file.exists()) {
@@ -88,7 +84,7 @@ public class JavaSourceLoader extends CacheLoader<File, Source> implements Remov
             return compileResult.getSources().get(file);
         }
 
-        final File checksumFile = FileUtils.getSettingFile(JavaAnalyzer.COMPILE_CHECKSUM);
+        final File checksumFile = FileUtils.getProjectDataFile(GlobalCache.SOURCE_CHECKSUM_DATA);
         final Map<String, String> finalChecksumMap = config.getChecksumMap(checksumFile);
 
         final String path = file.getCanonicalPath();

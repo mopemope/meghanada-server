@@ -36,9 +36,6 @@ import java.util.stream.Collectors;
 
 public class Session {
 
-    public static final String GRADLE_PROJECT_FILE = "build.gradle";
-    private static final String PROJECT_CACHE = "project.dat";
-    private static final String MVN_PROJECT_FILE = "pom.xml";
     private static final Logger log = LogManager.getLogger(Session.class);
 
     private static final Pattern SWITCH_TEST_RE = Pattern.compile("Test.java", Pattern.LITERAL);
@@ -83,16 +80,16 @@ public class Session {
             }
 
             // challenge
-            File gradle = new File(base, GRADLE_PROJECT_FILE);
-            File mvn = new File(base, MVN_PROJECT_FILE);
+            File gradle = new File(base, Project.GRADLE_PROJECT_FILE);
+            File mvn = new File(base, Project.MVN_PROJECT_FILE);
             File meghanada = new File(base, Config.MEGHANADA_CONF_FILE);
 
             if (gradle.exists()) {
                 log.debug("find gradle project {}", gradle);
-                return loadProject(base, GRADLE_PROJECT_FILE);
+                return loadProject(base, Project.GRADLE_PROJECT_FILE);
             } else if (mvn.exists()) {
                 log.debug("find mvn project {}", mvn);
-                return loadProject(base, MVN_PROJECT_FILE);
+                return loadProject(base, Project.MVN_PROJECT_FILE);
             } else if (meghanada.exists()) {
                 log.debug("find meghanada project {}", meghanada);
                 return loadProject(base, Config.MEGHANADA_CONF_FILE);
@@ -132,7 +129,7 @@ public class Session {
 
             if (config.useFastBoot()) {
 
-                final File projectCache = new File(projectSettingDir, PROJECT_CACHE);
+                final File projectCache = FileUtils.getProjectDataFile(GlobalCache.PROJECT_DATA);
 
                 if (projectCache.exists()) {
                     try {
@@ -152,9 +149,9 @@ public class Session {
             }
 
             Project project;
-            if (targetFile.equals(GRADLE_PROJECT_FILE)) {
+            if (targetFile.equals(Project.GRADLE_PROJECT_FILE)) {
                 project = new GradleProject(projectRoot);
-            } else if (targetFile.equals(MVN_PROJECT_FILE)) {
+            } else if (targetFile.equals(Project.MVN_PROJECT_FILE)) {
                 project = new MavenProject(projectRoot);
             } else {
                 project = new MeghanadaProject(projectRoot);
@@ -163,7 +160,7 @@ public class Session {
 
             final Project parsed = project.parseProject();
             if (config.useFastBoot()) {
-                final File projectCache = new File(projectSettingDir, PROJECT_CACHE);
+                final File projectCache = FileUtils.getProjectDataFile(GlobalCache.PROJECT_DATA);
                 Session.writeProjectCache(parsed, projectCache);
             }
             log.info("load project projectRoot:{}", project.getProjectRoot());
@@ -215,7 +212,7 @@ public class Session {
         }
 
         if (currentProject instanceof GradleProject) {
-            return loadProject(projectRoot, GRADLE_PROJECT_FILE).map(project -> {
+            return loadProject(projectRoot, Project.GRADLE_PROJECT_FILE).map(project -> {
                 this.currentProject = project;
                 this.projects.put(projectRoot, this.currentProject);
                 this.getLocationSearcher().setProject(this.getCurrentProject());
@@ -224,7 +221,7 @@ public class Session {
                 return true;
             }).orElse(false);
         } else if (currentProject instanceof MavenProject) {
-            return loadProject(projectRoot, MVN_PROJECT_FILE).map(project -> {
+            return loadProject(projectRoot, Project.MVN_PROJECT_FILE).map(project -> {
                 this.currentProject = project;
                 this.projects.put(projectRoot, this.currentProject);
                 this.getLocationSearcher().setProject(this.getCurrentProject());
@@ -252,8 +249,8 @@ public class Session {
             }
 
             // challenge
-            File gradle = new File(base, GRADLE_PROJECT_FILE);
-            File mvn = new File(base, MVN_PROJECT_FILE);
+            File gradle = new File(base, Project.GRADLE_PROJECT_FILE);
+            File mvn = new File(base, Project.MVN_PROJECT_FILE);
             File meghanada = new File(base, Config.MEGHANADA_CONF_FILE);
 
             if (gradle.exists()) {
