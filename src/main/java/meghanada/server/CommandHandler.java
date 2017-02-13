@@ -18,7 +18,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import static meghanada.config.Config.timeIt;
 import static meghanada.utils.FunctionUtils.wrapIOConsumer;
 
 public class CommandHandler {
@@ -43,44 +42,42 @@ public class CommandHandler {
             writer.write(out);
             writer.newLine();
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            log.catching(e);
         }
     }
 
     public void diagnostics(String path) {
         try {
             path = new File(path).getCanonicalPath();
-            final CompileResult compileResult = timeIt(session::compileProject);
+            final CompileResult compileResult = session.compileProject();
             final String out = outputFormatter.diagnostics(compileResult, path);
             writer.write(out);
             writer.newLine();
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            log.catching(e);
         }
     }
 
     public void compile(final String path) {
         try {
             final String canonicalPath = new File(path).getCanonicalPath();
-            final CompileResult compileResult = timeIt(() -> {
-                return session.compileFile(canonicalPath);
-            });
+            final CompileResult compileResult = session.compileFile(canonicalPath);
             final String out = outputFormatter.compile(compileResult, canonicalPath);
             writer.write(out);
             writer.newLine();
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            log.catching(e);
         }
     }
 
     public void compileProject() {
         try {
-            final CompileResult compileResult = timeIt(session::compileProject);
+            final CompileResult compileResult = session.compileProject();
             final String out = outputFormatter.compileProject(compileResult);
             writer.write(out);
             writer.newLine();
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            log.catching(e);
         }
     }
 
@@ -89,16 +86,12 @@ public class CommandHandler {
         try {
             int lineInt = Integer.parseInt(line);
             int columnInt = Integer.parseInt(column);
-            final Collection<? extends CandidateUnit> units = timeIt(() -> {
-                return session.completionAt(path, lineInt,
-                        columnInt,
-                        prefix);
-            });
+            final Collection<? extends CandidateUnit> units = session.completionAt(path, lineInt, columnInt, prefix);
             final String out = outputFormatter.autocomplete(units);
             writer.write(out);
             writer.newLine();
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            log.catching(e);
         }
     }
 
@@ -112,7 +105,7 @@ public class CommandHandler {
             }
             writer.newLine();
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            log.catching(e);
         }
 
     }
@@ -124,48 +117,41 @@ public class CommandHandler {
             writer.write(out);
             writer.newLine();
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            log.catching(e);
         }
     }
 
     public void addImport(final String path, final String fqcn) {
         try {
-            boolean result = timeIt(() -> {
-                return session.addImport(path, fqcn);
-            });
-
+            boolean result = session.addImport(path, fqcn);
             final String out = outputFormatter.addImport(result, fqcn);
             writer.write(out);
             writer.newLine();
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            log.catching(e);
         }
 
     }
 
     public void optimizeImport(String path) {
         try {
-            final List<String> result = timeIt(() -> {
-                return session.optimizeImport(path);
-            });
+            final List<String> result = session.optimizeImport(path);
             final String out = outputFormatter.optimizeImport(result);
             writer.write(out);
             writer.newLine();
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            log.catching(e);
         }
     }
 
     public void importAll(String path) {
         try {
-            final Map<String, List<String>> result = timeIt(() -> {
-                return session.searchMissingImport(path);
-            });
+            final Map<String, List<String>> result = session.searchMissingImport(path);
             final String out = outputFormatter.importAll(result);
             writer.write(out);
             writer.newLine();
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            log.catching(e);
         }
     }
 
@@ -176,7 +162,7 @@ public class CommandHandler {
             writer.write(out);
             writer.newLine();
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            log.catching(e);
         }
     }
 
@@ -185,7 +171,7 @@ public class CommandHandler {
             writer.write("pong");
             writer.newLine();
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            log.catching(e);
         }
     }
 
@@ -193,16 +179,14 @@ public class CommandHandler {
         int lineInt = Integer.parseInt(line);
         int columnInt = Integer.parseInt(col);
         try {
-            final Location location = timeIt(() -> {
-                return session.jumpDeclaration(path, lineInt, columnInt, symbol);
-            });
+            final Location location = session.jumpDeclaration(path, lineInt, columnInt, symbol);
             if (location != null) {
                 String out = outputFormatter.jumpDeclaration(location);
                 writer.write(out);
             }
             writer.newLine();
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            log.catching(e);
         }
 
     }
@@ -216,7 +200,7 @@ public class CommandHandler {
             }
             writer.newLine();
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            log.catching(e);
         }
     }
 
@@ -230,7 +214,7 @@ public class CommandHandler {
             }
             writer.newLine();
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            log.catching(e);
         }
     }
 
@@ -241,7 +225,7 @@ public class CommandHandler {
             writer.write(out);
             writer.newLine();
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            log.catching(e);
         }
 
     }
@@ -249,30 +233,25 @@ public class CommandHandler {
     public void localVariable(final String path, final String line) {
         final int lineInt = Integer.parseInt(line);
         try {
-            final Optional<LocalVariable> localVariable = timeIt(() -> {
-                return session.localVariable(path, lineInt);
-            });
+            final Optional<LocalVariable> localVariable = session.localVariable(path, lineInt);
             localVariable.ifPresent(wrapIOConsumer(lv -> {
                 final String out = outputFormatter.localVariable(lv);
                 writer.write(out);
             }));
             writer.newLine();
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            log.catching(e);
         }
     }
 
     public void formatCode(String path) {
         try {
             final String canonicalPath = new File(path).getCanonicalPath();
-            final boolean result = timeIt(() -> {
-                session.formatCode(canonicalPath);
-                return true;
-            });
+            session.formatCode(canonicalPath);
             writer.write(outputFormatter.formatCode(canonicalPath));
             writer.newLine();
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            log.catching(e);
         }
     }
 

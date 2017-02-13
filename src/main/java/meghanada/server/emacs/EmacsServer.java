@@ -1,5 +1,6 @@
 package meghanada.server.emacs;
 
+import com.google.common.base.Stopwatch;
 import meghanada.server.CommandHandler;
 import meghanada.server.OutputFormatter;
 import meghanada.server.Server;
@@ -149,8 +150,8 @@ public class EmacsServer implements Server {
     }
 
     private boolean dispatch(final List<String> argList, final CommandHandler handler) {
-        log.info("receive command {}", argList);
-        return match(argList)
+        final Stopwatch stopwatch = Stopwatch.createStarted();
+        final boolean result = match(argList)
                 .when(headTail(eq("pc"), any())).get(args -> {
                     // pc : Project Change
                     // usage: pc <filepath>
@@ -269,6 +270,9 @@ public class EmacsServer implements Server {
                     return false;
                 })
                 .getMatch();
+
+        log.info("receive command {}. elpased:{}", argList, stopwatch.stop());
+        return result;
     }
 
     private OutputFormatter getOutputFormatter() {
