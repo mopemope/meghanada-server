@@ -113,7 +113,6 @@ public class CachedASMReflector {
                 //skip cached jar
                 return;
             }
-
             final ASMReflector reflector = ASMReflector.getInstance();
             reflector.getClasses(file)
                     .entrySet()
@@ -541,4 +540,7 @@ public class CachedASMReflector {
         return this.standardClasses;
     }
 
+    public void resetClassFileMap() {
+        this.classFileMap.clear();
+    }
 }

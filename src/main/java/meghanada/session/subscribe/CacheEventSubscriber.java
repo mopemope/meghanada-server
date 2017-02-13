@@ -38,7 +38,7 @@ public class CacheEventSubscriber extends AbstractSubscriber {
         final Project project = session.getCurrentProject();
         final CachedASMReflector reflector = CachedASMReflector.getInstance();
 
-        boolean result = timeItF("project analyze and compile elapsed:{}", () -> {
+        boolean result = timeItF("analyzed and compiled. elapsed:{}", () -> {
             try {
                 final CompileResult compileResult = project.compileJava(false, true);
                 if (!compileResult.isSuccess()) {
@@ -65,6 +65,6 @@ public class CacheEventSubscriber extends AbstractSubscriber {
             reflector.addClasspath(dependency.getTestOutputDirectory());
         }
         reflector.createClassIndexes();
-        log.info("class index size:{} elapsed:{}", reflector.getGlobalClassIndex().size(), stopwatch.stop());
+        log.info("create class index.size:{} elapsed:{}", reflector.getGlobalClassIndex().size(), stopwatch.stop());
     }
 }

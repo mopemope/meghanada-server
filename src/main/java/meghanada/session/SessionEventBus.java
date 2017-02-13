@@ -74,11 +74,11 @@ public class SessionEventBus {
         return eventBus;
     }
 
-    public void requestClassCache() {
-        this.requestClassCache(false);
+    public void requestCreateCache() {
+        this.requestCreateCache(false);
     }
 
-    public void requestClassCache(final boolean onlyOutputDir) {
+    public void requestCreateCache(final boolean onlyOutputDir) {
         this.eventBus.post(new ClassCacheRequest(this.session, onlyOutputDir));
     }
 
@@ -86,12 +86,12 @@ public class SessionEventBus {
         this.eventBus.post(new ParseRequest(this.session, file));
     }
 
-    public void requestFileWatch(List<File> files) {
-        this.eventBus.post(new FileWatchRequest(this.session, files));
+    public void requestWatchFiles(final List<File> files) {
+        this.eventBus.post(new FilesWatchRequest(this.session, files));
     }
 
-    public void requestParseFiles(List<File> files) {
-        this.eventBus.post(new ParseFilesRequest(this.session, files));
+    public void requestWatchFile(final File file) {
+        this.eventBus.post(new FileWatchRequest(this.session, file, false));
     }
 
     static abstract class IORequest {
@@ -176,10 +176,21 @@ public class SessionEventBus {
 
     }
 
-    public static class FileWatchRequest extends IOListRequest {
+    public static class FilesWatchRequest extends IOListRequest {
 
-        public FileWatchRequest(Session session, List<File> files) {
+        public FilesWatchRequest(final Session session, final List<File> files) {
             super(session, files);
+        }
+
+    }
+
+    public static class FileWatchRequest extends IORequest {
+
+        public boolean recursive;
+
+        public FileWatchRequest(final Session session, final File file, final boolean recursive) {
+            super(session, file);
+            this.recursive = recursive;
         }
 
     }

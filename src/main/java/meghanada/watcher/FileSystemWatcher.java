@@ -9,16 +9,18 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class FileSystemWatcher {
 
     private static Logger log = LogManager.getLogger(FileSystemWatcher.class);
     private final EventBus eventBus;
+    public boolean started;
     private boolean abort;
+    private WatchKeyHolder watchKeyHolder;
 
     public FileSystemWatcher(EventBus eventBus) {
         this.eventBus = eventBus;
@@ -32,33 +34,52 @@ public class FileSystemWatcher {
 
     public void stop() {
         this.abort = true;
+        this.started = false;
     }
 
-    public void start(List<File> files) throws IOException {
+    public void watch(final File file) throws IOException {
+        if (this.watchKeyHolder != null) {
+            final Path path = file.toPath();
+            this.watchKeyHolder.register(path);
+        }
+    }
+
+    public void watchFiles(final List<File> files) throws IOException {
+        if (this.watchKeyHolder != null) {
+            for (final File root : files) {
+                if (root.exists()) {
+                    final Path rootPath = root.toPath();
+                    this.watchKeyHolder.walk(rootPath);
+                }
+            }
+        }
+    }
+
+    public void start(final List<File> files) throws IOException {
         this.abort = false;
         final FileSystem fileSystem = FileSystems.getDefault();
 
         try (final WatchService watchService = fileSystem.newWatchService()) {
 
-            final WatchKeyHolder watchKeyHolder = new WatchKeyHolder(watchService);
+            this.watchKeyHolder = new WatchKeyHolder(watchService);
             for (final File root : files) {
                 if (root.exists()) {
                     final Path rootPath = root.toPath();
-                    watchKeyHolder.walk(rootPath);
+                    this.watchKeyHolder.walk(rootPath);
                 }
             }
-
+            this.started = true;
             while (!abort) {
                 final WatchKey key = watchService.take();
 
-                this.handleEvent(watchKeyHolder, key);
+                this.handleEvent(this.watchKeyHolder, key);
 
                 if (!key.reset()) {
-                    watchKeyHolder.remove(key);
+                    this.watchKeyHolder.remove(key);
                 }
 
-                watchKeyHolder.sweep();
-                if (watchKeyHolder.isEmpty()) {
+                this.watchKeyHolder.sweep();
+                if (this.watchKeyHolder.isEmpty()) {
                     break;
                 }
             }
@@ -99,7 +120,7 @@ public class FileSystemWatcher {
         return eventBus;
     }
 
-    private FileEvent toEvent(WatchEvent<?> watchEvent, Path path) {
+    private FileEvent toEvent(final WatchEvent<?> watchEvent, final Path path) {
         if (watchEvent.kind().name().equals("ENTRY_CREATE")) {
             return new CreateEvent(path.toFile());
         } else if (watchEvent.kind().name().equals("ENTRY_MODIFY")) {
@@ -111,9 +132,9 @@ public class FileSystemWatcher {
     }
 
     static class FileEvent {
-        File file;
+        final File file;
 
-        FileEvent(File file) {
+        FileEvent(final File file) {
             this.file = file;
         }
 
@@ -130,23 +151,19 @@ public class FileSystemWatcher {
     }
 
     public static class CreateEvent extends FileEvent {
-
-        CreateEvent(File file) {
+        CreateEvent(final File file) {
             super(file);
         }
-
     }
 
     public static class ModifyEvent extends FileEvent {
-
-        ModifyEvent(File file) {
+        ModifyEvent(final File file) {
             super(file);
         }
     }
 
     private static class DeleteEvent extends FileEvent {
-
-        DeleteEvent(File file) {
+        DeleteEvent(final File file) {
             super(file);
         }
     }
@@ -154,13 +171,13 @@ public class FileSystemWatcher {
     private static class WatchKeyHolder {
 
         private final WatchService watchService;
-        private final Map<WatchKey, Path> watchKeys = new HashMap<>();
+        private final Map<WatchKey, Path> watchKeys = new ConcurrentHashMap<>();
 
         WatchKeyHolder(final WatchService watchService) {
             this.watchService = watchService;
         }
 
-        void walk(Path rootPath) throws IOException {
+        void walk(final Path rootPath) throws IOException {
             Files.walkFileTree(rootPath, new SimpleFileVisitor<Path>() {
                 @Override
                 public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {

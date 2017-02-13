@@ -80,9 +80,9 @@ public class Session {
             }
 
             // challenge
-            File gradle = new File(base, Project.GRADLE_PROJECT_FILE);
-            File mvn = new File(base, Project.MVN_PROJECT_FILE);
-            File meghanada = new File(base, Config.MEGHANADA_CONF_FILE);
+            final File gradle = new File(base, Project.GRADLE_PROJECT_FILE);
+            final File mvn = new File(base, Project.MVN_PROJECT_FILE);
+            final File meghanada = new File(base, Config.MEGHANADA_CONF_FILE);
 
             if (gradle.exists()) {
                 log.debug("find gradle project {}", gradle);
@@ -249,9 +249,9 @@ public class Session {
             }
 
             // challenge
-            File gradle = new File(base, Project.GRADLE_PROJECT_FILE);
-            File mvn = new File(base, Project.MVN_PROJECT_FILE);
-            File meghanada = new File(base, Config.MEGHANADA_CONF_FILE);
+            final File gradle = new File(base, Project.GRADLE_PROJECT_FILE);
+            final File mvn = new File(base, Project.MVN_PROJECT_FILE);
+            final File meghanada = new File(base, Config.MEGHANADA_CONF_FILE);
 
             if (gradle.exists()) {
                 log.debug("find gradle project {}", gradle);
@@ -289,13 +289,16 @@ public class Session {
 
         final Set<File> temp = new HashSet<>(this.getCurrentProject().getSourceDirectories());
         temp.addAll(this.getCurrentProject().getTestSourceDirectories());
-        this.sessionEventBus.requestFileWatch(new ArrayList<>(temp));
+        this.sessionEventBus.requestWatchFiles(new ArrayList<>(temp));
 
         // load once
         final CachedASMReflector reflector = CachedASMReflector.getInstance();
         reflector.addClasspath(Session.getSystemJars());
+        this.sessionEventBus.requestCreateCache();
 
-        this.sessionEventBus.requestClassCache();
+        this.projects.values().forEach(project -> {
+            this.sessionEventBus.requestWatchFile(project.getProjectRoot());
+        });
 
         log.debug("session started");
         this.started = true;
@@ -352,7 +355,7 @@ public class Session {
                 }
                 final boolean changed = this.searchAndChangeProject(file);
                 if (changed) {
-                    this.sessionEventBus.requestClassCache();
+                    this.sessionEventBus.requestCreateCache();
                 } else {
                     // load source
                     final GlobalCache globalCache = GlobalCache.getInstance();
@@ -429,7 +432,7 @@ public class Session {
         final GlobalCache globalCache = GlobalCache.getInstance();
         globalCache.invalidateSource(this.getCurrentProject(), file);
         this.parseJavaSource(file);
-        this.sessionEventBus.requestClassCache(true);
+        this.sessionEventBus.requestCreateCache(true);
         return true;
     }
 
@@ -437,7 +440,7 @@ public class Session {
         // java file only
         final File file = normalize(path);
         final CompileResult compileResult = currentProject.compileFileNoCache(file, true);
-        this.sessionEventBus.requestClassCache(true);
+        this.sessionEventBus.requestCreateCache(true);
         return compileResult;
     }
 
@@ -447,7 +450,7 @@ public class Session {
         if (result.isSuccess()) {
             result = project.compileTestJava(false);
         }
-        this.sessionEventBus.requestClassCache(true);
+        this.sessionEventBus.requestCreateCache(true);
 
         return result;
     }
@@ -505,8 +508,8 @@ public class Session {
             isTest = false;
         }
 
-        for (File file : roots) {
-            String rootPath = file.getCanonicalPath();
+        for (final File file : roots) {
+            final String rootPath = file.getCanonicalPath();
             if (path.startsWith(rootPath)) {
                 root = rootPath;
                 break;
@@ -637,5 +640,47 @@ public class Session {
         final Project project = getCurrentProject();
         FileUtils.formatJavaFile(project.getFormatProperties(), path);
         return path;
+    }
+
+    public void reloadProject() throws IOException {
+        final Project currentProject = this.currentProject;
+        final File projectRoot = currentProject.getProjectRoot();
+        this.projects.clear();
+
+        if (currentProject instanceof GradleProject) {
+            loadProject(projectRoot, Project.GRADLE_PROJECT_FILE).ifPresent(project -> {
+                this.currentProject = project;
+                this.projects.put(projectRoot, this.currentProject);
+                this.getLocationSearcher().setProject(this.getCurrentProject());
+                this.getVariableCompletion().setProject(this.getCurrentProject());
+                this.getCompletion().setProject(this.getCurrentProject());
+            });
+        } else if (currentProject instanceof MavenProject) {
+            loadProject(projectRoot, Project.MVN_PROJECT_FILE).ifPresent(project -> {
+                this.currentProject = project;
+                this.projects.put(projectRoot, this.currentProject);
+                this.getLocationSearcher().setProject(this.getCurrentProject());
+                this.getVariableCompletion().setProject(this.getCurrentProject());
+                this.getCompletion().setProject(this.getCurrentProject());
+            });
+        } else {
+            loadProject(projectRoot, Config.MEGHANADA_CONF_FILE).ifPresent(project -> {
+                this.currentProject = project;
+                this.projects.put(projectRoot, this.currentProject);
+                this.getLocationSearcher().setProject(this.getCurrentProject());
+                this.getVariableCompletion().setProject(this.getCurrentProject());
+                this.getCompletion().setProject(this.getCurrentProject());
+            });
+        }
+        final Set<File> temp = new HashSet<>(this.getCurrentProject().getSourceDirectories());
+        temp.addAll(this.getCurrentProject().getTestSourceDirectories());
+        this.sessionEventBus.requestWatchFiles(new ArrayList<>(temp));
+        final CachedASMReflector reflector = CachedASMReflector.getInstance();
+        reflector.resetClassFileMap();
+        reflector.addClasspath(Session.getSystemJars());
+        this.sessionEventBus.requestCreateCache();
+        this.projects.values().forEach(project -> {
+            this.sessionEventBus.requestWatchFile(project.getProjectRoot());
+        });
     }
 }

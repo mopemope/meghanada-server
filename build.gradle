@@ -98,6 +98,7 @@ dependencies {
     compile 'com.android.tools.build:gradle:2.2.3'
 }
 
+
 test {
     jvmArgs = ["-XX:SoftRefLRUPolicyMSPerMB=50", "-XX:+UseConcMarkSweepGC", "-Xverify:none",  "-Xms256m", "-Xmx2G"]
 
