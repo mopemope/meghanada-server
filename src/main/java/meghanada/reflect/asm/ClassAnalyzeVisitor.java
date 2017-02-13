@@ -146,7 +146,7 @@ class ClassAnalyzeVisitor extends ClassVisitor {
         if (this.classOnly) {
             return super.visitField(access, name, desc, sig, o);
         }
-        if (name.startsWith("$")) {
+        if (name.startsWith("$") || name.startsWith("this$")) {
             return null;
         }
         if (includePrivate) {

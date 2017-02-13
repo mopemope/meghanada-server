@@ -342,7 +342,7 @@ public class CachedASMReflectorTest extends GradleTestBase {
                 return cachedASMReflector.reflect(fqcn);
             });
             memberDescriptors.forEach(m -> System.out.println(m.getDisplayDeclaration()));
-            assertEquals(21, memberDescriptors.size());
+            assertEquals(20, memberDescriptors.size());
         }
     }
 
@@ -367,7 +367,7 @@ public class CachedASMReflectorTest extends GradleTestBase {
                 return cachedASMReflector.reflect(fqcn);
             });
             memberDescriptors.forEach(m -> System.out.println(m.getDisplayDeclaration()));
-            assertEquals(21, memberDescriptors.size());
+            assertEquals(20, memberDescriptors.size());
         }
     }
 
