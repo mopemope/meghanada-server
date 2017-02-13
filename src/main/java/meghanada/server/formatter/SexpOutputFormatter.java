@@ -112,9 +112,9 @@ public class SexpOutputFormatter implements OutputFormatter {
     }
 
     @Override
-    public String addImport(boolean result) {
+    public String addImport(boolean result, final String fqcn) {
         if (result) {
-            return LPAREN + "success" + RPAREN;
+            return LPAREN + "success " + doubleQuote(fqcn) + RPAREN;
         }
         return LPAREN + "error" + RPAREN;
     }

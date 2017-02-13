@@ -23,7 +23,7 @@ public interface OutputFormatter {
 
     String parse(boolean result);
 
-    String addImport(boolean result);
+    String addImport(boolean result, String fqcn);
 
     String optimizeImport(List<String> result);
 

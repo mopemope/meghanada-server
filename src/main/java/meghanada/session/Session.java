@@ -1,5 +1,6 @@
 package meghanada.session;
 
+import meghanada.analyze.ClassScope;
 import meghanada.analyze.CompileResult;
 import meghanada.analyze.Source;
 import meghanada.cache.GlobalCache;
@@ -380,7 +381,7 @@ public class Session {
         return getVariableCompletion().localVariable(file, line);
     }
 
-    public synchronized boolean addImport(String path, String fqcn) throws ExecutionException {
+    public synchronized boolean addImport(final String path, final String fqcn) throws ExecutionException {
         // java file only
         final File file = normalize(path);
         if (!FileUtils.isJavaFile(file)) {
@@ -388,6 +389,12 @@ public class Session {
         }
 
         final Source source = parseJavaSource(file);
+        for (final ClassScope classScope : source.getClassScopes()) {
+            if (fqcn.equals(classScope.getFQCN())) {
+                return false;
+            }
+        }
+
         source.importClass.put(ClassNameUtils.getSimpleName(fqcn), fqcn);
         return true;
     }

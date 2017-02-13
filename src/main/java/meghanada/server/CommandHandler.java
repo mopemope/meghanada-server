@@ -128,13 +128,13 @@ public class CommandHandler {
         }
     }
 
-    public void addImport(String path, String fqcn) {
+    public void addImport(final String path, final String fqcn) {
         try {
             boolean result = timeIt(() -> {
                 return session.addImport(path, fqcn);
             });
 
-            final String out = outputFormatter.addImport(result);
+            final String out = outputFormatter.addImport(result, fqcn);
             writer.write(out);
             writer.newLine();
         } catch (Exception e) {

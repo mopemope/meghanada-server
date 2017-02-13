@@ -325,11 +325,18 @@ public class Source {
         return ask;
     }
 
-
     public void invalidateCache() {
+        this.invalidateCache(this.classScopes);
+    }
+
+    private void invalidateCache(final List<ClassScope> classScopes) {
+        if (classScopes == null) {
+            return;
+        }
         final GlobalCache globalCache = GlobalCache.getInstance();
-        for (final ClassScope cs : this.classScopes) {
-            globalCache.invalidateMemberDescriptors(cs.getFQCN());
+        for (final ClassScope classScope : classScopes) {
+            globalCache.invalidateMemberDescriptors(classScope.getFQCN());
+            this.invalidateCache(classScope.classScopes);
         }
     }
 
