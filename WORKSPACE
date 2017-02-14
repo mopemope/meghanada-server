@@ -286,6 +286,16 @@ bind(
     actual = "@com_android_tools_build_gradle_api//jar",
 )
 
+maven_jar(
+    name = "io_takari_junit_takari_cpsuite",
+    artifact = "io.takari.junit:takari-cpsuite:1.2.7",
+)
+
+bind (
+    name = "takari-cpsuite-jar",
+    actual = "@io_takari_junit_takari_cpsuite//jar",
+)
+
 maven_server(
     name = "gradle",
     url = "http://repo.gradle.org/gradle/libs-releases-local",
