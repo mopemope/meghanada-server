@@ -22,3 +22,5 @@ secrets.yml
 .classpath
 .project
 .settings
+
+bazel-*
