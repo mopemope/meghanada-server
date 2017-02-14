@@ -180,9 +180,12 @@ public class GlobalCache {
     }
 
     private void writeCacheToFile(final File file, final Object obj) {
+        final File parentFile = file.getParentFile();
+        if (parentFile.isDirectory()) {
+            parentFile.mkdirs();
+        }
         this.getKryoPool().run(kryo -> {
-            try (final Output output = new Output(new ZstdOutputStream(new BufferedOutputStream(new FileOutputStream
-                    (file), 8192), 3))) {
+            try (final Output output = new Output(new ZstdOutputStream(new BufferedOutputStream(new FileOutputStream(file), 8192), 3))) {
                 kryo.writeObject(output, obj);
                 return obj;
             } catch (Exception e) {
@@ -206,8 +209,8 @@ public class GlobalCache {
         this.sourceCaches.forEach((root, sourceLoadingCache) -> {
             sourceLoadingCache.asMap().forEach((k, v) -> {
                 // force replace
-                sourceLoadingCache.put(k, v);
-            });
+                    sourceLoadingCache.put(k, v);
+                });
         });
 
         this.isTerminated = true;
