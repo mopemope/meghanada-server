@@ -3,11 +3,10 @@ java_import(
     jars = ["@bazel_tools//tools/jdk:langtools"],
 )
 
-java_binary(
-    name = "meghanada-server",
+java_library(
+    name = "meghanada-server-lib",
     srcs = glob(["src/main/java/**/*.java"]),
     resources = glob(["src/main/resources/*"]),
-    main_class = "meghanada.Main",
     deps = [":tools",
             "//external:maven-model-jar",
             "//external:plexus-utils-jar",
@@ -39,3 +38,48 @@ java_binary(
                     "//external:android-gradle-api-jar",
                     ]
 )
+
+java_binary(
+    name = "meghanada-server",
+    main_class = "meghanada.Main",
+    runtime_deps = [":meghanada-server-lib",]
+)
+
+java_test(
+    name = "AllTests",
+    srcs = glob(["src/test/java/**/*.java"]),
+    resources = glob(["src/test/resources/*"]),
+    size = "small",
+    test_class = "meghanada.analyze.JavaAnalyzerTest",
+    deps = [":meghanada-server-lib",
+            ":tools",
+            "//external:maven-model-jar",
+            "//external:plexus-utils-jar",
+            "//external:motif-jar",
+            "//external:motif-hamcrest-jar",
+            "//external:javaparser-core-jar",
+            "//external:log4j-core-jar",
+            "//external:log4j-api-jar",
+            "//external:log4j-slf4j-impl-jar",
+            "//external:commons-lang3-jar",
+            "//external:commons-cli-jar",
+            "//external:gradle-tooling-api-jar",
+            "//external:guava-jar",
+            "//external:asm-jar",
+            "//external:kryo-jar",
+            "//external:config-jar",
+            "//external:evo-inflector-jar",
+            "//external:junit-jar",
+            "//external:roaster-api-jar",
+            "//external:roaster-jdt-jar",
+            "//external:zstd-jni-jar",
+            "//external:android-builder-model-jar",],
+
+    runtime_deps = ["//external:objenesis-jar",
+                    "//external:hamcrest-core-jar",
+                    "//external:reflectasm-jar",
+                    "//external:minlog-jar",
+                    "//external:slf4j-api-jar",
+                    "//external:android-gradle-api-jar",
+                    ]
+ )
