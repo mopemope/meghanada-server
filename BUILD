@@ -55,6 +55,7 @@ java_test(
         "src/main/java/**/*.java",
         "src/test/java/**/*.java",
         "src/test/resources/*",
+        "src/test/resources/**/*.java",
         "build.gradle",
         "gradle",
         "gradlew",
