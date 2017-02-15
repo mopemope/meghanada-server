@@ -5,6 +5,7 @@ import meghanada.completion.LocalVariable;
 import meghanada.location.Location;
 import meghanada.reflect.CandidateUnit;
 import meghanada.session.Session;
+import meghanada.utils.ClassNameUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -124,7 +125,7 @@ public class CommandHandler {
     public void addImport(final String path, final String fqcn) {
         try {
             boolean result = session.addImport(path, fqcn);
-            final String out = outputFormatter.addImport(result, fqcn);
+            final String out = outputFormatter.addImport(result, ClassNameUtils.replaceInnerMark(fqcn));
             writer.write(out);
             writer.newLine();
         } catch (Exception e) {
