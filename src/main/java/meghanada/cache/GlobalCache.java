@@ -196,7 +196,7 @@ public class GlobalCache {
         });
     }
 
-    public void shutdown() {
+    public void shutdown() throws InterruptedException {
         if (this.isTerminated) {
             return;
         }
@@ -213,8 +213,8 @@ public class GlobalCache {
                     sourceLoadingCache.put(k, v);
                 });
         });
-
         this.isTerminated = true;
         this.executorService.shutdown();
+        this.executorService.awaitTermination(5, TimeUnit.SECONDS);
     }
 }
