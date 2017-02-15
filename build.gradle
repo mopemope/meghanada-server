@@ -14,7 +14,7 @@ plugins {
 
 ext {
     group = 'meghanada'
-    serverVersion = '0.6.0'
+    serverVersion = '0.6.1'
 
     longVersion = "$serverVersion-${grgit.head().abbreviatedId}"
     date = new Date().format("yyyy-MM-dd'T'HH:mm:ssZ")
