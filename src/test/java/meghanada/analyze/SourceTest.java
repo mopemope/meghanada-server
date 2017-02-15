@@ -6,7 +6,6 @@ import meghanada.project.Project;
 import meghanada.project.gradle.GradleProject;
 import meghanada.reflect.asm.CachedASMReflector;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.File;
@@ -19,13 +18,14 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import static meghanada.config.Config.debugIt;
+import static meghanada.config.Config.timeIt;
 import static org.junit.Assert.assertEquals;
 
 public class SourceTest extends GradleTestBase {
 
     private static Project project;
 
-    @org.junit.BeforeClass
+    @BeforeClass
     public static void beforeClass() throws Exception {
         GradleTestBase.setupReflector();
         CachedASMReflector cachedASMReflector = CachedASMReflector.getInstance();
@@ -55,31 +55,73 @@ public class SourceTest extends GradleTestBase {
         return project.getTestOutputDirectory();
     }
 
-    @Ignore
     @Test
     public void testOptimizeImports1() throws Exception {
         final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8", project.getSourceDirectories());
         final String cp = getClasspath();
 
         List<File> files = new ArrayList<>();
-        final File file = new File("./src/test/resources/MissingImport1.java").getCanonicalFile();
+        final File file = new File("./src/test/java/meghanada/AllTests.java").getCanonicalFile();
+        assert file.exists();
         files.add(file);
 
         final String tmp = System.getProperty("java.io.tmpdir");
 
-        final Source source = debugIt(() -> {
+        final Source source = timeIt(() -> {
             final CompileResult compileResult = analyzer.analyzeAndCompile(files, cp, tmp);
             return compileResult.getSources().get(file);
         });
 
         Map<String, List<String>> missingImport = debugIt(source::searchMissingImport);
         List<String> optimizeImports = debugIt(source::optimizeImports);
-        System.out.println(missingImport);
-        System.out.println(optimizeImports);
-        assertEquals(4, missingImport.size());
-        assertEquals(2, optimizeImports.size());
+        assertEquals(0, missingImport.size());
+        assertEquals(8, optimizeImports.size());
     }
-    
+
+    @Test
+    public void tesMissingImports1() throws Exception {
+        final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8", project.getSourceDirectories());
+        final String cp = getClasspath();
+
+        List<File> files = new ArrayList<>();
+        final File file = new File("./src/test/resources/meghanada/AnnoTest1.java").getCanonicalFile();
+        assert file.exists();
+        files.add(file);
+
+        final String tmp = System.getProperty("java.io.tmpdir");
+
+        final Source source = timeIt(() -> {
+            final CompileResult compileResult = analyzer.analyzeAndCompile(files, cp, tmp);
+            return compileResult.getSources().get(file);
+        });
+
+        Map<String, List<String>> missingImport = debugIt(source::searchMissingImport);
+        System.out.println(missingImport);
+        assertEquals(2, missingImport.size());
+    }
+
+    @Test
+    public void tesMissingImports2() throws Exception {
+        final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8", project.getSourceDirectories());
+        final String cp = getClasspath();
+
+        List<File> files = new ArrayList<>();
+        final File file = new File("./src/test/resources/meghanada/AnnoTest2.java").getCanonicalFile();
+        assert file.exists();
+        files.add(file);
+
+        final String tmp = System.getProperty("java.io.tmpdir");
+
+        final Source source = timeIt(() -> {
+            final CompileResult compileResult = analyzer.analyzeAndCompile(files, cp, tmp);
+            return compileResult.getSources().get(file);
+        });
+
+        Map<String, List<String>> missingImport = debugIt(source::searchMissingImport);
+        System.out.println(missingImport);
+        assertEquals(5, missingImport.size());
+    }
+
     private String getClasspath() throws IOException {
 
         final List<String> classpath = getSystemJars()

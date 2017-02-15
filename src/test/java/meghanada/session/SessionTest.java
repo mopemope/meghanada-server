@@ -5,7 +5,7 @@ import org.junit.Test;
 
 import java.io.File;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
 public class SessionTest {
 
@@ -16,34 +16,15 @@ public class SessionTest {
         try {
             session = Session.createSession("./");
             session.start();
-
             File root = session.getCurrentProject().getProjectRoot();
-            File src = new File(root, "src/main/java/meghanada/parser/java/JavaParser.java");
+            File src = new File("./src/main/java/meghanada/session/Session.java").getCanonicalFile();
+            assert src.exists();
             String srcPath = src.getCanonicalPath();
             String testPath = session.switchTest(srcPath);
+            assertNotNull(testPath);
             String srcPath2 = session.switchTest(testPath);
             assertEquals(srcPath, srcPath2);
-        } finally {
-            if (session != null) {
-                session.shutdown(5);
-            }
-
-        }
-    }
-
-    @Ignore
-    @Test
-    public void testCreateTest() throws Exception {
-        Session session = null;
-        try {
-            session = Session.createSession("./");
-            session.start();
-
-            File root = session.getCurrentProject().getProjectRoot();
-            File src = new File(root, "src/java/meghanada/project/ProjectDependency.java");
-            String srcPath = src.getCanonicalPath();
-            String testFile = session.createJunitFile(srcPath);
-            System.out.println(testFile);
+            assertTrue(testPath.endsWith("src/test/java/meghanada/session/SessionTest.java"));
         } finally {
             if (session != null) {
                 session.shutdown(5);

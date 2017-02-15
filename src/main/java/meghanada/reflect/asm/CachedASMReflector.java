@@ -255,7 +255,10 @@ public class CachedASMReflector {
             final String className = index.getName().toLowerCase();
             return className.contains(lower);
         } else {
-            return index.getName().equals(keyword) || index.getDeclaration().equals(keyword);
+            final String name = index.getName();
+            return name.equals(keyword) ||
+                    name.endsWith("$" + keyword) ||
+                    index.getDeclaration().equals(keyword);
         }
     }
 

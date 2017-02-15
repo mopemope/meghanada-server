@@ -499,7 +499,7 @@ public class Session {
         return getCurrentProject().runJUnit(test);
     }
 
-    public String switchTest(String path) throws IOException {
+    public String switchTest(final String path) throws IOException {
         Project project = currentProject;
         String root = null;
         Set<File> roots;
