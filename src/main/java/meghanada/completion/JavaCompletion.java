@@ -79,7 +79,8 @@ public class JavaCompletion {
             result = CachedASMReflector.getInstance().searchAnnotations(classPrefix.toLowerCase());
         }
         result.forEach(classIndex -> {
-            classIndex.name = "@" + classIndex.name;
+            final String name = ClassNameUtils.getSimpleName(ClassNameUtils.replaceInnerMark(classIndex.name));
+            classIndex.name = "@" + name;
         });
         return result;
     }

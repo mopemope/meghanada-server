@@ -33,11 +33,11 @@ public class ClassIndex implements CandidateUnit, Serializable, Cloneable {
         this.name = ClassNameUtils.getSimpleName(this.declaration);
     }
 
-    public static ClassIndex createPackage(String pkg) {
+    public static ClassIndex createPackage(final String pkg) {
         return new ClassIndex(pkg, Collections.emptyList(), Collections.emptyList());
     }
 
-    public static ClassIndex createClass(String fqcn) {
+    public static ClassIndex createClass(final String fqcn) {
         return new ClassIndex(fqcn, Collections.emptyList(), Collections.emptyList());
     }
 
@@ -61,7 +61,7 @@ public class ClassIndex implements CandidateUnit, Serializable, Cloneable {
 
     @Override
     public String getDisplayDeclaration() {
-        StringBuilder sb = new StringBuilder(ClassNameUtils.replaceInnerMark(this.declaration));
+        final StringBuilder sb = new StringBuilder(ClassNameUtils.replaceInnerMark(this.declaration));
         if (this.typeParameters != null && this.typeParameters.size() > 0) {
             sb.append('<');
             Joiner.on(", ").appendTo(sb, this.typeParameters).append('>');

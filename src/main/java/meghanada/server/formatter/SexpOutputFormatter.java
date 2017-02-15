@@ -90,7 +90,6 @@ public class SexpOutputFormatter implements OutputFormatter {
                         doubleQuote(d.getReturnType())) + RPAREN)
                 .collect(Collectors.joining(LIST_SEP));
         sb.append(s);
-
         sb.append(")");
         return sb.toString();
     }
