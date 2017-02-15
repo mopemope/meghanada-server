@@ -34,8 +34,9 @@ public class GlobalCache {
     public static final String COMPILE_CHECKSUM_DATA = "compile_checksum";
     public static final String CALLER_DATA = "source_caller";
     public static final String PROJECT_DATA = "project";
-
     public static final String CACHE_EXT = ".dat";
+    public static final int COMPRESSION_LEVEL = 3;
+
     private static final Logger log = LogManager.getLogger(GlobalCache.class);
     private static GlobalCache globalCache;
     private final KryoPool kryoPool;
@@ -185,7 +186,7 @@ public class GlobalCache {
             parentFile.mkdirs();
         }
         this.getKryoPool().run(kryo -> {
-            try (final Output output = new Output(new ZstdOutputStream(new BufferedOutputStream(new FileOutputStream(file), 8192), 3))) {
+            try (final Output output = new Output(new ZstdOutputStream(new BufferedOutputStream(new FileOutputStream(file), 8192), COMPRESSION_LEVEL))) {
                 kryo.writeObject(output, obj);
                 return obj;
             } catch (Exception e) {
