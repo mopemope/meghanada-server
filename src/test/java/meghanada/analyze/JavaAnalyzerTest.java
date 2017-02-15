@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import static meghanada.config.Config.timeIt;
+import static meghanada.config.Config.traceIt;
 
 public class JavaAnalyzerTest extends GradleTestBase {
 
@@ -55,7 +56,7 @@ public class JavaAnalyzerTest extends GradleTestBase {
     }
 
     @Test
-    public void analyze1() throws Exception {
+    public void analyze01() throws Exception {
         final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8", project.getSourceDirectories());
         final String cp = getClasspath();
 
@@ -78,7 +79,7 @@ public class JavaAnalyzerTest extends GradleTestBase {
     }
 
     @Test
-    public void analyze2() throws Exception {
+    public void analyze02() throws Exception {
         final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8", project.getSourceDirectories());
         final String cp = getClasspath();
 
@@ -101,7 +102,7 @@ public class JavaAnalyzerTest extends GradleTestBase {
     }
 
     @Test
-    public void analyze3() throws Exception {
+    public void analyze03() throws Exception {
         final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8", project.getSourceDirectories());
         final String cp = getClasspath();
 
@@ -124,7 +125,7 @@ public class JavaAnalyzerTest extends GradleTestBase {
     }
 
     @Test
-    public void analyze4() throws Exception {
+    public void analyze04() throws Exception {
         final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8", project.getSourceDirectories());
         final String cp = getClasspath();
 
@@ -147,7 +148,7 @@ public class JavaAnalyzerTest extends GradleTestBase {
     }
 
     @Test
-    public void analyze5() throws Exception {
+    public void analyze05() throws Exception {
         final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8", project.getSourceDirectories());
         final String cp = getClasspath();
 
@@ -170,7 +171,7 @@ public class JavaAnalyzerTest extends GradleTestBase {
     }
 
     @Test
-    public void analyze6() throws Exception {
+    public void analyze06() throws Exception {
         final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8", project.getSourceDirectories());
         final String cp = getClasspath();
 
@@ -193,7 +194,7 @@ public class JavaAnalyzerTest extends GradleTestBase {
     }
 
     @Test
-    public void analyze7() throws Exception {
+    public void analyze07() throws Exception {
         final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8", project.getSourceDirectories());
         final String cp = getClasspath();
 
@@ -216,7 +217,7 @@ public class JavaAnalyzerTest extends GradleTestBase {
     }
 
     @Test
-    public void analyze8() throws Exception {
+    public void analyze08() throws Exception {
         final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8", project.getSourceDirectories());
         final String cp = getClasspath();
 
@@ -238,7 +239,7 @@ public class JavaAnalyzerTest extends GradleTestBase {
     }
 
     @Test
-    public void analyze9() throws Exception {
+    public void analyze09() throws Exception {
         final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8", project.getSourceDirectories());
         final String cp = getClasspath();
 
@@ -386,6 +387,26 @@ public class JavaAnalyzerTest extends GradleTestBase {
         final String tmp = System.getProperty("java.io.tmpdir");
 
         timeIt(() -> {
+            final CompileResult compileResult = analyzer.analyzeAndCompile(files, cp, tmp);
+            compileResult.getSources().values().forEach(Source::dump);
+            return compileResult;
+        });
+
+    }
+
+    @Test
+    public void analyze16() throws Exception {
+        final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8", project.getSourceDirectories());
+        final String cp = getClasspath();
+
+        List<File> files = new ArrayList<>();
+        final File file = new File("./src/test/java/meghanada/AllTests.java").getCanonicalFile();
+        assert file.exists();
+        files.add(file);
+
+        final String tmp = System.getProperty("java.io.tmpdir");
+
+        traceIt(() -> {
             final CompileResult compileResult = analyzer.analyzeAndCompile(files, cp, tmp);
             compileResult.getSources().values().forEach(Source::dump);
             return compileResult;

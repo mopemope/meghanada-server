@@ -164,6 +164,9 @@ public class Source {
         for (final ClassScope cs : classScopes) {
             cs.dump();
         }
+        log.trace("unused={}", this.unused);
+        log.trace("usingClass={}", this.usingClasses);
+        log.trace("unknown={}", this.unknown);
         log.traceExit(entryMessage);
     }
 

@@ -52,7 +52,9 @@ public class TreeAnalyzer {
         } else {
             src.packageName = packageExpr.toString();
         }
-        final EndPosTable endPositions = ((JCTree.JCCompilationUnit) cut).endPositions;
+
+        final EndPosTable endPosTable = ((JCTree.JCCompilationUnit) cut).endPositions;
+
         cut.getImports().forEach(imp -> {
 
             final String importClass = imp.getQualifiedIdentifier().toString();
@@ -86,11 +88,27 @@ public class TreeAnalyzer {
             if (td instanceof JCTree.JCClassDecl) {
                 final JCTree.JCClassDecl classDecl = (JCTree.JCClassDecl) td;
                 final int startPos = classDecl.getPreferredPosition();
-                final int endPos = classDecl.getEndPosition(endPositions);
+                final int endPos = classDecl.getEndPosition(endPosTable);
+                final JCTree.JCModifiers modifiers = classDecl.getModifiers();
+                if (modifiers != null) {
+                    final List<JCTree.JCAnnotation> annotations = modifiers.getAnnotations();
+                    if (annotations != null) {
+                        annotations.forEach(wrapIOConsumer(jcAnnotation -> {
+                            final JCTree annotationType = jcAnnotation.getAnnotationType();
+                            this.analyzeParsedTree(annotationType, src, endPosTable);
+                            final List<JCTree.JCExpression> arguments = jcAnnotation.getArguments();
+                            if (arguments != null) {
+                                arguments.forEach(wrapIOConsumer(jcExpression -> {
+                                    this.analyzeParsedTree(jcExpression, src, endPosTable);
+                                }));
+                            }
+                        }));
+                    }
+                }
 
                 final JCTree.JCExpression extendsClause = classDecl.getExtendsClause();
                 if (extendsClause != null) {
-                    this.analyzeParsedTree(extendsClause, src, endPositions);
+                    this.analyzeParsedTree(extendsClause, src, endPosTable);
                 }
                 final Name simpleName = classDecl.getSimpleName();
                 final Range range = Range.create(src, startPos + 1, endPos);
@@ -104,7 +122,7 @@ public class TreeAnalyzer {
 
                 src.startClass(classScope);
                 classDecl.getMembers().forEach(wrapIOConsumer(tree -> {
-                    this.analyzeParsedTree(tree, src, endPositions);
+                    this.analyzeParsedTree(tree, src, endPosTable);
                 }));
                 final Optional<ClassScope> endClass = src.endClass();
                 log.trace("class={}", endClass);
@@ -686,12 +704,13 @@ public class TreeAnalyzer {
 
         final Type type = identifier.type;
         this.toFQCNString(type).ifPresent(fqcn -> {
-            methodCall.declaringClass = fqcn;
+            methodCall.declaringClass = this.markFQCN(src, fqcn);
             methodCall.returnType = fqcn;
         });
+
         final JCTree.JCClassDecl classBody = newClass.getClassBody();
         if (classBody != null) {
-
+            this.analyzeParsedTree(classBody, src, endPosTable);
         }
         src.getCurrentScope().ifPresent(scope -> {
             scope.addMethodCall(methodCall);
@@ -919,6 +938,23 @@ public class TreeAnalyzer {
         final JCTree.JCClassDecl classDecl = tree;
         final Range range = Range.create(src, startPos, endPos);
         final Name simpleName = classDecl.getSimpleName();
+
+        final JCTree.JCModifiers modifiers = classDecl.getModifiers();
+        if (modifiers != null) {
+            final List<JCTree.JCAnnotation> annotations = modifiers.getAnnotations();
+            if (annotations != null) {
+                annotations.forEach(wrapIOConsumer(jcAnnotation -> {
+                    final JCTree annotationType = jcAnnotation.getAnnotationType();
+                    this.analyzeParsedTree(annotationType, src, endPosTable);
+                    final List<JCTree.JCExpression> arguments = jcAnnotation.getArguments();
+                    if (arguments != null) {
+                        arguments.forEach(wrapIOConsumer(jcExpression -> {
+                            this.analyzeParsedTree(jcExpression, src, endPosTable);
+                        }));
+                    }
+                }));
+            }
+        }
         src.getCurrentClass().ifPresent(parent -> {
             final String parentName = parent.name;
             final String fqcn = parentName + ClassNameUtils.INNER_MARK + simpleName;
@@ -980,7 +1016,22 @@ public class TreeAnalyzer {
 
     private void analyzeMethodDecl(final JCTree.JCMethodDecl md, final Source src, final int preferredPos, final int endPos, final EndPosTable endPosTable) throws IOException {
         final String name = md.getName().toString();
-
+        final JCTree.JCModifiers modifiers = md.getModifiers();
+        if (modifiers != null) {
+            final List<JCTree.JCAnnotation> annotations = modifiers.getAnnotations();
+            if (annotations != null) {
+                annotations.forEach(wrapIOConsumer(jcAnnotation -> {
+                    final JCTree annotationType = jcAnnotation.getAnnotationType();
+                    this.analyzeParsedTree(annotationType, src, endPosTable);
+                    final List<JCTree.JCExpression> arguments = jcAnnotation.getArguments();
+                    if (arguments != null) {
+                        arguments.forEach(wrapIOConsumer(jcExpression -> {
+                            this.analyzeParsedTree(jcExpression, src, endPosTable);
+                        }));
+                    }
+                }));
+            }
+        }
         // TODO length or bytes ?
         final Range nameRange = Range.create(src, preferredPos, preferredPos + name.length());
         final Range range = Range.create(src, preferredPos, endPos);
@@ -1306,8 +1357,9 @@ public class TreeAnalyzer {
             src.unknown.add(simpleName);
         } else {
             // contains
-            if (src.unused.contains(simpleName)) {
-                src.unused.remove(simpleName);
+            final String name = ClassNameUtils.replaceInnerMark(simpleName);
+            if (src.unused.contains(name)) {
+                src.unused.remove(name);
             }
 
             final File classFile = cachedASMReflector.getClassFile(simpleName);
