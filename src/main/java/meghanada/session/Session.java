@@ -128,24 +128,20 @@ public class Session {
 
             log.trace("project projectID={} projectRoot={}", id, projectRoot);
 
-            if (config.useFastBoot()) {
-
-                final File projectCache = FileUtils.getProjectDataFile(GlobalCache.PROJECT_DATA);
-
-                if (projectCache.exists()) {
-                    try {
-                        final Project tempProject = Session.readProjectCache(projectCache);
-                        if (tempProject != null && tempProject.getId().equals(id)) {
-                            tempProject.setId(id);
-                            log.debug("load from cache project={}", tempProject);
-                            log.info("load project from cache. projectRoot:{}", tempProject.getProjectRoot());
-                            log.traceExit(entryMessage);
-                            return Optional.of(tempProject.mergeFromProjectConfig());
-                        }
-                    } catch (Exception ex) {
-                        // delete broken cache
-                        projectCache.delete();
+            final File projectCache = FileUtils.getProjectDataFile(GlobalCache.PROJECT_DATA);
+            if (config.useFastBoot() && projectCache.exists()) {
+                try {
+                    final Project tempProject = Session.readProjectCache(projectCache);
+                    if (tempProject != null && tempProject.getId().equals(id)) {
+                        tempProject.setId(id);
+                        log.debug("load from cache project={}", tempProject);
+                        log.info("load project from cache. projectRoot:{}", tempProject.getProjectRoot());
+                        log.traceExit(entryMessage);
+                        return Optional.of(tempProject.mergeFromProjectConfig());
                     }
+                } catch (Exception ex) {
+                    // delete broken cache
+                    projectCache.delete();
                 }
             }
 
@@ -161,8 +157,7 @@ public class Session {
 
             final Project parsed = project.parseProject();
             if (config.useFastBoot()) {
-                final File projectCache = FileUtils.getProjectDataFile(GlobalCache.PROJECT_DATA);
-                Session.writeProjectCache(parsed, projectCache);
+                Session.writeProjectCache(projectCache, parsed);
             }
             log.info("load project projectRoot:{}", project.getProjectRoot());
             log.traceExit(entryMessage);
@@ -171,7 +166,6 @@ public class Session {
             System.setProperty(Project.PROJECT_ROOT_KEY, projectRootPath);
         }
     }
-
     public static List<File> getSystemJars() throws IOException {
         final String javaHome = Config.load().getJavaHomeDir();
         File jvmDir = new File(javaHome);
@@ -181,7 +175,7 @@ public class Session {
                 .collect(Collectors.toList());
     }
 
-    private static void writeProjectCache(final Project project, final File cacheFile) {
+    private static void writeProjectCache(final File cacheFile, final Project project) {
         final GlobalCache globalCache = GlobalCache.getInstance();
         globalCache.asyncWriteCache(cacheFile, project);
     }

@@ -60,13 +60,14 @@ public class GlobalCache {
             while (!this.isTerminated) {
                 try {
                     final CacheRequest cr = blockingQueue.take();
-                    if (cr != null) {
+                    if (cr != null && !cr.shutdown) {
                         this.writeCacheToFile(cr.getFile(), cr.getTarget());
                     }
                 } catch (Exception e) {
                     log.catching(e);
                 }
             }
+            log.info("shutdown cache worker");
         });
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
@@ -182,7 +183,7 @@ public class GlobalCache {
 
     private void writeCacheToFile(final File file, final Object obj) {
         final File parentFile = file.getParentFile();
-        if (parentFile.isDirectory()) {
+        if (!parentFile.exists()) {
             parentFile.mkdirs();
         }
         this.getKryoPool().run(kryo -> {
@@ -195,7 +196,6 @@ public class GlobalCache {
             }
         });
     }
-
     public void shutdown() throws InterruptedException {
         if (this.isTerminated) {
             return;
@@ -214,6 +214,14 @@ public class GlobalCache {
                 });
         });
         this.isTerminated = true;
+
+        final CacheRequest cacheRequest = new CacheRequest(new File(""), this);
+        cacheRequest.shutdown = true;
+        try {
+            this.blockingQueue.put(cacheRequest);
+        } catch (InterruptedException e) {
+            log.catching(e);
+        }
         this.executorService.shutdown();
         this.executorService.awaitTermination(5, TimeUnit.SECONDS);
     }

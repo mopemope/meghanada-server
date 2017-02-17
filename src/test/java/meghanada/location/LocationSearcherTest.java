@@ -53,7 +53,7 @@ public class LocationSearcherTest extends GradleTestBase {
 
         LocationSearcher locationSearcher = getSearcher();
         {
-            //     private static Project findProject(File base) throws IOException
+            // private static Project findProject(File base) throws IOException
             Location result = debugIt(() -> locationSearcher.searchDeclaration(f, 95, 37, "base"));
             assertNotNull(result);
             assertEquals(75, result.getLine());
@@ -69,7 +69,7 @@ public class LocationSearcherTest extends GradleTestBase {
         LocationSearcher locationSearcher = getSearcher();
         // Set<File> sources = this.currentProject.getSourceDirectories();
         Location result = timeIt(() -> {
-            return locationSearcher.searchDeclaration(f, 214, 18, "currentProject");
+            return locationSearcher.searchDeclaration(f, 211, 18, "currentProject");
         });
         assertNotNull(result);
         assertEquals(45, result.getLine());
@@ -83,11 +83,11 @@ public class LocationSearcherTest extends GradleTestBase {
 
         LocationSearcher locationSearcher = getSearcher();
         Location result = timeIt(() -> {
-            return locationSearcher.searchDeclaration(f, 409, 31, "parseJavaSource");
+            return locationSearcher.searchDeclaration(f, 403, 31, "parseJavaSource");
         });
 
         assertNotNull(result);
-        assertEquals(428, result.getLine());
+        assertEquals(422, result.getLine());
         assertEquals(20, result.getColumn());
     }
 
@@ -99,7 +99,7 @@ public class LocationSearcherTest extends GradleTestBase {
         LocationSearcher locationSearcher = getSearcher();
         {
             // return source.searchMissingImport();
-            Location result = locationSearcher.searchDeclaration(f, 421, 24, "searchMissingImport");
+            Location result = locationSearcher.searchDeclaration(f, 415, 24, "searchMissingImport");
             assertNotNull(result);
             assertTrue(result.getPath().contains("Source.java"));
             assertEquals(290, result.getLine());
