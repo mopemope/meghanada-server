@@ -1,3 +1,11 @@
+# Version 0.6.1 (2017-02-17)
+
+* Fix type analyze bugs.
+* Fix write cache bugs.
+* Fix optimize import bugs.
+* Fix some bugs.
+* Add bazel build
+
 # Version 0.6.0 (2017-02-13)
 
 ## Highlights
