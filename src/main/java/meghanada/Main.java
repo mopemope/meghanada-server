@@ -9,9 +9,13 @@ import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.core.LoggerContext;
+import org.apache.logging.log4j.core.appender.FileAppender;
+import org.apache.logging.log4j.core.appender.SyslogAppender;
 import org.apache.logging.log4j.core.config.Configuration;
 import org.apache.logging.log4j.core.config.LoggerConfig;
+import org.apache.logging.log4j.core.layout.PatternLayout;
 
+import java.io.File;
 import java.io.IOException;
 
 public class Main {
@@ -36,6 +40,10 @@ public class Main {
             log.catching(e);
         });
 
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            log.info("shutdown server");
+        }));
+
         final Options options = buildOptions();
 
         final CommandLineParser parser = new DefaultParser();
@@ -52,6 +60,11 @@ public class Main {
         }
 
         System.setProperty("home", Config.getInstalledPath().getParentFile().getCanonicalPath());
+
+        final String dev = System.getenv("MEGHANADA_DEVELOP");
+        if (dev != null && dev.equals("1")) {
+            addFileAppender();
+        }
 
         if (cmd.hasOption("v")) {
             final LoggerContext context = (LoggerContext) LogManager.getContext(false);
@@ -104,6 +117,24 @@ public class Main {
         log.info("Meghanada-Server Version:{}", version);
         final Server server = createServer("localhost", portInt, projectRoot, fmt);
         server.startServer();
+    }
+
+    private static void addFileAppender() throws IOException {
+        final String tempDir = System.getProperty("java.io.tmpdir");
+        final File logFile = new File(tempDir, "meghanada_server.log");
+        final LoggerContext context = (LoggerContext) LogManager.getContext(false);
+        final Configuration configuration = context.getConfiguration();
+        final LoggerConfig loggerConfig = configuration.getLoggerConfig(LogManager.ROOT_LOGGER_NAME);
+        final FileAppender fileAppender = FileAppender.newBuilder()
+                .withName("file")
+                .withLayout(PatternLayout.newBuilder()
+                        .withPattern("[%d][%-5.-5p][%-14.-14c{1}:%4L] %-22.-22M - %m%n")
+                        .build())
+                .withFileName(logFile.getCanonicalPath())
+                .build();
+        configuration.addAppender(fileAppender);
+        loggerConfig.addAppender(fileAppender, Level.INFO, null);
+        context.updateLoggers();
     }
 
     private static Server createServer(final String host, final int port, final String projectRoot, final String fmt)

@@ -11,7 +11,6 @@ import org.apache.logging.log4j.Logger;
 
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.util.Collection;
@@ -42,7 +41,7 @@ public class CommandHandler {
             final String out = outputFormatter.changeProject(result);
             writer.write(out);
             writer.newLine();
-        } catch (Exception e) {
+        } catch (Throwable e) {
             log.catching(e);
         }
     }
@@ -54,7 +53,7 @@ public class CommandHandler {
             final String out = outputFormatter.diagnostics(compileResult, path);
             writer.write(out);
             writer.newLine();
-        } catch (Exception e) {
+        } catch (Throwable e) {
             log.catching(e);
         }
     }
@@ -66,7 +65,7 @@ public class CommandHandler {
             final String out = outputFormatter.compile(compileResult, canonicalPath);
             writer.write(out);
             writer.newLine();
-        } catch (Exception e) {
+        } catch (Throwable e) {
             log.catching(e);
         }
     }
@@ -77,7 +76,7 @@ public class CommandHandler {
             final String out = outputFormatter.compileProject(compileResult);
             writer.write(out);
             writer.newLine();
-        } catch (Exception e) {
+        } catch (Throwable e) {
             log.catching(e);
         }
     }
@@ -91,7 +90,7 @@ public class CommandHandler {
             final String out = outputFormatter.autocomplete(units);
             writer.write(out);
             writer.newLine();
-        } catch (Exception e) {
+        } catch (Throwable e) {
             log.catching(e);
         }
     }
@@ -105,7 +104,7 @@ public class CommandHandler {
                 writer.flush();
             }
             writer.newLine();
-        } catch (Exception e) {
+        } catch (Throwable e) {
             log.catching(e);
         }
 
@@ -117,7 +116,7 @@ public class CommandHandler {
             final String out = outputFormatter.parse(result);
             writer.write(out);
             writer.newLine();
-        } catch (Exception e) {
+        } catch (Throwable e) {
             log.catching(e);
         }
     }
@@ -128,7 +127,7 @@ public class CommandHandler {
             final String out = outputFormatter.addImport(result, ClassNameUtils.replaceInnerMark(fqcn));
             writer.write(out);
             writer.newLine();
-        } catch (Exception e) {
+        } catch (Throwable e) {
             log.catching(e);
         }
 
@@ -140,7 +139,7 @@ public class CommandHandler {
             final String out = outputFormatter.optimizeImport(result);
             writer.write(out);
             writer.newLine();
-        } catch (Exception e) {
+        } catch (Throwable e) {
             log.catching(e);
         }
     }
@@ -151,7 +150,7 @@ public class CommandHandler {
             final String out = outputFormatter.importAll(result);
             writer.write(out);
             writer.newLine();
-        } catch (Exception e) {
+        } catch (Throwable e) {
             log.catching(e);
         }
     }
@@ -162,7 +161,7 @@ public class CommandHandler {
             final String out = outputFormatter.switchTest(openPath);
             writer.write(out);
             writer.newLine();
-        } catch (Exception e) {
+        } catch (Throwable e) {
             log.catching(e);
         }
     }
@@ -171,7 +170,7 @@ public class CommandHandler {
         try {
             writer.write("pong");
             writer.newLine();
-        } catch (IOException e) {
+        } catch (Throwable e) {
             log.catching(e);
         }
     }
@@ -186,7 +185,7 @@ public class CommandHandler {
                 writer.write(out);
             }
             writer.newLine();
-        } catch (Exception e) {
+        } catch (Throwable e) {
             log.catching(e);
         }
 
@@ -200,7 +199,7 @@ public class CommandHandler {
                 writer.write(out);
             }
             writer.newLine();
-        } catch (Exception e) {
+        } catch (Throwable e) {
             log.catching(e);
         }
     }
@@ -214,7 +213,7 @@ public class CommandHandler {
                 writer.flush();
             }
             writer.newLine();
-        } catch (Exception e) {
+        } catch (Throwable e) {
             log.catching(e);
         }
     }
@@ -225,7 +224,7 @@ public class CommandHandler {
             final String out = outputFormatter.clearCache(result);
             writer.write(out);
             writer.newLine();
-        } catch (IOException e) {
+        } catch (Throwable e) {
             log.catching(e);
         }
 
@@ -240,7 +239,7 @@ public class CommandHandler {
                 writer.write(out);
             }));
             writer.newLine();
-        } catch (Exception e) {
+        } catch (Throwable e) {
             log.catching(e);
         }
     }
@@ -251,7 +250,7 @@ public class CommandHandler {
             session.formatCode(canonicalPath);
             writer.write(outputFormatter.formatCode(canonicalPath));
             writer.newLine();
-        } catch (Exception e) {
+        } catch (Throwable e) {
             log.catching(e);
         }
     }
