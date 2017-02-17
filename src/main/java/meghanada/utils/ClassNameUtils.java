@@ -248,7 +248,7 @@ public class ClassNameUtils {
         if (str == null || str.isEmpty()) {
             return Collections.emptyList();
         }
-        List<String> result = new ArrayList<>(4);
+        final List<String> result = new ArrayList<>(4);
 
         final int idx = str.indexOf("<");
         if (idx >= 0) {
@@ -277,12 +277,18 @@ public class ClassNameUtils {
                         continue;
                     case '>':
                         indent--;
-                        //if (indent == 0) {
+                        if (indent < 0) {
+                            if (sb.length() > 0) {
+                                result.add(sb.toString());
+                            }
+                            return result;
+                        }
                         sb.append(c);
-                        //}
                         continue;
                     case ' ':
                         if (wild) {
+                            sb.append(c);
+                        } else if (indent > 0) {
                             sb.append(c);
                         }
                         // skip

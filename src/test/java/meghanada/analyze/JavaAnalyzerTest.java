@@ -19,7 +19,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import static meghanada.config.Config.timeIt;
-import static meghanada.config.Config.traceIt;
 
 public class JavaAnalyzerTest extends GradleTestBase {
 
@@ -406,7 +405,87 @@ public class JavaAnalyzerTest extends GradleTestBase {
 
         final String tmp = System.getProperty("java.io.tmpdir");
 
-        traceIt(() -> {
+        timeIt(() -> {
+            final CompileResult compileResult = analyzer.analyzeAndCompile(files, cp, tmp);
+            compileResult.getSources().values().forEach(Source::dump);
+            return compileResult;
+        });
+
+    }
+
+    @Test
+    public void analyze17() throws Exception {
+        final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8", project.getSourceDirectories());
+        final String cp = getClasspath();
+
+        List<File> files = new ArrayList<>();
+        final File file = new File("./src/main/java/meghanada/analyze/TreeAnalyzer.java").getCanonicalFile();
+        assert file.exists();
+        files.add(file);
+
+        final String tmp = System.getProperty("java.io.tmpdir");
+
+        timeIt(() -> {
+            final CompileResult compileResult = analyzer.analyzeAndCompile(files, cp, tmp);
+            compileResult.getSources().values().forEach(Source::dump);
+            return compileResult;
+        });
+
+    }
+
+    @Test
+    public void analyze18() throws Exception {
+        final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8", project.getSourceDirectories());
+        final String cp = getClasspath();
+
+        List<File> files = new ArrayList<>();
+        final File file = new File("./src/test/java/meghanada/GenArray1.java").getCanonicalFile();
+        assert file.exists();
+        files.add(file);
+
+        final String tmp = System.getProperty("java.io.tmpdir");
+
+        timeIt(() -> {
+            final CompileResult compileResult = analyzer.analyzeAndCompile(files, cp, tmp);
+            compileResult.getSources().values().forEach(Source::dump);
+            return compileResult;
+        });
+
+    }
+
+    @Test
+    public void analyze19() throws Exception {
+        final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8", project.getSourceDirectories());
+        final String cp = getClasspath();
+
+        List<File> files = new ArrayList<>();
+        final File file = new File("./src/main/java/meghanada/reflect/asm/MethodAnalyzeVisitor.java").getCanonicalFile();
+        assert file.exists();
+        files.add(file);
+
+        final String tmp = System.getProperty("java.io.tmpdir");
+
+        timeIt(() -> {
+            final CompileResult compileResult = analyzer.analyzeAndCompile(files, cp, tmp);
+            compileResult.getSources().values().forEach(Source::dump);
+            return compileResult;
+        });
+
+    }
+
+    @Test
+    public void analyze20() throws Exception {
+        final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8", project.getSourceDirectories());
+        final String cp = getClasspath();
+
+        List<File> files = new ArrayList<>();
+        final File file = new File("./src/test/java/meghanada/SelfRef2.java").getCanonicalFile();
+        assert file.exists();
+        files.add(file);
+
+        final String tmp = System.getProperty("java.io.tmpdir");
+
+        timeIt(() -> {
             final CompileResult compileResult = analyzer.analyzeAndCompile(files, cp, tmp);
             compileResult.getSources().values().forEach(Source::dump);
             return compileResult;

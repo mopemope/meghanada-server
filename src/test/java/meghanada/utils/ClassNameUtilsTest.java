@@ -50,6 +50,20 @@ public class ClassNameUtilsTest {
     }
 
     @Test
+    public void parseTypeParameter6() throws Exception {
+        String name = "java.util.List<java.util.List<? extends String>>";
+        List<String> typeParams = ClassNameUtils.parseTypeParameter(name);
+        assertEquals("java.util.List<? extends String>", typeParams.get(0));
+    }
+
+    @Test
+    public void parseTypeParameter7() throws Exception {
+        String name = "meghanada.SelfRef1<T>$Ref";
+        List<String> typeParams = ClassNameUtils.parseTypeParameter(name);
+        assertEquals("T", typeParams.get(0));
+    }
+
+    @Test
     public void innerClassName1() throws Exception {
         String name = "java.util.Map.Entry";
         final Optional<String> innerClassName = ClassNameUtils.toInnerClassName(name);
@@ -75,6 +89,13 @@ public class ClassNameUtilsTest {
         String name = "java.util.ZipEntry";
         final String s = ClassNameUtils.removeCapture(name);
         assertEquals("java.util.ZipEntry", s);
+    }
+
+    @Test
+    public void rmCapture3() throws Exception {
+        String name = "capture of ?";
+        final String s = ClassNameUtils.removeCapture(name);
+        assertEquals("capture of ?", s);
     }
 
     @Test

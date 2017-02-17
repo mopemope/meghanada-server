@@ -63,7 +63,7 @@ public class CachedASMReflectorTest extends GradleTestBase {
     public void testSearchClasses1() throws Exception {
         CachedASMReflector cachedASMReflector = CachedASMReflector.getInstance();
         Collection<? extends CandidateUnit> candidateUnits = cachedASMReflector.searchClasses("Map", false, false);
-        // candidateUnits.forEach(c -> System.out.println(c));
+        candidateUnits.forEach(c -> System.out.println(c));
         assertEquals(1, candidateUnits.size());
     }
 

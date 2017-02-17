@@ -71,7 +71,7 @@ public class JavaCompletionTest extends GradleTestBase {
             return completion.completionAt(file, 8, 9, "@Test");
         });
         units.forEach(a -> System.out.println(a.getDeclaration()));
-        assertEquals(22, units.size());
+        assertEquals(6, units.size());
     }
 
     @Test

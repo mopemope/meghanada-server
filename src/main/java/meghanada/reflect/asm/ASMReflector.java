@@ -26,12 +26,11 @@ import java.util.stream.Stream;
 import static meghanada.utils.FunctionUtils.wrapIO;
 import static meghanada.utils.FunctionUtils.wrapIOConsumer;
 
-
 public class ASMReflector {
 
     private static final String[] filterPackage = new String[]{
             "sun.",
-            "com.sun.",
+            "com.sun",
             "com.oracle",
             "oracle.jrockit",
             "jdk",
@@ -61,25 +60,25 @@ public class ASMReflector {
 
     public static String toPrimitive(final char c) {
         switch (c) {
-            case 'B':
+            case 'B' :
                 return "byte";
-            case 'C':
+            case 'C' :
                 return "char";
-            case 'D':
+            case 'D' :
                 return "double";
-            case 'F':
+            case 'F' :
                 return "float";
-            case 'I':
+            case 'I' :
                 return "int";
-            case 'J':
+            case 'J' :
                 return "long";
-            case 'S':
+            case 'S' :
                 return "short";
-            case 'V':
+            case 'V' :
                 return "void";
-            case 'Z':
+            case 'Z' :
                 return "boolean";
-            default:
+            default :
                 return Character.toString(c);
         }
     }
@@ -566,9 +565,7 @@ public class ASMReflector {
         }
         List<String> supers = new ArrayList<>(classIndex.supers);
         if (!replace.isEmpty()) {
-            supers = classIndex
-                    .supers
-                    .stream()
+            supers = classIndex.supers.stream()
                     .map(s -> ClassNameUtils.replaceFromMap(s, replace))
                     .collect(Collectors.toList());
         }

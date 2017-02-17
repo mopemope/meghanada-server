@@ -114,6 +114,7 @@ public class SourceTest extends GradleTestBase {
 
         final Source source = timeIt(() -> {
             final CompileResult compileResult = analyzer.analyzeAndCompile(files, cp, tmp);
+            compileResult.getSources().values().forEach(Source::dump);
             return compileResult.getSources().get(file);
         });
 
