@@ -201,7 +201,6 @@ public class Source {
             log.trace("variables:{}", symbols);
             if (onlyName) {
                 for (final MethodCall methodCall : symbols) {
-                    // TODO impl nameContains
                     if (methodCall.nameContains(col)) {
                         final Optional<MethodCall> result = Optional.of(methodCall);
                         return log.traceExit(entryMessage, result);

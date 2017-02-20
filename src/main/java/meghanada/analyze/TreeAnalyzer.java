@@ -635,7 +635,8 @@ public class TreeAnalyzer {
         final JCTree.JCExpression methodSelect = methodInvocation.getMethodSelect();
         int identBegin = methodSelect.getStartPosition();
         int identEnd = methodSelect.getEndPosition(endPosTable);
-        final Range nameRange = Range.create(src, identBegin, identEnd);
+        // default
+        Range nameRange = Range.create(src, identBegin, identEnd);
 
         if (methodSelect instanceof JCTree.JCIdent) {
             // super
@@ -644,12 +645,15 @@ public class TreeAnalyzer {
             final Symbol sym = ident.sym;
             if (sym != null) {
                 final Symbol owner = sym.owner;
-                final Range range = Range.create(src, preferredPos + 1, endPos);
+                final int nameBegin = ident.getStartPosition();
+                final int nameEnd = ident.getEndPosition(endPosTable);
+                nameRange = Range.create(src, nameBegin, nameEnd);
+                final Range range = Range.create(src, nameBegin, endPos);
 
                 if (s.equals("super")) {
                     // call super constructor
                     final String constructor = owner.flatName().toString();
-                    final MethodCall methodCall = new MethodCall(s, constructor, preferredPos + 1, nameRange, range);
+                    final MethodCall methodCall = new MethodCall(s, constructor, nameBegin, nameRange, range);
                     if (owner.type != null) {
                         this.getTypeString(src, owner.type).ifPresent(fqcn -> {
                             methodCall.declaringClass = this.markFQCN(src, fqcn);
@@ -685,12 +689,15 @@ public class TreeAnalyzer {
             final JCTree.JCExpression expression = fa.getExpression();
             final String selectScope = expression.toString();
             this.analyzeParsedTree(expression, src, endPosTable);
-
             final Type owner = expression.type;
             final String name = fa.getIdentifier().toString();
 
-            final Range range = Range.create(src, preferredPos + 1, endPos);
-            final MethodCall methodCall = new MethodCall(selectScope, name, preferredPos + 1, nameRange, range);
+            final int start = expression.getEndPosition(endPosTable);
+            final int nameEnd = start + name.length();
+
+            nameRange = Range.create(src, start + 1, nameEnd + 1);
+            final Range range = Range.create(src, start + 1, endPos);
+            final MethodCall methodCall = new MethodCall(selectScope, name, start + 1, nameRange, range);
 
             if (owner == null) {
                 // call static
