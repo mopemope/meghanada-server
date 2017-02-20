@@ -1,3 +1,8 @@
+# Version 0.6.2 (2017-02-20)
+
+* Fix jump to declarations on method name.
+* Change cache hash filename.
+
 # Version 0.6.1 (2017-02-17)
 
 * Fix type analyze bugs.
