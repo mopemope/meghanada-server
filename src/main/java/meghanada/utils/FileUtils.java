@@ -6,6 +6,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.message.EntryMessage;
 import org.jboss.forge.roaster.Roaster;
+import meghanada.Main;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -34,7 +35,7 @@ public final class FileUtils {
         try {
             final MessageDigest md = MessageDigest.getInstance(ALGORITHM_MD5);
             try (InputStream is = Files.newInputStream(file.toPath());
-                 DigestInputStream dis = new DigestInputStream(is, md)) {
+                    DigestInputStream dis = new DigestInputStream(is, md)) {
                 final byte[] buf = new byte[8192];
                 while (dis.read(buf) != -1) {
                 }
@@ -83,7 +84,6 @@ public final class FileUtils {
         }
 
     }
-
 
     public static void deleteFile(final File root, final boolean deleteRoot) throws IOException {
         if (!root.exists()) {
@@ -214,6 +214,7 @@ public final class FileUtils {
         try {
             final MessageDigest md = MessageDigest.getInstance(ALGORITHM_SHA_512);
             md.update(path.getBytes(UTF_8));
+            md.update(Main.VERSION.getBytes(UTF_8));
             final byte[] digest = md.digest();
             final StringBuilder sb = new StringBuilder();
             for (final int b : digest) {
