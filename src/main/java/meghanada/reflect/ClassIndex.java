@@ -53,20 +53,17 @@ public class ClassIndex implements CandidateUnit, Serializable, Cloneable {
 
     @Override
     public String getDeclaration() {
-        if (!this.declaration.contains(ClassNameUtils.INNER_MARK)) {
-            return this.declaration;
-        }
         return ClassNameUtils.replaceInnerMark(this.declaration);
     }
 
     @Override
     public String getDisplayDeclaration() {
-        final StringBuilder sb = new StringBuilder(ClassNameUtils.replaceInnerMark(this.declaration));
+        final StringBuilder sb = new StringBuilder(this.declaration);
         if (this.typeParameters != null && this.typeParameters.size() > 0) {
             sb.append('<');
             Joiner.on(", ").appendTo(sb, this.typeParameters).append('>');
         }
-        return sb.toString();
+        return ClassNameUtils.replaceInnerMark(sb.toString());
     }
 
     @Override

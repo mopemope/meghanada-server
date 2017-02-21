@@ -108,7 +108,7 @@ public class ASMReflectorTest extends GradleTestBase {
                             methodDescriptor.getTypeParameterMap().put("K", "String");
                             methodDescriptor.getTypeParameterMap().put("V", "Long");
                             System.out.println(memberDescriptor.getReturnType());
-                            assertEquals("java.util.Set<java.util.Map.Entry<String, Long>>", memberDescriptor.getReturnType());
+                            assertEquals("java.util.Set<java.util.Map$Entry<String, Long>>", memberDescriptor.getReturnType());
                         }
                     });
         }

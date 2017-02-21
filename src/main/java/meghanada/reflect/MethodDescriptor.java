@@ -27,7 +27,8 @@ public class MethodDescriptor extends MemberDescriptor implements Serializable {
 
     }
 
-    public MethodDescriptor(final String declaringClass, final String name, final String modifier, final List<MethodParameter> parameters, final String[] exceptions, final String returnType, final boolean hashDefault) {
+    public MethodDescriptor(final String declaringClass, final String name, final String modifier, final List<MethodParameter> parameters, final String[] exceptions, final String returnType,
+            final boolean hashDefault) {
         this.declaringClass = declaringClass;
         this.name = name;
         if (modifier == null) {
@@ -63,15 +64,15 @@ public class MethodDescriptor extends MemberDescriptor implements Serializable {
         if (this.memberType.equals(MemberType.CONSTRUCTOR)) {
             String s = this.getConstructorDeclaration();
             if (this.hasTypeParameters()) {
-                return renderTypeParameters(s, formalType != null);
+                s = renderTypeParameters(s, formalType != null);
             }
-            return s;
+            return ClassNameUtils.replaceInnerMark(s);
         } else {
             String s = this.getMethodDeclaration();
             if (this.hasTypeParameters()) {
-                return renderTypeParameters(s, formalType != null);
+                s = renderTypeParameters(s, formalType != null);
             }
-            return s;
+            return ClassNameUtils.replaceInnerMark(s);
         }
     }
 
@@ -145,24 +146,24 @@ public class MethodDescriptor extends MemberDescriptor implements Serializable {
     @Override
     public String getDisplayDeclaration() {
         if (this.memberType.equals(MemberType.CONSTRUCTOR)) {
-            final String s = this.getConstructorDisplayDeclaration();
+            String s = this.getConstructorDisplayDeclaration();
             if (this.hasTypeParameters()) {
-                return renderTypeParameters(s, formalType != null);
+                s = renderTypeParameters(s, formalType != null);
             }
-            return s;
+            return ClassNameUtils.replaceInnerMark(s);
         } else {
-            final String s = this.getMethodDisplayDeclaration();
+            String s = this.getMethodDisplayDeclaration();
             if (this.hasTypeParameters()) {
-                return renderTypeParameters(s, formalType != null);
+                s = renderTypeParameters(s, formalType != null);
             }
-            return s;
+            return ClassNameUtils.replaceInnerMark(s);
         }
     }
 
     @Override
     public String getReturnType() {
         if (this.returnType != null) {
-            final String rt = ClassNameUtils.replaceInnerMark(this.returnType);
+            final String rt = this.returnType;
             if (this.hasTypeParameters()) {
                 return this.renderTypeParameters(rt, formalType != null);
             }
@@ -210,7 +211,6 @@ public class MethodDescriptor extends MemberDescriptor implements Serializable {
         }
         return returnType;
     }
-
 
     public boolean containsTypeParameter(String typeParameter) {
         return this.typeParameters != null && this.typeParameters.contains(typeParameter);
@@ -262,9 +262,12 @@ public class MethodDescriptor extends MemberDescriptor implements Serializable {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        if (!super.equals(o)) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
+        if (!super.equals(o))
+            return false;
         MethodDescriptor that = (MethodDescriptor) o;
         return Objects.equal(parameters, that.parameters) &&
                 Objects.equal(formalType, that.formalType);
