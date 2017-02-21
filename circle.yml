@@ -20,8 +20,8 @@ dependencies:
     - sudo apt-get install oracle-java8-installer
   override:
     - ./gradlew -v
-    - ./gradlew testClasses
+    - ./gradlew clean testClasses
 
 test:
   override:
-    - ./gradlew --full-stacktrace check
+    - ./gradlew --full-stacktrace clean check

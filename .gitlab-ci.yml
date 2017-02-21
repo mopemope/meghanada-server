@@ -1,7 +1,7 @@
-image: mopemope/java:jdk8
+image: isuper/java-oracle:jdk_8
 test:
   script:
-    - ./gradlew --full-stacktrace check shadowJar
+    - ./gradlew --full-stacktrace clean check shadowJar
   artifacts:
     paths:
       - build/libs/meghanada*
