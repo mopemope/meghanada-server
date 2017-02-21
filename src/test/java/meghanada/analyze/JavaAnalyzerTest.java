@@ -494,6 +494,26 @@ public class JavaAnalyzerTest extends GradleTestBase {
     }
 
     @Test
+    public void analyze21() throws Exception {
+        final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8", project.getSourceDirectories());
+        final String cp = getClasspath();
+
+        List<File> files = new ArrayList<>();
+        final File file = new File("./src/main/java/meghanada/analyze/JavaAnalyzer.java").getCanonicalFile();
+        assert file.exists();
+        files.add(file);
+
+        final String tmp = System.getProperty("java.io.tmpdir");
+
+        timeIt(() -> {
+            final CompileResult compileResult = analyzer.analyzeAndCompile(files, cp, tmp);
+            compileResult.getSources().values().forEach(Source::dump);
+            return compileResult;
+        });
+
+    }
+
+    @Test
     public void analyzeAll() throws Exception {
         final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8", project.getSourceDirectories());
         final String cp = getClasspath();
@@ -503,7 +523,7 @@ public class JavaAnalyzerTest extends GradleTestBase {
                 .filter(path -> path.toFile().isFile())
                 .map(Path::toFile)
                 .collect(Collectors.toList());
-        
+
         List<File> testFiles = Files.walk(new File("./src/test/java").getCanonicalFile().toPath(),
                 FileVisitOption.FOLLOW_LINKS)
                 .filter(path -> path.toFile().isFile())
@@ -593,23 +613,5 @@ public class JavaAnalyzerTest extends GradleTestBase {
 
         return String.join(File.pathSeparator, classpath);
     }
-
-    private List<File> getSystemJars() throws IOException {
-        final String javaHome = Config.load().getJavaHomeDir();
-        File jvmDir = new File(javaHome);
-        return Files.walk(jvmDir.toPath())
-                .filter(path -> {
-                    String name = path.toFile().getName();
-                    return name.endsWith(".jar") && !name.endsWith("policy.jar");
-                })
-                .map(path -> {
-                    try {
-                        return path.toFile().getCanonicalFile();
-                    } catch (IOException e) {
-                        throw new UncheckedIOException(e);
-                    }
-                })
-                .collect(Collectors.toList());
-    }
-
+    
 }

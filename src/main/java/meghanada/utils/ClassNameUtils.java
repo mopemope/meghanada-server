@@ -22,6 +22,7 @@ public class ClassNameUtils {
     private static final String DOT_SEPARATOR = ".";
     private static final Map<String, String> removeCaptureMap;
     private static final Map<String, String> removeTypeValMap;
+    private static final Map<String, String> removeWildcardMap;
     private static final Logger log = LogManager.getLogger(ClassNameUtils.class);
     private static final String[] primitives = new String[]{
             "byte",
@@ -48,11 +49,11 @@ public class ClassNameUtils {
 
     private static Map<String, String> boxMap = new HashMap<>(16);
 
-
     static {
         for (int i = 0; i < primitives.length; i++) {
             boxMap.put(primitives[i], box[i]);
         }
+
         removeCaptureMap = new HashMap<>(3);
         removeCaptureMap.put(CAPTURE_OF + "? super ", "");
         removeCaptureMap.put(CAPTURE_OF + "? extends ", "");
@@ -61,6 +62,11 @@ public class ClassNameUtils {
         removeTypeValMap = new HashMap<>(2);
         removeTypeValMap.put(CLASS_TYPE_VARIABLE_MARK, "");
         removeTypeValMap.put(FORMAL_TYPE_VARIABLE_MARK, "");
+
+        removeWildcardMap = new HashMap<>(2);
+        removeWildcardMap.put("? super ", "");
+        removeWildcardMap.put("? extends ", "");
+
     }
 
     private ClassNameUtils() {
@@ -416,10 +422,17 @@ public class ClassNameUtils {
     }
 
     public static String removeCapture(final String name) {
-        if (name.startsWith(CAPTURE_OF)) {
+        if (name.contains(CAPTURE_OF)) {
             return ClassNameUtils.replaceFromMap(name, removeCaptureMap);
         }
         return name;
+    }
+
+    public static String removeCaptureAndWildCard(final String name) {
+        if (name.contains(CAPTURE_OF)) {
+            return ClassNameUtils.replaceFromMap(name, removeCaptureMap);
+        }
+        return ClassNameUtils.removeWildcard(name);
     }
 
     static String vaArgsToArray(String name) {
@@ -455,4 +468,10 @@ public class ClassNameUtils {
     }
 
 
+    public static String removeWildcard(final String name) {
+        if (name.startsWith("?")) {
+            return ClassNameUtils.replaceFromMap(name, removeWildcardMap);
+        }
+        return name;
+    }
 }

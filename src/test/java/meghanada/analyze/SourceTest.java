@@ -11,7 +11,6 @@ import org.junit.Test;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -150,22 +149,5 @@ public class SourceTest extends GradleTestBase {
         return String.join(File.pathSeparator, classpath);
     }
 
-    private List<File> getSystemJars() throws IOException {
-        final String javaHome = Config.load().getJavaHomeDir();
-        File jvmDir = new File(javaHome);
-        return Files.walk(jvmDir.toPath())
-                .filter(path -> {
-                    String name = path.toFile().getName();
-                    return name.endsWith(".jar") && !name.endsWith("policy.jar");
-                })
-                .map(path -> {
-                    try {
-                        return path.toFile().getCanonicalFile();
-                    } catch (IOException e) {
-                        throw new UncheckedIOException(e);
-                    }
-                })
-                .collect(Collectors.toList());
-    }
 
 }

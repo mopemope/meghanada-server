@@ -57,7 +57,7 @@ public final class ClassName {
     }
 
     public String getName() {
-        String name = ClassNameUtils.removeCapture(this.rawName);
+        String name = ClassNameUtils.removeCaptureAndWildCard(this.rawName);
         if (typeIndex >= 0) {
             String fst = name.substring(0, typeIndex);
             String sec = name.substring(typeLastIndex + 1, name.length());

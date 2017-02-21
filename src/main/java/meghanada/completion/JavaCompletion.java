@@ -133,14 +133,16 @@ public class JavaCompletion {
             if (classIdx > 0 && prefixIdx > 0) {
                 final String prefix = searchWord.substring(prefixIdx + 1);
                 // return methods of prefix class
-                final String fqcn = searchWord.substring(classIdx + 1, prefixIdx);
+                String fqcn = searchWord.substring(classIdx + 1, prefixIdx);
+                fqcn = ClassNameUtils.replace(fqcn, ClassNameUtils.CAPTURE_OF, "");
                 return reflectWithFQCN(pkg, fqcn, prefix);
             }
             // chained method completion
 
             if (classIdx > 0) {
                 // return methods of prefix class
-                final String fqcn = searchWord.substring(classIdx + 1, searchWord.length());
+                String fqcn = searchWord.substring(classIdx + 1, searchWord.length());
+                fqcn = ClassNameUtils.replace(fqcn, ClassNameUtils.CAPTURE_OF, "");
                 return reflect(pkg, fqcn, "");
 
             } else {
@@ -161,7 +163,8 @@ public class JavaCompletion {
                 while (size > 0 && startColumn-- > 0) {
                     for (AccessSymbol accessSymbol : targets) {
                         if (accessSymbol.match(line, startColumn) && accessSymbol.returnType != null) {
-                            return reflect(pkg, accessSymbol.returnType, prefix);
+                            final String fqcn = ClassNameUtils.replace(accessSymbol.returnType, ClassNameUtils.CAPTURE_OF, "");
+                            return reflect(pkg, fqcn, prefix);
                         }
                     }
                 }

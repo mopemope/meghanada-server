@@ -28,6 +28,7 @@ import static meghanada.utils.FunctionUtils.wrapIOConsumer;
 
 public class ASMReflector {
 
+    public static final String PACKAGE_INFO = "package-info";
     private static final String[] filterPackage = new String[]{
             "sun.",
             "com.sun",
@@ -40,7 +41,6 @@ public class ASMReflector {
             "netscape",
             "org.jboss.forge.roaster._shade.org.eclipse.core.internal"
     };
-
     private static Logger log = LogManager.getLogger(ASMReflector.class);
     private static ASMReflector asmReflector;
     private Set<String> allowClass = new HashSet<>();
@@ -130,8 +130,13 @@ public class ASMReflector {
     }
 
     boolean ignorePackage(final String target) {
-        if (this.allowClass.contains(target)) {
-            return false;
+        if (target.endsWith(PACKAGE_INFO)) {
+            return true;
+        }
+        for (final String keyword : this.allowClass) {
+            if (target.startsWith(keyword)) {
+                return false;
+            }
         }
         for (final String p : ASMReflector.filterPackage) {
             if (target.startsWith(p)) {

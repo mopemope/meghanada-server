@@ -72,7 +72,7 @@ public class GradleTestBase {
                 .collect(Collectors.toSet());
     }
 
-    private static List<File> getSystemJars() throws IOException {
+    protected static List<File> getSystemJars() throws IOException {
         final String javaHome = Config.load().getJavaHomeDir();
         File jvmDir = new File(javaHome);
         return Files.walk(jvmDir.toPath())

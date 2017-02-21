@@ -10,6 +10,7 @@ import java.io.File;
 import java.util.Collection;
 
 import static meghanada.config.Config.debugIt;
+import static meghanada.config.Config.traceIt;
 import static org.junit.Assert.assertEquals;
 
 public class JavaCompletionTest extends GradleTestBase {
@@ -25,7 +26,7 @@ public class JavaCompletionTest extends GradleTestBase {
 
 
     @Test
-    public void testCompletion1() throws Exception {
+    public void testCompletion01() throws Exception {
         JavaCompletion completion = getCompletion();
         File file = new File("./src/test/java/meghanada/TopClass.java").getCanonicalFile();
         assert file.exists();
@@ -37,7 +38,7 @@ public class JavaCompletionTest extends GradleTestBase {
     }
 
     @Test
-    public void testCompletion2() throws Exception {
+    public void testCompletion02() throws Exception {
         JavaCompletion completion = getCompletion();
         File file = new File("./src/test/java/meghanada/TopClass.java").getCanonicalFile();
         assert file.exists();
@@ -49,7 +50,7 @@ public class JavaCompletionTest extends GradleTestBase {
     }
 
     @Test
-    public void testCompletion3() throws Exception {
+    public void testCompletion03() throws Exception {
         JavaCompletion completion = getCompletion();
         File file = new File("./src/test/java/meghanada/TopClass.java").getCanonicalFile();
         assert file.exists();
@@ -62,7 +63,7 @@ public class JavaCompletionTest extends GradleTestBase {
     }
 
     @Test
-    public void testCompletion4() throws Exception {
+    public void testCompletion04() throws Exception {
         JavaCompletion completion = getCompletion();
         File file = new File("./src/test/java/meghanada/TopClass.java").getCanonicalFile();
         assert file.exists();
@@ -75,7 +76,7 @@ public class JavaCompletionTest extends GradleTestBase {
     }
 
     @Test
-    public void testCompletion5() throws Exception {
+    public void testCompletion05() throws Exception {
         JavaCompletion completion = getCompletion();
         File file = new File("./src/main/java/meghanada/analyze/ExpressionScope.java").getCanonicalFile();
         assert file.exists();
@@ -93,7 +94,7 @@ public class JavaCompletionTest extends GradleTestBase {
     }
 
     @Test
-    public void testCompletion6() throws Exception {
+    public void testCompletion06() throws Exception {
         JavaCompletion completion = getCompletion();
         File file = new File("./src/main/java/meghanada/analyze/ExpressionScope.java").getCanonicalFile();
         assert file.exists();
@@ -106,7 +107,7 @@ public class JavaCompletionTest extends GradleTestBase {
     }
 
     @Test
-    public void testCompletion7() throws Exception {
+    public void testCompletion07() throws Exception {
         JavaCompletion completion = getCompletion();
         File file = new File("./src/main/java/meghanada/analyze/ExpressionScope.java").getCanonicalFile();
         assert file.exists();
@@ -120,7 +121,7 @@ public class JavaCompletionTest extends GradleTestBase {
     }
 
     @Test
-    public void testCompletion8() throws Exception {
+    public void testCompletion08() throws Exception {
         JavaCompletion completion = getCompletion();
         File file = new File("./src/main/java/meghanada/project/gradle/GradleProject.java").getCanonicalFile();
         assert file.exists();
@@ -131,6 +132,37 @@ public class JavaCompletionTest extends GradleTestBase {
         logMethod.forEach(a -> System.out.println(a.getDeclaration()));
         assertEquals(4, logMethod.size());
 
+    }
+
+    @Test
+    public void testCompletion09() throws Exception {
+        JavaCompletion completion = getCompletion();
+        File file = new File("./src/main/java/meghanada/analyze/JavaAnalyzer.java").getCanonicalFile();
+        assert file.exists();
+
+        final Collection<? extends CandidateUnit> units = traceIt(() -> {
+            return completion.completionAt(file, 79, 35, "*method:java.util.Iterator<capture of ? extends com.sun.source.tree.CompilationUnitTree>#");
+        });
+        // units.forEach(a -> System.out.println(a.getDisplayDeclaration()));
+        assertEquals(13, units.size());
+        for (CandidateUnit unit : units) {
+            if (unit.getName().equals("next")) {
+                final String returnType = unit.getReturnType();
+                assertEquals("capture of ? extends com.sun.source.tree.CompilationUnitTree", returnType);
+            }
+        }
+    }
+
+    @Test
+    public void testCompletion10() throws Exception {
+        JavaCompletion completion = getCompletion();
+        File file = new File("./src/main/java/meghanada/analyze/JavaAnalyzer.java").getCanonicalFile();
+        assert file.exists();
+        final Collection<? extends CandidateUnit> units = traceIt(() -> {
+            return completion.completionAt(file, 79, 35, "*method:capture of ? extends com.sun.source.tree.CompilationUnitTree#");
+        });
+        units.forEach(a -> System.out.println(a.getDisplayDeclaration()));
+        assertEquals(17, units.size());
     }
 
     private JavaCompletion getCompletion() throws Exception {

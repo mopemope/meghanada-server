@@ -566,20 +566,32 @@ public class TreeAnalyzer {
         }
 
         if (type instanceof Type.CapturedType) {
-            final Type upperBound = type.getUpperBound();
-            return Optional.ofNullable(upperBound.tsym.flatName().toString());
+            final Type.CapturedType capturedType = (Type.CapturedType) type;
+            final Type.WildcardType wildcardType = capturedType.wildcard;
+            if (wildcardType.kind.toString().equals("?")) {
+                final Type upperBound = type.getUpperBound();
+                final String s = upperBound.tsym.flatName().toString();
+                return Optional.of(s);
+            }
+            final String s = wildcardType.kind.toString() + wildcardType.type.tsym.flatName().toString();
+            return Optional.of(s);
         } else if (type instanceof Type.ArrayType) {
             final Type.ArrayType arrayType = (Type.ArrayType) type;
             final Type elemtype = arrayType.getComponentType();
             if (elemtype != null && elemtype.tsym != null) {
                 final String s = elemtype.tsym.toString();
-                return Optional.ofNullable(s);
+                return Optional.of(s);
             }
             return Optional.empty();
         } else if (type instanceof Type.WildcardType) {
             final Type.WildcardType wildcardType = (Type.WildcardType) type;
-            if (wildcardType != null && wildcardType.type != null) {
-                return Optional.of(wildcardType.type.tsym.flatName().toString());
+            if (wildcardType.type != null) {
+                if (wildcardType.kind.toString().equals("?")) {
+                    final String s = wildcardType.type.tsym.flatName().toString();
+                    return Optional.of(s);
+                }
+                final String s = wildcardType.kind.toString() + wildcardType.type.tsym.flatName().toString();
+                return Optional.of(s);
             }
             return Optional.empty();
         } else if (type instanceof Type.MethodType) {
@@ -1188,7 +1200,12 @@ public class TreeAnalyzer {
             final Type type = wildcard.type;
             final Type.WildcardType wildcardType = (Type.WildcardType) type;
             if (wildcardType != null && wildcardType.type != null) {
-                return Optional.of(wildcardType.type.tsym.flatName().toString());
+                if (wildcardType.kind.toString().equals("?")) {
+                    final String s = wildcardType.type.tsym.flatName().toString();
+                    return Optional.of(s);
+                }
+                final String s = wildcardType.kind.toString() + wildcardType.type.tsym.flatName().toString();
+                return Optional.of(s);
             }
             return Optional.empty();
         } else if (e instanceof JCTree.JCArrayTypeTree) {
@@ -1348,7 +1365,7 @@ public class TreeAnalyzer {
                                 }
                             }
                         } else {
-                            final String fqcn = resolveTypeFromImport(src, expression);
+                            final String fqcn = this.resolveTypeFromImport(src, expression);
                             variable.fqcn = this.markFQCN(src, fqcn);
                         }
                     } else {
@@ -1415,7 +1432,8 @@ public class TreeAnalyzer {
             return fqcn;
         }
 
-        final String simpleName = ClassNameUtils.removeTypeAndArray(fqcn);
+        String simpleName = ClassNameUtils.removeTypeAndArray(fqcn);
+        simpleName = ClassNameUtils.removeWildcard(simpleName);
         if (ClassNameUtils.isPrimitive(simpleName)) {
             return fqcn;
         }
@@ -1423,7 +1441,7 @@ public class TreeAnalyzer {
         ClassNameUtils.parseTypeParameter(fqcn).forEach(s -> {
             if (s.startsWith(ClassNameUtils.CAPTURE_OF)) {
                 final String cls = ClassNameUtils.removeCapture(s);
-                if (cls.equals("capture of ?")) {
+                if (cls.equals(ClassNameUtils.CAPTURE_OF)) {
                     markFQCN(src, ClassNameUtils.OBJECT_CLASS);
                 } else {
                     markFQCN(src, cls);
