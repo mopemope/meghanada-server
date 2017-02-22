@@ -9,7 +9,6 @@ import com.github.luben.zstd.ZstdInputStream;
 import com.github.luben.zstd.ZstdOutputStream;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.LoadingCache;
-import com.google.common.util.concurrent.UncheckedExecutionException;
 import meghanada.analyze.Source;
 import meghanada.project.Project;
 import meghanada.reflect.ClassIndex;
@@ -165,7 +164,6 @@ public class GlobalCache {
                 return kryo.readObject(input, type);
             } catch (Exception e) {
                 file.delete();
-                log.catching(e);
                 return null;
             }
         });
@@ -176,7 +174,6 @@ public class GlobalCache {
             try (final Input input = new Input(in)) {
                 return kryo.readObject(input, type);
             } catch (Exception e) {
-                log.catching(e);
                 return null;
             }
         });
@@ -193,7 +190,8 @@ public class GlobalCache {
                 return obj;
             } catch (Exception e) {
                 file.delete();
-                throw new UncheckedExecutionException(e);
+                log.catching(e);
+                return null;
             }
         });
     }
