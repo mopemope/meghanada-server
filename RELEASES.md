@@ -1,3 +1,10 @@
+# Version 0.6.3 (2017-02-22)
+
+* Fix jump to declarations for overload method.
+* Fix wildcard type completion.
+* Fix cache error log.
+* Reduce jar size.
+
 # Version 0.6.2 (2017-02-20)
 
 * Fix jump to declarations on method name.
