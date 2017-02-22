@@ -53,14 +53,14 @@ public class MemberCacheLoader extends CacheLoader<String, List<MemberDescriptor
         final CachedASMReflector reflector = CachedASMReflector.getInstance();
         reflector.containsClassIndex(fqcn)
                 .map(wrapIO(classIndex -> {
-                    reflector.writeCache(classIndex, list);
+                    CachedASMReflector.writeCache(classIndex, list);
                     return true;
                 }))
                 .orElseGet(() -> {
                     final String fqcn2 = ClassNameUtils.replaceInnerMark(fqcn);
                     reflector.containsClassIndex(fqcn2)
                             .ifPresent(wrapIOConsumer(classIndex -> {
-                                reflector.writeCache(classIndex, list);
+                                CachedASMReflector.writeCache(classIndex, list);
                             }));
                     return true;
                 });

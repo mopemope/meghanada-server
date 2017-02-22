@@ -150,6 +150,22 @@ public class TreeAnalyzer {
         return tree.toString();
     }
 
+    private static void analyzeLiteral(final SourceContext context, final JCTree.JCLiteral literal, final int preferredPos, final int endPos) throws IOException {
+        final Source src = context.getSource();
+        final Tree.Kind kind = literal.getKind();
+        final Object value = literal.getValue();
+        final Range range = Range.create(src, preferredPos, endPos);
+        final Variable variable = new Variable(kind.toString(), preferredPos, range);
+        if (value != null) {
+            variable.fqcn = value.getClass().toString();
+            context.setParameterFQCN(variable.fqcn);
+        } else {
+            variable.fqcn = "<nulltype>";
+            context.setParameterFQCN(variable.fqcn);
+        }
+        src.getCurrentScope().ifPresent(scope -> scope.addVariable(variable));
+    }
+
     private void analyzeCompilationUnitTree(final SourceContext context, final CompilationUnitTree cut) {
         final ExpressionTree packageExpr = cut.getPackageName();
         final Source src = context.getSource();
@@ -918,22 +934,6 @@ public class TreeAnalyzer {
             context.setParameter(false);
             return context.getParameterFQCN();
         }).collect(Collectors.toList());
-    }
-
-    private void analyzeLiteral(final SourceContext context, final JCTree.JCLiteral literal, final int preferredPos, final int endPos) throws IOException {
-        final Source src = context.getSource();
-        final Tree.Kind kind = literal.getKind();
-        final Object value = literal.getValue();
-        final Range range = Range.create(src, preferredPos, endPos);
-        final Variable variable = new Variable(kind.toString(), preferredPos, range);
-        if (value != null) {
-            variable.fqcn = value.getClass().toString();
-            context.setParameterFQCN(variable.fqcn);
-        } else {
-            variable.fqcn = "<nulltype>";
-            context.setParameterFQCN(variable.fqcn);
-        }
-        src.getCurrentScope().ifPresent(scope -> scope.addVariable(variable));
     }
 
     private void analyzeExpressionStatement(final SourceContext context, final JCTree.JCExpressionStatement expr, final int preferredPos, final int endPos) {

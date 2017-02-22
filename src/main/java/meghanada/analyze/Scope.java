@@ -130,13 +130,14 @@ public abstract class Scope {
 
     protected String getScopeType() {
         final String className = this.getClassName();
-        if (className.equals("ClassScope")) {
-            return "Class";
-        } else if (className.equals("MethodScope")) {
-            final MethodScope methodScope = (MethodScope) this;
-            return methodScope.isConstructor ? "Constructor" : "Method";
-        } else {
-            return "Block";
+        switch (className) {
+            case "ClassScope":
+                return "Class";
+            case "MethodScope":
+                final MethodScope methodScope = (MethodScope) this;
+                return methodScope.isConstructor ? "Constructor" : "Method";
+            default:
+                return "Block";
         }
     }
 

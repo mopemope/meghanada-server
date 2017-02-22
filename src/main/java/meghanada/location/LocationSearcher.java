@@ -41,6 +41,38 @@ public class LocationSearcher {
         return new File(root, path);
     }
 
+    private static Location searchLocalNameSymbol(final Source source, final int line, final int col, final String symbol) {
+        final EntryMessage entryMessage = log.traceEntry("line={} col={} symbol={}", line, col, symbol);
+
+        final Map<String, Variable> symbols = source.getDeclaratorMap(line);
+        log.trace("variables={}", symbols);
+        final Variable variable = symbols.get(symbol);
+        final Location location = Optional.ofNullable(variable)
+                .map(ns -> new Location(source.getFile().getPath(),
+                        ns.range.begin.line,
+                        ns.range.begin.column))
+                .orElseGet(() -> {
+                    // isField
+                    final TypeScope ts = source.getTypeScope(line);
+                    if (ts == null) {
+                        return null;
+                    }
+                    final Variable fieldSymbol = ts.getField(symbol);
+                    if (fieldSymbol == null) {
+                        return null;
+                    }
+                    return new Location(source.getFile().getPath(),
+                            fieldSymbol.range.begin.line,
+                            fieldSymbol.range.begin.column);
+                });
+        if (location != null) {
+            log.traceExit(entryMessage);
+            return location;
+        }
+        log.traceExit(entryMessage);
+        return null;
+    }
+
     public void setProject(Project project) {
         this.project = project;
     }
@@ -66,7 +98,7 @@ public class LocationSearcher {
         list.add(this::searchClassOrInterface);
         list.add(this::searchFieldAccessSymbol);
         list.add(this::searchMethodCallSymbol);
-        list.add(this::searchLocalNameSymbol);
+        list.add(LocationSearcher::searchLocalNameSymbol);
         return list;
     }
 
@@ -159,38 +191,6 @@ public class LocationSearcher {
         }).orElse(null);
         log.traceExit(entryMessage);
         return location;
-    }
-
-    private Location searchLocalNameSymbol(final Source source, final int line, final int col, final String symbol) {
-        final EntryMessage entryMessage = log.traceEntry("line={} col={} symbol={}", line, col, symbol);
-
-        final Map<String, Variable> symbols = source.getDeclaratorMap(line);
-        log.trace("variables={}", symbols);
-        final Variable variable = symbols.get(symbol);
-        final Location location = Optional.ofNullable(variable)
-                .map(ns -> new Location(source.getFile().getPath(),
-                        ns.range.begin.line,
-                        ns.range.begin.column))
-                .orElseGet(() -> {
-                    // isField
-                    final TypeScope ts = source.getTypeScope(line);
-                    if (ts == null) {
-                        return null;
-                    }
-                    final Variable fieldSymbol = ts.getField(symbol);
-                    if (fieldSymbol == null) {
-                        return null;
-                    }
-                    return new Location(source.getFile().getPath(),
-                            fieldSymbol.range.begin.line,
-                            fieldSymbol.range.begin.column);
-                });
-        if (location != null) {
-            log.traceExit(entryMessage);
-            return location;
-        }
-        log.traceExit(entryMessage);
-        return null;
     }
 
     private Location searchFieldAccessSymbol(final Source source, final int line, final int col, final String symbol) {

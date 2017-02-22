@@ -12,12 +12,11 @@ import java.util.Map;
 public class MethodScope extends BlockScope {
 
     private static final Logger log = LogManager.getLogger(MethodScope.class);
-
+    public final List<String> parameters = new ArrayList<>(3);
     public String name;
     public Range nameRange;
     public boolean isConstructor;
     public String returnType;
-    public List<String> parameters = new ArrayList<>(3);
 
     public MethodScope() {
 

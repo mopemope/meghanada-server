@@ -245,7 +245,7 @@ class MethodAnalyzeVisitor extends MethodVisitor {
                 String typeInfoType = ti.toString();
                 String parameterNameType = parameterName.type;
                 // remove generics
-                int idx1 = typeInfoType.indexOf("<");
+                int idx1 = typeInfoType.indexOf('<');
                 if (idx1 > 0) {
                     typeInfoType = typeInfoType.substring(0, idx1);
                 }
@@ -254,7 +254,7 @@ class MethodAnalyzeVisitor extends MethodVisitor {
                 }
                 // replace mark
                 typeInfoType = ClassNameUtils.replace(typeInfoType, "%%", "");
-                int idx2 = parameterNameType.indexOf("<");
+                int idx2 = parameterNameType.indexOf('<');
                 if (idx2 > 0) {
                     parameterNameType = parameterNameType.substring(0, idx2);
                 }

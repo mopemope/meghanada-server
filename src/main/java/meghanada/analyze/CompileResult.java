@@ -10,11 +10,11 @@ public class CompileResult {
 
     private final boolean success;
     private final Map<File, Source> sources;
-    private List<Diagnostic<? extends JavaFileObject>> diagnostics = new ArrayList<>();
-    private Set<File> errorFiles = new HashSet<>();
+    private List<Diagnostic<? extends JavaFileObject>> diagnostics = new ArrayList<>(0);
+    private Set<File> errorFiles = new HashSet<>(0);
 
     public CompileResult(final boolean success) {
-        this(success, new HashMap<>());
+        this(success, new HashMap<>(0));
     }
 
     public CompileResult(final boolean success, final Map<File, Source> sources) {

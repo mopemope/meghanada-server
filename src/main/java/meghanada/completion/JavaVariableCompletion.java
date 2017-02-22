@@ -32,6 +32,24 @@ public class JavaVariableCompletion {
         this.project = project;
     }
 
+    private static String fromInitial(final String returnType) {
+        final String simpleName = ClassNameUtils.getSimpleName(returnType);
+        return simpleName.substring(0, 1).toLowerCase();
+    }
+
+    private static boolean isPlural(final String returnType) {
+        log.traceEntry("returnType={}", returnType);
+        if (ClassNameUtils.isArray(returnType)) {
+            return log.traceExit(true);
+        }
+        for (final String cls : pluralClass) {
+            if (returnType.endsWith(cls)) {
+                return log.traceExit(true);
+            }
+        }
+        return log.traceExit(false);
+    }
+
     public Project getProject() {
         return project;
     }
@@ -42,7 +60,7 @@ public class JavaVariableCompletion {
 
     private Source getSource(final File file) throws IOException, ExecutionException {
         final GlobalCache globalCache = GlobalCache.getInstance();
-        return globalCache.getSource(this.getProject(), file.getCanonicalFile());
+        return globalCache.getSource(project, file.getCanonicalFile());
     }
 
     public Optional<LocalVariable> localVariable(final File file, final int line) throws ExecutionException, IOException {
@@ -56,14 +74,14 @@ public class JavaVariableCompletion {
 
     Optional<LocalVariable> createLocalVariable(final AccessSymbol accessSymbol, final String returnType) {
         if (returnType.equals("void")) {
-            return Optional.of(new LocalVariable(returnType, new ArrayList<>()));
+            return Optional.of(new LocalVariable(returnType, new ArrayList<>(0)));
         }
 
         // completion
-        final List<String> candidates = new ArrayList<>();
+        final List<String> candidates = new ArrayList<>(4);
 
         // 1. from type
-        final List<String> fromTypes = this.fromType(accessSymbol, returnType);
+        final List<String> fromTypes = this.fromType(returnType);
         candidates.addAll(fromTypes);
 
         // 2. add method or isField name
@@ -84,16 +102,16 @@ public class JavaVariableCompletion {
         return Optional.of(new LocalVariable(returnType, results));
     }
 
-    private List<String> fromType(final AccessSymbol symbol, final String returnType) {
-        Set<String> names = new HashSet<>();
+    private List<String> fromType(final String returnType) {
+        Set<String> names = new HashSet<>(4);
 
         final String simpleName = ClassNameUtils.getSimpleName(returnType);
-        final int i = simpleName.indexOf("<");
+        final int i = simpleName.indexOf('<');
         if (i > 0) {
             final String gen = simpleName.substring(i);
             final String cls = simpleName.substring(0, i);
             String removed = StringUtils.removePattern(gen, "[<> ,$.]");
-            if (this.isPlural(cls)) {
+            if (JavaVariableCompletion.isPlural(cls)) {
                 removed = StringUtils.uncapitalize(English.plural(removed));
             }
             final String[] strings = StringUtils.splitByCharacterTypeCamelCase(removed);
@@ -111,13 +129,8 @@ public class JavaVariableCompletion {
         return new ArrayList<>(names);
     }
 
-    private String fromInitial(final String returnType) {
-        final String simpleName = ClassNameUtils.getSimpleName(returnType);
-        return simpleName.substring(0, 1).toLowerCase();
-    }
-
     private List<String> fromName(final AccessSymbol accessSymbol) {
-        final Set<String> names = new HashSet<>();
+        final Set<String> names = new HashSet<>(4);
 
         String name = accessSymbol.name;
         if (name.startsWith("get")) {
@@ -155,18 +168,5 @@ public class JavaVariableCompletion {
             strings.add(0, StringUtils.uncapitalize(s));
             this.addName(names, strings);
         }
-    }
-
-    private boolean isPlural(final String returnType) {
-        log.traceEntry("returnType={}", returnType);
-        if (ClassNameUtils.isArray(returnType)) {
-            return log.traceExit(true);
-        }
-        for (final String cls : pluralClass) {
-            if (returnType.endsWith(cls)) {
-                return log.traceExit(true);
-            }
-        }
-        return log.traceExit(false);
     }
 }

@@ -1,7 +1,6 @@
 package meghanada.reflect.asm;
 
 import com.google.common.base.Joiner;
-import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.UncheckedExecutionException;
 import meghanada.cache.GlobalCache;
@@ -9,7 +8,6 @@ import meghanada.config.Config;
 import meghanada.reflect.CandidateUnit;
 import meghanada.reflect.ClassIndex;
 import meghanada.reflect.MemberDescriptor;
-import meghanada.reflect.MethodDescriptor;
 import meghanada.utils.ClassName;
 import meghanada.utils.ClassNameUtils;
 import meghanada.utils.FileUtils;
@@ -62,6 +60,101 @@ public class CachedASMReflector {
             cachedASMReflector = new CachedASMReflector();
         }
         return cachedASMReflector;
+    }
+
+    private static boolean containsKeyword(final String keyword, final boolean partial, final ClassIndex index) {
+        if (partial) {
+            final String lower = keyword.toLowerCase();
+            final String className = index.getName().toLowerCase();
+            return className.contains(lower);
+        } else {
+            final String name = index.getName();
+            return name.equals(keyword) ||
+                    name.endsWith('$' + keyword) ||
+                    index.getDeclaration().equals(keyword);
+        }
+    }
+
+    private static List<MemberDescriptor> replaceTypeParameters(final String className, final String classWithTP, final List<MemberDescriptor> members) {
+        final int idx1 = classWithTP.indexOf('<');
+        if (idx1 >= 0) {
+            final List<String> types = ClassNameUtils.parseTypeParameter(classWithTP);
+            final List<String> realTypes = ClassNameUtils.parseTypeParameter(className);
+            // log.warn("className {} types {} realTypes {}", className, types, realTypes);
+            for (final MemberDescriptor md : members) {
+                if (md.hasTypeParameters()) {
+                    md.clearTypeParameterMap();
+                    int realSize = realTypes.size();
+                    for (int i = 0; i < types.size(); i++) {
+                        final String t = types.get(i);
+                        if (realSize > i) {
+                            final String real = realTypes.get(i);
+                            md.putTypeParameter(t, real);
+                            // log.debug("put t:{}, real:{}", t, real);
+                        }
+                    }
+                }
+
+                final String declaringClass = ClassNameUtils.removeTypeParameter(md.getDeclaringClass());
+                if (className.startsWith(declaringClass)) {
+                    md.setDeclaringClass(className);
+                }
+            }
+        }
+        return members;
+    }
+
+    private static Stream<JarEntry> getJarEntryStream(final JarFile jarFile) {
+        return jarFile.stream()
+                .filter(jarEntry -> jarEntry.getName().endsWith(".class"))
+                .collect(Collectors.toList())
+                .stream();
+    }
+
+    private static boolean existsClassCache(final String className) {
+        final File outFile = getClassCacheFile(className);
+        return outFile.exists();
+    }
+
+    private static File getClassCacheFile(final String className) {
+
+        final Config config = Config.load();
+        final String dir = config.getProjectSettingDir();
+        final File root = new File(dir);
+        final String path = FileUtils.toHashedPath(className, GlobalCache.CACHE_EXT);
+        final String out1 = Joiner.on(File.separator).join(GlobalCache.CLASS_CACHE_DIR, path);
+        return new File(root, out1);
+    }
+
+    public static void writeCache(final ClassIndex classIndex, final List<MemberDescriptor> members) throws FileNotFoundException {
+        final Config config = Config.load();
+        final String fqcn = classIndex.getRawDeclaration();
+        final String dir = config.getProjectSettingDir();
+        final File root = new File(dir);
+        final String path = FileUtils.toHashedPath(fqcn, GlobalCache.CACHE_EXT);
+
+        final String out1 = Joiner.on(File.separator).join(GlobalCache.CLASS_CACHE_DIR, path);
+        final String out2 = Joiner.on(File.separator).join(GlobalCache.MEMBER_CACHE_DIR, path);
+        final File file1 = new File(root, out1);
+        final File file2 = new File(root, out2);
+
+        file1.getParentFile().mkdirs();
+        file2.getParentFile().mkdirs();
+
+        // ClassIndex
+        final GlobalCache globalCache = GlobalCache.getInstance();
+        globalCache.asyncWriteCache(file1, classIndex);
+        globalCache.asyncWriteCache(file2, members);
+
+    }
+
+    private static ClassIndex readClassIndexFromCache(final String fqcn) throws IOException {
+        final File in = CachedASMReflector.getClassCacheFile(fqcn);
+        if (in.exists()) {
+            final GlobalCache globalCache = GlobalCache.getInstance();
+            return globalCache.readCacheFromFile(in, ClassIndex.class);
+        }
+        return null;
     }
 
     public void addClasspath(final Collection<File> depends) {
@@ -149,8 +242,8 @@ public class CachedASMReflector {
             if (name.equals(innerName) || declaration.equals(innerName)) {
                 return result;
             }
-            final String innerParent = innerName.substring(0, innerName.lastIndexOf("$"));
-            final String innerClass = innerName.substring(innerName.lastIndexOf("$") + 1);
+            final String innerParent = innerName.substring(0, innerName.lastIndexOf('$'));
+            final String innerClass = innerName.substring(innerName.lastIndexOf('$') + 1);
             if (name.equals(innerParent)) {
                 for (final String superClass : classIndex.supers) {
                     final String searchName = superClass + '$' + ClassNameUtils.removeTypeParameter(innerClass);
@@ -173,7 +266,7 @@ public class CachedASMReflector {
 
         return this.globalClassIndex.values().parallelStream()
                 .map(classIndex -> matchFQCN(classIndex, className))
-                .filter(s -> s != null)
+                .filter(Objects::nonNull)
                 .findFirst()
                 .orElse(null);
     }
@@ -223,7 +316,7 @@ public class CachedASMReflector {
         return this.globalClassIndex
                 .values()
                 .stream()
-                .filter(classIndex -> classIndex.getReturnType().startsWith(parent + "$"))
+                .filter(classIndex -> classIndex.getReturnType().startsWith(parent + '$'))
                 .map(ClassIndex::clone)
                 .collect(Collectors.toList());
     }
@@ -240,26 +333,10 @@ public class CachedASMReflector {
         return this.globalClassIndex.values()
                 .stream()
                 .filter(classIndex -> {
-                    if (anno && !classIndex.isAnnotation) {
-                        return false;
-                    }
-                    return this.containsKeyword(keyword, partial, classIndex);
+                    return !(anno && !classIndex.isAnnotation) && CachedASMReflector.containsKeyword(keyword, partial, classIndex);
                 })
                 .map(ClassIndex::clone)
                 .collect(Collectors.toList());
-    }
-
-    private boolean containsKeyword(final String keyword, final boolean partial, final ClassIndex index) {
-        if (partial) {
-            final String lower = keyword.toLowerCase();
-            final String className = index.getName().toLowerCase();
-            return className.contains(lower);
-        } else {
-            final String name = index.getName();
-            return name.equals(keyword) ||
-                    name.endsWith("$" + keyword) ||
-                    index.getDeclaration().equals(keyword);
-        }
     }
 
     public List<MemberDescriptor> reflect(final String className) {
@@ -289,42 +366,6 @@ public class CachedASMReflector {
             return replaceTypeParameters(className, classIdx.getDisplayDeclaration(), members);
         }
         return members;
-    }
-
-    private List<MemberDescriptor> replaceTypeParameters(final String className, final String classWithTP, final List<MemberDescriptor> members) {
-        final int idx1 = classWithTP.indexOf("<");
-        if (idx1 >= 0) {
-            final List<String> types = ClassNameUtils.parseTypeParameter(classWithTP);
-            final List<String> realTypes = ClassNameUtils.parseTypeParameter(className);
-            // log.warn("className {} types {} realTypes {}", className, types, realTypes);
-            for (final MemberDescriptor md : members) {
-                if (md.hasTypeParameters()) {
-                    md.clearTypeParameterMap();
-                    int realSize = realTypes.size();
-                    for (int i = 0; i < types.size(); i++) {
-                        final String t = types.get(i);
-                        if (realSize > i) {
-                            final String real = realTypes.get(i);
-                            md.putTypeParameter(t, real);
-                            // log.debug("put t:{}, real:{}", t, real);
-                        }
-                    }
-                }
-
-                final String declaringClass = ClassNameUtils.removeTypeParameter(md.getDeclaringClass());
-                if (className.startsWith(declaringClass)) {
-                    md.setDeclaringClass(className);
-                }
-            }
-        }
-        return members;
-    }
-
-    private Stream<JarEntry> getJarEntryStream(final JarFile jarFile) {
-        return jarFile.stream()
-                .filter(jarEntry -> jarEntry.getName().endsWith(".class"))
-                .collect(Collectors.toList())
-                .stream();
     }
 
     public void createCache(final File jar, final File outputRoot) throws IOException {
@@ -358,56 +399,9 @@ public class CachedASMReflector {
                         final String fqcn = cn.getName();
                         final InheritanceInfo info = asmReflector.getReflectInfo(reflectIndex, fqcn);
                         final List<MemberDescriptor> descriptors = asmReflector.reflectAll(info);
-                        this.writeCache(ci, descriptors);
+                        CachedASMReflector.writeCache(ci, descriptors);
                     }
                 }));
-    }
-
-
-    private boolean existsClassCache(final String className) {
-        final File outFile = getClassCacheFile(className);
-        return outFile.exists();
-    }
-
-    private File getClassCacheFile(final String className) {
-
-        final Config config = Config.load();
-        final String dir = config.getProjectSettingDir();
-        final File root = new File(dir);
-        final String path = FileUtils.toHashedPath(className, GlobalCache.CACHE_EXT);
-        final String out1 = Joiner.on(File.separator).join(GlobalCache.CLASS_CACHE_DIR, path);
-        return new File(root, out1);
-    }
-
-    public void writeCache(final ClassIndex classIndex, final List<MemberDescriptor> members) throws FileNotFoundException {
-        final Config config = Config.load();
-        final String fqcn = classIndex.getRawDeclaration();
-        final String dir = config.getProjectSettingDir();
-        final File root = new File(dir);
-        final String path = FileUtils.toHashedPath(fqcn, GlobalCache.CACHE_EXT);
-
-        final String out1 = Joiner.on(File.separator).join(GlobalCache.CLASS_CACHE_DIR, path);
-        final String out2 = Joiner.on(File.separator).join(GlobalCache.MEMBER_CACHE_DIR, path);
-        final File file1 = new File(root, out1);
-        final File file2 = new File(root, out2);
-
-        file1.getParentFile().mkdirs();
-        file2.getParentFile().mkdirs();
-
-        // ClassIndex
-        final GlobalCache globalCache = GlobalCache.getInstance();
-        globalCache.asyncWriteCache(file1, classIndex);
-        globalCache.asyncWriteCache(file2, members);
-
-    }
-
-    private ClassIndex readClassIndexFromCache(final String fqcn) throws IOException {
-        final File in = this.getClassCacheFile(fqcn);
-        if (in.exists()) {
-            final GlobalCache globalCache = GlobalCache.getInstance();
-            return globalCache.readCacheFromFile(in, ClassIndex.class);
-        }
-        return null;
     }
 
     public Stream<MemberDescriptor> reflectStream(final String className) {
@@ -457,58 +451,6 @@ public class CachedASMReflector {
                     return mName.equals(name)
                             && m.matchType(CandidateUnit.MemberType.METHOD)
                             && parameters.size() == argLen;
-                });
-    }
-
-    public Stream<MemberDescriptor> reflectMethodStream(final String className, final String name, final int argLen, final String sig) {
-        return this.reflect(className)
-                .stream()
-                .filter(m -> {
-                    final String mName = m.getName();
-                    final List<String> parameters = m.getParameters();
-                    if (mName.equals(name)
-                            && m.matchType(CandidateUnit.MemberType.METHOD)
-                            && parameters.size() == argLen) {
-
-                        final MethodDescriptor md = (MethodDescriptor) m;
-                        final String formalType = md.formalType;
-                        if (formalType != null) {
-                            final int start1 = sig.indexOf("[");
-                            final int end1 = sig.lastIndexOf("]");
-                            final Iterable<String> split1 = Splitter.on(",").split(sig.substring(start1 + 1, end1));
-
-                            final String mdSig = m.getSig();
-                            final int start2 = mdSig.indexOf("[");
-                            final int end2 = mdSig.lastIndexOf("]");
-                            final Iterable<String> split2 = Splitter.on(",").split(mdSig.substring(start2 + 1, end2));
-                            final Set<String> typeParameters = md.getTypeParameters();
-
-                            boolean match = true;
-                            final Iterator<String> iterator2 = split2.iterator();
-                            for (final Iterator<String> iterator1 = split1.iterator(); iterator1.hasNext(); ) {
-                                final String next1 = iterator1.next();
-                                final String next2 = iterator2.next();
-                                if (next2.startsWith(ClassNameUtils.FORMAL_TYPE_VARIABLE_MARK)) {
-                                    final String key = next2.substring(2);
-                                    if (typeParameters.contains(key)) {
-                                        md.getTypeParameterMap().put(key, next2);
-                                        continue;
-                                    }
-                                    match = false;
-                                } else {
-                                    if (!next1.equals(next2)) {
-                                        match = false;
-                                    }
-                                }
-                            }
-                            return match;
-                        }
-
-                        final String mdSig = m.getSig();
-                        log.trace("compare sig sig={} mdSig={}", sig, mdSig);
-                        return sig.equals(mdSig);
-                    }
-                    return false;
                 });
     }
 

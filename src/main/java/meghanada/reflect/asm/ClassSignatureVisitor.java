@@ -271,6 +271,7 @@ class ClassSignatureVisitor extends SignatureVisitor {
             return this.getClassName();
         }
 
+
         @Override
         public boolean equals(Object o) {
             if (this == o) {

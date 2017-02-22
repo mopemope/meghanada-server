@@ -162,6 +162,110 @@ public class JavaCompletion {
                 .collect(Collectors.toSet());
     }
 
+    private static Collection<? extends CandidateUnit> completionThis(final Source source, final int line, final String prefix) {
+        final String fqcn = source.getTypeScope(line).getFQCN();
+        return JavaCompletion.reflectSelf(fqcn, false, prefix);
+    }
+
+    private static Collection<? extends CandidateUnit> privateReflect(final String fqcn, final boolean noStatic,
+                                                                      final boolean withCONSTRUCTOR, final String target) {
+        return doReflect(fqcn).stream().filter(md -> JavaCompletion.privateFilter(md, noStatic, withCONSTRUCTOR, target))
+                .collect(Collectors.toSet());
+    }
+
+    private static Collection<? extends CandidateUnit> completionSymbols(final Source source, final int line, final String prefix) {
+        final List<CandidateUnit> result = new ArrayList<>(32);
+
+        // prefix search
+        log.debug("Search variables prefix:{} line:{}", prefix, line);
+
+        final TypeScope typeScope = source.getTypeScope(line);
+        if (typeScope == null) {
+            return result;
+        }
+        final String fqcn = typeScope.getFQCN();
+
+        // add this member
+        JavaCompletion.reflectSelf(fqcn, true, prefix).stream().filter(c -> c.getName().startsWith(prefix)).forEach(result::add);
+
+        if (fqcn.contains(ClassNameUtils.INNER_MARK)) {
+            // add parent
+            String parentClass = fqcn;
+            while (true) {
+                int i = parentClass.lastIndexOf('$');
+                if (i < 0) {
+                    break;
+                }
+                parentClass = parentClass.substring(0, i);
+                JavaCompletion.reflectSelf(parentClass, true, prefix).stream().filter(c -> c.getName().startsWith(prefix))
+                        .forEach(result::add);
+            }
+        }
+
+        log.debug("self fqcn:{}", fqcn);
+
+        final Map<String, Variable> symbols = source.getDeclaratorMap(line);
+        log.debug("search variables size:{} result:{}", symbols.size(), symbols);
+
+        symbols.entrySet().forEach(entry -> {
+            final String key = entry.getKey();
+            log.debug("check variable name:{}", key);
+            if (key.startsWith(prefix)) {
+                log.debug("match variable name:{}", key);
+                final Variable value = entry.getValue();
+                if (!value.isField) {
+                    result.add(entry.getValue().toCandidateUnit());
+                }
+            }
+        });
+
+        source.importClass.entrySet().forEach(entry -> {
+            final String key = entry.getKey();
+            if (key.startsWith(prefix)) {
+                result.add(ClassIndex.createClass(entry.getValue()));
+            }
+        });
+
+        // Add class
+        if (Character.isUpperCase(prefix.charAt(0))) {
+            // completion
+            final CachedASMReflector reflector = CachedASMReflector.getInstance();
+            final boolean fuzzySearch = Config.load().useClassFuzzySearch();
+            if (fuzzySearch) {
+                result.addAll(reflector.fuzzySearchClasses(prefix.toLowerCase()));
+            } else {
+                result.addAll(reflector.searchClasses(prefix.toLowerCase()));
+            }
+        }
+
+        return result;
+    }
+
+    private static Collection<? extends CandidateUnit> reflect(final String ownPackage, final String fqcn,
+                                                               final boolean isStatic, final boolean withConstructor, final String prefix) {
+        if (fqcn.startsWith(ownPackage)) {
+            // package
+            return JavaCompletion.packageReflect(fqcn, isStatic, withConstructor, prefix);
+        }
+        return JavaCompletion.publicReflect(fqcn, isStatic, withConstructor, prefix);
+    }
+
+    private static Collection<MemberDescriptor> reflectSelf(final String fqcn, final boolean withConstructor,
+                                                            final String prefix) {
+        final String target = prefix.toLowerCase();
+        return doReflect(fqcn).stream().filter(md -> JavaCompletion.privateFilter(md, withConstructor, target))
+                .collect(Collectors.toSet());
+    }
+
+    private static Collection<MemberDescriptor> reflectWithFQCN(final String ownPackage, final String fqcn, final String prefix) {
+        final String target = prefix.toLowerCase();
+        return doReflect(fqcn).stream().filter(md -> JavaCompletion.publicFilter(md, target)).collect(Collectors.toSet());
+    }
+
+    private static Collection<? extends CandidateUnit> reflect(final String ownPackage, final String fqcn, final String prefix) {
+        return JavaCompletion.reflect(ownPackage, fqcn, false, false, prefix);
+    }
+
     public Project getProject() {
         return project;
     }
@@ -192,16 +296,11 @@ public class JavaCompletion {
                 return JavaCompletion.annotationCompletion(source, line, column, prefix);
             }
             // search symbol
-            return this.completionSymbols(source, line, prefix);
+            return JavaCompletion.completionSymbols(source, line, prefix);
         } catch (Exception e) {
             log.catching(e);
             return Collections.emptyList();
         }
-    }
-
-    private Collection<? extends CandidateUnit> completionThis(final Source source, final int line, final String prefix) {
-        final String fqcn = source.getTypeScope(line).getFQCN();
-        return this.reflectSelf(fqcn, false, prefix);
     }
 
     private Collection<? extends CandidateUnit> specialCompletion(final Source source, final int line,
@@ -283,12 +382,6 @@ public class JavaCompletion {
         return this.completionFieldsOrMethods(source, line, searchWord.substring(1), "");
     }
 
-    private Collection<? extends CandidateUnit> privateReflect(final String fqcn, final boolean noStatic,
-                                                               final boolean withCONSTRUCTOR, final String target) {
-        return doReflect(fqcn).stream().filter(md -> JavaCompletion.privateFilter(md, noStatic, withCONSTRUCTOR, target))
-                .collect(Collectors.toSet());
-    }
-
     private Collection<? extends CandidateUnit> completionPackage() {
         final GlobalCache globalCache = GlobalCache.getInstance();
         final LoadingCache<File, Source> sourceCache = globalCache.getSourceCache(project);
@@ -296,80 +389,12 @@ public class JavaCompletion {
                 .collect(Collectors.toSet());
     }
 
-    private Collection<? extends CandidateUnit> completionSymbols(final Source source, final int line, final String prefix) {
-        final List<CandidateUnit> result = new ArrayList<>(32);
-
-        // prefix search
-        log.debug("Search variables prefix:{} line:{}", prefix, line);
-
-        final TypeScope typeScope = source.getTypeScope(line);
-        if (typeScope == null) {
-            return result;
-        }
-        final String fqcn = typeScope.getFQCN();
-
-        // add this member
-        this.reflectSelf(fqcn, true, prefix).stream().filter(c -> c.getName().startsWith(prefix)).forEach(result::add);
-
-        if (fqcn.contains(ClassNameUtils.INNER_MARK)) {
-            // add parent
-            String parentClass = fqcn;
-            while (true) {
-                int i = parentClass.lastIndexOf('$');
-                if (i < 0) {
-                    break;
-                }
-                parentClass = parentClass.substring(0, i);
-                this.reflectSelf(parentClass, true, prefix).stream().filter(c -> c.getName().startsWith(prefix))
-                        .forEach(result::add);
-            }
-        }
-
-        log.debug("self fqcn:{}", fqcn);
-
-        final Map<String, Variable> symbols = source.getDeclaratorMap(line);
-        log.debug("search variables size:{} result:{}", symbols.size(), symbols);
-
-        symbols.entrySet().forEach(entry -> {
-            final String key = entry.getKey();
-            log.debug("check variable name:{}", key);
-            if (key.startsWith(prefix)) {
-                log.debug("match variable name:{}", key);
-                final Variable value = entry.getValue();
-                if (!value.isField) {
-                    result.add(entry.getValue().toCandidateUnit());
-                }
-            }
-        });
-
-        source.importClass.entrySet().forEach(entry -> {
-            final String key = entry.getKey();
-            if (key.startsWith(prefix)) {
-                result.add(ClassIndex.createClass(entry.getValue()));
-            }
-        });
-
-        // Add class
-        if (Character.isUpperCase(prefix.charAt(0))) {
-            // completion
-            final CachedASMReflector reflector = CachedASMReflector.getInstance();
-            final boolean fuzzySearch = Config.load().useClassFuzzySearch();
-            if (fuzzySearch) {
-                result.addAll(reflector.fuzzySearchClasses(prefix.toLowerCase()));
-            } else {
-                result.addAll(reflector.searchClasses(prefix.toLowerCase()));
-            }
-        }
-
-        return result;
-    }
-
     private Collection<? extends CandidateUnit> completionFieldsOrMethods(final Source source, final int line,
                                                                           final String var, final String target) {
 
         // completionAt methods or fields
         if (var.equals("this")) {
-            return this.completionThis(source, line, target);
+            return JavaCompletion.completionThis(source, line, target);
         }
         if (var.equals("super")) {
             return JavaCompletion.completionSuper(source, line, target);
@@ -388,7 +413,7 @@ public class JavaCompletion {
                     fqcn = ownPackage + '.' + fqcn;
                 }
 
-                final Collection<? extends CandidateUnit> result = this.reflect(ownPackage, fqcn, true, false, target);
+                final Collection<? extends CandidateUnit> result = JavaCompletion.reflect(ownPackage, fqcn, true, false, target);
                 res.addAll(result);
 
                 // add inner class
@@ -411,7 +436,7 @@ public class JavaCompletion {
                 if (!fqcn.contains(".")) {
                     fqcn = ownPackage + '.' + fqcn;
                 }
-                final Collection<? extends CandidateUnit> reflect = this.reflect(ownPackage, fqcn, target);
+                final Collection<? extends CandidateUnit> reflect = JavaCompletion.reflect(ownPackage, fqcn, target);
                 res.addAll(reflect);
             }
         }
@@ -419,7 +444,7 @@ public class JavaCompletion {
         {
             for (final ClassScope cs : source.getClassScopes()) {
                 final String fqcn = cs.getFQCN();
-                final Optional<MemberDescriptor> fieldResult = this.reflectSelf(fqcn, true, target).stream()
+                final Optional<MemberDescriptor> fieldResult = JavaCompletion.reflectSelf(fqcn, true, target).stream()
                         .filter(c -> c instanceof FieldDescriptor && c.getName().equals(var)).findFirst();
                 if (fieldResult.isPresent()) {
                     final MemberDescriptor memberDescriptor = fieldResult.orElse(null);
@@ -433,13 +458,13 @@ public class JavaCompletion {
         {
             // java.lang
             final String fqcn = "java.lang." + var;
-            final Collection<? extends CandidateUnit> result = this.reflect(ownPackage, fqcn, true, false, target);
+            final Collection<? extends CandidateUnit> result = JavaCompletion.reflect(ownPackage, fqcn, true, false, target);
             res.addAll(result);
         }
 
         {
             final String fqcn = ownPackage + '.' + var;
-            final Collection<? extends CandidateUnit> reflectResults = this.reflect(ownPackage, fqcn, true, false, target);
+            final Collection<? extends CandidateUnit> reflectResults = JavaCompletion.reflect(ownPackage, fqcn, true, false, target);
             res.addAll(reflectResults);
             final CachedASMReflector reflector = CachedASMReflector.getInstance();
             final Collection<? extends CandidateUnit> inners = reflector.searchInnerClasses(fqcn);
@@ -447,31 +472,6 @@ public class JavaCompletion {
         }
         return res;
 
-    }
-
-    private Collection<? extends CandidateUnit> reflect(final String ownPackage, final String fqcn,
-                                                        final boolean isStatic, final boolean withConstructor, final String prefix) {
-        if (fqcn.startsWith(ownPackage)) {
-            // package
-            return JavaCompletion.packageReflect(fqcn, isStatic, withConstructor, prefix);
-        }
-        return JavaCompletion.publicReflect(fqcn, isStatic, withConstructor, prefix);
-    }
-
-    private Collection<MemberDescriptor> reflectSelf(final String fqcn, final boolean withConstructor,
-                                                     final String prefix) {
-        final String target = prefix.toLowerCase();
-        return doReflect(fqcn).stream().filter(md -> JavaCompletion.privateFilter(md, withConstructor, target))
-                .collect(Collectors.toSet());
-    }
-
-    private Collection<MemberDescriptor> reflectWithFQCN(final String ownPackage, final String fqcn, final String prefix) {
-        final String target = prefix.toLowerCase();
-        return doReflect(fqcn).stream().filter(md -> JavaCompletion.publicFilter(md, target)).collect(Collectors.toSet());
-    }
-
-    private Collection<? extends CandidateUnit> reflect(final String ownPackage, final String fqcn, final String prefix) {
-        return this.reflect(ownPackage, fqcn, false, false, prefix);
     }
 
 }

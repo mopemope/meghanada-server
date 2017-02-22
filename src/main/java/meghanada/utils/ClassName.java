@@ -11,13 +11,11 @@ public final class ClassName {
     private final String rawName;
     private final int typeIndex;
     private final int typeLastIndex;
-    private final int arrayIndex;
 
     public ClassName(String name) {
         this.rawName = ClassNameUtils.vaArgsToArray(name);
         this.typeIndex = this.rawName.indexOf('<');
         this.typeLastIndex = this.rawName.lastIndexOf('>');
-        this.arrayIndex = this.rawName.indexOf('[');
     }
 
     public boolean hasTypeParameter() {

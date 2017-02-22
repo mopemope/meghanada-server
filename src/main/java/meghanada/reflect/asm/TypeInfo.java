@@ -26,8 +26,8 @@ class TypeInfo {
     public String toString() {
         StringBuilder sb = new StringBuilder(name);
         if (this.typeParameters != null && this.typeParameters.size() > 0) {
-            sb.append("<");
-            Joiner.on(", ").appendTo(sb, this.typeParameters).append(">");
+            sb.append('<');
+            Joiner.on(", ").appendTo(sb, this.typeParameters).append('>');
         }
         if (innerClass != null) {
             sb.append(ClassNameUtils.INNER_MARK);
@@ -40,7 +40,7 @@ class TypeInfo {
             sb.append("...");
         }
         if (paramName != null) {
-            sb.append(" ").append(paramName);
+            sb.append(' ').append(paramName);
         }
         return sb.toString();
     }
@@ -48,8 +48,8 @@ class TypeInfo {
     String getFQCN() {
         StringBuilder sb = new StringBuilder(fqcn);
         if (this.typeParameters != null && this.typeParameters.size() > 0) {
-            sb.append("<");
-            Joiner.on(", ").appendTo(sb, this.typeParameters).append(">");
+            sb.append('<');
+            Joiner.on(", ").appendTo(sb, this.typeParameters).append('>');
         }
         if (innerClass != null) {
             sb.append(ClassNameUtils.INNER_MARK);

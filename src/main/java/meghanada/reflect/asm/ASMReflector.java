@@ -28,7 +28,7 @@ import static meghanada.utils.FunctionUtils.wrapIOConsumer;
 
 public class ASMReflector {
 
-    public static final String PACKAGE_INFO = "package-info";
+    private static final String PACKAGE_INFO = "package-info";
     private static final String[] filterPackage = new String[]{
             "sun.",
             "com.sun",
@@ -41,9 +41,9 @@ public class ASMReflector {
             "netscape",
             "org.jboss.forge.roaster._shade.org.eclipse.core.internal"
     };
-    private static Logger log = LogManager.getLogger(ASMReflector.class);
+    private static final Logger log = LogManager.getLogger(ASMReflector.class);
     private static ASMReflector asmReflector;
-    private Set<String> allowClass = new HashSet<>(8);
+    private final Set<String> allowClass = new HashSet<>(8);
 
     private ASMReflector() {
         Config.load()
@@ -60,25 +60,25 @@ public class ASMReflector {
 
     public static String toPrimitive(final char c) {
         switch (c) {
-            case 'B' :
+            case 'B':
                 return "byte";
-            case 'C' :
+            case 'C':
                 return "char";
-            case 'D' :
+            case 'D':
                 return "double";
-            case 'F' :
+            case 'F':
                 return "float";
-            case 'I' :
+            case 'I':
                 return "int";
-            case 'J' :
+            case 'J':
                 return "long";
-            case 'S' :
+            case 'S':
                 return "short";
-            case 'V' :
+            case 'V':
                 return "void";
-            case 'Z' :
+            case 'Z':
                 return "boolean";
-            default :
+            default:
                 return Character.toString(c);
         }
     }
@@ -125,77 +125,7 @@ public class ASMReflector {
         return sb.toString();
     }
 
-    public void addAllowClass(final String clazz) {
-        this.allowClass.add(clazz);
-    }
-
-    boolean ignorePackage(final String target) {
-        if (target.endsWith(PACKAGE_INFO)) {
-            return true;
-        }
-        for (final String keyword : this.allowClass) {
-            if (target.startsWith(keyword)) {
-                return false;
-            }
-        }
-        for (final String p : ASMReflector.filterPackage) {
-            if (target.startsWith(p)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    Map<ClassIndex, File> getClasses(final File file) throws IOException {
-        final Map<ClassIndex, File> indexes = new ConcurrentHashMap<>(8);
-
-        if (file.isFile() && file.getName().endsWith("jar")) {
-            final JarFile jarFile = new JarFile(file);
-            this.getJarEntryStream(jarFile).forEach(wrapIOConsumer(jarEntry -> {
-                final String entryName = jarEntry.getName();
-                if (!entryName.endsWith(".class")) {
-                    return;
-                }
-                final String className = ClassNameUtils.replaceSlash(entryName.substring(0, entryName.length() - 6));
-                if (this.ignorePackage(className)) {
-                    return;
-                }
-                try (final InputStream in = jarFile.getInputStream(jarEntry)) {
-                    this.readClassIndex(indexes, in, file, false);
-                }
-            }));
-
-        } else if (file.isFile() && file.getName().endsWith(".class")) {
-            final String entryName = file.getName();
-            if (!entryName.endsWith(".class")) {
-                return indexes;
-            }
-            final String className = ClassNameUtils.replaceSlash(entryName.substring(0, entryName.length() - 6));
-            if (this.ignorePackage(className)) {
-                return indexes;
-            }
-            try (final InputStream in = new FileInputStream(file)) {
-                this.readClassIndex(indexes, in, file, true);
-            }
-        } else if (file.isDirectory()) {
-            this.getClassFileStream(file).forEach(wrapIOConsumer(classFile -> {
-                final String entryName = classFile.getName();
-                if (!entryName.endsWith(".class")) {
-                    return;
-                }
-                final String className = ClassNameUtils.replaceSlash(entryName.substring(0, entryName.length() - 6));
-                if (this.ignorePackage(className)) {
-                    return;
-                }
-                try (InputStream in = new FileInputStream(classFile)) {
-                    this.readClassIndex(indexes, in, file, true);
-                }
-            }));
-        }
-        return indexes;
-    }
-
-    private void readClassIndex(final Map<ClassIndex, File> indexes, final InputStream in, final File file, boolean allowSuper) throws IOException {
+    private static void readClassIndex(final Map<ClassIndex, File> indexes, final InputStream in, final File file, boolean allowSuper) throws IOException {
         final ClassReader classReader = new ClassReader(in);
         final String className = ClassNameUtils.replaceSlash(classReader.getClassName());
 
@@ -233,7 +163,141 @@ public class ASMReflector {
         }
     }
 
-    public List<MemberDescriptor> reflectAll(final InheritanceInfo info) throws IOException {
+    private static void replaceDescriptorsType(final String nameWithTP, final List<MemberDescriptor> members) {
+        members.forEach(m -> {
+            final Iterator<String> classTypeIterator = ClassNameUtils.parseTypeParameter(nameWithTP).iterator();
+            for (String tp : m.getTypeParameters()) {
+                if (classTypeIterator.hasNext()) {
+                    final String ct = classTypeIterator.next();
+
+                    log.trace("type nameWithoutTP: {} classTP: {} reflectTP: {}", nameWithTP, ct, tp);
+                    if (!ct.startsWith(ClassNameUtils.CLASS_TYPE_VARIABLE_MARK)) {
+                        m.putTypeParameter(tp, ct);
+                    }
+                }
+            }
+        });
+    }
+
+    private static ClassAnalyzeVisitor readClassFromJar(final ClassReader classReader, final String nameWithoutTP, final String nameWithTP) {
+        final ClassAnalyzeVisitor classAnalyzeVisitor = new ClassAnalyzeVisitor(nameWithoutTP, nameWithTP, false, false);
+        classReader.accept(classAnalyzeVisitor, 0);
+        return classAnalyzeVisitor;
+    }
+
+    private static List<String> replaceSuperClassTypeParameters(final String name, final ClassIndex classIndex) {
+        final List<String> strings = ClassNameUtils.parseTypeParameter(name);
+        final Iterator<String> iterator = strings.iterator();
+        final Iterator<String> tpIterator = classIndex.typeParameters.iterator();
+        final Map<String, String> replace = new HashMap<>(4);
+        while (iterator.hasNext()) {
+            final String real = iterator.next();
+            if (tpIterator.hasNext()) {
+                final String tp = tpIterator.next();
+                if (real.contains(ClassNameUtils.CLASS_TYPE_VARIABLE_MARK)) {
+                    final String removed = ClassNameUtils.replace(real, ClassNameUtils.CLASS_TYPE_VARIABLE_MARK, "");
+
+                    if (!tp.equals(removed)) {
+                        replace.put(ClassNameUtils.CLASS_TYPE_VARIABLE_MARK + tp, real);
+                    }
+                }
+            }
+        }
+        List<String> supers = new ArrayList<>(classIndex.supers);
+        if (!replace.isEmpty()) {
+            supers = classIndex.supers.stream()
+                    .map(s -> ClassNameUtils.replaceFromMap(s, replace))
+                    .collect(Collectors.toList());
+        }
+        return supers;
+    }
+
+    private static Stream<File> getClassFileStream(final File file) throws IOException {
+        return Files.walk(file.toPath())
+                .map(Path::toFile)
+                .filter(f -> f.isFile() && f.getName().endsWith(".class"))
+                .collect(Collectors.toList())
+                .stream();
+    }
+
+    private static Stream<JarEntry> getJarEntryStream(final JarFile jarFile) {
+        return jarFile.stream()
+                .filter(jarEntry -> jarEntry.getName().endsWith(".class"))
+                .collect(Collectors.toList())
+                .stream();
+    }
+
+    private void addAllowClass(final String clazz) {
+        this.allowClass.add(clazz);
+    }
+
+    boolean ignorePackage(final String target) {
+        if (target.endsWith(PACKAGE_INFO)) {
+            return true;
+        }
+        for (final String keyword : this.allowClass) {
+            if (target.startsWith(keyword)) {
+                return false;
+            }
+        }
+        for (final String p : ASMReflector.filterPackage) {
+            if (target.startsWith(p)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    Map<ClassIndex, File> getClasses(final File file) throws IOException {
+        final Map<ClassIndex, File> indexes = new ConcurrentHashMap<>(8);
+
+        if (file.isFile() && file.getName().endsWith("jar")) {
+            final JarFile jarFile = new JarFile(file);
+            ASMReflector.getJarEntryStream(jarFile).forEach(wrapIOConsumer(jarEntry -> {
+                final String entryName = jarEntry.getName();
+                if (!entryName.endsWith(".class")) {
+                    return;
+                }
+                final String className = ClassNameUtils.replaceSlash(entryName.substring(0, entryName.length() - 6));
+                if (this.ignorePackage(className)) {
+                    return;
+                }
+                try (final InputStream in = jarFile.getInputStream(jarEntry)) {
+                    ASMReflector.readClassIndex(indexes, in, file, false);
+                }
+            }));
+
+        } else if (file.isFile() && file.getName().endsWith(".class")) {
+            final String entryName = file.getName();
+            if (!entryName.endsWith(".class")) {
+                return indexes;
+            }
+            final String className = ClassNameUtils.replaceSlash(entryName.substring(0, entryName.length() - 6));
+            if (this.ignorePackage(className)) {
+                return indexes;
+            }
+            try (final InputStream in = new FileInputStream(file)) {
+                ASMReflector.readClassIndex(indexes, in, file, true);
+            }
+        } else if (file.isDirectory()) {
+            ASMReflector.getClassFileStream(file).forEach(wrapIOConsumer(classFile -> {
+                final String entryName = classFile.getName();
+                if (!entryName.endsWith(".class")) {
+                    return;
+                }
+                final String className = ClassNameUtils.replaceSlash(entryName.substring(0, entryName.length() - 6));
+                if (this.ignorePackage(className)) {
+                    return;
+                }
+                try (InputStream in = new FileInputStream(classFile)) {
+                    ASMReflector.readClassIndex(indexes, in, file, true);
+                }
+            }));
+        }
+        return indexes;
+    }
+
+    public List<MemberDescriptor> reflectAll(final InheritanceInfo info) {
 
         final Map<String, List<MemberDescriptor>> collect = info.classFileMap
                 .entrySet()
@@ -339,7 +403,7 @@ public class ASMReflector {
             }
             return Collections.emptyList();
         } else if (file.isDirectory()) {
-            return this.getClassFileStream(file)
+            return ASMReflector.getClassFileStream(file)
                     .map(wrapIO(f -> {
 
                         final String rootPath = file.getCanonicalPath();
@@ -376,28 +440,12 @@ public class ASMReflector {
         return Collections.emptyList();
     }
 
-    private void replaceDescriptorsType(final String nameWithTP, final List<MemberDescriptor> members) {
-        members.forEach(m -> {
-            final Iterator<String> classTypeIterator = ClassNameUtils.parseTypeParameter(nameWithTP).iterator();
-            for (String tp : m.getTypeParameters()) {
-                if (classTypeIterator.hasNext()) {
-                    final String ct = classTypeIterator.next();
-
-                    log.trace("type nameWithoutTP: {} classTP: {} reflectTP: {}", nameWithTP, ct, tp);
-                    if (!ct.startsWith(ClassNameUtils.CLASS_TYPE_VARIABLE_MARK)) {
-                        m.putTypeParameter(tp, ct);
-                    }
-                }
-            }
-        });
-    }
-
     private List<MemberDescriptor> reflect(final File file, final String name) throws IOException {
         final String nameWithoutTP = ClassNameUtils.removeTypeParameter(name);
         if (file.isFile() && file.getName().endsWith(".jar")) {
             final JarFile jarFile = new JarFile(file);
 
-            return this.getJarEntryStream(jarFile)
+            return ASMReflector.getJarEntryStream(jarFile)
                     .map(wrapIO(jarEntry -> {
                         final String entryName = jarEntry.getName();
                         if (!entryName.endsWith(".class")) {
@@ -492,12 +540,6 @@ public class ASMReflector {
         return members;
     }
 
-    private ClassAnalyzeVisitor readClassFromJar(final ClassReader classReader, final String nameWithoutTP, final String nameWithTP) {
-        final ClassAnalyzeVisitor classAnalyzeVisitor = new ClassAnalyzeVisitor(nameWithoutTP, nameWithTP, false, false);
-        classReader.accept(classAnalyzeVisitor, 0);
-        return classAnalyzeVisitor;
-    }
-
     public InheritanceInfo getReflectInfo(final Map<ClassIndex, File> index, final String fqcn) {
         final InheritanceInfo info = new InheritanceInfo(fqcn);
         this.getReflectInfo(index, fqcn, info);
@@ -526,7 +568,7 @@ public class ASMReflector {
                     }
                     info.inherit.add(name);
                     info.classFileMap.get(file).add(name);
-                    final List<String> supers = this.replaceSuperClassTypeParameters(name, classIndex);
+                    final List<String> supers = ASMReflector.replaceSuperClassTypeParameters(name, classIndex);
                     Collections.reverse(supers);
                     supers.forEach(superClass -> this.getReflectInfo(index, superClass, info));
                     break;
@@ -544,52 +586,10 @@ public class ASMReflector {
         info.inherit.add(name);
         info.classFileMap.get(file).add(name);
 
-        final List<String> supers = this.replaceSuperClassTypeParameters(name, classIndex);
+        final List<String> supers = ASMReflector.replaceSuperClassTypeParameters(name, classIndex);
 
         Collections.reverse(supers);
         supers.forEach(superClass -> this.getReflectInfo(index, superClass, info));
-    }
-
-    private List<String> replaceSuperClassTypeParameters(final String name, final ClassIndex classIndex) {
-        final List<String> strings = ClassNameUtils.parseTypeParameter(name);
-        final Iterator<String> iterator = strings.iterator();
-        final Iterator<String> tpIterator = classIndex.typeParameters.iterator();
-        final Map<String, String> replace = new HashMap<>(4);
-        while (iterator.hasNext()) {
-            final String real = iterator.next();
-            if (tpIterator.hasNext()) {
-                final String tp = tpIterator.next();
-                if (real.contains(ClassNameUtils.CLASS_TYPE_VARIABLE_MARK)) {
-                    final String removed = ClassNameUtils.replace(real, ClassNameUtils.CLASS_TYPE_VARIABLE_MARK, "");
-
-                    if (!tp.equals(removed)) {
-                        replace.put(ClassNameUtils.CLASS_TYPE_VARIABLE_MARK + tp, real);
-                    }
-                }
-            }
-        }
-        List<String> supers = new ArrayList<>(classIndex.supers);
-        if (!replace.isEmpty()) {
-            supers = classIndex.supers.stream()
-                    .map(s -> ClassNameUtils.replaceFromMap(s, replace))
-                    .collect(Collectors.toList());
-        }
-        return supers;
-    }
-
-    private Stream<File> getClassFileStream(final File file) throws IOException {
-        return Files.walk(file.toPath())
-                .map(Path::toFile)
-                .filter(f -> f.isFile() && f.getName().endsWith(".class"))
-                .collect(Collectors.toList())
-                .stream();
-    }
-
-    private Stream<JarEntry> getJarEntryStream(final JarFile jarFile) {
-        return jarFile.stream()
-                .filter(jarEntry -> jarEntry.getName().endsWith(".class"))
-                .collect(Collectors.toList())
-                .stream();
     }
 
 }
