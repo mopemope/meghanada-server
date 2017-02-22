@@ -56,7 +56,7 @@ public class JavaAnalyzerTest extends GradleTestBase {
 
     @Test
     public void analyze01() throws Exception {
-        final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8", project.getSourceDirectories());
+        final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8");
         final String cp = getClasspath();
 
         List<File> files = new ArrayList<>();
@@ -79,7 +79,7 @@ public class JavaAnalyzerTest extends GradleTestBase {
 
     @Test
     public void analyze02() throws Exception {
-        final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8", project.getSourceDirectories());
+        final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8");
         final String cp = getClasspath();
 
         List<File> files = new ArrayList<>();
@@ -102,7 +102,7 @@ public class JavaAnalyzerTest extends GradleTestBase {
 
     @Test
     public void analyze03() throws Exception {
-        final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8", project.getSourceDirectories());
+        final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8");
         final String cp = getClasspath();
 
         List<File> files = new ArrayList<>();
@@ -125,7 +125,7 @@ public class JavaAnalyzerTest extends GradleTestBase {
 
     @Test
     public void analyze04() throws Exception {
-        final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8", project.getSourceDirectories());
+        final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8");
         final String cp = getClasspath();
 
         List<File> files = new ArrayList<>();
@@ -148,7 +148,7 @@ public class JavaAnalyzerTest extends GradleTestBase {
 
     @Test
     public void analyze05() throws Exception {
-        final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8", project.getSourceDirectories());
+        final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8");
         final String cp = getClasspath();
 
         List<File> files = new ArrayList<>();
@@ -171,7 +171,7 @@ public class JavaAnalyzerTest extends GradleTestBase {
 
     @Test
     public void analyze06() throws Exception {
-        final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8", project.getSourceDirectories());
+        final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8");
         final String cp = getClasspath();
 
         List<File> files = new ArrayList<>();
@@ -194,7 +194,7 @@ public class JavaAnalyzerTest extends GradleTestBase {
 
     @Test
     public void analyze07() throws Exception {
-        final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8", project.getSourceDirectories());
+        final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8");
         final String cp = getClasspath();
 
         List<File> files = new ArrayList<>();
@@ -217,7 +217,7 @@ public class JavaAnalyzerTest extends GradleTestBase {
 
     @Test
     public void analyze08() throws Exception {
-        final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8", project.getSourceDirectories());
+        final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8");
         final String cp = getClasspath();
 
         List<File> files = new ArrayList<>();
@@ -239,7 +239,7 @@ public class JavaAnalyzerTest extends GradleTestBase {
 
     @Test
     public void analyze09() throws Exception {
-        final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8", project.getSourceDirectories());
+        final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8");
         final String cp = getClasspath();
 
         List<File> files = new ArrayList<>();
@@ -262,7 +262,7 @@ public class JavaAnalyzerTest extends GradleTestBase {
 
     @Test
     public void analyze10() throws Exception {
-        final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8", project.getSourceDirectories());
+        final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8");
         final String cp = getClasspath();
 
         List<File> files = new ArrayList<>();
@@ -285,7 +285,7 @@ public class JavaAnalyzerTest extends GradleTestBase {
 
     @Test
     public void analyze11() throws Exception {
-        final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8", project.getSourceDirectories());
+        final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8");
         final String cp = getClasspath();
 
         List<File> files = new ArrayList<>();
@@ -308,7 +308,7 @@ public class JavaAnalyzerTest extends GradleTestBase {
 
     @Test
     public void analyze12() throws Exception {
-        final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8", project.getSourceDirectories());
+        final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8");
         final String cp = getClasspath();
         List<File> files = new ArrayList<>();
         final File file = new File("./src/test/java/meghanada/GenArray1.java").getCanonicalFile();
@@ -330,7 +330,7 @@ public class JavaAnalyzerTest extends GradleTestBase {
 
     @Test
     public void analyze13() throws Exception {
-        final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8", project.getSourceDirectories());
+        final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8");
         final String cp = getClasspath();
         List<File> files = new ArrayList<>();
         final File file = new File("./src/test/java/meghanada/L1.java").getCanonicalFile();
@@ -352,7 +352,7 @@ public class JavaAnalyzerTest extends GradleTestBase {
 
     @Test
     public void analyze14() throws Exception {
-        final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8", project.getSourceDirectories());
+        final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8");
         final String cp = getClasspath();
 
         List<File> files = new ArrayList<>();
@@ -375,7 +375,7 @@ public class JavaAnalyzerTest extends GradleTestBase {
 
     @Test
     public void analyze15() throws Exception {
-        final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8", project.getSourceDirectories());
+        final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8");
         final String cp = getClasspath();
 
         List<File> files = new ArrayList<>();
@@ -395,7 +395,7 @@ public class JavaAnalyzerTest extends GradleTestBase {
 
     @Test
     public void analyze16() throws Exception {
-        final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8", project.getSourceDirectories());
+        final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8");
         final String cp = getClasspath();
 
         List<File> files = new ArrayList<>();
@@ -415,7 +415,7 @@ public class JavaAnalyzerTest extends GradleTestBase {
 
     @Test
     public void analyze17() throws Exception {
-        final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8", project.getSourceDirectories());
+        final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8");
         final String cp = getClasspath();
 
         List<File> files = new ArrayList<>();
@@ -435,7 +435,7 @@ public class JavaAnalyzerTest extends GradleTestBase {
 
     @Test
     public void analyze18() throws Exception {
-        final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8", project.getSourceDirectories());
+        final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8");
         final String cp = getClasspath();
 
         List<File> files = new ArrayList<>();
@@ -455,7 +455,7 @@ public class JavaAnalyzerTest extends GradleTestBase {
 
     @Test
     public void analyze19() throws Exception {
-        final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8", project.getSourceDirectories());
+        final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8");
         final String cp = getClasspath();
 
         List<File> files = new ArrayList<>();
@@ -475,7 +475,7 @@ public class JavaAnalyzerTest extends GradleTestBase {
 
     @Test
     public void analyze20() throws Exception {
-        final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8", project.getSourceDirectories());
+        final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8");
         final String cp = getClasspath();
 
         List<File> files = new ArrayList<>();
@@ -495,7 +495,7 @@ public class JavaAnalyzerTest extends GradleTestBase {
 
     @Test
     public void analyze21() throws Exception {
-        final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8", project.getSourceDirectories());
+        final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8");
         final String cp = getClasspath();
 
         List<File> files = new ArrayList<>();
@@ -515,7 +515,7 @@ public class JavaAnalyzerTest extends GradleTestBase {
 
     @Test
     public void analyzeAll() throws Exception {
-        final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8", project.getSourceDirectories());
+        final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8");
         final String cp = getClasspath();
 
         List<File> files = Files.walk(new File("./src/main/java").getCanonicalFile().toPath(),
@@ -544,7 +544,7 @@ public class JavaAnalyzerTest extends GradleTestBase {
 
     @Test
     public void analyzeFail() throws Exception {
-        final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8", project.getSourceDirectories());
+        final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8");
         final String cp = getSystemClasspath();
 
         List<File> files = Files.walk(new File("./src/main/java").toPath(), FileVisitOption.FOLLOW_LINKS)

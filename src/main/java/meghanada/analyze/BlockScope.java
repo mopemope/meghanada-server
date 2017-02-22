@@ -44,6 +44,7 @@ public class BlockScope extends Scope {
     }
 
     public void startExpression(final ExpressionScope expr) {
+        expr.parent = this;
         this.currentExpr.push(expr);
     }
 

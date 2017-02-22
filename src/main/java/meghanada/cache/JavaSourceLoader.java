@@ -23,13 +23,13 @@ public class JavaSourceLoader extends CacheLoader<File, Source> implements Remov
 
     private static final Logger log = LogManager.getLogger(JavaSourceLoader.class);
 
-    private Project project;
+    private final Project project;
 
     public JavaSourceLoader(final Project project) {
         this.project = project;
     }
 
-    public Source writeSourceCache(final Source source) throws IOException {
+    private static void writeSourceCache(final Source source) throws IOException {
         final File sourceFile = source.getFile();
         final Config config = Config.load();
         final String dir = config.getProjectSettingDir();
@@ -42,10 +42,9 @@ public class JavaSourceLoader extends CacheLoader<File, Source> implements Remov
 
         log.debug("write file:{}", file);
         GlobalCache.getInstance().asyncWriteCache(file, source);
-        return source;
     }
 
-    public Source removeSourceCache(final Source source) throws IOException {
+    private static void removeSourceCache(final Source source) throws IOException {
         final File sourceFile = source.getFile();
         final Config config = Config.load();
         final String dir = config.getProjectSettingDir();
@@ -54,10 +53,9 @@ public class JavaSourceLoader extends CacheLoader<File, Source> implements Remov
         final String out = Joiner.on(File.separator).join(GlobalCache.SOURCE_CACHE_DIR, path);
         final File file = new File(root, out);
         file.delete();
-        return source;
     }
 
-    private Optional<Source> loadFromCache(final File sourceFile) throws IOException {
+    private static Optional<Source> loadFromCache(final File sourceFile) throws IOException {
 
         final Config config = Config.load();
         final String dir = config.getProjectSettingDir();
@@ -96,7 +94,7 @@ public class JavaSourceLoader extends CacheLoader<File, Source> implements Remov
                 // not modify
                 // load from cache
                 try {
-                    final Optional<Source> source = this.loadFromCache(file);
+                    final Optional<Source> source = JavaSourceLoader.loadFromCache(file);
                     if (source.isPresent()) {
                         return source.get();
                     }

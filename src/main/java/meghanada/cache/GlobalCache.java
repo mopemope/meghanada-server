@@ -40,14 +40,15 @@ public class GlobalCache {
     private static final Logger log = LogManager.getLogger(GlobalCache.class);
     private static GlobalCache globalCache;
     private final KryoPool kryoPool;
-    private Map<File, LoadingCache<File, Source>> sourceCaches;
+    private final Map<File, LoadingCache<File, Source>> sourceCaches;
+    private final ExecutorService executorService = Executors.newCachedThreadPool();
+    private final BlockingQueue<CacheRequest> blockingQueue = new LinkedBlockingQueue<>();
+
     private LoadingCache<String, List<MemberDescriptor>> memberCache;
     private boolean isTerminated = false;
-    private ExecutorService executorService = Executors.newCachedThreadPool();
-    private BlockingQueue<CacheRequest> blockingQueue = new LinkedBlockingQueue<>();
 
     private GlobalCache() {
-        this.sourceCaches = new HashMap<>();
+        this.sourceCaches = new HashMap<>(1);
         this.kryoPool = new KryoPool.Builder(() -> {
             final Kryo kryo = new Kryo();
             kryo.register(ClassIndex.class);
@@ -110,7 +111,7 @@ public class GlobalCache {
         return this.memberCache.get(fqcn);
     }
 
-    public void replaceMemberDescriptors(final String fqcn, final List<MemberDescriptor> memberDescriptors) throws ExecutionException {
+    public void replaceMemberDescriptors(final String fqcn, final List<MemberDescriptor> memberDescriptors) {
         this.memberCache.put(fqcn, memberDescriptors);
     }
 
@@ -148,18 +149,18 @@ public class GlobalCache {
         return sourceCache.get(file);
     }
 
-    public void replaceSource(final Project project, final Source source) throws ExecutionException {
+    public void replaceSource(final Project project, final Source source) {
         final LoadingCache<File, Source> sourceCache = this.getSourceCache(project);
         sourceCache.put(source.getFile(), source);
     }
 
-    public void invalidateSource(final Project project, final File file) throws ExecutionException {
+    public void invalidateSource(final Project project, final File file) {
         final LoadingCache<File, Source> sourceCache = this.getSourceCache(project);
         sourceCache.invalidate(file);
     }
 
     public <T> T readCacheFromFile(final File file, final Class<T> type) {
-        return getKryoPool().run(kryo -> {
+        return kryoPool.run(kryo -> {
             try (final Input input = new Input(new ZstdInputStream(new ByteBufferInput(new FileInputStream(file), 8192)))) {
                 return kryo.readObject(input, type);
             } catch (Exception e) {
@@ -171,7 +172,7 @@ public class GlobalCache {
     }
 
     public <T> T readCacheFromInputStream(final InputStream in, final Class<T> type) {
-        return getKryoPool().run(kryo -> {
+        return kryoPool.run(kryo -> {
             try (final Input input = new Input(in)) {
                 return kryo.readObject(input, type);
             } catch (Exception e) {
@@ -186,7 +187,7 @@ public class GlobalCache {
         if (!parentFile.exists()) {
             parentFile.mkdirs();
         }
-        this.getKryoPool().run(kryo -> {
+        kryoPool.run(kryo -> {
             try (final Output output = new Output(new ZstdOutputStream(new BufferedOutputStream(new FileOutputStream(file), 8192), COMPRESSION_LEVEL))) {
                 kryo.writeObject(output, obj);
                 return obj;
@@ -196,22 +197,19 @@ public class GlobalCache {
             }
         });
     }
+
     public void shutdown() throws InterruptedException {
         if (this.isTerminated) {
             return;
         }
 
         if (this.memberCache != null) {
-            this.memberCache.asMap().forEach((k, v) -> {
-                this.memberCache.put(k, v);
-            });
+            this.memberCache.asMap().forEach((k, v) -> this.memberCache.put(k, v));
         }
 
         this.sourceCaches.forEach((root, sourceLoadingCache) -> {
-            sourceLoadingCache.asMap().forEach((k, v) -> {
-                // force replace
-                    sourceLoadingCache.put(k, v);
-                });
+            // force replace
+            sourceLoadingCache.asMap().forEach(sourceLoadingCache::put);
         });
         this.isTerminated = true;
 

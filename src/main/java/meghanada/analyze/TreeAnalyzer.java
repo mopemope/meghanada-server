@@ -21,12 +21,14 @@ import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.Name;
 import java.io.File;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 import static meghanada.utils.FunctionUtils.wrapIOConsumer;
@@ -38,13 +40,119 @@ public class TreeAnalyzer {
     private final Map<String, String> standardClasses;
     private final CachedASMReflector cachedASMReflector;
 
-    public TreeAnalyzer() {
+    TreeAnalyzer() {
         this.cachedASMReflector = CachedASMReflector.getInstance();
         this.standardClasses = this.cachedASMReflector.getStandardClasses();
     }
 
-    private Source analyzeCompilationUnitTree(final CompilationUnitTree cut, final Source src) {
+    private static Optional<String> getExpressionType(final Source src, final JCTree.JCExpression e) {
+        if (e instanceof JCTree.JCFieldAccess) {
+            final JCTree.JCFieldAccess fieldAccess = (JCTree.JCFieldAccess) e;
+            final Symbol sym = fieldAccess.sym;
+            if (sym != null) {
+                final com.sun.tools.javac.util.Name name = sym.flatName();
+                return Optional.of(name.toString());
+            }
+            return Optional.empty();
+        } else if (e instanceof JCTree.JCWildcard) {
+            final JCTree.JCWildcard wildcard = (JCTree.JCWildcard) e;
+            final Type type = wildcard.type;
+            final Type.WildcardType wildcardType = (Type.WildcardType) type;
+            if (wildcardType != null && wildcardType.type != null) {
+                if (wildcardType.kind.toString().equals("?")) {
+                    final String s = wildcardType.type.tsym.flatName().toString();
+                    return Optional.of(s);
+                }
+                final String s = wildcardType.kind.toString() + wildcardType.type.tsym.flatName().toString();
+                return Optional.of(s);
+            }
+            return Optional.empty();
+        } else if (e instanceof JCTree.JCArrayTypeTree) {
+            final JCTree.JCArrayTypeTree arrayTypeTree = (JCTree.JCArrayTypeTree) e;
+            final Type type = arrayTypeTree.type;
+            if (type != null && type instanceof Type.ArrayType) {
+                final Type.ArrayType arrayType = (Type.ArrayType) type;
+                final String base = arrayType.getComponentType().tsym.flatName().toString();
+                return Optional.of(base + ClassNameUtils.ARRAY);
+            }
+            return Optional.empty();
+        } else {
+            final Type type = e.type;
+            String typeArgType = e.toString();
+            if (type != null) {
+                typeArgType = type.tsym.flatName().toString();
+            } else {
+                typeArgType = src.importClass.getOrDefault(typeArgType, typeArgType);
+            }
+            return Optional.ofNullable(typeArgType);
+        }
+    }
+
+    private static String resolveTypeFromImport(final Source src, final JCTree tree) {
+
+        if (tree instanceof JCTree.JCTypeApply) {
+            final JCTree.JCTypeApply typeApply = (JCTree.JCTypeApply) tree;
+            final Type type = typeApply.type;
+            String methodReturn;
+            if (type != null) {
+                methodReturn = type.tsym.flatName().toString();
+            } else {
+                final String clazz = typeApply.getType().toString();
+                methodReturn = src.importClass.getOrDefault(clazz, clazz);
+            }
+
+            final List<JCTree.JCExpression> typeArguments = typeApply.getTypeArguments();
+            if (typeArguments != null) {
+                final java.util.List<String> temp = new ArrayList<>(typeArguments.length());
+                for (final JCTree.JCExpression e : typeArguments) {
+                    getExpressionType(src, e).ifPresent(temp::add);
+                }
+                final String join = Joiner.on(",").join(temp);
+                if (!join.isEmpty()) {
+                    methodReturn = methodReturn + '<' + join + '>';
+                }
+            }
+            return methodReturn;
+        } else if (tree instanceof JCTree.JCFieldAccess) {
+            final JCTree.JCFieldAccess fieldAccess = (JCTree.JCFieldAccess) tree;
+            final Symbol sym = fieldAccess.sym;
+            if (sym != null) {
+                return sym.flatName().toString();
+            }
+            return tree.toString();
+        } else if (tree instanceof JCTree.JCIdent) {
+            final Symbol sym = ((JCTree.JCIdent) tree).sym;
+            if (sym != null && sym.asType() != null) {
+                final Type type = sym.asType();
+                if (type instanceof Type.CapturedType) {
+                    final Type upperBound = type.getUpperBound();
+                    if (upperBound != null) {
+                        return upperBound.tsym.flatName().toString();
+                    }
+                } else {
+                    return type.tsym.flatName().toString();
+                }
+            }
+            final String ident = tree.toString();
+            return src.importClass.getOrDefault(ident, ident);
+        } else if (tree instanceof JCTree.JCPrimitiveTypeTree) {
+            return tree.toString();
+        } else if (tree instanceof JCTree.JCArrayTypeTree) {
+            final JCTree.JCArrayTypeTree arrayTypeTree = (JCTree.JCArrayTypeTree) tree;
+            final JCTree type = arrayTypeTree.getType();
+            if (type != null) {
+                final String k = type.toString();
+                return src.importClass.getOrDefault(k, k) + "[]";
+            }
+        } else {
+            log.warn("tree={} {}", tree, tree.getClass());
+        }
+        return tree.toString();
+    }
+
+    private void analyzeCompilationUnitTree(final SourceContext context, final CompilationUnitTree cut) {
         final ExpressionTree packageExpr = cut.getPackageName();
+        final Source src = context.getSource();
         log.trace("file={}", src.getFile());
         if (packageExpr == null) {
             src.packageName = "";
@@ -53,7 +161,7 @@ public class TreeAnalyzer {
         }
 
         final EndPosTable endPosTable = ((JCTree.JCCompilationUnit) cut).endPositions;
-
+        context.setEndPosTable(endPosTable);
         cut.getImports().forEach(imp -> {
 
             final String importClass = imp.getQualifiedIdentifier().toString();
@@ -89,25 +197,11 @@ public class TreeAnalyzer {
                 final int startPos = classDecl.getPreferredPosition();
                 final int endPos = classDecl.getEndPosition(endPosTable);
                 final JCTree.JCModifiers modifiers = classDecl.getModifiers();
-                if (modifiers != null) {
-                    final List<JCTree.JCAnnotation> annotations = modifiers.getAnnotations();
-                    if (annotations != null) {
-                        annotations.forEach(wrapIOConsumer(jcAnnotation -> {
-                            final JCTree annotationType = jcAnnotation.getAnnotationType();
-                            this.analyzeParsedTree(annotationType, src, endPosTable);
-                            final List<JCTree.JCExpression> arguments = jcAnnotation.getArguments();
-                            if (arguments != null) {
-                                arguments.forEach(wrapIOConsumer(jcExpression -> {
-                                    this.analyzeParsedTree(jcExpression, src, endPosTable);
-                                }));
-                            }
-                        }));
-                    }
-                }
+                parseModifiers(context, modifiers);
 
                 final JCTree.JCExpression extendsClause = classDecl.getExtendsClause();
                 if (extendsClause != null) {
-                    this.analyzeParsedTree(extendsClause, src, endPosTable);
+                    this.analyzeParsedTree(context, extendsClause);
                 }
                 final Name simpleName = classDecl.getSimpleName();
                 final Range range = Range.create(src, startPos + 1, endPos);
@@ -115,14 +209,12 @@ public class TreeAnalyzer {
                 final int nameStart = startPos + 6;
                 final Range nameRange = Range.create(src, nameStart, nameStart + simpleName.length());
 
-                final String fqcn = src.packageName + "." + simpleName.toString();
+                final String fqcn = src.packageName + '.' + simpleName.toString();
                 final ClassScope classScope = new ClassScope(fqcn, nameRange, startPos, range);
                 log.trace("class={}", classScope);
 
                 src.startClass(classScope);
-                classDecl.getMembers().forEach(wrapIOConsumer(tree -> {
-                    this.analyzeParsedTree(tree, src, endPosTable);
-                }));
+                classDecl.getMembers().forEach(wrapIOConsumer(tree -> analyzeParsedTree(context, tree)));
                 final Optional<ClassScope> endClass = src.endClass();
                 log.trace("class={}", endClass);
             } else if (td instanceof JCTree.JCSkip) {
@@ -131,12 +223,12 @@ public class TreeAnalyzer {
                 log.warn("unknown td={} {}", td, td.getClass());
             }
         }));
-        return src;
     }
 
-    private void analyzeParsedTree(final JCTree tree, final Source src, final EndPosTable endPosTable) throws IOException {
+    private void analyzeParsedTree(final SourceContext context, final JCTree tree) throws IOException {
         final JCDiagnostic.DiagnosticPosition pos = tree.pos();
 
+        final EndPosTable endPosTable = context.getEndPosTable();
         final int startPos = pos.getStartPosition();
         final int preferredPos = pos.getPreferredPosition();
         final int endPos = pos.getEndPosition(endPosTable);
@@ -158,57 +250,57 @@ public class TreeAnalyzer {
 
         if (tree instanceof JCTree.JCVariableDecl) {
 
-            this.analyzeVariableDecl((JCTree.JCVariableDecl) tree, src, preferredPos, endPos, endPosTable);
+            this.analyzeVariableDecl(context, (JCTree.JCVariableDecl) tree, preferredPos, endPos);
 
         } else if (tree instanceof JCTree.JCTypeCast) {
 
             final JCTree.JCTypeCast cast = (JCTree.JCTypeCast) tree;
             final JCTree type = cast.getType();
             final JCTree.JCExpression expression = cast.getExpression();
-            this.analyzeParsedTree(expression, src, endPosTable);
+            this.analyzeParsedTree(context, expression);
 
         } else if (tree instanceof JCTree.JCMethodDecl) {
 
-            this.analyzeMethodDecl((JCTree.JCMethodDecl) tree, src, preferredPos, endPos, endPosTable);
+            this.analyzeMethodDecl(context, (JCTree.JCMethodDecl) tree, preferredPos, endPos);
 
         } else if (tree instanceof JCTree.JCClassDecl) {
 
-            this.analyzeClassDecl((JCTree.JCClassDecl) tree, src, endPosTable, startPos, endPos);
+            this.analyzeClassDecl(context, (JCTree.JCClassDecl) tree, startPos, endPos);
 
         } else if (tree instanceof JCTree.JCBlock) {
             final JCTree.JCBlock block = (JCTree.JCBlock) tree;
 
             block.getStatements().forEach(wrapIOConsumer(stmt -> {
-                this.analyzeParsedTree(stmt, src, endPosTable);
+                this.analyzeParsedTree(context, stmt);
             }));
 
         } else if (tree instanceof JCTree.JCFieldAccess) {
 
-            this.analyzeFieldAccess((JCTree.JCFieldAccess) tree, src, endPosTable, preferredPos, endPos);
+            this.analyzeFieldAccess(context, (JCTree.JCFieldAccess) tree, preferredPos, endPos);
 
         } else if (tree instanceof JCTree.JCArrayAccess) {
 
             final JCTree.JCArrayAccess arrayAccess = (JCTree.JCArrayAccess) tree;
             final JCTree.JCExpression expression = arrayAccess.getExpression();
             if (expression != null) {
-                this.analyzeParsedTree(expression, src, endPosTable);
+                this.analyzeParsedTree(context, expression);
             }
             final JCTree.JCExpression index = arrayAccess.getIndex();
             if (index != null) {
-                this.analyzeParsedTree(index, src, endPosTable);
+                this.analyzeParsedTree(context, index);
             }
 
         } else if (tree instanceof JCTree.JCExpressionStatement) {
 
-            this.analyzeExpressionStatement((JCTree.JCExpressionStatement) tree, src, endPosTable, preferredPos, endPos);
+            this.analyzeExpressionStatement(context, (JCTree.JCExpressionStatement) tree, preferredPos, endPos);
 
         } else if (tree instanceof JCTree.JCLiteral) {
 
-            this.analyzeLiteral((JCTree.JCLiteral) tree, src, preferredPos, endPos);
+            analyzeLiteral(context, (JCTree.JCLiteral) tree, preferredPos, endPos);
 
         } else if (tree instanceof JCTree.JCIdent) {
 
-            this.parseIdent((JCTree.JCIdent) tree, src, preferredPos, endPos);
+            analyzeIdent(context, (JCTree.JCIdent) tree, preferredPos, endPos);
 
         } else if (tree instanceof JCTree.JCContinue) {
             // skip
@@ -220,30 +312,30 @@ public class TreeAnalyzer {
             final JCTree.JCExpression expression = unary.getExpression();
             final Symbol operator = unary.getOperator();
             // TODO mark operator ?
-            this.analyzeParsedTree(expression, src, endPosTable);
+            this.analyzeParsedTree(context, expression);
 
         } else if (tree instanceof JCTree.JCSwitch) {
 
-            this.analyzeSwitch((JCTree.JCSwitch) tree, src, endPosTable);
+            this.analyzeSwitch(context, (JCTree.JCSwitch) tree);
 
         } else if (tree instanceof JCTree.JCReturn) {
 
             final JCTree.JCReturn ret = (JCTree.JCReturn) tree;
             final JCTree.JCExpression expression = ret.getExpression();
             if (expression != null) {
-                this.analyzeParsedTree(ret.getExpression(), src, endPosTable);
+                this.analyzeParsedTree(context, ret.getExpression());
             }
         } else if (tree instanceof JCTree.JCForLoop) {
 
-            this.analyzeForLoop((JCTree.JCForLoop) tree, src, endPosTable);
+            this.analyzeForLoop(context, (JCTree.JCForLoop) tree);
 
         } else if (tree instanceof JCTree.JCEnhancedForLoop) {
 
-            this.analyzeEnhancedForLoop((JCTree.JCEnhancedForLoop) tree, src, endPosTable);
+            this.analyzeEnhancedForLoop(context, (JCTree.JCEnhancedForLoop) tree);
 
         } else if (tree instanceof JCTree.JCTry) {
 
-            this.analyzeTry((JCTree.JCTry) tree, src, endPosTable);
+            this.analyzeTry(context, (JCTree.JCTry) tree);
 
         } else if (tree instanceof JCTree.JCIf) {
 
@@ -251,23 +343,23 @@ public class TreeAnalyzer {
             final JCTree.JCExpression condition = ifExpr.getCondition();
             final JCTree.JCStatement thenStatement = ifExpr.getThenStatement();
             final JCTree.JCStatement elseStatement = ifExpr.getElseStatement();
-            this.analyzeParsedTree(condition, src, endPosTable);
+            this.analyzeParsedTree(context, condition);
             if (thenStatement != null) {
-                this.analyzeParsedTree(thenStatement, src, endPosTable);
+                this.analyzeParsedTree(context, thenStatement);
             }
             if (elseStatement != null) {
-                this.analyzeParsedTree(elseStatement, src, endPosTable);
+                this.analyzeParsedTree(context, elseStatement);
             }
 
         } else if (tree instanceof JCTree.JCParens) {
 
             final JCTree.JCParens parens = (JCTree.JCParens) tree;
             final JCTree.JCExpression expression = parens.getExpression();
-            this.analyzeParsedTree(expression, src, endPosTable);
+            this.analyzeParsedTree(context, expression);
 
         } else if (tree instanceof JCTree.JCNewClass) {
 
-            this.analyzeNewClass((JCTree.JCNewClass) tree, src, endPosTable, preferredPos, endPos);
+            this.analyzeNewClass(context, (JCTree.JCNewClass) tree, preferredPos, endPos);
 
         } else if (tree instanceof JCTree.JCBinary) {
 
@@ -276,12 +368,12 @@ public class TreeAnalyzer {
             final JCTree.JCExpression leftOperand = binary.getLeftOperand();
             final JCTree.JCExpression rightOperand = binary.getRightOperand();
 
-            this.analyzeParsedTree(leftOperand, src, endPosTable);
-            this.analyzeParsedTree(rightOperand, src, endPosTable);
+            this.analyzeParsedTree(context, leftOperand);
+            this.analyzeParsedTree(context, rightOperand);
 
         } else if (tree instanceof JCTree.JCMethodInvocation) {
 
-            this.analyzeMethodInvocation((JCTree.JCMethodInvocation) tree, src, endPosTable, preferredPos, endPos);
+            this.analyzeMethodInvocation(context, (JCTree.JCMethodInvocation) tree, preferredPos, endPos);
 
         } else if (tree instanceof JCTree.JCAssign) {
 
@@ -290,29 +382,29 @@ public class TreeAnalyzer {
             final JCTree.JCExpression variable = assign.getVariable();
 
             if (variable != null) {
-                this.analyzeParsedTree(variable, src, endPosTable);
+                this.analyzeParsedTree(context, variable);
             }
             if (expression != null) {
-                this.analyzeParsedTree(expression, src, endPosTable);
+                this.analyzeParsedTree(context, expression);
             }
         } else if (tree instanceof JCTree.JCNewArray) {
 
             final JCTree.JCNewArray newArray = (JCTree.JCNewArray) tree;
             final JCTree.JCExpression type = newArray.getType();
             if (type != null) {
-                this.analyzeParsedTree(type, src, endPosTable);
+                this.analyzeParsedTree(context, type);
             }
             final List<JCTree.JCExpression> initializes = newArray.getInitializers();
             if (initializes != null) {
                 initializes.forEach(wrapIOConsumer(jcExpression -> {
-                    this.analyzeParsedTree(jcExpression, src, endPosTable);
+                    this.analyzeParsedTree(context, jcExpression);
                 }));
             }
             final List<JCTree.JCExpression> dimensions = newArray.getDimensions();
 
             if (dimensions != null) {
                 dimensions.forEach(wrapIOConsumer(jcExpression -> {
-                    this.analyzeParsedTree(jcExpression, src, endPosTable);
+                    this.analyzeParsedTree(context, jcExpression);
                 }));
             }
 
@@ -323,64 +415,48 @@ public class TreeAnalyzer {
             final JCTree.JCConditional conditional = (JCTree.JCConditional) tree;
             final JCTree.JCExpression condition = conditional.getCondition();
             if (condition != null) {
-                this.analyzeParsedTree(condition, src, endPosTable);
+                this.analyzeParsedTree(context, condition);
             }
             final JCTree.JCExpression trueExpression = conditional.getTrueExpression();
             if (trueExpression != null) {
-                this.analyzeParsedTree(trueExpression, src, endPosTable);
+                this.analyzeParsedTree(context, trueExpression);
             }
             final JCTree.JCExpression falseExpression = conditional.getFalseExpression();
             if (falseExpression != null) {
-                this.analyzeParsedTree(falseExpression, src, endPosTable);
+                this.analyzeParsedTree(context, falseExpression);
             }
 
         } else if (tree instanceof JCTree.JCLambda) {
 
-            final JCTree.JCLambda lambda = (JCTree.JCLambda) tree;
-            final java.util.List<? extends VariableTree> parameters = lambda.getParameters();
-            if (parameters != null) {
-                parameters.forEach(wrapIOConsumer(v -> {
-                    if (v instanceof JCTree.JCVariableDecl) {
-                        this.analyzeParsedTree((JCTree.JCVariableDecl) v, src, endPosTable);
-                    }
-                }));
-            }
-            final Type lambdaType = lambda.type;
-            if (lambdaType != null) {
-                // TODO mark
-            }
+            analyzeLambda(context, (JCTree.JCLambda) tree);
 
-            final JCTree body = lambda.getBody();
-            if (body != null) {
-                this.analyzeParsedTree(body, src, endPosTable);
-            }
         } else if (tree instanceof JCTree.JCThrow) {
 
             final JCTree.JCThrow jcThrow = (JCTree.JCThrow) tree;
             final JCTree.JCExpression expression = jcThrow.getExpression();
-            this.analyzeParsedTree(expression, src, endPosTable);
+            this.analyzeParsedTree(context, expression);
 
         } else if (tree instanceof JCTree.JCInstanceOf) {
 
             final JCTree.JCInstanceOf jcInstanceOf = (JCTree.JCInstanceOf) tree;
             final JCTree.JCExpression expression = jcInstanceOf.getExpression();
             if (expression != null) {
-                this.analyzeParsedTree(expression, src, endPosTable);
+                this.analyzeParsedTree(context, expression);
             }
-            final JCTree type = jcInstanceOf.getType();
-            if (type != null) {
-                this.analyzeParsedTree(type, src, endPosTable);
+            final JCTree typeTree = jcInstanceOf.getType();
+            if (typeTree != null) {
+                this.analyzeParsedTree(context, typeTree);
             }
 
         } else if (tree instanceof JCTree.JCMemberReference) {
-
+            final Source src = context.getSource();
             final JCTree.JCMemberReference memberReference = (JCTree.JCMemberReference) tree;
             final JCTree.JCExpression expression = memberReference.getQualifierExpression();
             final com.sun.tools.javac.util.Name name = memberReference.getName();
             final String methodName = name.toString();
 
             if (expression != null) {
-                this.analyzeParsedTree(expression, src, endPosTable);
+                this.analyzeParsedTree(context, expression);
                 final Symbol sym = memberReference.sym;
                 if (sym != null) {
                     // method invoke
@@ -411,152 +487,176 @@ public class TreeAnalyzer {
             final JCTree.JCWhileLoop whileLoop = (JCTree.JCWhileLoop) tree;
             final JCTree.JCExpression condition = whileLoop.getCondition();
             if (condition != null) {
-                this.analyzeParsedTree(condition, src, endPosTable);
+                this.analyzeParsedTree(context, condition);
             }
             final JCTree.JCStatement statement = whileLoop.getStatement();
             if (statement != null) {
-                this.analyzeParsedTree(statement, src, endPosTable);
+                this.analyzeParsedTree(context, statement);
             }
 
         } else if (tree instanceof JCTree.JCSynchronized) {
             final JCTree.JCSynchronized jcSynchronized = (JCTree.JCSynchronized) tree;
             final JCTree.JCExpression expression = jcSynchronized.getExpression();
             if (expression != null) {
-                this.analyzeParsedTree(expression, src, endPosTable);
+                this.analyzeParsedTree(context, expression);
             }
             final JCTree.JCBlock block = jcSynchronized.getBlock();
             if (block != null) {
-                this.analyzeParsedTree(block, src, endPosTable);
+                this.analyzeParsedTree(context, block);
             }
         } else if (tree instanceof JCTree.JCAssert) {
 
             final JCTree.JCAssert jcAssert = (JCTree.JCAssert) tree;
             final JCTree.JCExpression condition = jcAssert.getCondition();
             if (condition != null) {
-                this.analyzeParsedTree(condition, src, endPosTable);
+                this.analyzeParsedTree(context, condition);
             }
             final JCTree.JCExpression detail = jcAssert.getDetail();
             if (detail != null) {
-                this.analyzeParsedTree(detail, src, endPosTable);
+                this.analyzeParsedTree(context, detail);
             }
         } else if (tree instanceof JCTree.JCArrayTypeTree) {
             final JCTree.JCArrayTypeTree arrayTypeTree = (JCTree.JCArrayTypeTree) tree;
             final JCTree type = arrayTypeTree.getType();
             if (type != null) {
-                this.analyzeParsedTree(type, src, endPosTable);
+                this.analyzeParsedTree(context, type);
             }
         } else if (tree instanceof JCTree.JCDoWhileLoop) {
             final JCTree.JCDoWhileLoop doWhileLoop = (JCTree.JCDoWhileLoop) tree;
             final JCTree.JCExpression condition = doWhileLoop.getCondition();
             if (condition != null) {
-                this.analyzeParsedTree(condition, src, endPosTable);
+                this.analyzeParsedTree(context, condition);
             }
             final JCTree.JCStatement statement = doWhileLoop.getStatement();
             if (statement != null) {
-                this.analyzeParsedTree(statement, src, endPosTable);
+                this.analyzeParsedTree(context, statement);
             }
         } else if (tree instanceof JCTree.JCLabeledStatement) {
             final JCTree.JCLabeledStatement labeledStatement = (JCTree.JCLabeledStatement) tree;
             final JCTree.JCStatement statement = labeledStatement.getStatement();
             if (statement != null) {
-                this.analyzeParsedTree(statement, src, endPosTable);
+                this.analyzeParsedTree(context, statement);
             }
         } else if (tree instanceof JCTree.JCTypeApply) {
             final JCTree.JCTypeApply typeApply = (JCTree.JCTypeApply) tree;
             final JCTree type = typeApply.getType();
             if (type != null) {
-                this.analyzeParsedTree(type, src, endPosTable);
+                this.analyzeParsedTree(context, type);
             }
         } else if (tree instanceof JCTree.JCAssignOp) {
             final JCTree.JCAssignOp assignOp = (JCTree.JCAssignOp) tree;
             final JCTree.JCExpression expression = assignOp.getExpression();
             if (expression != null) {
-                this.analyzeParsedTree(expression, src, endPosTable);
+                this.analyzeParsedTree(context, expression);
             }
         } else if (tree instanceof JCTree.JCSkip) {
             // skip
         } else {
+            Source src = context.getSource();
             log.warn("@@ unknown tree class={} expr={} filePath={}", tree.getClass(), tree, src.filePath);
         }
 
         log.traceExit(entryMessage);
     }
 
-    private void analyzeEnhancedForLoop(JCTree.JCEnhancedForLoop forLoop, Source src, EndPosTable endPosTable) throws IOException {
-        final JCTree.JCExpression expression = forLoop.getExpression();
-        if (expression != null) {
-            this.analyzeParsedTree(expression, src, endPosTable);
+    private void analyzeLambda(final SourceContext context, final JCTree.JCLambda lambda) throws IOException {
+        final boolean isParameter = context.isParameter();
+        final java.util.List<? extends VariableTree> parameters = lambda.getParameters();
+        if (parameters != null) {
+            parameters.forEach(wrapIOConsumer(v -> {
+                if (v instanceof JCTree.JCVariableDecl) {
+                    this.analyzeParsedTree(context, (JCTree.JCVariableDecl) v);
+                }
+            }));
         }
-        final JCTree.JCVariableDecl variable = forLoop.getVariable();
-        if (variable != null) {
-            this.analyzeParsedTree(variable, src, endPosTable);
+        final JCTree body = lambda.getBody();
+        if (body != null) {
+            this.analyzeParsedTree(context, body);
         }
-        final JCTree.JCStatement statement = forLoop.getStatement();
-        if (statement != null) {
-            this.analyzeParsedTree(statement, src, endPosTable);
+
+        context.setParameter(isParameter);
+        final Type lambdaType = lambda.type;
+        if (lambdaType != null) {
+            final Source src = context.getSource();
+            getTypeString(src, lambdaType).ifPresent(context::setParameterFQCN);
         }
     }
 
-    private void analyzeSwitch(JCTree.JCSwitch jcSwitch, Source src, EndPosTable endPosTable) throws IOException {
+    private void analyzeEnhancedForLoop(final SourceContext context, final JCTree.JCEnhancedForLoop forLoop) throws IOException {
+        final JCTree.JCExpression expression = forLoop.getExpression();
+        if (expression != null) {
+            this.analyzeParsedTree(context, expression);
+        }
+        final JCTree.JCVariableDecl variable = forLoop.getVariable();
+        if (variable != null) {
+            this.analyzeParsedTree(context, variable);
+        }
+        final JCTree.JCStatement statement = forLoop.getStatement();
+        if (statement != null) {
+            this.analyzeParsedTree(context, statement);
+        }
+    }
+
+    private void analyzeSwitch(final SourceContext context, final JCTree.JCSwitch jcSwitch) throws IOException {
         final JCTree.JCExpression expression = jcSwitch.getExpression();
-        this.analyzeParsedTree(expression, src, endPosTable);
+        this.analyzeParsedTree(context, expression);
         final List<JCTree.JCCase> cases = jcSwitch.getCases();
         if (cases != null) {
             cases.forEach(wrapIOConsumer(jcCase -> {
                 final JCTree.JCExpression expression1 = jcCase.getExpression();
                 if (expression1 != null) {
-                    this.analyzeParsedTree(expression1, src, endPosTable);
+                    this.analyzeParsedTree(context, expression1);
                 }
                 final List<JCTree.JCStatement> statements = jcCase.getStatements();
                 if (statements != null) {
                     statements.forEach(wrapIOConsumer(jcStatement -> {
-                        this.analyzeParsedTree(jcStatement, src, endPosTable);
+                        this.analyzeParsedTree(context, jcStatement);
                     }));
                 }
             }));
         }
     }
 
-    private void analyzeTry(JCTree.JCTry tryExpr, Source src, EndPosTable endPosTable) throws IOException {
+    private void analyzeTry(final SourceContext context, final JCTree.JCTry tryExpr) throws IOException {
         final JCTree.JCBlock block = tryExpr.getBlock();
         final List<JCTree.JCCatch> catches = tryExpr.getCatches();
         final JCTree.JCBlock finallyBlock = tryExpr.getFinallyBlock();
 
-        this.analyzeParsedTree(block, src, endPosTable);
+        this.analyzeParsedTree(context, block);
 
         if (catches != null) {
             catches.forEach(wrapIOConsumer(jcCatch -> {
                 final JCTree.JCVariableDecl parameter = jcCatch.getParameter();
-                this.analyzeParsedTree(parameter, src, endPosTable);
-                this.analyzeParsedTree(jcCatch.getBlock(), src, endPosTable);
+                this.analyzeParsedTree(context, parameter);
+                this.analyzeParsedTree(context, jcCatch.getBlock());
             }));
         }
 
         if (finallyBlock != null) {
-            this.analyzeParsedTree(finallyBlock, src, endPosTable);
+            this.analyzeParsedTree(context, finallyBlock);
         }
     }
 
-    private void analyzeForLoop(final JCTree.JCForLoop forLoop, Source src, EndPosTable endPosTable) throws IOException {
+    private void analyzeForLoop(final SourceContext context, final JCTree.JCForLoop forLoop) throws IOException {
         final List<JCTree.JCStatement> initializers = forLoop.getInitializer();
         final JCTree.JCExpression condition = forLoop.getCondition();
         final List<JCTree.JCExpressionStatement> updates = forLoop.getUpdate();
         final JCTree.JCStatement statement = forLoop.getStatement();
         if (initializers != null) {
             initializers.forEach(wrapIOConsumer(s -> {
-                this.analyzeParsedTree(s, src, endPosTable);
+                this.analyzeParsedTree(context, s);
             }));
         }
         if (condition != null) {
-            this.analyzeParsedTree(condition, src, endPosTable);
+            this.analyzeParsedTree(context, condition);
         }
         if (updates != null) {
             updates.forEach(wrapIOConsumer(s -> {
-                this.analyzeParsedTree(s, src, endPosTable);
+                this.analyzeParsedTree(context, s);
             }));
         }
         if (statement != null) {
-            this.analyzeParsedTree(statement, src, endPosTable);
+            this.analyzeParsedTree(context, statement);
         }
     }
 
@@ -600,16 +700,7 @@ public class TreeAnalyzer {
 
             String baseType = returnType.tsym.flatName().toString();
             final List<Type> typeArguments = returnType.getTypeArguments();
-            if (typeArguments != null && !typeArguments.isEmpty()) {
-                final java.util.List<String> temp = new ArrayList<>();
-                for (final Type typeArgument : typeArguments) {
-                    getTypeString(src, typeArgument).ifPresent(temp::add);
-                }
-                final String join = Joiner.on(",").join(temp);
-                if (!join.isEmpty()) {
-                    baseType = baseType + "<" + join + ">";
-                }
-            }
+            baseType = getFlatName(src, baseType, typeArguments);
             return Optional.of(baseType);
         } else {
             if (type.toString().equals("?")) {
@@ -624,31 +715,36 @@ public class TreeAnalyzer {
             }
 
             final List<Type> typeArguments = type.getTypeArguments();
-            if (typeArguments != null && !typeArguments.isEmpty()) {
-                final java.util.List<String> temp = new ArrayList<>();
-                for (final Type typeArgument : typeArguments) {
-                    getTypeString(src, typeArgument).ifPresent(temp::add);
-                }
-                final String join = Joiner.on(",").join(temp);
-                if (!join.isEmpty()) {
-                    baseType = baseType + "<" + join + ">";
-                }
-            }
+            baseType = getFlatName(src, baseType, typeArguments);
             return Optional.of(baseType);
         }
     }
 
-    private void analyzeMethodInvocation(final JCTree.JCMethodInvocation methodInvocation, final Source src, EndPosTable endPosTable, int preferredPos, int endPos) throws IOException {
+    private String getFlatName(final Source src, String baseType, final List<Type> typeArguments) {
+        if (typeArguments != null && !typeArguments.isEmpty()) {
+            final java.util.List<String> temp = new ArrayList<>(typeArguments.length());
+            for (final Type typeArgument : typeArguments) {
+                getTypeString(src, typeArgument).ifPresent(temp::add);
+            }
+            final String join = Joiner.on(",").join(temp);
+            if (!join.isEmpty()) {
+                baseType = baseType + '<' + join + '>';
+            }
+        }
+        return baseType;
+    }
+
+    private void analyzeMethodInvocation(final SourceContext context, final JCTree.JCMethodInvocation methodInvocation, int preferredPos, int endPos) throws IOException {
+        final Source src = context.getSource();
+        EndPosTable endPosTable = context.getEndPosTable();
         final Type returnType = methodInvocation.type;
-        methodInvocation.getArguments().forEach(wrapIOConsumer(vd -> {
-            this.analyzeParsedTree(vd, src, endPosTable);
-        }));
+
+        final boolean isParameter = context.isParameter();
+        final List<JCTree.JCExpression> argumentExprs = methodInvocation.getArguments();
+        final java.util.List<String> arguments = getArgmentsType(context, argumentExprs);
+        context.setParameter(isParameter);
 
         final JCTree.JCExpression methodSelect = methodInvocation.getMethodSelect();
-        int identBegin = methodSelect.getStartPosition();
-        int identEnd = methodSelect.getEndPosition(endPosTable);
-        // default
-        Range nameRange = Range.create(src, identBegin, identEnd);
 
         if (methodSelect instanceof JCTree.JCIdent) {
             // super
@@ -659,7 +755,7 @@ public class TreeAnalyzer {
                 final Symbol owner = sym.owner;
                 final int nameBegin = ident.getStartPosition();
                 final int nameEnd = ident.getEndPosition(endPosTable);
-                nameRange = Range.create(src, nameBegin, nameEnd);
+                final Range nameRange = Range.create(src, nameBegin, nameEnd);
                 final Range range = Range.create(src, nameBegin, endPos);
 
                 if (s.equals("super")) {
@@ -674,9 +770,11 @@ public class TreeAnalyzer {
                     if (owner.type != null) {
                         this.getTypeString(src, owner.type).ifPresent(fqcn -> {
                             methodCall.returnType = this.markFQCN(src, fqcn);
+                            context.setParameterFQCN(methodCall.returnType);
                         });
                     }
                     src.getCurrentScope().ifPresent(scope -> {
+                        methodCall.arguments = arguments;
                         scope.addMethodCall(methodCall);
                     });
                 } else {
@@ -688,10 +786,12 @@ public class TreeAnalyzer {
                         });
                         this.getTypeString(src, returnType).ifPresent(fqcn -> {
                             methodCall.returnType = this.markFQCN(src, fqcn);
+                            context.setParameterFQCN(methodCall.returnType);
                         });
                     }
 
                     src.getCurrentScope().ifPresent(scope -> {
+                        methodCall.arguments = arguments;
                         scope.addMethodCall(methodCall);
                     });
                 }
@@ -700,14 +800,14 @@ public class TreeAnalyzer {
             final JCTree.JCFieldAccess fa = (JCTree.JCFieldAccess) methodSelect;
             final JCTree.JCExpression expression = fa.getExpression();
             final String selectScope = expression.toString();
-            this.analyzeParsedTree(expression, src, endPosTable);
+            this.analyzeParsedTree(context, expression);
             final Type owner = expression.type;
             final String name = fa.getIdentifier().toString();
 
             final int start = expression.getEndPosition(endPosTable);
             final int nameEnd = start + name.length();
 
-            nameRange = Range.create(src, start + 1, nameEnd + 1);
+            final Range nameRange = Range.create(src, start + 1, nameEnd + 1);
             final Range range = Range.create(src, start + 1, endPos);
             final MethodCall methodCall = new MethodCall(selectScope, name, start + 1, nameRange, range);
 
@@ -742,6 +842,7 @@ public class TreeAnalyzer {
                     final String clazz = src.importClass.get(nm);
                     if (clazz != null) {
                         methodCall.returnType = this.markFQCN(src, clazz);
+                        context.setParameterFQCN(methodCall.returnType);
                     } else {
                         if (src.isReportUnknown()) {
                             log.warn("unknown ident class expression={} {} {}", expression, expression.getClass(), src.filePath);
@@ -755,22 +856,29 @@ public class TreeAnalyzer {
             } else {
                 this.getTypeString(src, returnType).ifPresent(fqcn -> {
                     methodCall.returnType = this.markFQCN(src, fqcn);
+                    context.setParameterFQCN(methodCall.returnType);
                 });
             }
             src.getCurrentScope().ifPresent(scope -> {
+                methodCall.arguments = arguments;
                 scope.addMethodCall(methodCall);
             });
 
         } else {
             log.warn("unknown methoddSelect:{}", methodSelect);
-            this.analyzeParsedTree(methodSelect, src, endPosTable);
+            this.analyzeParsedTree(context, methodSelect);
         }
     }
 
-    private void analyzeNewClass(final JCTree.JCNewClass newClass, Source src, EndPosTable endPosTable, int preferredPos, int endPos) throws IOException {
-        newClass.getArguments().forEach(wrapIOConsumer(jcExpression -> {
-            this.analyzeParsedTree(jcExpression, src, endPosTable);
-        }));
+    private void analyzeNewClass(final SourceContext context, final JCTree.JCNewClass newClass, int preferredPos, int endPos) throws IOException {
+        final Source src = context.getSource();
+        final EndPosTable endPosTable = context.getEndPosTable();
+        final boolean isParameter = context.isParameter();
+
+        final List<JCTree.JCExpression> argumentExprs = newClass.getArguments();
+        final java.util.List<String> arguments = getArgmentsType(context, argumentExprs);
+        context.setParameter(isParameter);
+
         final JCTree.JCExpression identifier = newClass.getIdentifier();
         final String name = identifier.toString();
 
@@ -785,30 +893,51 @@ public class TreeAnalyzer {
         this.getTypeString(src, type).ifPresent(fqcn -> {
             methodCall.declaringClass = this.markFQCN(src, fqcn);
             methodCall.returnType = fqcn;
+            context.setParameterFQCN(fqcn);
         });
 
         final JCTree.JCClassDecl classBody = newClass.getClassBody();
         if (classBody != null) {
-            this.analyzeParsedTree(classBody, src, endPosTable);
+            this.analyzeParsedTree(context, classBody);
         }
         src.getCurrentScope().ifPresent(scope -> {
+            methodCall.arguments = arguments;
             scope.addMethodCall(methodCall);
         });
     }
 
-    private void analyzeLiteral(final JCTree.JCLiteral literal, final Source src, final int preferredPos, final int endPos) throws IOException {
+    private java.util.List<String> getArgmentsType(SourceContext context, List<JCTree.JCExpression> arguments) {
+        return arguments.stream().map(expression -> {
+            context.setParameter(true);
+            try {
+                this.analyzeParsedTree(context, expression);
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+            log.trace("class={} returnFQCN={} expr={}", expression.getClass().getSimpleName(), context.getParameterFQCN(), expression);
+            context.setParameter(false);
+            return context.getParameterFQCN();
+        }).collect(Collectors.toList());
+    }
+
+    private void analyzeLiteral(final SourceContext context, final JCTree.JCLiteral literal, final int preferredPos, final int endPos) throws IOException {
+        final Source src = context.getSource();
         final Tree.Kind kind = literal.getKind();
         final Object value = literal.getValue();
         final Range range = Range.create(src, preferredPos, endPos);
         final Variable variable = new Variable(kind.toString(), preferredPos, range);
         if (value != null) {
             variable.fqcn = value.getClass().toString();
+            context.setParameterFQCN(variable.fqcn);
+        } else {
+            variable.fqcn = "<nulltype>";
+            context.setParameterFQCN(variable.fqcn);
         }
         src.getCurrentScope().ifPresent(scope -> scope.addVariable(variable));
     }
 
-    private void analyzeExpressionStatement(final JCTree.JCExpressionStatement expr, final Source src, final EndPosTable endPosTable, final int preferredPos, final int endPos) {
-
+    private void analyzeExpressionStatement(final SourceContext context, final JCTree.JCExpressionStatement expr, final int preferredPos, final int endPos) {
+        final Source src = context.getSource();
         final JCTree.JCExpression expression = expr.getExpression();
         final Tree.Kind expressionKind = expression.getKind();
         final JCTree expressionTree = expression.getTree();
@@ -827,21 +956,21 @@ public class TreeAnalyzer {
                 final JCTree.JCExpression lhs = assign.lhs;
                 final JCTree.JCExpression rhs = assign.rhs;
                 if (lhs != null) {
-                    this.analyzeParsedTree(lhs, src, endPosTable);
+                    this.analyzeParsedTree(context, lhs);
                 }
                 if (rhs != null) {
-                    this.analyzeParsedTree(rhs, src, endPosTable);
+                    this.analyzeParsedTree(context, rhs);
                 }
             } else if (expressionKind.equals(Tree.Kind.METHOD_INVOCATION)) {
                 final JCTree.JCMethodInvocation methodInvocation = (JCTree.JCMethodInvocation) expressionTree;
-                this.analyzeParsedTree(methodInvocation, src, endPosTable);
+                this.analyzeParsedTree(context, methodInvocation);
             } else if (expressionKind.equals(Tree.Kind.POSTFIX_DECREMENT) ||
                     expressionKind.equals(Tree.Kind.POSTFIX_INCREMENT)) {
                 if (expressionTree instanceof JCTree.JCUnary) {
                     final JCTree.JCUnary jcUnary = (JCTree.JCUnary) expressionTree;
                     final JCTree.JCExpression args = jcUnary.getExpression();
                     if (args != null) {
-                        this.analyzeParsedTree(args, src, endPosTable);
+                        this.analyzeParsedTree(context, args);
                     }
                 } else {
                     log.warn("POSTFIX_XXXXX expressionKind:{} tree:{}", expressionKind, expressionTree.getClass());
@@ -853,7 +982,7 @@ public class TreeAnalyzer {
                     final JCTree.JCUnary jcUnary = (JCTree.JCUnary) expressionTree;
                     final JCTree.JCExpression args = jcUnary.getExpression();
                     if (args != null) {
-                        this.analyzeParsedTree(args, src, endPosTable);
+                        this.analyzeParsedTree(context, args);
                     }
                 } else {
                     log.warn("PREFIX_XXXXX expressionKind:{} tree:{}", expressionKind, expressionTree.getClass());
@@ -874,10 +1003,10 @@ public class TreeAnalyzer {
                     final JCTree.JCExpression lhs = assignOp.lhs;
                     final JCTree.JCExpression rhs = assignOp.rhs;
                     if (lhs != null) {
-                        this.analyzeParsedTree(lhs, src, endPosTable);
+                        this.analyzeParsedTree(context, lhs);
                     }
                     if (rhs != null) {
-                        this.analyzeParsedTree(rhs, src, endPosTable);
+                        this.analyzeParsedTree(context, rhs);
                     }
                 } else {
                     log.warn("XXXX_ASSIGNMENT expressionKind:{} tree:{}", expressionKind, expressionTree.getClass());
@@ -885,7 +1014,7 @@ public class TreeAnalyzer {
             } else if (expressionKind.equals(Tree.Kind.NEW_CLASS)) {
                 if (expressionTree instanceof JCTree.JCNewClass) {
                     final JCTree.JCNewClass newClass = (JCTree.JCNewClass) expressionTree;
-                    this.analyzeParsedTree(newClass, src, endPosTable);
+                    this.analyzeParsedTree(context, newClass);
                 } else {
                     log.warn("NEW_CLASS expressionKind:{} tree:{}", expressionKind, expressionTree.getClass());
                 }
@@ -895,7 +1024,7 @@ public class TreeAnalyzer {
                     final List<? extends JCTree> errorTrees = erroneous.getErrorTrees();
                     if (errorTrees != null) {
                         errorTrees.forEach(wrapIOConsumer(tree -> {
-                            this.analyzeParsedTree(tree, src, endPosTable);
+                            this.analyzeParsedTree(context, tree);
                         }));
                     }
                 }
@@ -909,11 +1038,12 @@ public class TreeAnalyzer {
         }));
     }
 
-    private void analyzeFieldAccess(final JCTree.JCFieldAccess fieldAccess, final Source src, final EndPosTable endPosTable, final int preferredPos, final int endPos) throws IOException {
+    private void analyzeFieldAccess(final SourceContext context, final JCTree.JCFieldAccess fieldAccess, final int preferredPos, final int endPos) throws IOException {
 
+        final Source src = context.getSource();
         final Symbol sym = fieldAccess.sym;
         final JCTree.JCExpression selected = fieldAccess.getExpression();
-        this.analyzeParsedTree(selected, src, endPosTable);
+        this.analyzeParsedTree(context, selected);
 
         final String selectScope = selected.toString();
         final Name identifier = fieldAccess.getIdentifier();
@@ -941,6 +1071,7 @@ public class TreeAnalyzer {
             if (sym.type != null) {
                 this.getTypeString(src, sym.type).ifPresent(fqcn -> {
                     fa.returnType = this.markFQCN(src, fqcn);
+                    context.setParameterFQCN(fa.returnType);
                 });
             }
             src.getCurrentScope().ifPresent(scope -> {
@@ -958,6 +1089,7 @@ public class TreeAnalyzer {
             if (sym.type != null) {
                 this.getTypeString(src, sym.type).ifPresent(fqcn -> {
                     methodCall.returnType = this.markFQCN(src, fqcn);
+                    context.setParameterFQCN(methodCall.returnType);
                 });
             }
             src.getCurrentScope().ifPresent(scope -> {
@@ -984,6 +1116,7 @@ public class TreeAnalyzer {
             if (sym.type != null) {
                 this.getTypeString(src, sym.type).ifPresent(fqcn -> {
                     fa.returnType = this.markFQCN(src, fqcn);
+                    context.setParameterFQCN(fa.returnType);
                 });
             }
             src.getCurrentScope().ifPresent(scope -> {
@@ -1013,31 +1146,16 @@ public class TreeAnalyzer {
         } else {
             log.warn("other kind:{}", kind);
         }
-
     }
 
-    private void analyzeClassDecl(JCTree.JCClassDecl tree, Source src, EndPosTable endPosTable, int startPos, int endPos) throws IOException {
+    private void analyzeClassDecl(final SourceContext context, final JCTree.JCClassDecl classDecl, int startPos, int endPos) throws IOException {
         // innerClass
-        final JCTree.JCClassDecl classDecl = tree;
+        final Source src = context.getSource();
         final Range range = Range.create(src, startPos, endPos);
         final Name simpleName = classDecl.getSimpleName();
 
         final JCTree.JCModifiers modifiers = classDecl.getModifiers();
-        if (modifiers != null) {
-            final List<JCTree.JCAnnotation> annotations = modifiers.getAnnotations();
-            if (annotations != null) {
-                annotations.forEach(wrapIOConsumer(jcAnnotation -> {
-                    final JCTree annotationType = jcAnnotation.getAnnotationType();
-                    this.analyzeParsedTree(annotationType, src, endPosTable);
-                    final List<JCTree.JCExpression> arguments = jcAnnotation.getArguments();
-                    if (arguments != null) {
-                        arguments.forEach(wrapIOConsumer(jcExpression -> {
-                            this.analyzeParsedTree(jcExpression, src, endPosTable);
-                        }));
-                    }
-                }));
-            }
-        }
+        parseModifiers(context, modifiers);
         src.getCurrentClass().ifPresent(parent -> {
             final String parentName = parent.name;
             final String fqcn = parentName + ClassNameUtils.INNER_MARK + simpleName;
@@ -1047,18 +1165,36 @@ public class TreeAnalyzer {
             log.trace("maybe inner class={}", classScope);
             parent.startClass(classScope);
             classDecl.getMembers().forEach(wrapIOConsumer(tree1 -> {
-                this.analyzeParsedTree(tree1, src, endPosTable);
+                this.analyzeParsedTree(context, tree1);
             }));
             parent.endClass();
         });
     }
 
-    private void parseIdent(final JCTree.JCIdent ident, final Source src, final int preferredPos, final int endPos) throws IOException {
+    private void parseModifiers(SourceContext context, JCTree.JCModifiers modifiers) {
+        if (modifiers != null) {
+            final List<JCTree.JCAnnotation> annotations = modifiers.getAnnotations();
+            if (annotations != null) {
+                annotations.forEach(wrapIOConsumer(jcAnnotation -> {
+                    final JCTree annotationType = jcAnnotation.getAnnotationType();
+                    this.analyzeParsedTree(context, annotationType);
+                    final List<JCTree.JCExpression> arguments = jcAnnotation.getArguments();
+                    if (arguments != null) {
+                        arguments.forEach(wrapIOConsumer(jcExpression -> {
+                            this.analyzeParsedTree(context, jcExpression);
+                        }));
+                    }
+                }));
+            }
+        }
+    }
+
+    private void analyzeIdent(final SourceContext context, final JCTree.JCIdent ident, final int preferredPos, final int endPos) throws IOException {
         if (endPos == -1) {
             return;
         }
         final Symbol sym = ident.sym;
-
+        final Source src = context.getSource();
         final Range range = Range.create(src, preferredPos, endPos);
         if (sym != null) {
             final Type type = sym.asType();
@@ -1068,6 +1204,7 @@ public class TreeAnalyzer {
 
             this.getTypeString(src, type).ifPresent(fqcn -> {
                 variable.fqcn = this.markFQCN(src, fqcn);
+                context.setParameterFQCN(variable.fqcn);
             });
 
             src.getCurrentScope().ifPresent(scope -> scope.addVariable(variable));
@@ -1080,6 +1217,7 @@ public class TreeAnalyzer {
                 final String className = currentClass.get().name;
                 if (ClassNameUtils.getSimpleName(className).equals(nm)) {
                     variable.fqcn = this.markFQCN(src, className);
+                    context.setParameterFQCN(variable.fqcn);
                     src.getCurrentScope().ifPresent(scope -> scope.addVariable(variable));
                     return;
                 }
@@ -1087,6 +1225,7 @@ public class TreeAnalyzer {
 
             if (src.importClass.containsKey(nm)) {
                 variable.fqcn = this.markFQCN(src, src.importClass.get(nm));
+                context.setParameterFQCN(variable.fqcn);
                 src.getCurrentScope().ifPresent(scope -> scope.addVariable(variable));
                 return;
             }
@@ -1095,6 +1234,7 @@ public class TreeAnalyzer {
                 final String className = currentClass.get().name;
                 if (ClassNameUtils.getSimpleName(className).equals(nm)) {
                     variable.fqcn = this.markFQCN(src, className);
+                    context.setParameterFQCN(variable.fqcn);
                     src.getCurrentScope().ifPresent(scope -> scope.addVariable(variable));
                 }
             });
@@ -1103,25 +1243,12 @@ public class TreeAnalyzer {
         }
     }
 
-    private void analyzeMethodDecl(final JCTree.JCMethodDecl md, final Source src, final int preferredPos, final int endPos, final EndPosTable endPosTable) throws IOException {
+    private void analyzeMethodDecl(final SourceContext context, final JCTree.JCMethodDecl md, final int preferredPos, final int endPos) throws IOException {
+
+        final Source src = context.getSource();
         final String name = md.getName().toString();
         final JCTree.JCModifiers modifiers = md.getModifiers();
-        if (modifiers != null) {
-            final List<JCTree.JCAnnotation> annotations = modifiers.getAnnotations();
-            if (annotations != null) {
-                annotations.forEach(wrapIOConsumer(jcAnnotation -> {
-                    final JCTree annotationType = jcAnnotation.getAnnotationType();
-                    this.analyzeParsedTree(annotationType, src, endPosTable);
-                    final List<JCTree.JCExpression> arguments = jcAnnotation.getArguments();
-                    if (arguments != null) {
-                        arguments.forEach(wrapIOConsumer(jcExpression -> {
-                            this.analyzeParsedTree(jcExpression, src, endPosTable);
-                        }));
-                    }
-                }));
-            }
-        }
-        // TODO length or bytes ?
+        parseModifiers(context, modifiers);
         final Range nameRange = Range.create(src, preferredPos, preferredPos + name.length());
         final Range range = Range.create(src, preferredPos, endPos);
 
@@ -1161,10 +1288,10 @@ public class TreeAnalyzer {
             // check method parameter
             md.getParameters().forEach(wrapIOConsumer(vd -> {
                 try {
-                    src.isParameter = true;
-                    this.analyzeParsedTree(vd, src, endPosTable);
+                    context.setParameter(true);
+                    this.analyzeParsedTree(context, vd);
                 } finally {
-                    src.isParameter = false;
+                    context.setParameter(false);
                 }
             }));
 
@@ -1178,7 +1305,7 @@ public class TreeAnalyzer {
             final JCTree.JCBlock body = md.getBody();
             // parse body
             if (body != null) {
-                this.analyzeParsedTree(body, src, endPosTable);
+                this.analyzeParsedTree(context, body);
             }
             classScope.endMethod();
 
@@ -1186,134 +1313,15 @@ public class TreeAnalyzer {
 
     }
 
-    private Optional<String> getExpressionType(final Source src, final JCTree.JCExpression e) {
-        if (e instanceof JCTree.JCFieldAccess) {
-            final JCTree.JCFieldAccess fieldAccess = (JCTree.JCFieldAccess) e;
-            final Symbol sym = fieldAccess.sym;
-            if (sym != null) {
-                final com.sun.tools.javac.util.Name name = sym.flatName();
-                return Optional.of(name.toString());
-            }
-            return Optional.empty();
-        } else if (e instanceof JCTree.JCWildcard) {
-            final JCTree.JCWildcard wildcard = (JCTree.JCWildcard) e;
-            final Type type = wildcard.type;
-            final Type.WildcardType wildcardType = (Type.WildcardType) type;
-            if (wildcardType != null && wildcardType.type != null) {
-                if (wildcardType.kind.toString().equals("?")) {
-                    final String s = wildcardType.type.tsym.flatName().toString();
-                    return Optional.of(s);
-                }
-                final String s = wildcardType.kind.toString() + wildcardType.type.tsym.flatName().toString();
-                return Optional.of(s);
-            }
-            return Optional.empty();
-        } else if (e instanceof JCTree.JCArrayTypeTree) {
-            final JCTree.JCArrayTypeTree arrayTypeTree = (JCTree.JCArrayTypeTree) e;
-            final Type type = arrayTypeTree.type;
-            if (type != null && type instanceof Type.ArrayType) {
-                final Type.ArrayType arrayType = (Type.ArrayType) type;
-                final String base = arrayType.getComponentType().tsym.flatName().toString();
-                return Optional.of(base + ClassNameUtils.ARRAY);
-            }
-            return Optional.empty();
-        } else {
-            final Type type = e.type;
-            String typeArgType = e.toString();
-            if (type != null) {
-                typeArgType = type.tsym.flatName().toString();
-            } else {
-                typeArgType = src.importClass.getOrDefault(typeArgType, typeArgType);
-            }
-            return Optional.ofNullable(typeArgType);
-        }
-    }
-
-    private String resolveTypeFromImport(final Source src, final JCTree tree) {
-
-        if (tree instanceof JCTree.JCTypeApply) {
-            final JCTree.JCTypeApply typeApply = (JCTree.JCTypeApply) tree;
-            final Type type = typeApply.type;
-            String methodReturn;
-            if (type != null) {
-                methodReturn = type.tsym.flatName().toString();
-            } else {
-                final String clazz = typeApply.getType().toString();
-                methodReturn = src.importClass.getOrDefault(clazz, clazz);
-            }
-
-            final List<JCTree.JCExpression> typeArguments = typeApply.getTypeArguments();
-            if (typeArguments != null) {
-                final java.util.List<String> temp = new ArrayList<>();
-                for (final JCTree.JCExpression e : typeArguments) {
-                    getExpressionType(src, e).ifPresent(temp::add);
-                }
-                final String join = Joiner.on(",").join(temp);
-                if (!join.isEmpty()) {
-                    methodReturn = methodReturn + "<" + join + ">";
-                }
-            }
-            return methodReturn;
-        } else if (tree instanceof JCTree.JCFieldAccess) {
-            final JCTree.JCFieldAccess fieldAccess = (JCTree.JCFieldAccess) tree;
-            final Symbol sym = fieldAccess.sym;
-            if (sym != null) {
-                return sym.flatName().toString();
-            }
-            return tree.toString();
-        } else if (tree instanceof JCTree.JCIdent) {
-            final Symbol sym = ((JCTree.JCIdent) tree).sym;
-            if (sym != null && sym.asType() != null) {
-                final Type type = sym.asType();
-                if (type instanceof Type.CapturedType) {
-                    final Type upperBound = type.getUpperBound();
-                    if (upperBound != null) {
-                        return upperBound.tsym.flatName().toString();
-                    }
-                } else {
-                    return type.tsym.flatName().toString();
-                }
-            }
-            final String ident = tree.toString();
-            return src.importClass.getOrDefault(ident, ident);
-        } else if (tree instanceof JCTree.JCPrimitiveTypeTree) {
-            return tree.toString();
-        } else if (tree instanceof JCTree.JCArrayTypeTree) {
-            final JCTree.JCArrayTypeTree arrayTypeTree = (JCTree.JCArrayTypeTree) tree;
-            final JCTree type = arrayTypeTree.getType();
-            if (type != null) {
-                final String k = type.toString();
-                return src.importClass.getOrDefault(k, k) + "[]";
-            }
-        } else {
-            log.warn("tree={} {}", tree, tree.getClass());
-        }
-        return tree.toString();
-    }
-
-    private void analyzeVariableDecl(final JCTree.JCVariableDecl vd, final Source src, final int preferredPos, final int endPos, final EndPosTable endPosTable) {
-
+    private void analyzeVariableDecl(final SourceContext context, final JCTree.JCVariableDecl vd, final int preferredPos, final int endPos) {
+        final Source src = context.getSource();
         final Name name = vd.getName();
         final JCTree.JCExpression initializer = vd.getInitializer();
         final JCTree.JCExpression nameExpression = vd.getNameExpression();
         final JCTree typeTree = vd.getType();
         final JCTree.JCModifiers modifiers = vd.getModifiers();
 
-        if (modifiers != null) {
-            final List<JCTree.JCAnnotation> annotations = modifiers.getAnnotations();
-            if (annotations != null) {
-                annotations.forEach(wrapIOConsumer(jcAnnotation -> {
-                    final JCTree annotationType = jcAnnotation.getAnnotationType();
-                    this.analyzeParsedTree(annotationType, src, endPosTable);
-                    final List<JCTree.JCExpression> arguments = jcAnnotation.getArguments();
-                    if (arguments != null) {
-                        arguments.forEach(wrapIOConsumer(jcExpression -> {
-                            this.analyzeParsedTree(jcExpression, src, endPosTable);
-                        }));
-                    }
-                }));
-            }
-        }
+        parseModifiers(context, modifiers);
 
         if (initializer != null || nameExpression != null) {
             log.trace("init={} name={} tree={}", initializer, nameExpression, typeTree);
@@ -1345,7 +1353,7 @@ public class TreeAnalyzer {
                     if (vd.getTag().equals(JCTree.Tag.VARDEF)) {
                         variable.def = true;
                     }
-                    if (src.isParameter) {
+                    if (context.isParameter()) {
                         variable.parameter = true;
                     }
 
@@ -1365,7 +1373,7 @@ public class TreeAnalyzer {
                                 }
                             }
                         } else {
-                            final String fqcn = this.resolveTypeFromImport(src, expression);
+                            final String fqcn = resolveTypeFromImport(src, expression);
                             variable.fqcn = this.markFQCN(src, fqcn);
                         }
                     } else {
@@ -1373,11 +1381,23 @@ public class TreeAnalyzer {
                             log.warn("unknown typeTree class expression={} {}", typeTree, src.filePath);
                         }
                     }
-
-                    src.getCurrentScope().ifPresent(scope -> scope.addVariable(variable));
+                    src.getCurrentScope().ifPresent(scope -> {
+                        if (variable.parameter) {
+                            Scope parent = scope;
+                            if (scope instanceof ExpressionScope) {
+                                final ExpressionScope expressionScope1 = (ExpressionScope) scope;
+                                parent = expressionScope1.parent;
+                            }
+                            if (parent instanceof MethodScope) {
+                                final MethodScope methodScope = (MethodScope) parent;
+                                methodScope.addMethodParameter(variable.fqcn);
+                            }
+                        }
+                        scope.addVariable(variable);
+                    });
 
                     if (initializer != null) {
-                        this.analyzeParsedTree(initializer, src, endPosTable);
+                        this.analyzeParsedTree(context, initializer);
                     }
                 } finally {
                     blockScope.endExpression();
@@ -1387,23 +1407,22 @@ public class TreeAnalyzer {
     }
 
 
-    public Map<File, Source> analyze(final Iterable<? extends CompilationUnitTree> parsed, final Set<File> errorFiles) {
-        final Map<File, Source> analyzedMap = new ConcurrentHashMap<>();
-
+    public Map<File, Source> analyze(final Iterable<? extends CompilationUnitTree> parsed, final int size, final Set<File> errorFiles) {
+        final Map<File, Source> analyzeMap = new ConcurrentHashMap<>(size);
         if (log.isDebugEnabled()) {
             parsed.forEach(wrapIOConsumer(cut -> {
-                this.analyzeUnit(analyzedMap, cut, errorFiles);
+                this.analyzeUnit(analyzeMap, cut, errorFiles);
             }));
         } else {
             StreamSupport.stream(parsed.spliterator(), true).forEach(wrapIOConsumer(cut -> {
-                this.analyzeUnit(analyzedMap, cut, errorFiles);
+                this.analyzeUnit(analyzeMap, cut, errorFiles);
             }));
         }
 
-        return analyzedMap;
+        return analyzeMap;
     }
 
-    private void analyzeUnit(final Map<File, Source> analyzedMap, final CompilationUnitTree cut, final Set<File> errorFiles) throws IOException {
+    private void analyzeUnit(final Map<File, Source> analyzeMap, final CompilationUnitTree cut, final Set<File> errorFiles) throws IOException {
         final URI uri = cut.getSourceFile().toUri();
         final File file = new File(uri.normalize());
         final String path = file.getCanonicalPath();
@@ -1413,10 +1432,11 @@ public class TreeAnalyzer {
         if (errorFiles.contains(file)) {
             source.hasCompileError = true;
         }
+        final SourceContext context = new SourceContext(source);
         final EntryMessage entryMessage = log.traceEntry("---------- analyze file:{} ----------", file);
-        this.analyzeCompilationUnitTree(cut, source);
+        this.analyzeCompilationUnitTree(context, cut);
         log.traceExit(entryMessage);
-        analyzedMap.put(file, source);
+        analyzeMap.put(file, source);
     }
 
 

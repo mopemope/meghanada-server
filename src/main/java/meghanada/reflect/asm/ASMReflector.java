@@ -43,7 +43,7 @@ public class ASMReflector {
     };
     private static Logger log = LogManager.getLogger(ASMReflector.class);
     private static ASMReflector asmReflector;
-    private Set<String> allowClass = new HashSet<>();
+    private Set<String> allowClass = new HashSet<>(8);
 
     private ASMReflector() {
         Config.load()
@@ -84,7 +84,7 @@ public class ASMReflector {
     }
 
     public static String toModifier(final int access, final boolean hasDefault) {
-        StringBuilder sb = new StringBuilder();
+        StringBuilder sb = new StringBuilder(7);
         if ((Opcodes.ACC_PRIVATE & access) > 0) {
             sb.append("private ");
         }

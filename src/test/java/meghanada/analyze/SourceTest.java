@@ -56,7 +56,7 @@ public class SourceTest extends GradleTestBase {
 
     @Test
     public void testOptimizeImports1() throws Exception {
-        final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8", project.getSourceDirectories());
+        final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8");
         final String cp = getClasspath();
 
         List<File> files = new ArrayList<>();
@@ -79,7 +79,7 @@ public class SourceTest extends GradleTestBase {
 
     @Test
     public void tesMissingImports1() throws Exception {
-        final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8", project.getSourceDirectories());
+        final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8");
         final String cp = getClasspath();
 
         List<File> files = new ArrayList<>();
@@ -101,7 +101,7 @@ public class SourceTest extends GradleTestBase {
 
     @Test
     public void tesMissingImports2() throws Exception {
-        final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8", project.getSourceDirectories());
+        final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8");
         final String cp = getClasspath();
 
         List<File> files = new ArrayList<>();

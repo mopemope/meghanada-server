@@ -27,7 +27,7 @@ public class JavaAnalyzer {
     private String compileSource = "1.8";
     private String compileTarget = "1.8";
 
-    public JavaAnalyzer(final String compileSource, final String compileTarget, final Set<File> sourceRoots) {
+    public JavaAnalyzer(final String compileSource, final String compileTarget) {
         this.compileSource = compileSource;
         this.compileTarget = compileTarget;
         log.debug("Compiler settings compileSource:{} compileTarget:{}", this.compileSource, this.compileTarget);
@@ -36,7 +36,7 @@ public class JavaAnalyzer {
     public CompileResult analyzeAndCompile(final List<File> files, final String classpath, final String out) throws IOException {
 
         if (files == null || files.isEmpty()) {
-            final Map<File, Source> analyzedMap = new HashMap<>();
+            final Map<File, Source> analyzedMap = new HashMap<>(0);
             log.debug("compile targets is empty");
             return new CompileResult(true, analyzedMap);
         }
@@ -80,7 +80,7 @@ public class JavaAnalyzer {
             final List<Diagnostic<? extends JavaFileObject>> diagnostics = diagnosticCollector.getDiagnostics();
             final Set<File> errorFiles = this.getErrorFiles(diagnostics);
 
-            final Map<File, Source> analyzedMap = treeAnalyzer.analyze(parsedIter, errorFiles);
+            final Map<File, Source> analyzedMap = treeAnalyzer.analyze(parsedIter, compileFiles.size(), errorFiles);
 
             if (!Config.load().useExternalBuilder()) {
                 final Iterable<? extends JavaFileObject> generate = javacTask.generate();
@@ -91,7 +91,7 @@ public class JavaAnalyzer {
     }
 
     private Set<File> getErrorFiles(final List<Diagnostic<? extends JavaFileObject>> diagnostics) {
-        final Set<File> temp = Collections.newSetFromMap(new ConcurrentHashMap<File, Boolean>());
+        final Set<File> temp = Collections.newSetFromMap(new ConcurrentHashMap<File, Boolean>(diagnostics.size()));
         diagnostics.forEach(diagnostic -> {
             final Diagnostic.Kind kind = diagnostic.getKind();
             final JavaFileObject fileObject = diagnostic.getSource();

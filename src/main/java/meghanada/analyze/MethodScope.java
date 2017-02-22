@@ -1,9 +1,12 @@
 package meghanada.analyze;
 
+import com.google.common.base.MoreObjects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.message.EntryMessage;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 public class MethodScope extends BlockScope {
@@ -14,6 +17,7 @@ public class MethodScope extends BlockScope {
     public Range nameRange;
     public boolean isConstructor;
     public String returnType;
+    public List<String> parameters = new ArrayList<>(3);
 
     public MethodScope() {
 
@@ -30,6 +34,9 @@ public class MethodScope extends BlockScope {
         this.isConstructor = isConstructor;
     }
 
+    public void addMethodParameter(final String fqcn) {
+        this.parameters.add(fqcn);
+    }
 
     @Override
     public void dumpVariable() {
@@ -71,10 +78,11 @@ public class MethodScope extends BlockScope {
 
     @Override
     public void dump() {
-        final EntryMessage entryMessage = log.traceEntry("**** {} {} return {}",
+        final EntryMessage entryMessage = log.traceEntry("**** {} {} return {} parameter {}",
                 this.getScopeType(),
                 this.name,
-                this.returnType);
+                this.returnType,
+                this.parameters);
         super.dumpVariable(log);
 
         for (final ExpressionScope expressionScope : this.expressions) {
@@ -117,5 +125,16 @@ public class MethodScope extends BlockScope {
             declaratorMap.putAll(es.getDeclaratorMap());
         }
         return declaratorMap;
+    }
+
+    @Override
+    public String toString() {
+        return MoreObjects.toStringHelper(this)
+                .add("name", name)
+                .add("nameRange", nameRange)
+                .add("isConstructor", isConstructor)
+                .add("returnType", returnType)
+                .add("parameters", parameters)
+                .toString();
     }
 }

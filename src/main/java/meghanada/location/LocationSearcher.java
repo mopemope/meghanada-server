@@ -6,6 +6,7 @@ import meghanada.cache.GlobalCache;
 import meghanada.project.Project;
 import meghanada.reflect.ClassIndex;
 import meghanada.reflect.asm.CachedASMReflector;
+import meghanada.utils.ClassNameUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.message.EntryMessage;
@@ -18,7 +19,7 @@ import java.util.concurrent.ExecutionException;
 
 public class LocationSearcher {
 
-    private static Logger log = LogManager.getLogger(LocationSearcher.class);
+    private static final Logger log = LogManager.getLogger(LocationSearcher.class);
     private final List<LocationSearchFunction> locationSearchFunctions;
     private Project project;
 
@@ -28,8 +29,16 @@ public class LocationSearcher {
         this.project = project;
     }
 
-    public Project getProject() {
-        return project;
+    private static Optional<File> existsFQCN(final Set<File> roots, final String fqcn) {
+        return roots.stream()
+                .map(root -> toFile(root, fqcn))
+                .filter(File::exists)
+                .findFirst();
+    }
+
+    private static File toFile(final File root, final String fqcn) {
+        final String path = ClassNameUtils.replace(fqcn, ".", File.separator) + ".java";
+        return new File(root, path);
     }
 
     public void setProject(Project project) {
@@ -38,7 +47,7 @@ public class LocationSearcher {
 
     private Source getSource(final File file) throws IOException, ExecutionException {
         final GlobalCache globalCache = GlobalCache.getInstance();
-        return globalCache.getSource(this.getProject(), file.getCanonicalFile());
+        return globalCache.getSource(project, file.getCanonicalFile());
     }
 
     public Location searchDeclaration(final File file, final int line, final int column, final String symbol) throws ExecutionException, IOException {
@@ -67,9 +76,10 @@ public class LocationSearcher {
 
         final Location result = methodCall.flatMap(mc -> {
             final String methodName = mc.name;
+            final List<String> arguments = mc.arguments;
             final String fqcn = mc.declaringClass;
 
-            List<String> searchTargets = new ArrayList<>();
+            List<String> searchTargets = new ArrayList<>(2);
             searchTargets.add(fqcn);
             final Map<String, ClassIndex> globalClassIndex = CachedASMReflector.getInstance().getGlobalClassIndex();
             if (globalClassIndex.containsKey(fqcn)) {
@@ -78,15 +88,24 @@ public class LocationSearcher {
             }
 
             for (final String targetFqcn : searchTargets) {
-                final Optional<Location> location = existsFQCN(this.getProject().getAllSources(), targetFqcn).flatMap(f -> {
+                final Optional<Location> location = existsFQCN(project.getAllSources(), targetFqcn).flatMap(f -> {
                     try {
                         final Source declaringClassSrc = this.getSource(f);
                         final String path = declaringClassSrc.getFile().getPath();
                         return declaringClassSrc.getClassScopes()
                                 .stream()
                                 .flatMap(ts -> ts.getScopes().stream())
-                                .filter(bs -> methodName.equals(bs.getName()))
-                                .filter(bs -> bs instanceof MethodScope)
+                                .filter(bs -> {
+                                    if (!methodName.equals(bs.getName())) {
+                                        return false;
+                                    }
+                                    if (!(bs instanceof MethodScope)) {
+                                        return false;
+                                    }
+                                    final MethodScope methodScope = (MethodScope) bs;
+                                    final List<String> parameters = methodScope.parameters;
+                                    return ClassNameUtils.compareArgumentType(arguments, parameters);
+                                })
                                 .map(MethodScope.class::cast)
                                 .map(ms -> new Location(path,
                                         ms.getBeginLine(),
@@ -114,14 +133,14 @@ public class LocationSearcher {
         String fqcn = source.importClass.get(symbol);
         if (fqcn == null) {
             if (source.packageName != null) {
-                fqcn = source.packageName + "." + symbol;
+                fqcn = source.packageName + '.' + symbol;
             } else {
                 fqcn = symbol;
             }
         }
         final String searchFQCN = fqcn;
 
-        final Location location = existsFQCN(this.getProject().getAllSources(), fqcn).flatMap(f -> {
+        final Location location = existsFQCN(project.getAllSources(), fqcn).flatMap(f -> {
             try {
                 final Source declaringClassSrc = this.getSource(f);
                 final String path = declaringClassSrc.getFile().getPath();
@@ -183,7 +202,7 @@ public class LocationSearcher {
                     final String fieldName = fa.name;
                     final String fqcn = fa.declaringClass;
 
-                    final List<String> searchTargets = new ArrayList<>();
+                    final List<String> searchTargets = new ArrayList<>(2);
                     searchTargets.add(fqcn);
 
                     final Map<String, ClassIndex> globalClassIndex = CachedASMReflector.getInstance().getGlobalClassIndex();
@@ -193,17 +212,15 @@ public class LocationSearcher {
                     }
 
                     for (final String targetFqcn : searchTargets) {
-                        final Optional<Location> location = existsFQCN(this.getProject().getAllSources(), targetFqcn).flatMap(f -> {
+                        final Optional<Location> location = existsFQCN(project.getAllSources(), targetFqcn).flatMap(f -> {
                             try {
                                 final Source declaringClassSrc = this.getSource(f);
                                 final String path = declaringClassSrc.getFile().getPath();
                                 return declaringClassSrc
                                         .getClassScopes()
                                         .stream()
-                                        .map(ts -> {
-                                            return ts.getField(fieldName);
-                                        })
-                                        .filter(ns -> ns != null)
+                                        .map(ts -> ts.getField(fieldName))
+                                        .filter(Objects::nonNull)
                                         .map(ns -> new Location(path,
                                                 ns.range.begin.line,
                                                 ns.range.begin.column))
@@ -220,17 +237,5 @@ public class LocationSearcher {
                 }).orElse(null);
         log.traceExit(entryMessage);
         return location1;
-    }
-
-    private Optional<File> existsFQCN(final Set<File> roots, final String fqcn) {
-        return roots.stream()
-                .map(root -> toFile(root, fqcn))
-                .filter(File::exists)
-                .findFirst();
-    }
-
-    private File toFile(final File root, final String fqcn) {
-        final String path = fqcn.replace(".", File.separator) + ".java";
-        return new File(root, path);
     }
 }

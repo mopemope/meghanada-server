@@ -1,8 +1,12 @@
 package meghanada.analyze;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class MethodCall extends AccessSymbol {
 
     public Range nameRange;
+    public List<String> arguments = new ArrayList<>(0);
 
     public MethodCall() {
         super();

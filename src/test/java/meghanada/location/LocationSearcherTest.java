@@ -116,8 +116,32 @@ public class LocationSearcherTest extends GradleTestBase {
             Location result = locationSearcher.searchDeclaration(f, 415, 24, "searchMissingImport");
             assertNotNull(result);
             assertTrue(result.getPath().contains("Source.java"));
-            assertEquals(289, result.getLine());
+            assertEquals(288, result.getLine());
             assertEquals(38, result.getColumn());
+        }
+    }
+
+    @Test
+    public void testJumpMethod3() throws Exception {
+        File f = new File("./src/test/java/meghanada/Overload1.java").getCanonicalFile();
+        assert f.exists();
+
+        LocationSearcher locationSearcher = getSearcher();
+        {
+            // return source.searchMissingImport();
+            Location result = locationSearcher.searchDeclaration(f, 22, 9, "over");
+            assertNotNull(result);
+            assertTrue(result.getPath().contains("Overload1.java"));
+            assertEquals(16, result.getLine());
+            assertEquals(17, result.getColumn());
+        }
+        {
+            // return source.searchMissingImport();
+            Location result = locationSearcher.searchDeclaration(f, 25, 9, "over");
+            assertNotNull(result);
+            assertTrue(result.getPath().contains("Overload1.java"));
+            assertEquals(12, result.getLine());
+            assertEquals(17, result.getColumn());
         }
     }
 

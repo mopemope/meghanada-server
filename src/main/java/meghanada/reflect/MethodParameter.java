@@ -3,11 +3,7 @@ package meghanada.reflect;
 import com.google.common.base.MoreObjects;
 import meghanada.utils.ClassNameUtils;
 
-import java.io.Serializable;
-
-public class MethodParameter implements Serializable {
-
-    private static final long serialVersionUID = -8745173932685379688L;
+public class MethodParameter {
 
     public String type;
     public String name;

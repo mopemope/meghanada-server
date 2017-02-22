@@ -482,13 +482,6 @@ public class Session {
         return file;
     }
 
-    private File normalizeFile(File file) {
-        if (!file.isAbsolute()) {
-            file = new File(getCurrentProject().getProjectRoot(), file.getPath());
-        }
-        return file;
-    }
-
     public InputStream runJUnit(String test) throws IOException {
         return getCurrentProject().runJUnit(test);
     }

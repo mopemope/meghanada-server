@@ -1,8 +1,6 @@
 package meghanada.utils;
 
 import com.google.common.base.MoreObjects;
-import com.google.common.collect.BiMap;
-import meghanada.reflect.asm.CachedASMReflector;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -17,43 +15,13 @@ public final class ClassName {
 
     public ClassName(String name) {
         this.rawName = ClassNameUtils.vaArgsToArray(name);
-        this.typeIndex = this.rawName.indexOf("<");
-        this.typeLastIndex = this.rawName.lastIndexOf(">");
-        this.arrayIndex = this.rawName.indexOf("[");
+        this.typeIndex = this.rawName.indexOf('<');
+        this.typeLastIndex = this.rawName.lastIndexOf('>');
+        this.arrayIndex = this.rawName.indexOf('[');
     }
 
     public boolean hasTypeParameter() {
         return this.typeIndex > 0;
-    }
-
-    public String toFQCN(String ownPkg, BiMap<String, String> classes) {
-
-        final CachedASMReflector cachedASMReflector = CachedASMReflector.getInstance();
-        final String name = this.getName();
-
-        if (cachedASMReflector.containsFQCN(name)) {
-            return rawName;
-        }
-
-        if (classes != null && classes.containsKey(name)) {
-            return this.addTypeParameters(classes.get(name));
-        }
-
-        {
-            if (ownPkg != null) {
-                final String result = cachedASMReflector.classNameToFQCN(ownPkg + '.' + name);
-                if (result != null) {
-                    return this.addTypeParameters(result);
-                }
-            }
-        }
-
-        // full search
-        final String result = cachedASMReflector.classNameToFQCN(name);
-        if (result != null) {
-            return this.addTypeParameters(result);
-        }
-        return null;
     }
 
     public String getName() {
@@ -64,19 +32,9 @@ public final class ClassName {
             name = fst + sec;
         }
 
-        int arrayIndex = name.indexOf("[");
+        int arrayIndex = name.indexOf('[');
         if (arrayIndex >= 0) {
             name = name.substring(0, arrayIndex);
-        }
-        return name;
-    }
-
-    public String addTypeParameters(String name) {
-        if (typeIndex >= 0) {
-            return name + this.rawName.substring(typeIndex);
-        }
-        if (arrayIndex >= 0) {
-            return name + this.rawName.substring(arrayIndex);
         }
         return name;
     }

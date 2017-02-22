@@ -9,7 +9,6 @@ import org.junit.Test;
 import java.io.File;
 import java.util.Set;
 
-import static meghanada.config.Config.debugIt;
 import static meghanada.config.Config.timeIt;
 
 public class GradleProjectTest {
@@ -39,7 +38,7 @@ public class GradleProjectTest {
 
     @Test
     public void testParse1() throws Exception {
-        final Project project = debugIt(() -> {
+        final Project project = timeIt(() -> {
             return this.project.parseProject();
         });
 

@@ -12,6 +12,7 @@ public class ExpressionScope extends Scope {
 
     public AccessSymbol expressionReturn;
     public boolean isField;
+    public Scope parent;
 
     public ExpressionScope() {
 
@@ -19,7 +20,6 @@ public class ExpressionScope extends Scope {
 
     public ExpressionScope(final int pos, final Range range) {
         super(pos, range);
-
     }
 
     @Override

@@ -33,9 +33,8 @@ public class Source {
     public String filePath;
     public String packageName;
     public List<LineRange> lineRange;
-    // temp flag
-    public boolean isParameter;
 
+    // temp flag
     public boolean hasCompileError;
 
     public Source() {
@@ -95,7 +94,7 @@ public class Source {
             return this.lineRange;
         }
         int last = 1;
-        final List<LineRange> list = new ArrayList<>();
+        final List<LineRange> list = new ArrayList<>(32);
         try (BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(file), Charset.forName("UTF-8")))) {
             String s;
             while ((s = br.readLine()) != null) {
@@ -262,7 +261,7 @@ public class Source {
     }
 
     public List<MemberDescriptor> getAllMember() {
-        final List<MemberDescriptor> memberDescriptors = new ArrayList<>();
+        final List<MemberDescriptor> memberDescriptors = new ArrayList<>(8);
         for (final TypeScope typeScope : this.classScopes) {
             final List<MemberDescriptor> result = typeScope.getMemberDescriptors();
             if (result != null) {
@@ -287,15 +286,14 @@ public class Source {
     }
 
     public Map<String, List<String>> searchMissingImport() {
-        Map<String, String> importMap = new HashMap<>(this.importClass);
-        return this.searchMissingImport(importMap, true);
+        return this.searchMissingImport(true);
     }
 
-    private Map<String, List<String>> searchMissingImport(Map<String, String> importMap, boolean addAll) {
+    private Map<String, List<String>> searchMissingImport(boolean addAll) {
         final CachedASMReflector reflector = CachedASMReflector.getInstance();
 
         // search missing imports
-        final Map<String, List<String>> ask = new HashMap<>();
+        final Map<String, List<String>> ask = new HashMap<>(4);
 
         log.debug("unknown class size:{} classes:{}", this.unknown.size(), this.unknown);
         for (final String clazzName : this.unknown) {
@@ -348,12 +346,10 @@ public class Source {
 
         log.debug("unused:{}", this.unused);
         // remove unused
-        this.unused.forEach(k -> {
-            importMap.values().remove(k);
-        });
+        this.unused.forEach(k -> importMap.values().remove(k));
         log.debug("importMap:{}", importMap);
 
-        final Map<String, List<String>> missingImport = this.searchMissingImport(importMap, false);
+        final Map<String, List<String>> missingImport = this.searchMissingImport(false);
         log.debug("missingImport:{}", missingImport);
 
         if (missingImport.size() > 0) {
@@ -364,7 +360,7 @@ public class Source {
         // create optimize import
         // 1. count import pkg
         // 2. sort
-        final Map<String, List<String>> optimizeMap = new HashMap<>();
+        final Map<String, List<String>> optimizeMap = new HashMap<>(4);
         importMap.values()
                 .forEach(fqcn -> {
                     String pkg1 = ClassNameUtils.getPackage(fqcn);
@@ -375,7 +371,7 @@ public class Source {
                         List<String> list = optimizeMap.get(pkg1);
                         list.add(fqcn);
                     } else {
-                        List<String> list = new ArrayList<>();
+                        List<String> list = new ArrayList<>(1);
                         list.add(fqcn);
                         optimizeMap.put(pkg1, list);
                     }
@@ -386,7 +382,7 @@ public class Source {
                     if (strings.size() >= 5) {
                         final String sample = strings.get(0);
                         final String pkg = ClassNameUtils.getPackage(sample);
-                        final List<String> result = new ArrayList<>();
+                        final List<String> result = new ArrayList<>(4);
                         result.add(pkg + ".*");
                         return result;
                     }
@@ -413,10 +409,7 @@ public class Source {
             return false;
         }
         final String key = System.getProperty(REPORT_UNKNOWN_TREE);
-        if (key != null && key.equals("true")) {
-            return true;
-        }
-        return false;
+        return key != null && key.equals("true");
     }
 
 }

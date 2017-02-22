@@ -20,7 +20,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -44,10 +43,41 @@ public class MemberCacheLoader extends CacheLoader<String, List<MemberDescriptor
 
         this.cacheChecksumFile = FileUtils.getProjectDataFile(GlobalCache.COMPILE_CHECKSUM_DATA);
         if (this.cacheChecksumFile.exists()) {
-            this.cacheChecksum = new ConcurrentHashMap<>(this.readCacheChecksum(this.cacheChecksumFile));
+            this.cacheChecksum = new ConcurrentHashMap<>(MemberCacheLoader.readCacheChecksum(this.cacheChecksumFile));
         } else {
             this.cacheChecksum = new ConcurrentHashMap<>(64);
         }
+    }
+
+    private static void writeFileCache(final String fqcn, final List<MemberDescriptor> list) {
+        final CachedASMReflector reflector = CachedASMReflector.getInstance();
+        reflector.containsClassIndex(fqcn)
+                .map(wrapIO(classIndex -> {
+                    reflector.writeCache(classIndex, list);
+                    return true;
+                }))
+                .orElseGet(() -> {
+                    final String fqcn2 = ClassNameUtils.replaceInnerMark(fqcn);
+                    reflector.containsClassIndex(fqcn2)
+                            .ifPresent(wrapIOConsumer(classIndex -> {
+                                reflector.writeCache(classIndex, list);
+                            }));
+                    return true;
+                });
+
+    }
+
+    @SuppressWarnings("unchecked")
+    private static List<MemberDescriptor> loadFromCache(final File cacheFile) {
+        if (cacheFile.exists()) {
+            return GlobalCache.getInstance().readCacheFromFile(cacheFile, ArrayList.class);
+        }
+        return null;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Map<String, String> readCacheChecksum(final File inFile) {
+        return GlobalCache.getInstance().readCacheFromFile(inFile, HashMap.class);
     }
 
     @Override
@@ -104,21 +134,10 @@ public class MemberCacheLoader extends CacheLoader<String, List<MemberDescriptor
             if (file.isFile() && fileName.endsWith(".class")) {
                 final String md5sum = FileUtils.md5sum(file);
                 final String filePath = file.getCanonicalPath();
-                if (this.cacheChecksum.containsKey(filePath)) {
-                    if (this.cacheChecksum.get(filePath).equals(md5sum)) {
-                        // not modified
-                        final List<MemberDescriptor> cachedResult = this.loadFromCache(cacheFilePath);
-                        if (cachedResult != null) {
-                            return cachedResult;
-                        }
-                    } else {
-                        this.cacheChecksum.put(filePath, md5sum);
-                    }
-                } else {
-                    this.cacheChecksum.put(filePath, md5sum);
-                }
+                final List<MemberDescriptor> cachedResult = getCachedMemberDescriptors(cacheFilePath, md5sum, filePath);
+                if (cachedResult != null) return cachedResult;
             } else if (file.isFile() && fileName.endsWith(".jar") && !fileName.contains("SNAPSHOT")) {
-                final List<MemberDescriptor> cachedResult = this.loadFromCache(cacheFilePath);
+                final List<MemberDescriptor> cachedResult = MemberCacheLoader.loadFromCache(cacheFilePath);
                 if (cachedResult != null) {
                     return cachedResult;
                 }
@@ -131,19 +150,7 @@ public class MemberCacheLoader extends CacheLoader<String, List<MemberDescriptor
                 if (classFile.exists()) {
                     final String md5sum = FileUtils.md5sum(classFile);
                     final String classFilePath = classFile.getCanonicalPath();
-                    if (this.cacheChecksum.containsKey(classFilePath)) {
-                        if (this.cacheChecksum.get(classFilePath).equals(md5sum)) {
-                            // not modified
-                            final List<MemberDescriptor> cachedResult = this.loadFromCache(cacheFilePath);
-                            if (cachedResult != null) {
-                                return cachedResult;
-                            }
-                        } else {
-                            this.cacheChecksum.put(classFilePath, md5sum);
-                        }
-                    } else {
-                        this.cacheChecksum.put(classFilePath, md5sum);
-                    }
+                    return getCachedMemberDescriptors(cacheFilePath, md5sum, classFilePath);
                 } else {
                     log.warn("not exists:{}", classFile);
                 }
@@ -152,36 +159,21 @@ public class MemberCacheLoader extends CacheLoader<String, List<MemberDescriptor
         return null;
     }
 
-    private void writeFileCache(final String fqcn, final List<MemberDescriptor> list) {
-        final CachedASMReflector reflector = CachedASMReflector.getInstance();
-        final Config config = Config.load();
-        reflector.containsClassIndex(fqcn)
-                .map(wrapIO(classIndex -> {
-                    reflector.writeCache(classIndex, list);
-                    return true;
-                }))
-                .orElseGet(() -> {
-                    final String fqcn2 = ClassNameUtils.replaceInnerMark(fqcn);
-                    reflector.containsClassIndex(fqcn2)
-                            .ifPresent(wrapIOConsumer(classIndex -> {
-                                reflector.writeCache(classIndex, list);
-                            }));
-                    return true;
-                });
-
-    }
-
-    @SuppressWarnings("unchecked")
-    private List<MemberDescriptor> loadFromCache(final File cacheFile) throws FileNotFoundException {
-        if (cacheFile.exists()) {
-            return GlobalCache.getInstance().readCacheFromFile(cacheFile, ArrayList.class);
+    private List<MemberDescriptor> getCachedMemberDescriptors(final File cacheFilePath, final String md5sum, final String filePath) {
+        if (this.cacheChecksum.containsKey(filePath)) {
+            if (this.cacheChecksum.get(filePath).equals(md5sum)) {
+                // not modified
+                final List<MemberDescriptor> cachedResult = MemberCacheLoader.loadFromCache(cacheFilePath);
+                if (cachedResult != null) {
+                    return cachedResult;
+                }
+            } else {
+                this.cacheChecksum.put(filePath, md5sum);
+            }
+        } else {
+            this.cacheChecksum.put(filePath, md5sum);
         }
         return null;
-    }
-
-    @SuppressWarnings("unchecked")
-    private Map<String, String> readCacheChecksum(final File inFile) {
-        return GlobalCache.getInstance().readCacheFromFile(inFile, HashMap.class);
     }
 
     @Override
@@ -192,8 +184,9 @@ public class MemberCacheLoader extends CacheLoader<String, List<MemberDescriptor
                 cause.equals(RemovalCause.REPLACED)) {
             final String key = notification.getKey();
             final List<MemberDescriptor> value = notification.getValue();
-            this.writeFileCache(key, value);
+            MemberCacheLoader.writeFileCache(key, value);
         } else if (cause.equals(RemovalCause.EXPLICIT)) {
+
         }
     }
 }

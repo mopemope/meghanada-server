@@ -149,7 +149,7 @@ public abstract class Project {
 
     private JavaAnalyzer getJavaAnalyzer() {
         if (this.javaAnalyzer == null) {
-            this.javaAnalyzer = new JavaAnalyzer(this.compileSource, this.compileTarget, getAllSources());
+            this.javaAnalyzer = new JavaAnalyzer(this.compileSource, this.compileTarget);
         }
         return this.javaAnalyzer;
     }

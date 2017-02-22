@@ -1,6 +1,7 @@
 package meghanada.utils;
 
 import com.google.common.base.Joiner;
+import meghanada.reflect.asm.CachedASMReflector;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -72,7 +73,7 @@ public class ClassNameUtils {
     private ClassNameUtils() {
     }
 
-    public static String boxing(final String className) {
+    public static String autoBoxing(final String className) {
         if (boxMap.containsKey(className)) {
             return boxMap.get(className);
         }
@@ -80,7 +81,7 @@ public class ClassNameUtils {
     }
 
     public static boolean isPrimitive(final String className) {
-        for (String p : primitives) {
+        for (final String p : primitives) {
             if (p.equals(className)) {
                 return true;
             }
@@ -159,7 +160,7 @@ public class ClassNameUtils {
         if (name.contains("$")) {
             return Optional.of(name);
         }
-        final int sep = name.lastIndexOf(".");
+        final int sep = name.lastIndexOf('.');
         if (sep > 0) {
             return Optional.of(name.substring(0, sep) + '$' + name.substring(sep + 1));
         }
@@ -167,24 +168,24 @@ public class ClassNameUtils {
     }
 
     public static boolean hasPackage(String name) {
-        int sep = name.lastIndexOf(".");
+        int sep = name.lastIndexOf('.');
         return sep > 0;
     }
 
     public static String getSimpleName(final String fqcn) {
-        final int typeIndex = fqcn.indexOf("<");
+        final int typeIndex = fqcn.indexOf('<');
 
         String name = fqcn;
         if (typeIndex >= 0) {
             name = name.substring(0, typeIndex);
         }
 
-        int arrayIndex = name.indexOf("[");
+        int arrayIndex = name.indexOf('[');
         if (arrayIndex >= 0) {
             name = name.substring(0, arrayIndex);
         }
 
-        final int idx = name.lastIndexOf(".");
+        final int idx = name.lastIndexOf('.');
         if (idx >= 0) {
             return fqcn.substring(idx + 1, fqcn.length());
         }
@@ -192,7 +193,7 @@ public class ClassNameUtils {
     }
 
     public static String getPackage(String fqcn) {
-        int idx = fqcn.lastIndexOf(".");
+        int idx = fqcn.lastIndexOf('.');
         if (idx >= 0) {
             return fqcn.substring(0, idx);
         }
@@ -209,9 +210,9 @@ public class ClassNameUtils {
 
     public static String removeTypeParameter(String name) {
         // check type parameter
-        int tpIdx = name.indexOf("<");
+        int tpIdx = name.indexOf('<');
         if (tpIdx >= 0) {
-            final int last = name.lastIndexOf(">");
+            final int last = name.lastIndexOf('>');
             String fst = name.substring(0, tpIdx);
             String sec = name.substring(last + 1, name.length());
             name = fst + sec;
@@ -221,9 +222,9 @@ public class ClassNameUtils {
 
     public static String removeArray(String name) {
         // check array parameter
-        int idx = name.indexOf("[");
+        int idx = name.indexOf('[');
         if (idx >= 0) {
-            final int last = name.lastIndexOf("]");
+            final int last = name.lastIndexOf(']');
             String fst = name.substring(0, idx);
             String sec = name.substring(last + 1, name.length());
             name = fst + sec;
@@ -231,23 +232,8 @@ public class ClassNameUtils {
         return name;
     }
 
-    public static boolean isClassArray(String name) {
-        // check array parameter
-        int idx = name.indexOf("[");
-        return idx >= 0;
-    }
-
     public static String removeTypeAndArray(String name) {
         return removeTypeParameter(removeArray(name));
-    }
-
-    public static String getParentClass(String name) {
-        // check array parameter
-        int idx = name.indexOf(INNER_MARK);
-        if (idx >= 0) {
-            name = name.substring(0, idx);
-        }
-        return name;
     }
 
     public static List<String> parseTypeParameter(final String str) {
@@ -256,7 +242,7 @@ public class ClassNameUtils {
         }
         final List<String> result = new ArrayList<>(4);
 
-        final int idx = str.indexOf("<");
+        final int idx = str.indexOf('<');
         if (idx >= 0) {
             String gen = str.substring(idx + 1, str.length() - 1);
             int indent = 0;
@@ -325,7 +311,7 @@ public class ClassNameUtils {
 
     static String replaceTypeParameter(final String str, final Map<String, String> replaceMap) {
 
-        final int idx = str.indexOf("<");
+        final int idx = str.indexOf('<');
         StringBuilder all = new StringBuilder(64);
 
         if (idx >= 0) {
@@ -449,19 +435,19 @@ public class ClassNameUtils {
 
         final List<String> parameters = ClassNameUtils.parseTypeParameter(name);
         if (parameters.size() > 0) {
-            sb.append("<");
+            sb.append('<');
             List<String> temp = new ArrayList<>(parameters.size());
 
             for (final String s : parameters) {
                 final String simpleName = ClassNameUtils.getSimpleName(s);
-                if (simpleName.indexOf("<") > 0) {
+                if (simpleName.indexOf('<') > 0) {
                     temp.add(getAllSimpleName(simpleName));
                 } else {
                     temp.add(simpleName);
                 }
             }
             sb.append(Joiner.on(", ").join(temp));
-            sb.append(">");
+            sb.append('>');
         }
 
         return sb.toString();
@@ -473,5 +459,36 @@ public class ClassNameUtils {
             return ClassNameUtils.replaceFromMap(name, removeWildcardMap);
         }
         return name;
+    }
+
+    public static boolean compareArgumentType(final List<String> arguments, final List<String> parameters) {
+        if (arguments.size() != parameters.size()) {
+            return false;
+        }
+        final Iterator<String> iteratorA = arguments.iterator();
+        final CachedASMReflector reflector = CachedASMReflector.getInstance();
+        for (final String paramStr : parameters) {
+            final String realArgStr = iteratorA.next();
+
+            if (ClassNameUtils.isArray(paramStr) != ClassNameUtils.isArray(realArgStr)) {
+                return false;
+            }
+            final ClassName paramClass = new ClassName(paramStr);
+            final ClassName argClass = new ClassName(realArgStr);
+            final String paramClassName = autoBoxing(paramClass.getName());
+            final String argClassName = autoBoxing(argClass.getName());
+
+            if (paramClassName.equals(argClassName)) {
+                continue;
+            }
+            final boolean result = reflector.getSuperClassStream(argClassName).anyMatch(s -> {
+                final String cls = new ClassName(s).getName();
+                return cls.equals(paramClassName);
+            });
+            if (!result) {
+                return false;
+            }
+        }
+        return true;
     }
 }

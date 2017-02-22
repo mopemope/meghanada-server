@@ -1,12 +1,12 @@
 package meghanada.utils;
 
+import meghanada.Main;
 import meghanada.cache.GlobalCache;
 import meghanada.config.Config;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.message.EntryMessage;
 import org.jboss.forge.roaster.Roaster;
-import meghanada.Main;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -40,7 +40,7 @@ public final class FileUtils {
                 while (dis.read(buf) != -1) {
                 }
                 final byte[] digest = md.digest();
-                final StringBuilder sb = new StringBuilder();
+                final StringBuilder sb = new StringBuilder(128);
                 for (final int b : digest) {
                     sb.append(Character.forDigit(b >> 4 & 0xF, 16));
                     sb.append(Character.forDigit(b & 0xF, 16));
@@ -58,7 +58,7 @@ public final class FileUtils {
             parent = parent.getParentFile();
         }
 
-        final List<File> list = new ArrayList<>();
+        final List<File> list = new ArrayList<>(8);
         final File[] files = parent.listFiles();
         if (files != null) {
             for (final File file : files) {
@@ -169,7 +169,7 @@ public final class FileUtils {
             }
         });
         byte[] digest = md.digest();
-        StringBuilder sb = new StringBuilder();
+        StringBuilder sb = new StringBuilder(128);
         for (final int b : digest) {
             sb.append(Character.forDigit(b >> 4 & 0xF, 16));
             sb.append(Character.forDigit(b & 0xF, 16));
@@ -190,7 +190,7 @@ public final class FileUtils {
         if (!root.exists() && !root.mkdirs()) {
             log.warn("fail create directory={}", root);
         }
-        final String path = FileUtils.toHashedPath(settingDir + ":" + key, GlobalCache.CACHE_EXT);
+        final String path = FileUtils.toHashedPath(settingDir + ':' + key, GlobalCache.CACHE_EXT);
         return new File(root, path);
     }
 
@@ -216,7 +216,7 @@ public final class FileUtils {
             md.update(path.getBytes(UTF_8));
             md.update(Main.VERSION.getBytes(UTF_8));
             final byte[] digest = md.digest();
-            final StringBuilder sb = new StringBuilder();
+            final StringBuilder sb = new StringBuilder(128);
             for (final int b : digest) {
                 sb.append(Character.forDigit(b >> 4 & 0xF, 16));
                 sb.append(Character.forDigit(b & 0xF, 16));
@@ -266,7 +266,7 @@ public final class FileUtils {
     }
 
     public static List<File> getPackagePrivateSource(final List<File> compileFiles) {
-        final Set<File> temp = Collections.newSetFromMap(new ConcurrentHashMap<File, Boolean>());
+        final Set<File> temp = Collections.newSetFromMap(new ConcurrentHashMap<File, Boolean>(8));
 
         compileFiles.parallelStream().forEach(file -> {
             if (file.isFile()) {
