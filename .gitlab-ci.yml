@@ -1,7 +1,0 @@
-image: isuper/java-oracle:jdk_8
-test:
-  script:
-    - ./gradlew --full-stacktrace clean check shadowJar
-  artifacts:
-    paths:
-      - build/libs/meghanada*
