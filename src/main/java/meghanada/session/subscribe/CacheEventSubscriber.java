@@ -67,5 +67,6 @@ public class CacheEventSubscriber extends AbstractSubscriber {
         }
         reflector.updateClassIndexFromDirectory();
         log.info("create class index.size:{} elapsed:{}", reflector.getGlobalClassIndex().size(), stopwatch.stop());
+        log.info("Done indexing");
     }
 }
