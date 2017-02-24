@@ -301,6 +301,7 @@ public class LocationSearcher {
         }
 
         final Location type = searchLocationFromSrcZIP(context, fqcn, temp);
+        final boolean only = temp.setReadOnly();
         if (type != null) {
             return type;
         }
