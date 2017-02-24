@@ -1,5 +1,6 @@
 package meghanada.session;
 
+import com.google.common.base.Joiner;
 import meghanada.analyze.ClassScope;
 import meghanada.analyze.CompileResult;
 import meghanada.analyze.Source;
@@ -42,15 +43,15 @@ public class Session {
     private static final Pattern SWITCH_TEST_RE = Pattern.compile("Test.java", Pattern.LITERAL);
     private static final Pattern SWITCH_JAVA_RE = Pattern.compile(".java", Pattern.LITERAL);
     private final SessionEventBus sessionEventBus;
-    private Project currentProject;
+    private final Deque<Location> jumpDecHistory = new ArrayDeque<>(16);
+    private final HashMap<File, Project> projects = new HashMap<>(2);
 
+    private Project currentProject;
     private JavaCompletion completion;
     private JavaVariableCompletion variableCompletion;
     private LocationSearcher locationSearcher;
 
-    private Deque<Location> jumpDecHistory = new ArrayDeque<>(16);
     private boolean started;
-    private HashMap<File, Project> projects = new HashMap<>();
 
     private Session(final Project currentProject) {
         this.currentProject = currentProject;
@@ -146,12 +147,16 @@ public class Session {
             }
 
             Project project;
-            if (targetFile.equals(Project.GRADLE_PROJECT_FILE)) {
-                project = new GradleProject(projectRoot);
-            } else if (targetFile.equals(Project.MVN_PROJECT_FILE)) {
-                project = new MavenProject(projectRoot);
-            } else {
-                project = new MeghanadaProject(projectRoot);
+            switch (targetFile) {
+                case Project.GRADLE_PROJECT_FILE:
+                    project = new GradleProject(projectRoot);
+                    break;
+                case Project.MVN_PROJECT_FILE:
+                    project = new MavenProject(projectRoot);
+                    break;
+                default:
+                    project = new MeghanadaProject(projectRoot);
+                    break;
             }
             project.setId(id);
 
@@ -166,13 +171,18 @@ public class Session {
             System.setProperty(Project.PROJECT_ROOT_KEY, projectRootPath);
         }
     }
-    public static List<File> getSystemJars() throws IOException {
+
+    private static List<File> getSystemJars() throws IOException {
         final String javaHome = Config.load().getJavaHomeDir();
-        File jvmDir = new File(javaHome);
-        return Files.walk(jvmDir.toPath())
+        final File jvmDir = new File(javaHome);
+        final String toolsJarPath = Joiner.on(File.separator).join("..", "lib", "tools.jar");
+        final File toolsJar = new File(jvmDir, toolsJarPath);
+        final List<File> files = Files.walk(jvmDir.toPath())
                 .map(Path::toFile)
                 .filter(f -> f.getName().endsWith(".jar") && !f.getName().endsWith("policy.jar"))
                 .collect(Collectors.toList());
+        files.add(toolsJar.getCanonicalFile());
+        return files;
     }
 
     private static void writeProjectCache(final File cacheFile, final Project project) {
@@ -180,62 +190,12 @@ public class Session {
         globalCache.asyncWriteCache(cacheFile, project);
     }
 
-    private static Project readProjectCache(final File cacheFile) throws IOException {
+    private static Project readProjectCache(final File cacheFile) {
         final GlobalCache globalCache = GlobalCache.getInstance();
         return globalCache.readCacheFromFile(cacheFile, Project.class);
     }
 
-    public boolean clearCache() throws IOException {
-        this.currentProject.clearCache();
-        return true;
-    }
-
-    private boolean searchAndChangeProject(final File base) throws IOException {
-        final File projectRoot = this.findProjectRoot(base);
-
-        if (this.currentProject.getProjectRoot().equals(projectRoot)) {
-            // not change
-            return false;
-        }
-
-        if (this.projects.containsKey(projectRoot)) {
-            // loaded project
-            this.currentProject = this.projects.get(projectRoot);
-            this.getLocationSearcher().setProject(this.getCurrentProject());
-            this.getVariableCompletion().setProject(this.getCurrentProject());
-            return false;
-        }
-
-        if (currentProject instanceof GradleProject) {
-            return loadProject(projectRoot, Project.GRADLE_PROJECT_FILE).map(project -> {
-                this.currentProject = project;
-                this.projects.put(projectRoot, this.currentProject);
-                this.getLocationSearcher().setProject(this.getCurrentProject());
-                this.getVariableCompletion().setProject(this.getCurrentProject());
-                this.getCompletion().setProject(this.getCurrentProject());
-                return true;
-            }).orElse(false);
-        } else if (currentProject instanceof MavenProject) {
-            return loadProject(projectRoot, Project.MVN_PROJECT_FILE).map(project -> {
-                this.currentProject = project;
-                this.projects.put(projectRoot, this.currentProject);
-                this.getLocationSearcher().setProject(this.getCurrentProject());
-                this.getVariableCompletion().setProject(this.getCurrentProject());
-                this.getCompletion().setProject(this.getCurrentProject());
-                return true;
-            }).orElse(false);
-        }
-        return loadProject(projectRoot, Config.MEGHANADA_CONF_FILE).map(project -> {
-            this.currentProject = project;
-            this.projects.put(projectRoot, this.currentProject);
-            this.getLocationSearcher().setProject(this.getCurrentProject());
-            this.getVariableCompletion().setProject(this.getCurrentProject());
-            this.getCompletion().setProject(this.getCurrentProject());
-            return true;
-        }).orElse(false);
-    }
-
-    private File findProjectRoot(File base) throws IOException {
+    private static File findProjectRoot(File base) {
         while (true) {
 
             log.debug("finding project from '{}' ...", base);
@@ -267,7 +227,51 @@ public class Session {
         }
     }
 
-    private void setupSubscribes() throws IOException {
+    public boolean clearCache() throws IOException {
+        this.currentProject.clearCache();
+        return true;
+    }
+
+    private boolean searchAndChangeProject(final File base) throws IOException {
+        final File projectRoot = Session.findProjectRoot(base);
+
+        if (this.currentProject.getProjectRoot().equals(projectRoot)) {
+            // not change
+            return false;
+        }
+
+        if (this.projects.containsKey(projectRoot)) {
+            // loaded project
+            this.currentProject = this.projects.get(projectRoot);
+            this.getLocationSearcher().setProject(currentProject);
+            this.getVariableCompletion().setProject(currentProject);
+            return false;
+        }
+
+        if (currentProject instanceof GradleProject) {
+            return loadProject(projectRoot, Project.GRADLE_PROJECT_FILE).map(project -> {
+                return setProject(projectRoot, project);
+            }).orElse(false);
+        } else if (currentProject instanceof MavenProject) {
+            return loadProject(projectRoot, Project.MVN_PROJECT_FILE).map(project -> {
+                return setProject(projectRoot, project);
+            }).orElse(false);
+        }
+        return loadProject(projectRoot, Config.MEGHANADA_CONF_FILE).map(project -> {
+            return setProject(projectRoot, project);
+        }).orElse(false);
+    }
+
+    private Boolean setProject(File projectRoot, Project project) {
+        this.currentProject = project;
+        this.projects.put(projectRoot, this.currentProject);
+        this.getLocationSearcher().setProject(currentProject);
+        this.getVariableCompletion().setProject(currentProject);
+        this.getCompletion().setProject(currentProject);
+        return true;
+    }
+
+    private void setupSubscribes() {
         // subscribe file watch
         this.sessionEventBus.subscribeFileWatch();
         this.sessionEventBus.subscribeParse();
@@ -282,8 +286,8 @@ public class Session {
         this.setupSubscribes();
         log.debug("session start");
 
-        final Set<File> temp = new HashSet<>(this.getCurrentProject().getSourceDirectories());
-        temp.addAll(this.getCurrentProject().getTestSourceDirectories());
+        final Set<File> temp = new HashSet<>(currentProject.getSourceDirectories());
+        temp.addAll(currentProject.getTestSourceDirectories());
         this.sessionEventBus.requestWatchFiles(new ArrayList<>(temp));
 
         // load once
@@ -310,28 +314,28 @@ public class Session {
         return currentProject;
     }
 
-    public LocationSearcher getLocationSearcher() {
+    private LocationSearcher getLocationSearcher() {
         if (this.locationSearcher == null) {
-            this.locationSearcher = new LocationSearcher(this.getCurrentProject());
+            this.locationSearcher = new LocationSearcher(currentProject);
         }
         return locationSearcher;
     }
 
     private JavaCompletion getCompletion() {
         if (this.completion == null) {
-            this.completion = new JavaCompletion(this.getCurrentProject());
+            this.completion = new JavaCompletion(currentProject);
         }
         return this.completion;
     }
 
-    public JavaVariableCompletion getVariableCompletion() {
+    private JavaVariableCompletion getVariableCompletion() {
         if (this.variableCompletion == null) {
-            this.variableCompletion = new JavaVariableCompletion(this.getCurrentProject());
+            this.variableCompletion = new JavaVariableCompletion(currentProject);
         }
         return variableCompletion;
     }
 
-    public synchronized Collection<? extends CandidateUnit> completionAt(String path, int line, int column, String prefix) throws IOException, ClassNotFoundException, ExecutionException {
+    public synchronized Collection<? extends CandidateUnit> completionAt(String path, int line, int column, String prefix) {
         // java file only
         File file = normalize(path);
         if (!FileUtils.isJavaFile(file)) {
@@ -354,7 +358,7 @@ public class Session {
                 } else {
                     // load source
                     final GlobalCache globalCache = GlobalCache.getInstance();
-                    globalCache.getSource(this.getCurrentProject(), file);
+                    globalCache.getSource(currentProject, file);
                 }
                 return true;
             } catch (Exception e) {
@@ -431,7 +435,7 @@ public class Session {
             return false;
         }
         final GlobalCache globalCache = GlobalCache.getInstance();
-        globalCache.invalidateSource(this.getCurrentProject(), file);
+        globalCache.invalidateSource(currentProject, file);
         this.parseJavaSource(file);
         this.sessionEventBus.requestCreateCache(true);
         return true;
@@ -446,7 +450,7 @@ public class Session {
     }
 
     public synchronized CompileResult compileProject() throws IOException {
-        final Project project = this.getCurrentProject();
+        final Project project = currentProject;
         CompileResult result = project.compileJava(false);
         if (result.isSuccess()) {
             result = project.compileTestJava(false);
@@ -457,7 +461,7 @@ public class Session {
     }
 
     public Collection<File> getDependentJars() {
-        return getCurrentProject()
+        return currentProject
                 .getDependencies()
                 .stream()
                 .map(ProjectDependency::getFile)
@@ -465,25 +469,25 @@ public class Session {
     }
 
     public File getOutputDirectory() {
-        return getCurrentProject()
+        return currentProject
                 .getOutputDirectory();
     }
 
     public File getTestOutputDirectory() {
-        return getCurrentProject()
+        return currentProject
                 .getTestOutputDirectory();
     }
 
     private File normalize(String src) {
         File file = new File(src);
         if (!file.isAbsolute()) {
-            file = new File(getCurrentProject().getProjectRoot(), src);
+            file = new File(currentProject.getProjectRoot(), src);
         }
         return file;
     }
 
     public InputStream runJUnit(String test) throws IOException {
-        return getCurrentProject().runJUnit(test);
+        return currentProject.runJUnit(test);
     }
 
     public String switchTest(final String path) throws IOException {
@@ -540,7 +544,7 @@ public class Session {
     }
 
     String createJunitFile(String path) throws IOException, ExecutionException {
-        Project project = this.getCurrentProject();
+        Project project = currentProject;
         String root = null;
         Set<File> roots = project.getSourceDirectories();
 
@@ -556,7 +560,7 @@ public class Session {
         }
 
         String switchPath = path.substring(root.length());
-        switchPath = switchPath.replace(".java", "Test.java");
+        switchPath = SWITCH_JAVA_RE.matcher(switchPath).replaceAll(Matcher.quoteReplacement("Test.java"));
         int srcSize = project.getTestSourceDirectories().size();
         // to test
         for (File srcRoot : project.getTestSourceDirectories()) {
@@ -580,7 +584,7 @@ public class Session {
     private void createTestFile(String path, File testFile) throws IOException, ExecutionException {
         Source javaSource = this.parseJavaSource(new File(path));
         String pkg = javaSource.packageName;
-        String testName = testFile.getName().replace(".java", "");
+        String testName = SWITCH_JAVA_RE.matcher(testFile.getName()).replaceAll(Matcher.quoteReplacement(""));
 
         String sb = "package " + pkg + ";\n"
                 + "\n"
@@ -627,11 +631,11 @@ public class Session {
     }
 
     public InputStream runTask(List<String> args) throws Exception {
-        return getCurrentProject().runTask(args);
+        return currentProject.runTask(args);
     }
 
     public String formatCode(final String path) throws IOException {
-        final Project project = getCurrentProject();
+        final Project project = currentProject;
         FileUtils.formatJavaFile(project.getFormatProperties(), path);
         return path;
     }
@@ -645,29 +649,29 @@ public class Session {
             loadProject(projectRoot, Project.GRADLE_PROJECT_FILE).ifPresent(project -> {
                 this.currentProject = project;
                 this.projects.put(projectRoot, this.currentProject);
-                this.getLocationSearcher().setProject(this.getCurrentProject());
-                this.getVariableCompletion().setProject(this.getCurrentProject());
-                this.getCompletion().setProject(this.getCurrentProject());
+                this.getLocationSearcher().setProject(this.currentProject);
+                this.getVariableCompletion().setProject(this.currentProject);
+                this.getCompletion().setProject(this.currentProject);
             });
         } else if (currentProject instanceof MavenProject) {
             loadProject(projectRoot, Project.MVN_PROJECT_FILE).ifPresent(project -> {
                 this.currentProject = project;
                 this.projects.put(projectRoot, this.currentProject);
-                this.getLocationSearcher().setProject(this.getCurrentProject());
-                this.getVariableCompletion().setProject(this.getCurrentProject());
-                this.getCompletion().setProject(this.getCurrentProject());
+                this.getLocationSearcher().setProject(this.currentProject);
+                this.getVariableCompletion().setProject(this.currentProject);
+                this.getCompletion().setProject(this.currentProject);
             });
         } else {
             loadProject(projectRoot, Config.MEGHANADA_CONF_FILE).ifPresent(project -> {
                 this.currentProject = project;
                 this.projects.put(projectRoot, this.currentProject);
-                this.getLocationSearcher().setProject(this.getCurrentProject());
-                this.getVariableCompletion().setProject(this.getCurrentProject());
-                this.getCompletion().setProject(this.getCurrentProject());
+                this.getLocationSearcher().setProject(this.currentProject);
+                this.getVariableCompletion().setProject(this.currentProject);
+                this.getCompletion().setProject(this.currentProject);
             });
         }
-        final Set<File> temp = new HashSet<>(this.getCurrentProject().getSourceDirectories());
-        temp.addAll(this.getCurrentProject().getTestSourceDirectories());
+        final Set<File> temp = new HashSet<>(this.currentProject.getSourceDirectories());
+        temp.addAll(this.currentProject.getTestSourceDirectories());
         this.sessionEventBus.requestWatchFiles(new ArrayList<>(temp));
         final CachedASMReflector reflector = CachedASMReflector.getInstance();
         reflector.resetClassFileMap();
