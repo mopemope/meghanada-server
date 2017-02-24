@@ -74,7 +74,7 @@ public class SourceTest extends GradleTestBase {
         Map<String, List<String>> missingImport = debugIt(source::searchMissingImport);
         List<String> optimizeImports = debugIt(source::optimizeImports);
         assertEquals(0, missingImport.size());
-        assertEquals(8, optimizeImports.size());
+        assertEquals(12, optimizeImports.size());
     }
 
     @Test

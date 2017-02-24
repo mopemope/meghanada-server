@@ -33,9 +33,9 @@ public class TypeScope extends MethodScope {
                                    final Range nameRange,
                                    final int pos,
                                    final Range range,
-                                   final boolean isConstrucor) {
+                                   final boolean isConstructor) {
         // add method
-        final MethodScope scope = new MethodScope(name, nameRange, pos, range, isConstrucor);
+        final MethodScope scope = new MethodScope(name, nameRange, pos, range, isConstructor);
         super.startBlock(scope);
         return scope;
     }

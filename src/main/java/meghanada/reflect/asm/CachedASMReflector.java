@@ -197,10 +197,10 @@ public class CachedASMReflector {
 
         }));
 
-        this.createClassIndexFromDir();
+        this.updateClassIndexFromDirectory();
     }
 
-    public void createClassIndexFromDir() {
+    public void updateClassIndexFromDirectory() {
         this.directories.stream().parallel().forEach(wrapIOConsumer(file -> {
             if (file.getName().endsWith(".jar") && this.classFileMap.containsValue(file)) {
                 //skip cached jar
@@ -479,9 +479,13 @@ public class CachedASMReflector {
         if (this.standardClasses != null) {
             return this.standardClasses;
         }
-        this.standardClasses = new ImmutableMap.Builder<String, String>()
+        final ImmutableMap<String, String> map = new ImmutableMap.Builder<String, String>()
                 .putAll(this.getPackageClasses("java.lang"))
                 .build();
+        if (map.isEmpty()) {
+            return map;
+        }
+        this.standardClasses = map;
         return this.standardClasses;
     }
 

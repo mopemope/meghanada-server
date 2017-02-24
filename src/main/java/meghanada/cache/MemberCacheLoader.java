@@ -132,7 +132,7 @@ public class MemberCacheLoader extends CacheLoader<String, List<MemberDescriptor
         if (file.exists()) {
             final String fileName = file.getName();
             if (file.isFile() && fileName.endsWith(".class")) {
-                final String md5sum = FileUtils.md5sum(file);
+                final String md5sum = FileUtils.getChecksum(file);
                 final String filePath = file.getCanonicalPath();
                 final List<MemberDescriptor> cachedResult = getCachedMemberDescriptors(cacheFilePath, md5sum, filePath);
                 if (cachedResult != null) return cachedResult;
@@ -148,7 +148,7 @@ public class MemberCacheLoader extends CacheLoader<String, List<MemberDescriptor
                 // Dir
                 final File classFile = new File(file, ClassNameUtils.replace(fqcn, ".", File.separator) + ".class");
                 if (classFile.exists()) {
-                    final String md5sum = FileUtils.md5sum(classFile);
+                    final String md5sum = FileUtils.getChecksum(classFile);
                     final String classFilePath = classFile.getCanonicalPath();
                     return getCachedMemberDescriptors(cacheFilePath, md5sum, classFilePath);
                 } else {

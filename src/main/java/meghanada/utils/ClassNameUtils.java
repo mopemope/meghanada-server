@@ -126,6 +126,16 @@ public class ClassNameUtils {
         return sb.toString();
     }
 
+    public static String getParentClass(final String name) {
+        final ClassName className = new ClassName(name);
+        final String simpleName = className.getName();
+        final int i = simpleName.indexOf('$');
+        if (i > 0) {
+            return simpleName.substring(0, i);
+        }
+        return simpleName;
+    }
+
     public static String replaceInnerMark(final String string) {
         if (!string.contains(INNER_MARK)) {
             return string;

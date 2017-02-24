@@ -37,12 +37,7 @@ public class TreeAnalyzer {
 
     private static final Logger log = LogManager.getLogger(TreeAnalyzer.class);
 
-    private final Map<String, String> standardClasses;
-    private final CachedASMReflector cachedASMReflector;
-
     TreeAnalyzer() {
-        this.cachedASMReflector = CachedASMReflector.getInstance();
-        this.standardClasses = this.cachedASMReflector.getStandardClasses();
     }
 
     private static Optional<String> getExpressionType(final Source src, final JCTree.JCExpression e) {
@@ -158,10 +153,10 @@ public class TreeAnalyzer {
         final Variable variable = new Variable(kind.toString(), preferredPos, range);
         if (value != null) {
             variable.fqcn = value.getClass().toString();
-            context.setParameterFQCN(variable.fqcn);
+            context.setArgumentFQCN(variable.fqcn);
         } else {
             variable.fqcn = "<nulltype>";
-            context.setParameterFQCN(variable.fqcn);
+            context.setArgumentFQCN(variable.fqcn);
         }
         src.getCurrentScope().ifPresent(scope -> scope.addVariable(variable));
     }
@@ -178,13 +173,14 @@ public class TreeAnalyzer {
 
         final EndPosTable endPosTable = ((JCTree.JCCompilationUnit) cut).endPositions;
         context.setEndPosTable(endPosTable);
+        final CachedASMReflector cachedASMReflector = CachedASMReflector.getInstance();
         cut.getImports().forEach(imp -> {
 
             final String importClass = imp.getQualifiedIdentifier().toString();
             final String simpleName = ClassNameUtils.getSimpleName(importClass);
             if (simpleName.equals("*")) {
                 // wild
-                Map<String, String> symbols = this.cachedASMReflector.getPackageClasses(importClass);
+                Map<String, String> symbols = cachedASMReflector.getPackageClasses(importClass);
                 for (final String entry : symbols.values()) {
                     src.addImport(entry);
                 }
@@ -470,7 +466,6 @@ public class TreeAnalyzer {
             final JCTree.JCExpression expression = memberReference.getQualifierExpression();
             final com.sun.tools.javac.util.Name name = memberReference.getName();
             final String methodName = name.toString();
-
             if (expression != null) {
                 this.analyzeParsedTree(context, expression);
                 final Symbol sym = memberReference.sym;
@@ -479,7 +474,14 @@ public class TreeAnalyzer {
                     final int start = expression.getEndPosition(endPosTable) + 2;
                     final Range range = Range.create(src, start, start + methodName.length());
                     final String s = memberReference.toString();
+
                     final MethodCall methodCall = new MethodCall(s, methodName, preferredPos + 1, range, range);
+                    if (sym instanceof Symbol.MethodSymbol) {
+                        final Symbol.MethodSymbol methodSymbol = (Symbol.MethodSymbol) sym;
+                        methodCall.arguments = methodSymbol.getParameters().stream()
+                                .map(varSymbol -> varSymbol.asType().toString())
+                                .collect(Collectors.toList());
+                    }
                     final Symbol owner = sym.owner;
                     if (owner.type != null) {
                         this.getTypeString(src, owner.type).ifPresent(fqcn -> {
@@ -594,7 +596,7 @@ public class TreeAnalyzer {
         final Type lambdaType = lambda.type;
         if (lambdaType != null) {
             final Source src = context.getSource();
-            getTypeString(src, lambdaType).ifPresent(context::setParameterFQCN);
+            getTypeString(src, lambdaType).ifPresent(context::setArgumentFQCN);
         }
     }
 
@@ -757,7 +759,7 @@ public class TreeAnalyzer {
 
         final boolean isParameter = context.isParameter();
         final List<JCTree.JCExpression> argumentExprs = methodInvocation.getArguments();
-        final java.util.List<String> arguments = getArgmentsType(context, argumentExprs);
+        final java.util.List<String> arguments = getArgumentsType(context, argumentExprs);
         context.setParameter(isParameter);
 
         final JCTree.JCExpression methodSelect = methodInvocation.getMethodSelect();
@@ -786,7 +788,7 @@ public class TreeAnalyzer {
                     if (owner.type != null) {
                         this.getTypeString(src, owner.type).ifPresent(fqcn -> {
                             methodCall.returnType = this.markFQCN(src, fqcn);
-                            context.setParameterFQCN(methodCall.returnType);
+                            context.setArgumentFQCN(methodCall.returnType);
                         });
                     }
                     src.getCurrentScope().ifPresent(scope -> {
@@ -802,7 +804,7 @@ public class TreeAnalyzer {
                         });
                         this.getTypeString(src, returnType).ifPresent(fqcn -> {
                             methodCall.returnType = this.markFQCN(src, fqcn);
-                            context.setParameterFQCN(methodCall.returnType);
+                            context.setArgumentFQCN(methodCall.returnType);
                         });
                     }
 
@@ -858,7 +860,7 @@ public class TreeAnalyzer {
                     final String clazz = src.importClass.get(nm);
                     if (clazz != null) {
                         methodCall.returnType = this.markFQCN(src, clazz);
-                        context.setParameterFQCN(methodCall.returnType);
+                        context.setArgumentFQCN(methodCall.returnType);
                     } else {
                         if (src.isReportUnknown()) {
                             log.warn("unknown ident class expression={} {} {}", expression, expression.getClass(), src.filePath);
@@ -872,7 +874,7 @@ public class TreeAnalyzer {
             } else {
                 this.getTypeString(src, returnType).ifPresent(fqcn -> {
                     methodCall.returnType = this.markFQCN(src, fqcn);
-                    context.setParameterFQCN(methodCall.returnType);
+                    context.setArgumentFQCN(methodCall.returnType);
                 });
             }
             src.getCurrentScope().ifPresent(scope -> {
@@ -892,7 +894,7 @@ public class TreeAnalyzer {
         final boolean isParameter = context.isParameter();
 
         final List<JCTree.JCExpression> argumentExprs = newClass.getArguments();
-        final java.util.List<String> arguments = getArgmentsType(context, argumentExprs);
+        final java.util.List<String> arguments = getArgumentsType(context, argumentExprs);
         context.setParameter(isParameter);
 
         final JCTree.JCExpression identifier = newClass.getIdentifier();
@@ -909,7 +911,7 @@ public class TreeAnalyzer {
         this.getTypeString(src, type).ifPresent(fqcn -> {
             methodCall.declaringClass = this.markFQCN(src, fqcn);
             methodCall.returnType = fqcn;
-            context.setParameterFQCN(fqcn);
+            context.setArgumentFQCN(fqcn);
         });
 
         final JCTree.JCClassDecl classBody = newClass.getClassBody();
@@ -922,17 +924,17 @@ public class TreeAnalyzer {
         });
     }
 
-    private java.util.List<String> getArgmentsType(SourceContext context, List<JCTree.JCExpression> arguments) {
+    private java.util.List<String> getArgumentsType(SourceContext context, List<JCTree.JCExpression> arguments) {
         return arguments.stream().map(expression -> {
-            context.setParameter(true);
+            context.setArgument(true);
             try {
                 this.analyzeParsedTree(context, expression);
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
             }
-            log.trace("class={} returnFQCN={} expr={}", expression.getClass().getSimpleName(), context.getParameterFQCN(), expression);
-            context.setParameter(false);
-            return context.getParameterFQCN();
+            log.trace("class={} returnFQCN={} expr={}", expression.getClass().getSimpleName(), context.getArgumentFQCN(), expression);
+            context.setArgument(false);
+            return context.getArgumentFQCN();
         }).collect(Collectors.toList());
     }
 
@@ -1071,7 +1073,7 @@ public class TreeAnalyzer {
             if (sym.type != null) {
                 this.getTypeString(src, sym.type).ifPresent(fqcn -> {
                     fa.returnType = this.markFQCN(src, fqcn);
-                    context.setParameterFQCN(fa.returnType);
+                    context.setArgumentFQCN(fa.returnType);
                 });
             }
             src.getCurrentScope().ifPresent(scope -> {
@@ -1089,7 +1091,7 @@ public class TreeAnalyzer {
             if (sym.type != null) {
                 this.getTypeString(src, sym.type).ifPresent(fqcn -> {
                     methodCall.returnType = this.markFQCN(src, fqcn);
-                    context.setParameterFQCN(methodCall.returnType);
+                    context.setArgumentFQCN(methodCall.returnType);
                 });
             }
             src.getCurrentScope().ifPresent(scope -> {
@@ -1116,7 +1118,7 @@ public class TreeAnalyzer {
             if (sym.type != null) {
                 this.getTypeString(src, sym.type).ifPresent(fqcn -> {
                     fa.returnType = this.markFQCN(src, fqcn);
-                    context.setParameterFQCN(fa.returnType);
+                    context.setArgumentFQCN(fa.returnType);
                 });
             }
             src.getCurrentScope().ifPresent(scope -> {
@@ -1204,7 +1206,7 @@ public class TreeAnalyzer {
 
             this.getTypeString(src, type).ifPresent(fqcn -> {
                 variable.fqcn = this.markFQCN(src, fqcn);
-                context.setParameterFQCN(variable.fqcn);
+                context.setArgumentFQCN(variable.fqcn);
             });
 
             src.getCurrentScope().ifPresent(scope -> scope.addVariable(variable));
@@ -1217,7 +1219,7 @@ public class TreeAnalyzer {
                 final String className = currentClass.get().name;
                 if (ClassNameUtils.getSimpleName(className).equals(nm)) {
                     variable.fqcn = this.markFQCN(src, className);
-                    context.setParameterFQCN(variable.fqcn);
+                    context.setArgumentFQCN(variable.fqcn);
                     src.getCurrentScope().ifPresent(scope -> scope.addVariable(variable));
                     return;
                 }
@@ -1225,7 +1227,7 @@ public class TreeAnalyzer {
 
             if (src.importClass.containsKey(nm)) {
                 variable.fqcn = this.markFQCN(src, src.importClass.get(nm));
-                context.setParameterFQCN(variable.fqcn);
+                context.setArgumentFQCN(variable.fqcn);
                 src.getCurrentScope().ifPresent(scope -> scope.addVariable(variable));
                 return;
             }
@@ -1234,7 +1236,7 @@ public class TreeAnalyzer {
                 final String className = currentClass.get().name;
                 if (ClassNameUtils.getSimpleName(className).equals(nm)) {
                     variable.fqcn = this.markFQCN(src, className);
-                    context.setParameterFQCN(variable.fqcn);
+                    context.setArgumentFQCN(variable.fqcn);
                     src.getCurrentScope().ifPresent(scope -> scope.addVariable(variable));
                 }
             });
@@ -1286,15 +1288,11 @@ public class TreeAnalyzer {
             methodScope.returnType = this.markFQCN(src, returnFQCN);
 
             // check method parameter
+            context.setParameter(true);
             md.getParameters().forEach(wrapIOConsumer(vd -> {
-                try {
-                    context.setParameter(true);
-                    this.analyzeParsedTree(context, vd);
-                } finally {
-                    context.setParameter(false);
-                }
+                this.analyzeParsedTree(context, vd);
             }));
-
+            context.setParameter(false);
 
             // set exceptions
             md.getThrows().forEach(expr -> {
@@ -1427,8 +1425,8 @@ public class TreeAnalyzer {
         final File file = new File(uri.normalize());
         final String path = file.getCanonicalPath();
         final Source source = new Source(path);
-
-        source.importClass.putAll(this.standardClasses);
+        final Map<String, String> standardClasses = CachedASMReflector.getInstance().getStandardClasses();
+        source.importClass.putAll(standardClasses);
         if (errorFiles.contains(file)) {
             source.hasCompileError = true;
         }
@@ -1470,8 +1468,8 @@ public class TreeAnalyzer {
                 markFQCN(src, s);
             }
         });
-
-        if (!src.importClass.containsValue(simpleName) && !this.cachedASMReflector.getGlobalClassIndex().containsKey(simpleName)) {
+        final CachedASMReflector cachedASMReflector = CachedASMReflector.getInstance();
+        if (!src.importClass.containsValue(simpleName) && !cachedASMReflector.getGlobalClassIndex().containsKey(simpleName)) {
             src.unknown.add(simpleName);
         } else {
             // contains

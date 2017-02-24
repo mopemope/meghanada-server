@@ -196,4 +196,11 @@ public class ClassNameUtilsTest {
         assertEquals("Function<List<List<File>>>", s);
     }
 
+    @Test
+    public void getParentName() throws Exception {
+        String name = "java.utils.Map$Entry";
+        final String s = ClassNameUtils.getParentClass(name);
+        assertEquals("java.utils.Map", s);
+    }
+
 }

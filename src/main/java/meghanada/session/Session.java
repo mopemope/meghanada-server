@@ -421,7 +421,7 @@ public class Session {
 
     private Source parseJavaSource(final File file) throws ExecutionException {
         final GlobalCache globalCache = GlobalCache.getInstance();
-        return globalCache.getSource(this.getCurrentProject(), file);
+        return globalCache.getSource(currentProject, file);
     }
 
     public synchronized boolean parseFile(final String path) throws ExecutionException {

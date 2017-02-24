@@ -27,7 +27,7 @@ public class CacheEventSubscriber extends AbstractSubscriber {
     public synchronized void on(final SessionEventBus.ClassCacheRequest request) throws IOException {
         if (request.onlyOutputDir) {
             final CachedASMReflector reflector = CachedASMReflector.getInstance();
-            reflector.createClassIndexFromDir();
+            reflector.updateClassIndexFromDirectory();
         } else {
             this.createFullIndex();
         }
@@ -37,6 +37,8 @@ public class CacheEventSubscriber extends AbstractSubscriber {
         final Session session = super.sessionEventBus.getSession();
         final Project project = session.getCurrentProject();
         final CachedASMReflector reflector = CachedASMReflector.getInstance();
+        reflector.addClasspath(session.getDependentJars());
+        reflector.createClassIndexes();
 
         boolean result = timeItF("analyzed and compiled. elapsed:{}", () -> {
             try {
@@ -57,14 +59,13 @@ public class CacheEventSubscriber extends AbstractSubscriber {
         });
 
         final Stopwatch stopwatch = Stopwatch.createStarted();
-        reflector.addClasspath(session.getDependentJars());
         reflector.addClasspath(project.getOutputDirectory());
         reflector.addClasspath(project.getTestOutputDirectory());
         for (final Project dependency : project.getDependencyProjects()) {
             reflector.addClasspath(dependency.getOutputDirectory());
             reflector.addClasspath(dependency.getTestOutputDirectory());
         }
-        reflector.createClassIndexes();
+        reflector.updateClassIndexFromDirectory();
         log.info("create class index.size:{} elapsed:{}", reflector.getGlobalClassIndex().size(), stopwatch.stop());
     }
 }

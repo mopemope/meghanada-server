@@ -86,7 +86,7 @@ public class JavaSourceLoader extends CacheLoader<File, Source> implements Remov
         final Map<String, String> finalChecksumMap = config.getChecksumMap(checksumFile);
 
         final String path = file.getCanonicalPath();
-        final String md5sum = FileUtils.md5sum(file);
+        final String md5sum = FileUtils.getChecksum(file);
         if (finalChecksumMap.containsKey(path)) {
             // compare checksum
             final String prevSum = finalChecksumMap.get(path);

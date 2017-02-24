@@ -1,11 +1,12 @@
 package meghanada;
 
-import com.github.javaparser.Position;
-import com.github.javaparser.Range;
+
+import java.util.Comparator;
 
 public class Jump1 {
 
     public void test() {
-        final Range range = new Range(new Position(10, 1), new Position(11, 2));
+        final Comparator<String> comparator = String.CASE_INSENSITIVE_ORDER;
+        comparator.thenComparing(null, null);
     }
 }

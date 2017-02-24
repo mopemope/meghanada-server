@@ -704,7 +704,7 @@ public abstract class Project {
                 final File sourceFile = source.getFile();
                 final String path = sourceFile.getCanonicalPath();
                 if (!errorFiles.contains(sourceFile)) {
-                    final String md5sum = FileUtils.md5sum(sourceFile);
+                    final String md5sum = FileUtils.getChecksum(sourceFile);
                     checksumMap.put(path, md5sum);
                     try {
                         globalCache.replaceSource(this, source);

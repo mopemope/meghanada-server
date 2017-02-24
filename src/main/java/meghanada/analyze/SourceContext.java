@@ -6,22 +6,23 @@ public class SourceContext {
 
     private final Source source;
     private boolean isParameter;
-    private String parameterFQCN;
+    private boolean isArgument;
+    private String argumentFQCN;
     private EndPosTable endPosTable;
 
     public SourceContext(final Source source) {
         this.source = source;
     }
 
-    public String getParameterFQCN() {
-        return parameterFQCN;
+    public String getArgumentFQCN() {
+        return argumentFQCN;
     }
 
-    public void setParameterFQCN(String parameterFQCN) {
-        if (isParameter) {
-            this.parameterFQCN = parameterFQCN;
+    public void setArgumentFQCN(String argumentFQCN) {
+        if (isArgument) {
+            this.argumentFQCN = argumentFQCN;
         } else {
-            this.parameterFQCN = "";
+            this.argumentFQCN = "";
         }
 
     }
@@ -44,5 +45,9 @@ public class SourceContext {
 
     public void setEndPosTable(EndPosTable endPosTable) {
         this.endPosTable = endPosTable;
+    }
+
+    public void setArgument(boolean argument) {
+        isArgument = argument;
     }
 }

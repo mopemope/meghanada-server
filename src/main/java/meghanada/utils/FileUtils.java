@@ -23,17 +23,16 @@ public final class FileUtils {
 
     private static final Logger log = LogManager.getLogger(FileUtils.class);
     private static final String ALGORITHM_SHA_512 = "SHA-512";
-    private static final String ALGORITHM_MD5 = "MD5";
     private static final String UTF_8 = "UTF-8";
 
     public static boolean isJavaFile(final File file) {
         return file.getName().endsWith(".java") && file.exists();
     }
 
-    public static String md5sum(final File file) throws IOException {
+    public static String getChecksum(final File file) throws IOException {
         final EntryMessage entryMessage = log.traceEntry("file={}", file);
         try {
-            final MessageDigest md = MessageDigest.getInstance(ALGORITHM_MD5);
+            final MessageDigest md = MessageDigest.getInstance(ALGORITHM_SHA_512);
             try (InputStream is = Files.newInputStream(file.toPath());
                     DigestInputStream dis = new DigestInputStream(is, md)) {
                 final byte[] buf = new byte[8192];
@@ -142,7 +141,7 @@ public final class FileUtils {
     public static String findProjectID(final File root, final String target) throws IOException {
         MessageDigest md;
         try {
-            md = MessageDigest.getInstance(ALGORITHM_MD5);
+            md = MessageDigest.getInstance(ALGORITHM_SHA_512);
         } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException(e);
         }
@@ -299,7 +298,7 @@ public final class FileUtils {
                             return true;
                         }
 
-                        final String md5sum = FileUtils.md5sum(f);
+                        final String md5sum = FileUtils.getChecksum(f);
                         if (map.containsKey(path)) {
                             // compare checksum
                             final String prevSum = map.get(path);

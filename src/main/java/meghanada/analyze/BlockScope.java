@@ -5,6 +5,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class BlockScope extends Scope {
 
@@ -154,7 +155,16 @@ public class BlockScope extends Scope {
         if (this.contains(line)) {
             for (final BlockScope bs : scopes) {
                 if (bs.contains(line)) {
-                    return bs.getFieldAccess(line);
+                    for (final ExpressionScope expression : bs.expressions) {
+                        final List<FieldAccess> faList = expression.getFieldAccess(line);
+                        if (!faList.isEmpty()) {
+                            return faList;
+                        }
+                    }
+                    return this.fieldAccesses
+                            .stream()
+                            .filter(fa -> fa.range.begin.line == line)
+                            .collect(Collectors.toList());
                 }
             }
 

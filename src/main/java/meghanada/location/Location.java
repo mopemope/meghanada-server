@@ -3,11 +3,11 @@ package meghanada.location;
 import com.google.common.base.MoreObjects;
 
 public class Location {
-    String path;
-    int line;
-    int column;
+    final String path;
+    final int line;
+    final int column;
 
-    public Location(String path, int line, int column) {
+    public Location(final String path, final int line, final int column) {
         this.path = path;
         this.line = line;
         this.column = column;

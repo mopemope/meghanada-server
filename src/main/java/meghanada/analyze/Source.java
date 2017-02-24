@@ -271,18 +271,17 @@ public class Source {
         return memberDescriptors;
     }
 
-    public FieldAccess searchFieldAccess(final int line, final String name) {
+    public Optional<FieldAccess> searchFieldAccess(final int line, final String name) {
         final Scope scope = Scope.getScope(line, this.classScopes);
         if (scope != null && (scope instanceof TypeScope)) {
-            final TypeScope typeScope = (TypeScope) scope;
-            final Collection<FieldAccess> accessSymbols = typeScope.getFieldAccess(line);
-            for (final FieldAccess fa : accessSymbols) {
-                if (fa.name.equals(name)) {
-                    return fa;
-                }
-            }
+            final TypeScope ts = (TypeScope) scope;
+            final Collection<FieldAccess> fieldAccesses = ts.getFieldAccess(line);
+            return fieldAccesses
+                    .stream()
+                    .filter(fieldAccess -> fieldAccess.name.equals(name))
+                    .findFirst();
         }
-        return null;
+        return Optional.empty();
     }
 
     public Map<String, List<String>> searchMissingImport() {
