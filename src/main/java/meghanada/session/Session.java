@@ -235,7 +235,7 @@ public class Session {
     private boolean searchAndChangeProject(final File base) throws IOException {
         final File projectRoot = Session.findProjectRoot(base);
 
-        if (this.currentProject.getProjectRoot().equals(projectRoot)) {
+        if (projectRoot == null || this.currentProject.getProjectRoot().equals(projectRoot)) {
             // not change
             return false;
         }
