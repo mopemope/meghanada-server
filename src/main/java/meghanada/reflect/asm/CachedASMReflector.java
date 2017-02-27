@@ -32,7 +32,7 @@ import static meghanada.utils.FunctionUtils.wrapIOConsumer;
 
 public class CachedASMReflector {
 
-    public static final int BASE_CACHE_SIZE = 1024;
+    private static final int BASE_CACHE_SIZE = 1024;
     private static final Logger log = LogManager.getLogger(CachedASMReflector.class);
 
     private static final Pattern PACKAGE_RE = Pattern.compile("\\.\\*");
@@ -296,7 +296,7 @@ public class CachedASMReflector {
         return this.fuzzySearchClasses(keyword, true);
     }
 
-    public List<ClassIndex> fuzzySearchClasses(final String keyword, final boolean anno) {
+    private List<ClassIndex> fuzzySearchClasses(final String keyword, final boolean anno) {
         final int length = keyword.length() + 1;
         return this.globalClassIndex.values()
                 .stream()
@@ -368,43 +368,8 @@ public class CachedASMReflector {
         return members;
     }
 
-    public void createCache(final File jar, final File outputRoot) throws IOException {
-        final String jarName = jar.getName();
-        if (!jarName.endsWith(".jar") || jarName.contains("SNAPSHOT")) {
-            return;
-        }
-        final JarFile jarFile = new JarFile(jar);
-        final ASMReflector asmReflector = ASMReflector.getInstance();
-        getJarEntryStream(jarFile)
-                .filter(jarEntry -> jarEntry.getName().endsWith(".class"))
-                .forEach(wrapIOConsumer(jarEntry -> {
 
-                    final String entryName = jarEntry.getName();
-                    if (!entryName.endsWith(".class")) {
-                        return;
-                    }
-                    final String className = ClassNameUtils.replaceSlash(entryName.substring(0, entryName.length() - 6));
-                    if (asmReflector.ignorePackage(className)) {
-                        return;
-                    }
-
-                    if (existsClassCache(className)) {
-                        // log.debug("skip  :{}", className);
-                        return;
-                    }
-
-                    if (this.globalClassIndex.containsKey(className)) {
-                        final ClassIndex ci = globalClassIndex.get(className);
-                        ClassName cn = new ClassName(className);
-                        final String fqcn = cn.getName();
-                        final InheritanceInfo info = asmReflector.getReflectInfo(reflectIndex, fqcn);
-                        final List<MemberDescriptor> descriptors = asmReflector.reflectAll(info);
-                        CachedASMReflector.writeCache(ci, descriptors);
-                    }
-                }));
-    }
-
-    public Stream<MemberDescriptor> reflectStream(final String className) {
+    private Stream<MemberDescriptor> reflectStream(final String className) {
         return this.reflect(className).stream();
     }
 
@@ -420,7 +385,7 @@ public class CachedASMReflector {
         return this.reflectFieldStream(className, null);
     }
 
-    public Stream<MemberDescriptor> reflectFieldStream(final String className, final String name) {
+    private Stream<MemberDescriptor> reflectFieldStream(final String className, final String name) {
         return this.reflect(className)
                 .stream()
                 .filter(m -> {

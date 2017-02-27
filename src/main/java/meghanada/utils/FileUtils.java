@@ -52,7 +52,7 @@ public final class FileUtils {
         }
     }
 
-    public static List<File> listJavaFiles(File parent) {
+    private static List<File> listJavaFiles(File parent) {
         if (parent.isFile()) {
             parent = parent.getParentFile();
         }
@@ -239,7 +239,7 @@ public final class FileUtils {
         return Optional.empty();
     }
 
-    public static boolean hasClassFile(String path, Set<File> sourceRoots, File out) throws IOException {
+    private static boolean hasClassFile(String path, Set<File> sourceRoots, File out) throws IOException {
         if (sourceRoots == null) {
             return false;
         }
@@ -254,14 +254,6 @@ public final class FileUtils {
             }
         }
         return false;
-    }
-
-    private static List<File> getJavaSource(final File root) throws IOException {
-        return Files.walk(root.toPath(), FileVisitOption.FOLLOW_LINKS)
-                .filter(path -> path.toFile().isFile() && path.endsWith(".java"))
-                .map(Path::toFile)
-                .collect(Collectors.toList());
-
     }
 
     public static List<File> getPackagePrivateSource(final List<File> compileFiles) {
@@ -326,7 +318,7 @@ public final class FileUtils {
         return fileList;
     }
 
-    public static String readFile(String path) throws IOException {
+    private static String readFile(String path) throws IOException {
         final byte[] encoded = Files.readAllBytes(Paths.get(path));
         return new String(encoded, StandardCharsets.UTF_8);
     }

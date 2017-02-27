@@ -8,13 +8,6 @@ import meghanada.reflect.MemberDescriptor;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.FileVisitResult;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.SimpleFileVisitor;
-import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -401,35 +394,4 @@ public class CachedASMReflectorTest extends GradleTestBase {
 
     }
 
-    @Ignore
-    @org.junit.Test
-    public void testCreateCache() throws Exception {
-        CachedASMReflector reflector = CachedASMReflector.getInstance();
-        File root = new File("/tmp/.meghanada/cache").getCanonicalFile();
-        root.mkdirs();
-
-        Stopwatch stopwatch = Stopwatch.createStarted();
-        reflector.createCache(getRTJar(), root);
-        System.out.println("1st: " + stopwatch.stop());
-        stopwatch.reset();
-
-        stopwatch.start();
-        reflector.createCache(getRTJar(), root);
-        System.out.println("2nd: " + stopwatch.stop());
-        stopwatch.reset();
-
-        Files.walkFileTree(root.toPath(), new SimpleFileVisitor<Path>() {
-            @Override
-            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-                Files.delete(file);
-                return FileVisitResult.CONTINUE;
-            }
-
-            @Override
-            public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
-                Files.delete(dir);
-                return FileVisitResult.CONTINUE;
-            }
-        });
-    }
 }

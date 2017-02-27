@@ -82,16 +82,16 @@ public class LocationSearcher {
         return globalCache.getSource(project, file.getCanonicalFile());
     }
 
-    private static Location searchLocationFromSrcZIP(final SearchContext context, final String fqcn, final File temp) throws IOException {
+    private static Location searchLocationFromFile(final SearchContext context, final String fqcn, final File targetFile) throws IOException {
         try {
-            final CompilationUnit compilationUnit = JavaParser.parse(temp, String.valueOf(StandardCharsets.UTF_8));
+            final CompilationUnit compilationUnit = JavaParser.parse(targetFile, String.valueOf(StandardCharsets.UTF_8));
             final List<TypeDeclaration> types = compilationUnit.getTypes();
             for (final TypeDeclaration type : types) {
                 if (context.kind.equals(SearchKind.CLASS)) {
                     final String typeName = type.getName();
                     final String simpleName = ClassNameUtils.getSimpleName(fqcn);
                     if (typeName.equals(simpleName)) {
-                        return new Location(temp.getCanonicalPath(),
+                        return new Location(targetFile.getCanonicalPath(),
                                 type.getBegin().line,
                                 type.getBegin().column);
                     }
@@ -108,7 +108,7 @@ public class LocationSearcher {
                             final VariableDeclaratorId variableId = variable.getId();
                             final String name = variableId.getName();
                             if (name.equals(context.name)) {
-                                return new Location(temp.getCanonicalPath(),
+                                return new Location(targetFile.getCanonicalPath(),
                                         variable.getBegin().line,
                                         variable.getBegin().column);
                             }
@@ -122,7 +122,7 @@ public class LocationSearcher {
                             final List<Parameter> parameters = declaration.getParameters();
                             // TODO check FQCN types
                             if (context.arguments.size() == parameters.size()) {
-                                return new Location(temp.getCanonicalPath(),
+                                return new Location(targetFile.getCanonicalPath(),
                                         declaration.getBegin().line,
                                         declaration.getBegin().column);
                             }
@@ -136,7 +136,7 @@ public class LocationSearcher {
                             final List<Parameter> parameters = declaration.getParameters();
                             // TODO check FQCN types
                             if (context.arguments.size() == parameters.size()) {
-                                return new Location(temp.getCanonicalPath(),
+                                return new Location(targetFile.getCanonicalPath(),
                                         declaration.getBegin().line,
                                         declaration.getBegin().column);
                             }
@@ -300,7 +300,7 @@ public class LocationSearcher {
             return null;
         }
 
-        final Location type = searchLocationFromSrcZIP(context, fqcn, temp);
+        final Location type = searchLocationFromFile(context, fqcn, temp);
         final boolean only = temp.setReadOnly();
         if (type != null) {
             return type;
@@ -317,27 +317,28 @@ public class LocationSearcher {
             // deleted
             this.copiedSrcFile.remove(searchFQCN);
         }
-        final ZipFile srcZipFile = new ZipFile(srcZip);
-        final String s = ClassNameUtils.replace(searchFQCN, ".", "/") + ".java";
-        final ZipEntry entry = srcZipFile.getEntry(s);
-        if (entry == null) {
-            return null;
-        }
-
-        // copy from src.zip
-        final File temp = File.createTempFile("meghanada-server", ".java");
-        temp.deleteOnExit();
-        try (final InputStream inputStream = srcZipFile.getInputStream(entry);
-             final OutputStream outputStream = new FileOutputStream(temp)) {
-            final byte[] buf = new byte[1024];
-            int ret;
-            while ((ret = inputStream.read(buf)) != -1) {
-                outputStream.write(buf, 0, ret);
+        try (final ZipFile srcZipFile = new ZipFile(srcZip)) {
+            final String s = ClassNameUtils.replace(searchFQCN, ".", "/") + ".java";
+            final ZipEntry entry = srcZipFile.getEntry(s);
+            if (entry == null) {
+                return null;
             }
+
+            // copy from src.zip
+            final File temp = File.createTempFile("meghanada-server", ".java");
+            temp.deleteOnExit();
+            try (final InputStream inputStream = srcZipFile.getInputStream(entry);
+                 final OutputStream outputStream = new FileOutputStream(temp)) {
+                final byte[] buf = new byte[1024];
+                int ret;
+                while ((ret = inputStream.read(buf)) != -1) {
+                    outputStream.write(buf, 0, ret);
+                }
+            }
+            // reuse
+            this.copiedSrcFile.put(searchFQCN, temp);
+            return temp;
         }
-        // reuse
-        this.copiedSrcFile.put(searchFQCN, temp);
-        return temp;
     }
 
     private Location searchField(final Source src, final int line, final int col, final String symbol) {

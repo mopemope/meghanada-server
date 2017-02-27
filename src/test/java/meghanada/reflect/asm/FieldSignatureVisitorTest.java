@@ -80,28 +80,29 @@ public class FieldSignatureVisitorTest extends GradleTestBase {
     }
 
     private FieldSignatureVisitor doAnalyzeJar(File file, String fqcn) throws IOException {
-        JarFile jarFile = new JarFile(file);
-        Enumeration<JarEntry> entries = jarFile.entries();
+        try (JarFile jarFile = new JarFile(file)) {
+            Enumeration<JarEntry> entries = jarFile.entries();
 
-        while (entries.hasMoreElements()) {
-            JarEntry entry = entries.nextElement();
-            String name = entry.getName();
+            while (entries.hasMoreElements()) {
+                JarEntry entry = entries.nextElement();
+                String name = entry.getName();
 
-            if (name.endsWith(".class")) {
-                // log.debug("class {}", name);
-                try (InputStream in = jarFile.getInputStream(entry)) {
-                    ClassReader classReader = new ClassReader(in);
-                    String className = classReader.getClassName().replace("/", ".");
+                if (name.endsWith(".class")) {
+                    // log.debug("class {}", name);
+                    try (InputStream in = jarFile.getInputStream(entry)) {
+                        ClassReader classReader = new ClassReader(in);
+                        String className = classReader.getClassName().replace("/", ".");
 
-                    if (className.equals(fqcn)) {
-                        TestVisitor testVisitor = new TestVisitor(className);
-                        classReader.accept(testVisitor, 0);
-                        return testVisitor.getVisitor();
+                        if (className.equals(fqcn)) {
+                            TestVisitor testVisitor = new TestVisitor(className);
+                            classReader.accept(testVisitor, 0);
+                            return testVisitor.getVisitor();
+                        }
                     }
                 }
             }
+            return null;
         }
-        return null;
     }
 
     private static class TestVisitor extends ClassVisitor {

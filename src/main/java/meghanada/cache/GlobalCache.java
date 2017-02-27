@@ -34,7 +34,7 @@ public class GlobalCache {
     public static final String CALLER_DATA = "source_caller";
     public static final String PROJECT_DATA = "project";
     public static final String CACHE_EXT = ".dat";
-    public static final int COMPRESSION_LEVEL = 3;
+    private static final int COMPRESSION_LEVEL = 3;
 
     private static final Logger log = LogManager.getLogger(GlobalCache.class);
     private static GlobalCache globalCache;
@@ -84,10 +84,6 @@ public class GlobalCache {
             globalCache = new GlobalCache();
         }
         return globalCache;
-    }
-
-    private KryoPool getKryoPool() {
-        return kryoPool;
     }
 
     public void setMemberCache(final LoadingCache<String, List<MemberDescriptor>> memberCache) {
@@ -196,7 +192,7 @@ public class GlobalCache {
         });
     }
 
-    public void shutdown() throws InterruptedException {
+    private void shutdown() throws InterruptedException {
         if (this.isTerminated) {
             return;
         }

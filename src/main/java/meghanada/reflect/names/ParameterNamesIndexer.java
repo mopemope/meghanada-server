@@ -19,7 +19,6 @@ public class ParameterNamesIndexer {
 
     private static final String[] filterPackage = new String[]{
             "sun.",
-            "com.sun.",
             "com.oracle",
             "oracle.jrockit",
             "jdk",
@@ -32,7 +31,7 @@ public class ParameterNamesIndexer {
 
     private Kryo kryo = new Kryo();
 
-    public ParameterNamesIndexer() {
+    private ParameterNamesIndexer() {
         kryo.register(MethodParameterNames.class);
     }
 
@@ -52,17 +51,18 @@ public class ParameterNamesIndexer {
         return false;
     }
 
-    void createIndex(File src) throws IOException, ParseException {
-        ZipFile zipFile = new ZipFile(src);
-        Enumeration<? extends ZipEntry> entries = zipFile.entries();
-        while (entries.hasMoreElements()) {
-            ZipEntry zipEntry = entries.nextElement();
-            String fileName = zipEntry.getName();
-            String javaName = fileName.replace(File.separator, ".");
+    private void createIndex(File src) throws IOException, ParseException {
+        try (final ZipFile zipFile = new ZipFile(src)) {
+            Enumeration<? extends ZipEntry> entries = zipFile.entries();
+            while (entries.hasMoreElements()) {
+                ZipEntry zipEntry = entries.nextElement();
+                String fileName = zipEntry.getName();
+                String javaName = fileName.replace(File.separator, ".");
 
-            if (fileName.endsWith(".java") && !ignorePackage(javaName)) {
-                // log.debug("javaName {}", javaName);
-                this.serializeParams(zipFile, zipEntry, javaName);
+                if (fileName.endsWith(".java") && !ignorePackage(javaName)) {
+                    // log.debug("javaName {}", javaName);
+                    this.serializeParams(zipFile, zipEntry, javaName);
+                }
             }
         }
     }
