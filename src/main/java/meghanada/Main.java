@@ -10,7 +10,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.core.LoggerContext;
 import org.apache.logging.log4j.core.appender.FileAppender;
-import org.apache.logging.log4j.core.appender.SyslogAppender;
 import org.apache.logging.log4j.core.config.Configuration;
 import org.apache.logging.log4j.core.config.LoggerConfig;
 import org.apache.logging.log4j.core.layout.PatternLayout;
@@ -20,7 +19,7 @@ import java.io.IOException;
 
 public class Main {
 
-    public static final String VERSION = "0.6.4";
+    public static final String VERSION = "0.6.5";
 
     private static Logger log = LogManager.getLogger(Main.class);
 
