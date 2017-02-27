@@ -637,9 +637,14 @@ public class TreeAnalyzer {
 
     private void analyzeTry(final SourceContext context, final JCTree.JCTry tryExpr) throws IOException {
         final JCTree.JCBlock block = tryExpr.getBlock();
+        final List<JCTree> resources = tryExpr.getResources();
         final List<JCTree.JCCatch> catches = tryExpr.getCatches();
         final JCTree.JCBlock finallyBlock = tryExpr.getFinallyBlock();
-
+        if (resources != null && !resources.isEmpty()) {
+            for (final JCTree resource : resources) {
+                this.analyzeParsedTree(context, resource);
+            }
+        }
         this.analyzeParsedTree(context, block);
 
         if (catches != null) {

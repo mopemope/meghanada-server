@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static meghanada.config.Config.debugIt;
 import static meghanada.config.Config.timeIt;
 
 public class JavaAnalyzerTest extends GradleTestBase {
@@ -511,6 +512,29 @@ public class JavaAnalyzerTest extends GradleTestBase {
             return compileResult;
         });
 
+    }
+
+    @Test
+    public void analyze22() throws Exception {
+        final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8");
+        final String cp = getClasspath();
+
+        List<File> files = new ArrayList<>();
+        final File file = new File("./src/test/java/meghanada/Gen12.java").getCanonicalFile();
+        assert file.exists();
+        files.add(file);
+
+        final String tmp = System.getProperty("java.io.tmpdir");
+
+        debugIt(() -> {
+            final CompileResult compileResult = analyzer.analyzeAndCompile(files, cp, tmp);
+            compileResult.getSources().values().forEach(Source::dump);
+            return compileResult;
+        });
+
+        timeIt(() -> {
+            return analyzer.analyzeAndCompile(files, cp, tmp);
+        });
     }
 
     @Test
