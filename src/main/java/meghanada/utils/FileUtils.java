@@ -34,7 +34,7 @@ public final class FileUtils {
         try {
             final MessageDigest md = MessageDigest.getInstance(ALGORITHM_SHA_512);
             try (InputStream is = Files.newInputStream(file.toPath());
-                    DigestInputStream dis = new DigestInputStream(is, md)) {
+                 DigestInputStream dis = new DigestInputStream(is, md)) {
                 final byte[] buf = new byte[8192];
                 while (dis.read(buf) != -1) {
                 }

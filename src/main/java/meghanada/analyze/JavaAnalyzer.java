@@ -34,6 +34,10 @@ public class JavaAnalyzer {
     }
 
     public CompileResult analyzeAndCompile(final List<File> files, final String classpath, final String out) throws IOException {
+        return analyzeAndCompile(files, classpath, out, true);
+    }
+
+    public CompileResult analyzeAndCompile(final List<File> files, final String classpath, final String out, final boolean generate) throws IOException {
 
         if (files == null || files.isEmpty()) {
             final Map<File, Source> analyzedMap = new HashMap<>(0);
@@ -46,10 +50,10 @@ public class JavaAnalyzer {
             log.warn("fail mkdirs path:{}", tempOut);
         }
         log.trace("start compile classpath={} files={} output={}", classpath, files, out);
-        return this.runAnalyzeAndCompile(classpath, out, files);
+        return this.runAnalyzeAndCompile(classpath, out, files, generate);
     }
 
-    private CompileResult runAnalyzeAndCompile(final String classpath, final String out, List<File> compileFiles) throws IOException {
+    private CompileResult runAnalyzeAndCompile(final String classpath, final String out, final List<File> compileFiles, final boolean generate) throws IOException {
 
         try (StandardJavaFileManager fileManager = compiler.getStandardFileManager(null, null, Charset.forName("UTF-8"))) {
             final Iterable<? extends JavaFileObject> compilationUnits = fileManager.getJavaFileObjectsFromFiles(compileFiles);
@@ -82,9 +86,10 @@ public class JavaAnalyzer {
 
             final Map<File, Source> analyzedMap = treeAnalyzer.analyze(parsedIter, compileFiles.size(), errorFiles);
 
-            if (!Config.load().useExternalBuilder()) {
-                final Iterable<? extends JavaFileObject> generate = javacTask.generate();
+            if (generate && !Config.load().useExternalBuilder()) {
+                final Iterable<? extends JavaFileObject> generated = javacTask.generate();
             }
+
             boolean success = errorFiles.size() == 0;
             return new CompileResult(success, analyzedMap, diagnostics, errorFiles);
         }

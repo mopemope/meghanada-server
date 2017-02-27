@@ -14,11 +14,16 @@ import meghanada.utils.ClassNameUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.message.EntryMessage;
+import org.jboss.windup.decompiler.api.DecompilationListener;
+import org.jboss.windup.decompiler.api.DecompilationResult;
+import org.jboss.windup.decompiler.fernflower.FernflowerDecompiler;
+import org.jboss.windup.decompiler.util.Filter;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
+import java.util.logging.Level;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
@@ -29,6 +34,7 @@ public class LocationSearcher {
     private static final Logger log = LogManager.getLogger(LocationSearcher.class);
     private final List<LocationSearchFunction> locationSearchFunctions;
     private final Map<String, File> copiedSrcFile = new HashMap<>(16);
+    private final Map<String, List<String>> decompileFiles = new HashMap<>(16);
     private Project project;
 
     public LocationSearcher(final Project project) {
@@ -145,7 +151,7 @@ public class LocationSearcher {
                 }
             }
         } catch (ParseException e) {
-            throw new UncheckedExecutionException(e);
+            log.debug(e.getMessage());
         }
         return null;
     }
@@ -199,7 +205,13 @@ public class LocationSearcher {
                             final SearchContext context = new SearchContext(targetFqcn, SearchKind.METHOD);
                             context.name = methodName;
                             context.arguments = arguments;
-                            return searchFromSrcZip(context);
+                            return Optional.ofNullable(searchFromSrcZip(context)).orElseGet(() -> {
+                                try {
+                                    return searchFromDecompileFile(context);
+                                } catch (IOException e) {
+                                    throw new UncheckedExecutionException(e);
+                                }
+                            });
                         }));
                 if (Objects.nonNull(location)) {
                     return location;
@@ -277,7 +289,13 @@ public class LocationSearcher {
             }
         }).orElseGet(wrapIO(() -> {
             final SearchContext context = new SearchContext(searchFQCN, SearchKind.CLASS);
-            return searchFromSrcZip(context);
+            return Optional.ofNullable(searchFromSrcZip(context)).orElseGet(() -> {
+                try {
+                    return searchFromDecompileFile(context);
+                } catch (IOException e) {
+                    throw new UncheckedExecutionException(e);
+                }
+            });
         }));
         log.traceExit(entryMessage);
         return location;
@@ -300,11 +318,63 @@ public class LocationSearcher {
             return null;
         }
 
-        final Location type = searchLocationFromFile(context, fqcn, temp);
+        final Location loc = searchLocationFromFile(context, fqcn, temp);
         final boolean only = temp.setReadOnly();
-        if (type != null) {
-            return type;
+        if (loc != null) {
+            return loc;
         }
+        return null;
+    }
+
+    private Location searchFromDecompileFile(final SearchContext context) throws IOException {
+        final String searchFQCN = context.searchFQCN;
+        final CachedASMReflector reflector = CachedASMReflector.getInstance();
+        final File classFile = reflector.getClassFile(searchFQCN);
+        final File temp = File.createTempFile("meghanada-server", ".java");
+        temp.deleteOnExit();
+        if (classFile != null && classFile.exists() && classFile.getName().endsWith(".jar")) {
+            final FernflowerDecompiler decompiler = new FernflowerDecompiler();
+            decompiler.getLogger().setLevel(Level.OFF);
+            final DecompilationResult decompilationResult = decompiler.decompileArchive(classFile.toPath(),
+                    temp.getParentFile().toPath(),
+                    zipEntry -> {
+                        final String name = zipEntry.getName();
+                        final String search = ClassNameUtils.replace(searchFQCN, ".", "/") + ".class";
+                        if (name.equals(search)) {
+                            return Filter.Result.ACCEPT_STOP;
+                        }
+                        return Filter.Result.REJECT;
+                    }, new DefaultDecompileFilter());
+            final String fqcn = ClassNameUtils.getParentClass(context.searchFQCN);
+            if (this.decompileFiles.containsKey(fqcn)) {
+                final List<String> files = this.decompileFiles.get(fqcn);
+                for (final String decompileFile : files) {
+                    final File file = new File(decompileFile);
+                    file.setReadOnly();
+                    file.deleteOnExit();
+                    final Location location = searchLocationFromFile(context, fqcn, file);
+                    if (location != null) {
+                        return location;
+                    }
+                }
+            } else {
+                final Map<String, String> decompiledFiles = decompilationResult.getDecompiledFiles();
+                List<String> tempList = new ArrayList<>();
+                for (final String decompileFile : decompiledFiles.values()) {
+                    tempList.add(decompileFile);
+                    final File file = new File(decompileFile);
+                    file.setReadOnly();
+                    file.deleteOnExit();
+                    final Location location = searchLocationFromFile(context, fqcn, file);
+                    if (location != null) {
+                        this.decompileFiles.put(fqcn, tempList);
+                        return location;
+                    }
+                }
+                this.decompileFiles.put(fqcn, tempList);
+            }
+        }
+
         return null;
     }
 
@@ -364,7 +434,13 @@ public class LocationSearcher {
                         }).orElseGet(wrapIO(() -> {
                             final SearchContext context = new SearchContext(targetFqcn, SearchKind.FIELD);
                             context.name = fieldName;
-                            return searchFromSrcZip(context);
+                            return Optional.ofNullable(searchFromSrcZip(context)).orElseGet(() -> {
+                                try {
+                                    return searchFromDecompileFile(context);
+                                } catch (IOException e) {
+                                    throw new UncheckedExecutionException(e);
+                                }
+                            });
                         }));
                 if (Objects.nonNull(location)) {
                     return location;
@@ -403,6 +479,24 @@ public class LocationSearcher {
         SearchContext(final String searchFQCN, final SearchKind kind) {
             this.searchFQCN = searchFQCN;
             this.kind = kind;
+        }
+    }
+
+    private static class DefaultDecompileFilter implements DecompilationListener {
+
+        @Override
+        public void fileDecompiled(List<String> list, String s) {
+
+        }
+
+        @Override
+        public void decompilationFailed(List<String> list, String s) {
+
+        }
+
+        @Override
+        public void decompilationProcessComplete() {
+
         }
     }
 }

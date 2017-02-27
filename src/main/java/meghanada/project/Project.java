@@ -398,7 +398,7 @@ public abstract class Project {
         if (FileUtils.filterFile(file)) {
             List<File> files = new ArrayList<>();
             files.add(file);
-            return getJavaAnalyzer().analyzeAndCompile(files, this.allClasspath(), output);
+            return getJavaAnalyzer().analyzeAndCompile(files, this.allClasspath(), output, false);
         }
         return new CompileResult(false);
     }

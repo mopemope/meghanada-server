@@ -28,7 +28,7 @@ public class MethodDescriptor extends MemberDescriptor implements Serializable {
     }
 
     public MethodDescriptor(final String declaringClass, final String name, final String modifier, final List<MethodParameter> parameters, final String[] exceptions, final String returnType,
-            final boolean hashDefault) {
+                            final boolean hashDefault) {
         this.declaringClass = declaringClass;
         this.name = name;
         if (modifier == null) {

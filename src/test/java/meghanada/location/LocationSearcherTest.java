@@ -182,12 +182,29 @@ public class LocationSearcherTest extends GradleTestBase {
         LocationSearcher locationSearcher = getSearcher();
         {
             Location result = timeIt(() -> {
-                return locationSearcher.searchDeclaration(f, 170, 24, "searchField");
+                return locationSearcher.searchDeclaration(f, 176, 24, "searchField");
             });
             assertNotNull(result);
             assertTrue(result.getPath().contains("LocationSearcher.java"));
-            assertEquals(344, result.getLine());
+            assertEquals(414, result.getLine());
             assertEquals(22, result.getColumn());
+        }
+    }
+
+    @Test
+    public void testJumpMethod6() throws Exception {
+        File f = new File("./src/main/java/meghanada/location/LocationSearcher.java").getCanonicalFile();
+        assert f.exists();
+
+        LocationSearcher locationSearcher = getSearcher();
+        {
+            Location result = timeIt(() -> {
+                return locationSearcher.searchDeclaration(f, 338, 72, "decompileArchive");
+            });
+            assertNotNull(result);
+            assertTrue(result.getPath().contains(".java"));
+            assertEquals(103, result.getLine());
+            assertEquals(4, result.getColumn());
         }
     }
 
@@ -232,6 +249,21 @@ public class LocationSearcherTest extends GradleTestBase {
             assertNotNull(result);
             assertTrue(result.getPath().contains(".java"));
             assertEquals(111, result.getLine());
+            assertEquals(1, result.getColumn());
+        }
+    }
+
+    @Test
+    public void testJumpClass4() throws Exception {
+        File f = new File("./src/main/java/meghanada/reflect/asm/ASMReflector.java").getCanonicalFile();
+        assert f.exists();
+
+        LocationSearcher locationSearcher = getSearcher();
+        {
+            Location result = locationSearcher.searchDeclaration(f, 44, 40, "LogManager");
+            assertNotNull(result);
+            assertTrue(result.getPath().contains(".java"));
+            assertEquals(21, result.getLine());
             assertEquals(1, result.getColumn());
         }
     }

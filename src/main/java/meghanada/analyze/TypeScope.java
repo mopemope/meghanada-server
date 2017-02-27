@@ -66,7 +66,13 @@ public class TypeScope extends MethodScope {
     }
 
     @Override
-    public List<MethodCall> getMethodCall(int line) {
+    public List<MethodCall> getMethodCall(final int line) {
+        for (final ExpressionScope expressionScope : expressions) {
+            final List<MethodCall> methodCalls = expressionScope.getMethodCall(line);
+            if (methodCalls != null && !methodCalls.isEmpty()) {
+                return methodCalls;
+            }
+        }
         final Scope scope = getScope(line, super.scopes);
         if (scope != null) {
             return scope.getMethodCall(line);

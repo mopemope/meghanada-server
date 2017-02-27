@@ -5,8 +5,8 @@ import java.io.File;
 public class CacheRequest {
 
     private final File file;
-    private Object target;
     public boolean shutdown;
+    private Object target;
 
     public CacheRequest(final File file, final Object target) {
         this.file = file;
