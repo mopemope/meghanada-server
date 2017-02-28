@@ -472,6 +472,14 @@ public class ClassNameUtils {
     }
 
     public static boolean compareArgumentType(final List<String> arguments, final List<String> parameters) {
+
+        if (!parameters.isEmpty() && parameters.size() > 0 && arguments.size() > parameters.size()) {
+            final String last = parameters.get(parameters.size() - 1);
+            final boolean isVarargs = last.endsWith(ClassNameUtils.ARRAY);
+            if (isVarargs) {
+                return compareVarArgumentType(arguments, parameters);
+            }
+        }
         if (arguments.size() != parameters.size()) {
             return false;
         }
@@ -496,6 +504,56 @@ public class ClassNameUtils {
                 return cls.equals(paramClassName);
             });
             if (!result) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static boolean compareVarArgumentType(List<String> arguments, List<String> parameters) {
+        final Iterator<String> iteratorA = arguments.iterator();
+        final CachedASMReflector reflector = CachedASMReflector.getInstance();
+        final int last = parameters.size() - 1;
+        int index = 0;
+        for (final String paramStr : parameters) {
+            if (index == last) {
+                return checkVarargs(iteratorA, paramStr);
+            } else {
+                final String realArgStr = iteratorA.next();
+                if (ClassNameUtils.isArray(paramStr) != ClassNameUtils.isArray(realArgStr)) {
+                    return false;
+                }
+                final ClassName paramClass = new ClassName(paramStr);
+                final ClassName argClass = new ClassName(realArgStr);
+                final String paramClassName = autoBoxing(paramClass.getName());
+                final String argClassName = autoBoxing(argClass.getName());
+
+                index++;
+                if (paramClassName.equals(argClassName)) {
+                    continue;
+                }
+                final boolean result = reflector.getSuperClassStream(argClassName).anyMatch(s -> {
+                    final String cls = new ClassName(s).getName();
+                    return cls.equals(paramClassName);
+                });
+                if (!result) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    private static boolean checkVarargs(final Iterator<String> iteratorA, final String paramStr) {
+        // base class
+        final ClassName paramClass = new ClassName(paramStr);
+        final String paramClassName = autoBoxing(paramClass.getName());
+
+        while (iteratorA.hasNext()) {
+            final String realArgStr = iteratorA.next();
+            final ClassName argClass = new ClassName(realArgStr);
+            final String argClassName = autoBoxing(argClass.getName());
+            if (!paramClassName.equals(argClassName)) {
                 return false;
             }
         }

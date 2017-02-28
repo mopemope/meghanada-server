@@ -152,7 +152,7 @@ public class TreeAnalyzer {
         final Range range = Range.create(src, preferredPos, endPos);
         final Variable variable = new Variable(kind.toString(), preferredPos, range);
         if (value != null) {
-            variable.fqcn = value.getClass().toString();
+            variable.fqcn = value.getClass().getCanonicalName();
             context.setArgumentFQCN(variable.fqcn);
         } else {
             variable.fqcn = "<nulltype>";

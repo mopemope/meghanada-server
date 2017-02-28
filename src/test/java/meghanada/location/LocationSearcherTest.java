@@ -1,6 +1,7 @@
 package meghanada.location;
 
 import meghanada.GradleTestBase;
+import meghanada.cache.GlobalCache;
 import meghanada.reflect.asm.CachedASMReflector;
 import org.junit.Test;
 
@@ -139,22 +140,29 @@ public class LocationSearcherTest extends GradleTestBase {
     public void testJumpMethod3() throws Exception {
         File f = new File("./src/test/java/meghanada/Overload1.java").getCanonicalFile();
         assert f.exists();
+        // cached broken source
+        GlobalCache.getInstance().invalidateSource(project, f);
 
         LocationSearcher locationSearcher = getSearcher();
         {
-            // return source.searchMissingImport();
-            Location result = locationSearcher.searchDeclaration(f, 22, 9, "over");
+            Location result = locationSearcher.searchDeclaration(f, 26, 9, "over");
             assertNotNull(result);
             assertTrue(result.getPath().contains("Overload1.java"));
             assertEquals(16, result.getLine());
             assertEquals(17, result.getColumn());
         }
         {
-            // return source.searchMissingImport();
-            Location result = locationSearcher.searchDeclaration(f, 25, 9, "over");
+            Location result = locationSearcher.searchDeclaration(f, 29, 9, "over");
             assertNotNull(result);
             assertTrue(result.getPath().contains("Overload1.java"));
             assertEquals(12, result.getLine());
+            assertEquals(17, result.getColumn());
+        }
+        {
+            Location result = locationSearcher.searchDeclaration(f, 31, 9, "over");
+            assertNotNull(result);
+            assertTrue(result.getPath().contains("Overload1.java"));
+            assertEquals(20, result.getLine());
             assertEquals(17, result.getColumn());
         }
     }
