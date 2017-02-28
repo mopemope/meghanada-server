@@ -26,7 +26,7 @@ public class ASMReflectorTest extends GradleTestBase {
 
     @Test
     public void testGetClasses1() throws Exception {
-        File jar = getJar("junit");
+        File jar = getJar("junit:junit");
         ASMReflector asmReflector = ASMReflector.getInstance();
         Map<ClassIndex, File> classIndex = timeIt(() -> asmReflector.getClasses(jar));
         assertEquals(189, classIndex.size());
@@ -416,13 +416,13 @@ public class ASMReflectorTest extends GradleTestBase {
         Stopwatch stopwatch = Stopwatch.createUnstarted();
         {
             String fqcn = "org.junit.Test";
-            File jar = getJar("junit");
+            File jar = getJar("junit:junit");
             stopwatch.start();
             List<MemberDescriptor> memberDescriptors = timeIt(() -> {
                 Map<ClassIndex, File> index = asmReflector.getClasses(jar);
                 index.keySet().forEach(classIndex -> {
                     if (classIndex.isAnnotation) {
-                        System.out.println(classIndex);
+                        System.out.println("anno: " + classIndex);
                     }
                 });
                 final InheritanceInfo info = asmReflector.getReflectInfo(index, fqcn);

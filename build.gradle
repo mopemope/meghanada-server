@@ -20,12 +20,16 @@ ext {
     date = new Date().format("yyyy-MM-dd'T'HH:mm:ssZ")
     sourceCompatibility = 1.8
 
-    gradleVersion = '3.3'
+    gradleVersion = '3.4'
     log4jVersion = '2.8'
 }
 
 mainClassName = "meghanada.Main"
 applicationName = 'meghanada'
+
+tasks.withType(JavaCompile) {
+    options.incremental = true
+}
 
 shadowJar {
     baseName = 'meghanada'
