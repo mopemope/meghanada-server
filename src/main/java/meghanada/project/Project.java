@@ -799,7 +799,7 @@ public abstract class Project {
         final Config config = Config.load();
         final String projectSettingDir = config.getProjectSettingDir();
         log.info("clear cache {}", projectSettingDir);
-        FileUtils.deleteFile(new File(projectSettingDir), false);
+        FileUtils.deleteFiles(new File(projectSettingDir), false);
     }
 
     private Properties readFormatProperties() {

@@ -11,6 +11,7 @@ import meghanada.config.Config;
 import meghanada.project.Project;
 import meghanada.reflect.asm.CachedASMReflector;
 import meghanada.utils.ClassNameUtils;
+import meghanada.utils.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.message.EntryMessage;
@@ -21,6 +22,8 @@ import org.jboss.windup.decompiler.util.Filter;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.logging.Level;
@@ -330,48 +333,65 @@ public class LocationSearcher {
         final String searchFQCN = context.searchFQCN;
         final CachedASMReflector reflector = CachedASMReflector.getInstance();
         final File classFile = reflector.getClassFile(searchFQCN);
-        final File temp = File.createTempFile("meghanada-server", ".java");
-        temp.deleteOnExit();
+        final String tempDir = System.getProperty("java.io.tmpdir");
         if (classFile != null && classFile.exists() && classFile.getName().endsWith(".jar")) {
             final FernflowerDecompiler decompiler = new FernflowerDecompiler();
             decompiler.getLogger().setLevel(Level.OFF);
-            final DecompilationResult decompilationResult = decompiler.decompileArchive(classFile.toPath(),
-                    temp.getParentFile().toPath(),
-                    zipEntry -> {
-                        final String name = zipEntry.getName();
-                        final String search = ClassNameUtils.replace(searchFQCN, ".", "/") + ".class";
-                        if (name.equals(search)) {
-                            return Filter.Result.ACCEPT_STOP;
+            final File output = new File(tempDir, "meghanada_decompile");
+            if (!output.exists()) {
+                output.mkdirs();
+            }
+            try {
+                final DecompilationResult decompilationResult = decompiler.decompileArchive(classFile.toPath(),
+                        output.toPath(),
+                        zipEntry -> {
+                            final String name = zipEntry.getName();
+                            final String base = ClassNameUtils.replace(searchFQCN, ".", "/");
+                            final String search = base + ".class";
+                            if (name.equals(search)) {
+                                return Filter.Result.ACCEPT;
+                            }
+                            final String inner = base + "$";
+                            if (name.startsWith(inner)) {
+                                return Filter.Result.ACCEPT;
+                            }
+                            return Filter.Result.REJECT;
+                        }, new DefaultDecompileFilter());
+                final String fqcn = ClassNameUtils.getParentClass(context.searchFQCN);
+
+                if (this.decompileFiles.containsKey(fqcn)) {
+                    final List<String> files = this.decompileFiles.get(fqcn);
+                    for (final String decompileFile : files) {
+                        final File file = new File(decompileFile);
+                        final Location location = searchLocationFromFile(context, fqcn, file);
+                        if (location != null) {
+                            return location;
                         }
-                        return Filter.Result.REJECT;
-                    }, new DefaultDecompileFilter());
-            final String fqcn = ClassNameUtils.getParentClass(context.searchFQCN);
-            if (this.decompileFiles.containsKey(fqcn)) {
-                final List<String> files = this.decompileFiles.get(fqcn);
-                for (final String decompileFile : files) {
-                    final File file = new File(decompileFile);
-                    file.setReadOnly();
-                    file.deleteOnExit();
-                    final Location location = searchLocationFromFile(context, fqcn, file);
-                    if (location != null) {
-                        return location;
                     }
-                }
-            } else {
-                final Map<String, String> decompiledFiles = decompilationResult.getDecompiledFiles();
-                List<String> tempList = new ArrayList<>();
-                for (final String decompileFile : decompiledFiles.values()) {
-                    tempList.add(decompileFile);
-                    final File file = new File(decompileFile);
-                    file.setReadOnly();
-                    file.deleteOnExit();
-                    final Location location = searchLocationFromFile(context, fqcn, file);
-                    if (location != null) {
-                        this.decompileFiles.put(fqcn, tempList);
-                        return location;
+                } else {
+                    final Map<String, String> decompiledFiles = decompilationResult.getDecompiledFiles();
+                    final List<String> tempList = new ArrayList<>();
+                    for (final String decompileFile : decompiledFiles.values()) {
+                        final File decompiled = new File(decompileFile);
+                        final File temp = File.createTempFile("meghanada-server", ".java");
+                        Files.copy(decompiled.toPath(), temp.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                        tempList.add(temp.getCanonicalPath());
+
+                        decompiled.deleteOnExit();
+                        decompiled.delete();
+
+                        temp.setReadOnly();
+                        temp.deleteOnExit();
+                        final Location location = searchLocationFromFile(context, fqcn, temp);
+                        if (location != null) {
+                            this.decompileFiles.put(fqcn, tempList);
+                            return location;
+                        }
                     }
+                    this.decompileFiles.put(fqcn, tempList);
                 }
-                this.decompileFiles.put(fqcn, tempList);
+            } finally {
+                FileUtils.deleteFiles(output, false);
             }
         }
 

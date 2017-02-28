@@ -84,7 +84,7 @@ public final class FileUtils {
 
     }
 
-    public static void deleteFile(final File root, final boolean deleteRoot) throws IOException {
+    public static void deleteFiles(final File root, final boolean deleteRoot) throws IOException {
         if (!root.exists()) {
             return;
         }
