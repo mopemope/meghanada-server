@@ -21,12 +21,15 @@ import java.util.stream.Collectors;
 
 public final class FileUtils {
 
+    public static final String JAVA_EXT = ".java";
+    public static final String JAR_EXT = ".jar";
+    public static final String CLASS_EXT = ".class";
     private static final Logger log = LogManager.getLogger(FileUtils.class);
     private static final String ALGORITHM_SHA_512 = "SHA-512";
     private static final String UTF_8 = "UTF-8";
 
     public static boolean isJavaFile(final File file) {
-        return file.getName().endsWith(".java") && file.exists();
+        return file.getName().endsWith(JAVA_EXT) && file.exists();
     }
 
     public static String getChecksum(final File file) throws IOException {
@@ -82,6 +85,13 @@ public final class FileUtils {
             throw new UncheckedIOException(e);
         }
 
+    }
+
+    public static Optional<File> collectFile(final File root, final String ext) throws IOException {
+        return Files.walk(root.toPath())
+                .map(Path::toFile)
+                .filter(file -> file.isFile() && file.getName().endsWith(ext))
+                .findFirst();
     }
 
     public static void deleteFiles(final File root, final boolean deleteRoot) throws IOException {
@@ -228,7 +238,7 @@ public final class FileUtils {
     }
 
     public static Optional<File> getSourceFile(final String importClass, final Set<File> sourceRoots) {
-        final String p = ClassNameUtils.replaceDot2FileSep(importClass) + ".java";
+        final String p = ClassNameUtils.replaceDot2FileSep(importClass) + JAVA_EXT;
         for (final File root : sourceRoots) {
             // TODO slow
             final File file = new File(root, p);
@@ -248,7 +258,7 @@ public final class FileUtils {
             if (path.startsWith(root)) {
                 // find
                 final String src = path.substring(root.length());
-                final String classFile = ClassNameUtils.replace(src, ".java", ".class");
+                final String classFile = ClassNameUtils.replace(src, JAVA_EXT, CLASS_EXT);
                 final File file = new File(out, classFile);
                 return file.exists();
             }

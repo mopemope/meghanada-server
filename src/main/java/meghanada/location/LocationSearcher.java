@@ -34,6 +34,8 @@ import static meghanada.utils.FunctionUtils.wrapIO;
 
 public class LocationSearcher {
 
+    public static final String TEMP_FILE_PREFIX = "meghanada-server";
+    public static final String TEMP_DECOMPILE_DIR = "meghanada_decompile";
     private static final Logger log = LogManager.getLogger(LocationSearcher.class);
     private final List<LocationSearchFunction> locationSearchFunctions;
     private final Map<String, File> copiedSrcFile = new HashMap<>(16);
@@ -54,7 +56,7 @@ public class LocationSearcher {
 
     private static File toFile(final File root, final String fqcn) {
         final String clazzName = ClassNameUtils.getParentClass(fqcn);
-        final String path = ClassNameUtils.replace(clazzName, ".", File.separator) + ".java";
+        final String path = ClassNameUtils.replace(clazzName, ".", File.separator) + FileUtils.JAVA_EXT;
         return new File(root, path);
     }
 
@@ -91,12 +93,12 @@ public class LocationSearcher {
         return globalCache.getSource(project, file.getCanonicalFile());
     }
 
-    private static Location searchLocationFromFile(final SearchContext context, final String fqcn, final File targetFile) throws IOException {
+    private static Location searchLocationFromFile(final SearchContext ctx, final String fqcn, final File targetFile) throws IOException {
         try {
             final CompilationUnit compilationUnit = JavaParser.parse(targetFile, String.valueOf(StandardCharsets.UTF_8));
             final List<TypeDeclaration> types = compilationUnit.getTypes();
             for (final TypeDeclaration type : types) {
-                if (context.kind.equals(SearchKind.CLASS)) {
+                if (ctx.kind.equals(SearchKind.CLASS)) {
                     final String typeName = type.getName();
                     final String simpleName = ClassNameUtils.getSimpleName(fqcn);
                     if (typeName.equals(simpleName)) {
@@ -107,54 +109,82 @@ public class LocationSearcher {
                 }
 
                 final List<BodyDeclaration> members = type.getMembers();
+                ConstructorDeclaration constructor = null;
+                MethodDeclaration method = null;
+
                 for (final BodyDeclaration member : members) {
                     if (member instanceof FieldDeclaration &&
-                            context.name != null &&
-                            context.kind.equals(SearchKind.FIELD)) {
-                        final FieldDeclaration declaration = (FieldDeclaration) member;
-                        final List<VariableDeclarator> variables = declaration.getVariables();
-                        for (VariableDeclarator variable : variables) {
-                            final VariableDeclaratorId variableId = variable.getId();
-                            final String name = variableId.getName();
-                            if (name.equals(context.name)) {
-                                return new Location(targetFile.getCanonicalPath(),
-                                        variable.getBegin().line,
-                                        variable.getBegin().column);
-                            }
+                            ctx.name != null &&
+                            ctx.kind.equals(SearchKind.FIELD)) {
+                        final Location variable = getFieldLocation(ctx, targetFile, (FieldDeclaration) member);
+                        if (variable != null) {
+                            return variable;
                         }
                     } else if (member instanceof ConstructorDeclaration &&
-                            context.name != null &&
-                            context.kind.equals(SearchKind.METHOD)) {
+                            ctx.name != null &&
+                            ctx.kind.equals(SearchKind.METHOD)) {
                         final ConstructorDeclaration declaration = (ConstructorDeclaration) member;
                         final String name = declaration.getName();
-                        if (name.equals(context.name)) {
+                        if (name.equals(ctx.name)) {
                             final List<Parameter> parameters = declaration.getParameters();
                             // TODO check FQCN types
-                            if (context.arguments.size() == parameters.size()) {
+                            if (ctx.arguments.size() == parameters.size()) {
                                 return new Location(targetFile.getCanonicalPath(),
                                         declaration.getBegin().line,
                                         declaration.getBegin().column);
+                            } else {
+                                if (constructor == null) {
+                                    constructor = declaration;
+                                }
                             }
                         }
                     } else if (member instanceof MethodDeclaration &&
-                            context.name != null &&
-                            context.kind.equals(SearchKind.METHOD)) {
+                            ctx.name != null &&
+                            ctx.kind.equals(SearchKind.METHOD)) {
                         final MethodDeclaration declaration = (MethodDeclaration) member;
                         final String name = declaration.getName();
-                        if (name.equals(context.name)) {
+                        if (name.equals(ctx.name)) {
                             final List<Parameter> parameters = declaration.getParameters();
                             // TODO check FQCN types
-                            if (context.arguments.size() == parameters.size()) {
+                            if (ctx.arguments.size() == parameters.size()) {
                                 return new Location(targetFile.getCanonicalPath(),
                                         declaration.getBegin().line,
                                         declaration.getBegin().column);
+                            } else {
+                                if (method == null) {
+                                    method = declaration;
+                                }
                             }
                         }
                     }
                 }
+                if (constructor != null) {
+                    return new Location(targetFile.getCanonicalPath(),
+                            constructor.getBegin().line,
+                            constructor.getBegin().column);
+                }
+                if (method != null) {
+                    return new Location(targetFile.getCanonicalPath(),
+                            method.getBegin().line,
+                            method.getBegin().column);
+                }
             }
         } catch (ParseException e) {
             log.debug(e.getMessage());
+        }
+        return null;
+    }
+
+    private static Location getFieldLocation(SearchContext context, File targetFile, FieldDeclaration declaration) throws IOException {
+        final List<VariableDeclarator> variables = declaration.getVariables();
+        for (VariableDeclarator variable : variables) {
+            final VariableDeclaratorId variableId = variable.getId();
+            final String name = variableId.getName();
+            if (name.equals(context.name)) {
+                return new Location(targetFile.getCanonicalPath(),
+                        variable.getBegin().line,
+                        variable.getBegin().column);
+            }
         }
         return null;
     }
@@ -210,7 +240,7 @@ public class LocationSearcher {
                             context.arguments = arguments;
                             return Optional.ofNullable(searchFromSrcZip(context)).orElseGet(() -> {
                                 try {
-                                    return searchFromDecompileFile(context);
+                                    return searchFromDependency(context);
                                 } catch (IOException e) {
                                     throw new UncheckedExecutionException(e);
                                 }
@@ -294,7 +324,7 @@ public class LocationSearcher {
             final SearchContext context = new SearchContext(searchFQCN, SearchKind.CLASS);
             return Optional.ofNullable(searchFromSrcZip(context)).orElseGet(() -> {
                 try {
-                    return searchFromDecompileFile(context);
+                    return searchFromDependency(context);
                 } catch (IOException e) {
                     throw new UncheckedExecutionException(e);
                 }
@@ -329,73 +359,96 @@ public class LocationSearcher {
         return null;
     }
 
-    private Location searchFromDecompileFile(final SearchContext context) throws IOException {
+    private Location searchFromDependency(final SearchContext context) throws IOException {
         final String searchFQCN = context.searchFQCN;
         final CachedASMReflector reflector = CachedASMReflector.getInstance();
         final File classFile = reflector.getClassFile(searchFQCN);
         final String tempDir = System.getProperty("java.io.tmpdir");
-        if (classFile != null && classFile.exists() && classFile.getName().endsWith(".jar")) {
-            final FernflowerDecompiler decompiler = new FernflowerDecompiler();
-            decompiler.getLogger().setLevel(Level.OFF);
-            final File output = new File(tempDir, "meghanada_decompile");
-            if (!output.exists()) {
-                output.mkdirs();
+        if (classFile != null && classFile.exists() && classFile.getName().endsWith(FileUtils.JAR_EXT)) {
+            final File depParent = classFile.getParentFile();
+            final File dependencyDir = depParent.getParentFile();
+            final String srcName = ClassNameUtils.replace(classFile.getName(), FileUtils.JAR_EXT, "-sources.jar");
+
+            final String disable = System.getProperty("disable-source-jar");
+            if (disable != null && disable.equals("true")) {
+                return searchLocationFromDecompileFile(context, searchFQCN, classFile, tempDir);
             }
-            try {
-                final DecompilationResult decompilationResult = decompiler.decompileArchive(classFile.toPath(),
-                        output.toPath(),
-                        zipEntry -> {
-                            final String name = zipEntry.getName();
-                            final String base = ClassNameUtils.replace(searchFQCN, ".", "/");
-                            final String search = base + ".class";
-                            if (name.equals(search)) {
-                                return Filter.Result.ACCEPT;
-                            }
-                            final String inner = base + "$";
-                            if (name.startsWith(inner)) {
-                                return Filter.Result.ACCEPT;
-                            }
-                            return Filter.Result.REJECT;
-                        }, new DefaultDecompileFilter());
-                final String fqcn = ClassNameUtils.getParentClass(context.searchFQCN);
 
-                if (this.decompileFiles.containsKey(fqcn)) {
-                    final List<String> files = this.decompileFiles.get(fqcn);
-                    for (final String decompileFile : files) {
-                        final File file = new File(decompileFile);
-                        final Location location = searchLocationFromFile(context, fqcn, file);
-                        if (location != null) {
-                            return location;
-                        }
-                    }
-                } else {
-                    final Map<String, String> decompiledFiles = decompilationResult.getDecompiledFiles();
-                    final List<String> tempList = new ArrayList<>();
-                    for (final String decompileFile : decompiledFiles.values()) {
-                        final File decompiled = new File(decompileFile);
-                        final File temp = File.createTempFile("meghanada-server", ".java");
-                        Files.copy(decompiled.toPath(), temp.toPath(), StandardCopyOption.REPLACE_EXISTING);
-                        tempList.add(temp.getCanonicalPath());
-
-                        decompiled.deleteOnExit();
-                        decompiled.delete();
-
-                        temp.setReadOnly();
-                        temp.deleteOnExit();
-                        final Location location = searchLocationFromFile(context, fqcn, temp);
-                        if (location != null) {
-                            this.decompileFiles.put(fqcn, tempList);
-                            return location;
-                        }
-                    }
-                    this.decompileFiles.put(fqcn, tempList);
+            FileUtils.collectFile(dependencyDir, srcName).map(wrapIO(srcJar -> {
+                final File file = copyFromSrcZip(searchFQCN, srcJar);
+                if (file == null) {
+                    return searchLocationFromDecompileFile(context, searchFQCN, classFile, tempDir);
                 }
-            } finally {
-                FileUtils.deleteFiles(output, false);
-            }
+                final String fqcn = ClassNameUtils.getParentClass(context.searchFQCN);
+                return searchLocationFromFile(context, fqcn, file);
+            })).orElseGet(wrapIO(() -> {
+                return searchLocationFromDecompileFile(context, searchFQCN, classFile, tempDir);
+            }));
         }
 
         return null;
+    }
+
+    private Location searchLocationFromDecompileFile(SearchContext context, String searchFQCN, File classFile, String tempDir) throws IOException {
+        final FernflowerDecompiler decompiler = new FernflowerDecompiler();
+        decompiler.getLogger().setLevel(Level.OFF);
+        final File output = new File(tempDir, TEMP_DECOMPILE_DIR);
+        if (!output.exists()) {
+            output.mkdirs();
+        }
+        try {
+            final DecompilationResult decompilationResult = decompiler.decompileArchive(classFile.toPath(),
+                    output.toPath(),
+                    zipEntry -> {
+                        final String name = zipEntry.getName();
+                        final String base = ClassNameUtils.replace(searchFQCN, ".", "/");
+                        final String search = base + FileUtils.CLASS_EXT;
+                        if (name.equals(search)) {
+                            return Filter.Result.ACCEPT;
+                        }
+                        final String inner = base + "$";
+                        if (name.startsWith(inner)) {
+                            return Filter.Result.ACCEPT;
+                        }
+                        return Filter.Result.REJECT;
+                    }, new DefaultDecompileFilter());
+            final String fqcn = ClassNameUtils.getParentClass(context.searchFQCN);
+
+            if (this.decompileFiles.containsKey(fqcn)) {
+                final List<String> files = this.decompileFiles.get(fqcn);
+                for (final String decompileFile : files) {
+                    final File file = new File(decompileFile);
+                    final Location location = searchLocationFromFile(context, fqcn, file);
+                    if (location != null) {
+                        return location;
+                    }
+                }
+            } else {
+                final Map<String, String> decompiledFiles = decompilationResult.getDecompiledFiles();
+                final List<String> tempList = new ArrayList<>();
+                for (final String decompileFile : decompiledFiles.values()) {
+                    final File decompiled = new File(decompileFile);
+                    final File temp = File.createTempFile(TEMP_FILE_PREFIX, FileUtils.JAVA_EXT);
+                    Files.copy(decompiled.toPath(), temp.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                    tempList.add(temp.getCanonicalPath());
+
+                    decompiled.deleteOnExit();
+                    decompiled.delete();
+
+                    temp.setReadOnly();
+                    temp.deleteOnExit();
+                    final Location location = searchLocationFromFile(context, fqcn, temp);
+                    if (location != null) {
+                        this.decompileFiles.put(fqcn, tempList);
+                        return location;
+                    }
+                }
+                this.decompileFiles.put(fqcn, tempList);
+            }
+            return null;
+        } finally {
+            FileUtils.deleteFiles(output, false);
+        }
     }
 
     private File copyFromSrcZip(final String searchFQCN, final File srcZip) throws IOException {
@@ -408,14 +461,14 @@ public class LocationSearcher {
             this.copiedSrcFile.remove(searchFQCN);
         }
         try (final ZipFile srcZipFile = new ZipFile(srcZip)) {
-            final String s = ClassNameUtils.replace(searchFQCN, ".", "/") + ".java";
+            final String s = ClassNameUtils.replace(searchFQCN, ".", "/") + FileUtils.JAVA_EXT;
             final ZipEntry entry = srcZipFile.getEntry(s);
             if (entry == null) {
                 return null;
             }
 
             // copy from src.zip
-            final File temp = File.createTempFile("meghanada-server", ".java");
+            final File temp = File.createTempFile(TEMP_FILE_PREFIX, FileUtils.JAVA_EXT);
             temp.deleteOnExit();
             try (final InputStream inputStream = srcZipFile.getInputStream(entry);
                  final OutputStream outputStream = new FileOutputStream(temp)) {
@@ -456,7 +509,7 @@ public class LocationSearcher {
                             context.name = fieldName;
                             return Optional.ofNullable(searchFromSrcZip(context)).orElseGet(() -> {
                                 try {
-                                    return searchFromDecompileFile(context);
+                                    return searchFromDependency(context);
                                 } catch (IOException e) {
                                     throw new UncheckedExecutionException(e);
                                 }

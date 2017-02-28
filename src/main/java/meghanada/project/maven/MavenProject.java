@@ -24,6 +24,7 @@ public class MavenProject extends Project {
 
     private static final String REPOSITORY = "repository";
     private static final String RESOLVE_TASK = "dependency:resolve";
+    private static final String SOURCES_TASK = "dependency:sources";
     private static final String BUILD_CLASSPATH_TASK = "dependency:build-classpath";
 
     private static Logger log = LogManager.getLogger(MavenProject.class);
@@ -70,6 +71,9 @@ public class MavenProject extends Project {
             final String logPath = logFile.getCanonicalPath();
             if (this.runMvn(RESOLVE_TASK) != 0) {
                 throw new ProjectParseException("Could not resolve dependencies. please try 'mvn dependency:resolve' or 'mvn install'");
+            }
+            if (this.runMvn(SOURCES_TASK) != 0) {
+                throw new ProjectParseException("Could not resolve dependencies. please try 'mvn dependency:sources' or 'mvn install'");
             }
             if (this.runMvn(BUILD_CLASSPATH_TASK, String.format("-Dmdep.outputFile=%s", logPath)) != 0) {
                 throw new ProjectParseException("Could not resolve dependencies. please try 'mvn dependency:resolve' or 'mvn install'");
