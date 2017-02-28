@@ -23,6 +23,7 @@ public class AllTests {
     public static void init() throws Exception {
         final Project project = new GradleProject(new File("./").getCanonicalFile());
         project.parseProject();
+        project.clearCache();
         final List<File> jars = project.getDependencies().stream()
                 .map(ProjectDependency::getFile)
                 .collect(Collectors.toList());
