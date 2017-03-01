@@ -826,12 +826,10 @@ public class TreeAnalyzer {
             this.analyzeParsedTree(context, expression);
             final Type owner = expression.type;
             final String name = fa.getIdentifier().toString();
+            final int start = preferredPos - name.length();
 
-            final int start = expression.getEndPosition(endPosTable);
-            final int nameEnd = start + name.length();
-
-            final Range nameRange = Range.create(src, start + 1, nameEnd + 1);
-            final Range range = Range.create(src, start + 1, endPos);
+            final Range nameRange = Range.create(src, start, preferredPos);
+            final Range range = Range.create(src, start, endPos);
             final MethodCall methodCall = new MethodCall(selectScope, name, start + 1, nameRange, range);
 
             if (owner == null) {

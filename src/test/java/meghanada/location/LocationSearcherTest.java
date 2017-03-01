@@ -106,7 +106,7 @@ public class LocationSearcherTest extends GradleTestBase {
     }
 
     @Test
-    public void testJumpMethod1() throws Exception {
+    public void testJumpMethod01() throws Exception {
         File f = new File("./src/main/java/meghanada/session/Session.java").getCanonicalFile();
         assert f.exists();
 
@@ -121,7 +121,7 @@ public class LocationSearcherTest extends GradleTestBase {
     }
 
     @Test
-    public void testJumpMethod2() throws Exception {
+    public void testJumpMethod02() throws Exception {
         File f = new File("./src/main/java/meghanada/session/Session.java").getCanonicalFile();
         assert f.exists();
 
@@ -137,7 +137,7 @@ public class LocationSearcherTest extends GradleTestBase {
     }
 
     @Test
-    public void testJumpMethod3() throws Exception {
+    public void testJumpMethod03() throws Exception {
         File f = new File("./src/test/java/meghanada/Overload1.java").getCanonicalFile();
         assert f.exists();
         LocationSearcher locationSearcher = getSearcher();
@@ -168,7 +168,7 @@ public class LocationSearcherTest extends GradleTestBase {
     }
 
     @Test
-    public void testJumpMethod4() throws Exception {
+    public void testJumpMethod04() throws Exception {
         File f = new File("./src/test/java/meghanada/Jump1.java").getCanonicalFile();
         assert f.exists();
 
@@ -183,7 +183,7 @@ public class LocationSearcherTest extends GradleTestBase {
     }
 
     @Test
-    public void testJumpMethod5() throws Exception {
+    public void testJumpMethod05() throws Exception {
         File f = new File("./src/main/java/meghanada/location/LocationSearcher.java").getCanonicalFile();
         assert f.exists();
 
@@ -200,7 +200,7 @@ public class LocationSearcherTest extends GradleTestBase {
     }
 
     @Test
-    public void testJumpMethod6() throws Exception {
+    public void testJumpMethod06() throws Exception {
         File f = new File("./src/main/java/meghanada/location/LocationSearcher.java").getCanonicalFile();
         assert f.exists();
 
@@ -213,6 +213,23 @@ public class LocationSearcherTest extends GradleTestBase {
             assertTrue(result.getPath().contains(".java"));
             assertEquals(103, result.getLine());
             assertEquals(4, result.getColumn());
+        }
+    }
+
+    @Test
+    public void testJumpMethod07() throws Exception {
+        File f = new File("./src/main/java/meghanada/reflect/asm/ASMReflector.java").getCanonicalFile();
+        assert f.exists();
+
+        LocationSearcher locationSearcher = getSearcher();
+        {
+            Location result = timeIt(() -> {
+                return locationSearcher.searchDeclaration(f, 50, 18, "getAllowClass");
+            });
+            assertNotNull(result);
+            assertTrue(result.getPath().contains("Config.java"));
+            assertEquals(272, result.getLine());
+            assertEquals(25, result.getColumn());
         }
     }
 
