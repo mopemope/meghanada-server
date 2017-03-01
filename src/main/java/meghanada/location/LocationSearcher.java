@@ -374,7 +374,7 @@ public class LocationSearcher {
                 return searchLocationFromDecompileFile(context, searchFQCN, classFile, tempDir);
             }
 
-            FileUtils.collectFile(dependencyDir, srcName).map(wrapIO(srcJar -> {
+            return FileUtils.collectFile(dependencyDir, srcName).map(wrapIO(srcJar -> {
                 final File file = copyFromSrcZip(searchFQCN, srcJar);
                 if (file == null) {
                     return searchLocationFromDecompileFile(context, searchFQCN, classFile, tempDir);
