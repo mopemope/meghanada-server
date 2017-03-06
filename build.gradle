@@ -20,8 +20,8 @@ ext {
     date = new Date().format("yyyy-MM-dd'T'HH:mm:ssZ")
     sourceCompatibility = 1.8
 
-    gradleVersion = '3.4'
-    log4jVersion = '2.8'
+    gradleVersion = '3.4.1'
+    log4jVersion = '2.8.1'
 }
 
 mainClassName = "meghanada.Main"
