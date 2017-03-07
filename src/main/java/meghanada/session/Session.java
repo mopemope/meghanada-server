@@ -9,6 +9,8 @@ import meghanada.completion.JavaCompletion;
 import meghanada.completion.JavaVariableCompletion;
 import meghanada.completion.LocalVariable;
 import meghanada.config.Config;
+import meghanada.docs.declaration.Declaration;
+import meghanada.docs.declaration.DeclarationSearcher;
 import meghanada.location.Location;
 import meghanada.location.LocationSearcher;
 import meghanada.project.Project;
@@ -50,6 +52,7 @@ public class Session {
     private JavaCompletion completion;
     private JavaVariableCompletion variableCompletion;
     private LocationSearcher locationSearcher;
+    private DeclarationSearcher declarationSearcher;
 
     private boolean started;
 
@@ -615,7 +618,7 @@ public class Session {
     }
 
     public synchronized Location jumpDeclaration(final String path, final int line, final int column, final String symbol) throws ExecutionException, IOException {
-        Location location = this.getLocationSearcher().searchDeclaration(new File(path), line, column, symbol);
+        Location location = this.getLocationSearcher().searchDeclarationLocation(new File(path), line, column, symbol);
         if (location != null) {
             Location backLocation = new Location(path, line, column);
             this.jumpDecHistory.addLast(backLocation);
@@ -680,5 +683,20 @@ public class Session {
         this.projects.values().forEach(project -> {
             this.sessionEventBus.requestWatchFile(project.getProjectRoot());
         });
+    }
+
+    public Optional<Declaration> showDeclaration(final String path,
+                                                 final int line,
+                                                 final int column,
+                                                 final String symbol) throws IOException, ExecutionException {
+        final DeclarationSearcher searcher = this.getDeclarationSearcher();
+        return searcher.searchDeclaration(new File(path), line, column, symbol);
+    }
+
+    private DeclarationSearcher getDeclarationSearcher() {
+        if (this.declarationSearcher == null) {
+            this.declarationSearcher = new DeclarationSearcher(currentProject);
+        }
+        return declarationSearcher;
     }
 }

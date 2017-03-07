@@ -47,6 +47,10 @@ public class SourceContext {
         this.endPosTable = endPosTable;
     }
 
+    public boolean isArgument() {
+        return isArgument;
+    }
+
     public void setArgument(boolean argument) {
         isArgument = argument;
     }

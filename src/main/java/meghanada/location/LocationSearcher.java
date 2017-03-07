@@ -30,6 +30,7 @@ import java.util.logging.Level;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
+import static meghanada.utils.FileUtils.existsFQCN;
 import static meghanada.utils.FunctionUtils.wrapIO;
 
 public class LocationSearcher {
@@ -45,19 +46,6 @@ public class LocationSearcher {
     public LocationSearcher(final Project project) {
         this.locationSearchFunctions = this.getLocationSearchFunctions();
         this.project = project;
-    }
-
-    private static Optional<File> existsFQCN(final Set<File> roots, final String fqcn) {
-        return roots.stream()
-                .map(root -> toFile(root, fqcn))
-                .filter(File::exists)
-                .findFirst();
-    }
-
-    private static File toFile(final File root, final String fqcn) {
-        final String clazzName = ClassNameUtils.getParentClass(fqcn);
-        final String path = ClassNameUtils.replace(clazzName, ".", File.separator) + FileUtils.JAVA_EXT;
-        return new File(root, path);
     }
 
     private static Location searchLocalVariable(final Source source, final int line, final int col, final String symbol) {
@@ -193,7 +181,7 @@ public class LocationSearcher {
         this.project = project;
     }
 
-    public Location searchDeclaration(final File file, final int line, final int column, final String symbol) throws ExecutionException, IOException {
+    public Location searchDeclarationLocation(final File file, final int line, final int column, final String symbol) throws ExecutionException, IOException {
         final Source source = getSource(project, file);
         log.trace("search symbol {}", symbol);
 

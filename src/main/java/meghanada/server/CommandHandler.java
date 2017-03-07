@@ -2,6 +2,7 @@ package meghanada.server;
 
 import meghanada.analyze.CompileResult;
 import meghanada.completion.LocalVariable;
+import meghanada.docs.declaration.Declaration;
 import meghanada.location.Location;
 import meghanada.reflect.CandidateUnit;
 import meghanada.session.Session;
@@ -28,7 +29,7 @@ public class CommandHandler {
     private final BufferedWriter writer;
     private final OutputFormatter outputFormatter;
 
-    public CommandHandler(Session session, BufferedWriter writer, OutputFormatter formatter) {
+    public CommandHandler(final Session session, final BufferedWriter writer, final OutputFormatter formatter) {
         this.session = session;
         this.writer = writer;
         this.outputFormatter = formatter;
@@ -253,6 +254,23 @@ public class CommandHandler {
         } catch (Throwable e) {
             log.catching(e);
         }
+    }
+
+    public void showDeclaration(final String path, final String line, final String col, final String symbol) {
+        int lineInt = Integer.parseInt(line);
+        int columnInt = Integer.parseInt(col);
+        try {
+            final Optional<Declaration> declaration = session.showDeclaration(path, lineInt, columnInt, symbol);
+            declaration.ifPresent(wrapIOConsumer(decl -> {
+                final String out = outputFormatter.showDeclaration(decl);
+                writer.write(out);
+            }));
+            writer.newLine();
+            writer.flush();
+        } catch (Throwable e) {
+            log.catching(e);
+        }
+
     }
 
 }

@@ -240,6 +240,12 @@ public class EmacsServer implements Server {
                     handler.jumpDeclaration(args.get(0), args.get(1), args.get(2), args.get(3));
                     return true;
                 })
+                .when(headTail(eq("sd"), any())).get(args -> {
+                    // sd : Show declaration (short)
+                    // usage: sd <filepath> <line> <column> <symbol>
+                    handler.showDeclaration(args.get(0), args.get(1), args.get(2), args.get(3));
+                    return true;
+                })
                 .when(headTail(eq("bj"), any())).get(args -> {
                     // bj : Back Jump
                     // usage: bj

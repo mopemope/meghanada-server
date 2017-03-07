@@ -2,6 +2,7 @@ package meghanada.server;
 
 import meghanada.analyze.CompileResult;
 import meghanada.completion.LocalVariable;
+import meghanada.docs.declaration.Declaration;
 import meghanada.location.Location;
 import meghanada.reflect.CandidateUnit;
 
@@ -38,4 +39,6 @@ public interface OutputFormatter {
     String localVariable(LocalVariable lv);
 
     String formatCode(String path);
+
+    String showDeclaration(Declaration decl);
 }

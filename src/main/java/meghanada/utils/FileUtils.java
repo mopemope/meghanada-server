@@ -1,8 +1,10 @@
 package meghanada.utils;
 
 import meghanada.Main;
+import meghanada.analyze.Source;
 import meghanada.cache.GlobalCache;
 import meghanada.config.Config;
+import meghanada.project.Project;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.message.EntryMessage;
@@ -17,6 +19,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
 public final class FileUtils {
@@ -353,4 +356,23 @@ public final class FileUtils {
             return properties;
         }
     }
+
+    public static Optional<File> existsFQCN(final Set<File> roots, final String fqcn) {
+        return roots.stream()
+                .map(root -> convertFQCNToFile(root, fqcn))
+                .filter(File::exists)
+                .findFirst();
+    }
+
+    private static File convertFQCNToFile(final File root, final String fqcn) {
+        final String clazzName = ClassNameUtils.getParentClass(fqcn);
+        final String path = ClassNameUtils.replace(clazzName, ".", File.separator) + FileUtils.JAVA_EXT;
+        return new File(root, path);
+    }
+
+    public static Optional<Source> getSource(final Project project, final File file) throws IOException, ExecutionException {
+        final GlobalCache globalCache = GlobalCache.getInstance();
+        return Optional.ofNullable(globalCache.getSource(project, file.getCanonicalFile()));
+    }
+
 }

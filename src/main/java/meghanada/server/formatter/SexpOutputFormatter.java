@@ -2,6 +2,7 @@ package meghanada.server.formatter;
 
 import meghanada.analyze.CompileResult;
 import meghanada.completion.LocalVariable;
+import meghanada.docs.declaration.Declaration;
 import meghanada.location.Location;
 import meghanada.reflect.CandidateUnit;
 import meghanada.server.OutputFormatter;
@@ -177,8 +178,8 @@ public class SexpOutputFormatter implements OutputFormatter {
     }
 
     @Override
-    public String localVariable(LocalVariable lv) {
-        StringBuilder sb = new StringBuilder();
+    public String localVariable(final LocalVariable lv) {
+        final StringBuilder sb = new StringBuilder();
         sb.append(LPAREN);
         sb.append(this.doubleQuote(lv.getReturnType()));
         if (!lv.getCandidates().isEmpty()) {
@@ -200,7 +201,16 @@ public class SexpOutputFormatter implements OutputFormatter {
     }
 
     @Override
-    public String formatCode(String path) {
+    public String formatCode(final String path) {
         return doubleQuote(path);
+    }
+
+    @Override
+    public String showDeclaration(final Declaration declaration) {
+        return LPAREN + String.join(LIST_SEP,
+                doubleQuote(declaration.type.name()),
+                doubleQuote(declaration.scopeInfo),
+                doubleQuote(declaration.signature))
+                + RPAREN;
     }
 }

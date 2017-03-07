@@ -440,7 +440,7 @@ public class TreeAnalyzer {
 
         } else if (tree instanceof JCTree.JCLambda) {
 
-            analyzeLambda(context, (JCTree.JCLambda) tree);
+            this.analyzeLambda(context, (JCTree.JCLambda) tree);
 
         } else if (tree instanceof JCTree.JCThrow) {
 
@@ -579,6 +579,8 @@ public class TreeAnalyzer {
 
     private void analyzeLambda(final SourceContext context, final JCTree.JCLambda lambda) throws IOException {
         final boolean isParameter = context.isParameter();
+        final boolean isArgument = context.isArgument();
+
         final java.util.List<? extends VariableTree> parameters = lambda.getParameters();
         if (parameters != null) {
             parameters.forEach(wrapIOConsumer(v -> {
@@ -596,7 +598,10 @@ public class TreeAnalyzer {
         final Type lambdaType = lambda.type;
         if (lambdaType != null) {
             final Source src = context.getSource();
-            getTypeString(src, lambdaType).ifPresent(context::setArgumentFQCN);
+            this.getTypeString(src, lambdaType).ifPresent(fqcn -> {
+                context.setArgument(isArgument);
+                context.setArgumentFQCN(fqcn);
+            });
         }
     }
 
@@ -895,9 +900,11 @@ public class TreeAnalyzer {
         final Source src = context.getSource();
         final EndPosTable endPosTable = context.getEndPosTable();
         final boolean isParameter = context.isParameter();
+        final boolean isArgument = context.isArgument();
 
         final List<JCTree.JCExpression> argumentExprs = newClass.getArguments();
         final java.util.List<String> arguments = getArgumentsType(context, argumentExprs);
+
         context.setParameter(isParameter);
 
         final JCTree.JCExpression identifier = newClass.getIdentifier();
@@ -914,6 +921,7 @@ public class TreeAnalyzer {
         this.getTypeString(src, type).ifPresent(fqcn -> {
             methodCall.declaringClass = this.markFQCN(src, fqcn);
             methodCall.returnType = fqcn;
+            context.setArgument(isArgument);
             context.setArgumentFQCN(fqcn);
         });
 

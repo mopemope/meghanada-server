@@ -76,7 +76,9 @@ public class JavaSourceLoader extends CacheLoader<File, Source> implements Remov
     @Override
     public Source load(final File file) throws IOException {
         final Config config = Config.load();
-
+        if (file == null || !file.exists()) {
+            return null;
+        }
         if (!config.useSourceCache()) {
             final CompileResult compileResult = project.parseFile(file);
             return compileResult.getSources().get(file);

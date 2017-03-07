@@ -431,6 +431,12 @@ public class CachedASMReflector {
                 });
     }
 
+    public Stream<MemberDescriptor> reflectConstructorStream(final String className) {
+        return this.reflect(className)
+                .stream()
+                .filter(m -> m.matchType(CandidateUnit.MemberType.CONSTRUCTOR));
+    }
+
     public Stream<String> getSuperClassStream(final String className) {
         return this.containsClassIndex(className)
                 .map(classIndex -> classIndex.supers.stream()).orElse(new ArrayList<String>(0).stream());
