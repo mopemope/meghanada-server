@@ -87,6 +87,7 @@ public class DeclarationSearcher {
         final EntryMessage entryMessage = log.traceEntry("line={} col={} symbol={}", line, col, symbol);
         Optional<Declaration> result = Optional.empty();
         if (symbol.equals("package") ||
+                symbol.equals("import") ||
                 symbol.equals("new") ||
                 symbol.equals("try") ||
                 symbol.equals("throw") ||
@@ -95,6 +96,7 @@ public class DeclarationSearcher {
                 symbol.equals("private") ||
                 symbol.equals("protected") ||
                 symbol.equals("return") ||
+                symbol.equals("static") ||
                 symbol.equals("final")) {
             result = Optional.of(new Declaration(symbol, "", Declaration.Type.OTHER, 0));
         }

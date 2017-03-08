@@ -128,6 +128,22 @@ public class DeclarationSearcherTest extends GradleTestBase {
     }
 
     @Test
+    public void testClassDeclaration02() throws Exception {
+        File f = new File("./src/main/java/meghanada/server/emacs/EmacsServer.java").getCanonicalFile();
+        assert f.exists();
+        final DeclarationSearcher searcher = getSearcher();
+        final Optional<Declaration> result = timeIt(() -> {
+            return searcher.searchDeclaration(f, 51, 38, "SEXP");
+        });
+        assertNotNull(result);
+        assertTrue(result.isPresent());
+        result.ifPresent(declaration -> {
+            assertEquals("OUTPUT.SEXP", declaration.scopeInfo);
+            assertEquals("meghanada.server.emacs.EmacsServer$OUTPUT", declaration.signature);
+        });
+    }
+
+    @Test
     public void testVar01() throws Exception {
         File f = new File("./src/main/java/meghanada/server/emacs/EmacsServer.java").getCanonicalFile();
         assert f.exists();
