@@ -208,7 +208,7 @@ public class SexpOutputFormatter implements OutputFormatter {
     @Override
     public String showDeclaration(final Declaration declaration) {
         return LPAREN + String.join(LIST_SEP,
-                doubleQuote(declaration.type.name()),
+                declaration.type.name().toLowerCase(),
                 doubleQuote(declaration.scopeInfo),
                 doubleQuote(declaration.signature))
                 + RPAREN;

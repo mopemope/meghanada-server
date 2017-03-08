@@ -10,6 +10,7 @@ public abstract class AccessSymbol {
     public int pos;
     public Range range;
     public String returnType;
+    public int argumentIndex = -1;
 
     public AccessSymbol() {
 

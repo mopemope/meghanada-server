@@ -95,6 +95,23 @@ public class DeclarationSearcherTest extends GradleTestBase {
     }
 
     @Test
+    public void testMethodDeclaration04() throws Exception {
+        File f = new File("./src/main/java/meghanada/server/emacs/EmacsServer.java").getCanonicalFile();
+        assert f.exists();
+        final DeclarationSearcher searcher = getSearcher();
+        final Optional<Declaration> result = debugIt(() -> {
+            return searcher.searchDeclaration(f, 110, 84, "getOutputFormatter");
+        });
+        assertNotNull(result);
+        assertTrue(result.isPresent());
+        result.ifPresent(declaration -> {
+            assertEquals("getOutputFormatter", declaration.scopeInfo);
+            assertEquals("private OutputFormatter getOutputFormatter()", declaration.signature);
+            assertEquals(2, declaration.argumentIndex);
+        });
+    }
+
+    @Test
     public void testClassDeclaration01() throws Exception {
         File f = new File("./src/main/java/meghanada/server/emacs/EmacsServer.java").getCanonicalFile();
         assert f.exists();
@@ -107,6 +124,54 @@ public class DeclarationSearcherTest extends GradleTestBase {
         result.ifPresent(declaration -> {
             assertEquals("ServerSocket", declaration.scopeInfo);
             assertEquals("java.net.ServerSocket", declaration.signature);
+        });
+    }
+
+    @Test
+    public void testVar01() throws Exception {
+        File f = new File("./src/main/java/meghanada/server/emacs/EmacsServer.java").getCanonicalFile();
+        assert f.exists();
+
+        final DeclarationSearcher searcher = getSearcher();
+        final Optional<Declaration> result = timeIt(() -> searcher.searchDeclaration(f, 49, 55, "address"));
+        assertNotNull(result);
+        assertTrue(result.isPresent());
+        result.ifPresent(declaration -> {
+            assertEquals("address", declaration.scopeInfo);
+            assertEquals("java.net.InetAddress", declaration.signature);
+            assertEquals(2, declaration.argumentIndex);
+        });
+    }
+
+    @Test
+    public void testVar02() throws Exception {
+        File f = new File("./src/main/java/meghanada/server/emacs/EmacsServer.java").getCanonicalFile();
+        assert f.exists();
+
+        final DeclarationSearcher searcher = getSearcher();
+        final Optional<Declaration> result = timeIt(() -> searcher.searchDeclaration(f, 49, 52, "0"));
+        assertNotNull(result);
+        assertTrue(result.isPresent());
+        result.ifPresent(declaration -> {
+            assertEquals("0", declaration.scopeInfo);
+            assertEquals("java.lang.Integer", declaration.signature);
+            assertEquals(1, declaration.argumentIndex);
+        });
+    }
+
+    @Test
+    public void testVar03() throws Exception {
+        File f = new File("./src/main/java/meghanada/server/emacs/EmacsServer.java").getCanonicalFile();
+        assert f.exists();
+
+        final DeclarationSearcher searcher = getSearcher();
+        final Optional<Declaration> result = timeIt(() -> searcher.searchDeclaration(f, 110, 38, "handler"));
+        assertNotNull(result);
+        assertTrue(result.isPresent());
+        result.ifPresent(declaration -> {
+            assertEquals("handler", declaration.scopeInfo);
+            assertEquals("meghanada.server.CommandHandler", declaration.signature);
+            assertEquals(-1, declaration.argumentIndex);
         });
     }
 

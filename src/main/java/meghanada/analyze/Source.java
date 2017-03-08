@@ -260,6 +260,22 @@ public class Source {
         return Collections.emptyMap();
     }
 
+    public Optional<Variable> getVariable(final int line, final int col) {
+        final Scope scope = Scope.getInnerScope(line, this.classScopes);
+        if (scope != null) {
+            final Set<Variable> variables = scope.getVariables();
+
+            return scope.getVariables()
+                    .stream()
+                    .filter(variable -> {
+                        return variable.range.begin.line == line &&
+                                variable.range.containsColumn(col);
+                    })
+                    .findFirst();
+        }
+        return Optional.empty();
+    }
+
     public List<MemberDescriptor> getAllMember() {
         final List<MemberDescriptor> memberDescriptors = new ArrayList<>(8);
         for (final TypeScope typeScope : this.classScopes) {

@@ -260,11 +260,10 @@ public class CommandHandler {
         int lineInt = Integer.parseInt(line);
         int columnInt = Integer.parseInt(col);
         try {
-            final Optional<Declaration> declaration = session.showDeclaration(path, lineInt, columnInt, symbol);
-            declaration.ifPresent(wrapIOConsumer(decl -> {
-                final String out = outputFormatter.showDeclaration(decl);
-                writer.write(out);
-            }));
+            final Declaration declaration = session.showDeclaration(path, lineInt, columnInt, symbol)
+                    .orElse(new Declaration("", "", Declaration.Type.OTHER, 0));
+            final String out = outputFormatter.showDeclaration(declaration);
+            writer.write(out);
             writer.newLine();
             writer.flush();
         } catch (Throwable e) {

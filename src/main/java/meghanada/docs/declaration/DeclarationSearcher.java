@@ -39,10 +39,9 @@ public class DeclarationSearcher {
                                                              final Integer col,
                                                              final String symbol) {
         final EntryMessage entryMessage = log.traceEntry("line={} col={} symbol={}", line, col, symbol);
-        final Map<String, Variable> variableMap = source.getDeclaratorMap(line);
-        final Optional<Variable> variable = Optional.ofNullable(variableMap.get(symbol));
+        final Optional<Variable> variable = source.getVariable(line, col);
         final Declaration declaration = variable.map(var -> {
-            return new Declaration(symbol, var.fqcn, Declaration.Type.VAR);
+            return new Declaration(symbol, var.fqcn, Declaration.Type.VAR, var.argumentIndex);
         }).orElseGet(() -> {
             final TypeScope ts = source.getTypeScope(line);
             if (ts == null) {
@@ -52,7 +51,7 @@ public class DeclarationSearcher {
             if (fieldVar == null) {
                 return null;
             }
-            return new Declaration(symbol, fieldVar.fqcn, Declaration.Type.VAR);
+            return new Declaration(symbol, fieldVar.fqcn, Declaration.Type.VAR, fieldVar.argumentIndex);
         });
         log.traceExit(entryMessage);
         return Optional.ofNullable(declaration);
@@ -95,8 +94,9 @@ public class DeclarationSearcher {
                 symbol.equals("public") ||
                 symbol.equals("private") ||
                 symbol.equals("protected") ||
+                symbol.equals("return") ||
                 symbol.equals("final")) {
-            result = Optional.of(new Declaration(symbol, "", Declaration.Type.OTHER));
+            result = Optional.of(new Declaration(symbol, "", Declaration.Type.OTHER, 0));
         }
         log.traceExit(entryMessage);
         return result;
@@ -114,7 +114,7 @@ public class DeclarationSearcher {
             } else {
                 scope = symbol;
             }
-            return new Declaration(scope.trim(), fa.returnType, Declaration.Type.FIELD);
+            return new Declaration(scope.trim(), fa.returnType, Declaration.Type.FIELD, fa.argumentIndex);
         });
         log.traceExit(entryMessage);
         return result;
@@ -160,7 +160,7 @@ public class DeclarationSearcher {
             } else {
                 scope = symbol;
             }
-            return new Declaration(scope.trim(), decl, Declaration.Type.METHOD);
+            return new Declaration(scope.trim(), decl, Declaration.Type.METHOD, mc.argumentIndex);
         });
         log.traceExit(entryMessage);
         return result;
@@ -186,9 +186,9 @@ public class DeclarationSearcher {
             }
             final String clazzName = fqcn;
             result = existsFQCN(project.getAllSources(), fqcn)
-                    .map(file -> new Declaration(symbol, clazzName, Declaration.Type.CLASS));
+                    .map(file -> new Declaration(symbol, clazzName, Declaration.Type.CLASS, 0));
         } else {
-            final Declaration declaration = new Declaration(symbol, fqcn, Declaration.Type.CLASS);
+            final Declaration declaration = new Declaration(symbol, fqcn, Declaration.Type.CLASS, 0);
             result = Optional.of(declaration);
         }
         log.traceExit(entryMessage);

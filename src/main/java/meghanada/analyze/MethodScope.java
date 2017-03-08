@@ -8,6 +8,7 @@ import org.apache.logging.log4j.message.EntryMessage;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public class MethodScope extends BlockScope {
 
@@ -124,6 +125,15 @@ public class MethodScope extends BlockScope {
             declaratorMap.putAll(es.getDeclaratorMap());
         }
         return declaratorMap;
+    }
+
+    @Override
+    public Set<Variable> getVariables() {
+        final Set<Variable> variables = super.getVariables();
+        for (final ExpressionScope es : this.expressions) {
+            variables.addAll(es.getVariables());
+        }
+        return variables;
     }
 
     @Override

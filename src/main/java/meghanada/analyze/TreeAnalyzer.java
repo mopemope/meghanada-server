@@ -153,9 +153,11 @@ public class TreeAnalyzer {
         final Variable variable = new Variable(kind.toString(), preferredPos, range);
         if (value != null) {
             variable.fqcn = value.getClass().getCanonicalName();
+            variable.argumentIndex = context.getArgumentIndex();
             context.setArgumentFQCN(variable.fqcn);
         } else {
             variable.fqcn = "<nulltype>";
+            variable.argumentIndex = context.getArgumentIndex();
             context.setArgumentFQCN(variable.fqcn);
         }
         src.getCurrentScope().ifPresent(scope -> scope.addVariable(variable));
@@ -281,11 +283,14 @@ public class TreeAnalyzer {
 
         } else if (tree instanceof JCTree.JCBlock) {
             final JCTree.JCBlock block = (JCTree.JCBlock) tree;
+            final int argumentIndex = context.getArgumentIndex();
 
+            context.setArgumentIndex(-1);
             block.getStatements().forEach(wrapIOConsumer(stmt -> {
                 this.analyzeParsedTree(context, stmt);
             }));
 
+            context.setArgumentIndex(argumentIndex);
         } else if (tree instanceof JCTree.JCFieldAccess) {
 
             this.analyzeFieldAccess(context, (JCTree.JCFieldAccess) tree, preferredPos, endPos);
@@ -492,6 +497,7 @@ public class TreeAnalyzer {
                     if (sym.type != null) {
                         this.getTypeString(src, sym.type).ifPresent(fqcn -> {
                             methodCall.returnType = this.markFQCN(src, fqcn);
+                            // TODO add args
                         });
                     }
                     src.getCurrentScope().ifPresent(scope -> {
@@ -580,6 +586,7 @@ public class TreeAnalyzer {
     private void analyzeLambda(final SourceContext context, final JCTree.JCLambda lambda) throws IOException {
         final boolean isParameter = context.isParameter();
         final boolean isArgument = context.isArgument();
+        final int argumentIndex = context.getArgumentIndex();
 
         final java.util.List<? extends VariableTree> parameters = lambda.getParameters();
         if (parameters != null) {
@@ -591,7 +598,9 @@ public class TreeAnalyzer {
         }
         final JCTree body = lambda.getBody();
         if (body != null) {
+            context.setArgumentIndex(-1);
             this.analyzeParsedTree(context, body);
+            context.setArgumentIndex(argumentIndex);
         }
 
         context.setParameter(isParameter);
@@ -600,6 +609,7 @@ public class TreeAnalyzer {
             final Source src = context.getSource();
             this.getTypeString(src, lambdaType).ifPresent(fqcn -> {
                 context.setArgument(isArgument);
+                // TODO
                 context.setArgumentFQCN(fqcn);
             });
         }
@@ -768,9 +778,11 @@ public class TreeAnalyzer {
         final Type returnType = methodInvocation.type;
 
         final boolean isParameter = context.isParameter();
+        final int argumentIndex = context.getArgumentIndex();
         final List<JCTree.JCExpression> argumentExprs = methodInvocation.getArguments();
         final java.util.List<String> arguments = getArgumentsType(context, argumentExprs);
         context.setParameter(isParameter);
+        context.setArgumentIndex(argumentIndex);
 
         final JCTree.JCExpression methodSelect = methodInvocation.getMethodSelect();
 
@@ -798,6 +810,7 @@ public class TreeAnalyzer {
                     if (owner.type != null) {
                         this.getTypeString(src, owner.type).ifPresent(fqcn -> {
                             methodCall.returnType = this.markFQCN(src, fqcn);
+                            methodCall.argumentIndex = context.getArgumentIndex();
                             context.setArgumentFQCN(methodCall.returnType);
                         });
                     }
@@ -814,6 +827,7 @@ public class TreeAnalyzer {
                         });
                         this.getTypeString(src, returnType).ifPresent(fqcn -> {
                             methodCall.returnType = this.markFQCN(src, fqcn);
+                            methodCall.argumentIndex = context.getArgumentIndex();
                             context.setArgumentFQCN(methodCall.returnType);
                         });
                     }
@@ -868,6 +882,7 @@ public class TreeAnalyzer {
                     final String clazz = src.importClass.get(nm);
                     if (clazz != null) {
                         methodCall.returnType = this.markFQCN(src, clazz);
+                        methodCall.argumentIndex = context.getArgumentIndex();
                         context.setArgumentFQCN(methodCall.returnType);
                     } else {
                         if (src.isReportUnknown()) {
@@ -882,6 +897,7 @@ public class TreeAnalyzer {
             } else {
                 this.getTypeString(src, returnType).ifPresent(fqcn -> {
                     methodCall.returnType = this.markFQCN(src, fqcn);
+                    methodCall.argumentIndex = context.getArgumentIndex();
                     context.setArgumentFQCN(methodCall.returnType);
                 });
             }
@@ -901,11 +917,14 @@ public class TreeAnalyzer {
         final EndPosTable endPosTable = context.getEndPosTable();
         final boolean isParameter = context.isParameter();
         final boolean isArgument = context.isArgument();
+        final int argumentIndex = context.getArgumentIndex();
 
         final List<JCTree.JCExpression> argumentExprs = newClass.getArguments();
         final java.util.List<String> arguments = getArgumentsType(context, argumentExprs);
 
         context.setParameter(isParameter);
+        context.setArgument(isArgument);
+        context.setArgumentIndex(argumentIndex);
 
         final JCTree.JCExpression identifier = newClass.getIdentifier();
         final String name = identifier.toString();
@@ -921,7 +940,7 @@ public class TreeAnalyzer {
         this.getTypeString(src, type).ifPresent(fqcn -> {
             methodCall.declaringClass = this.markFQCN(src, fqcn);
             methodCall.returnType = fqcn;
-            context.setArgument(isArgument);
+            methodCall.argumentIndex = argumentIndex;
             context.setArgumentFQCN(fqcn);
         });
 
@@ -935,18 +954,26 @@ public class TreeAnalyzer {
         });
     }
 
-    private java.util.List<String> getArgumentsType(SourceContext context, List<JCTree.JCExpression> arguments) {
-        return arguments.stream().map(expression -> {
-            context.setArgument(true);
-            try {
-                this.analyzeParsedTree(context, expression);
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
-            }
-            log.trace("class={} returnFQCN={} expr={}", expression.getClass().getSimpleName(), context.getArgumentFQCN(), expression);
-            context.setArgument(false);
-            return context.getArgumentFQCN();
-        }).collect(Collectors.toList());
+    private java.util.List<String> getArgumentsType(final SourceContext context, final List<JCTree.JCExpression> arguments) {
+        context.setArgumentIndex(0);
+        try {
+            return arguments.stream()
+                    .map(expression -> {
+                        context.setArgument(true);
+                        try {
+                            this.analyzeParsedTree(context, expression);
+                        } catch (IOException e) {
+                            throw new UncheckedIOException(e);
+                        }
+                        log.trace("class={} returnFQCN={} expr={}", expression.getClass().getSimpleName(), context.getArgumentFQCN(), expression);
+                        context.incrArgumentIndex();
+                        context.setArgument(false);
+                        return context.getArgumentFQCN();
+                    }).collect(Collectors.toList());
+        } finally {
+            // reset
+            context.setArgumentIndex(-1);
+        }
     }
 
     private void analyzeExpressionStatement(final SourceContext context, final JCTree.JCExpressionStatement expr, final int preferredPos, final int endPos) {
@@ -1084,6 +1111,7 @@ public class TreeAnalyzer {
             if (sym.type != null) {
                 this.getTypeString(src, sym.type).ifPresent(fqcn -> {
                     fa.returnType = this.markFQCN(src, fqcn);
+                    fa.argumentIndex = context.getArgumentIndex();
                     context.setArgumentFQCN(fa.returnType);
                 });
             }
@@ -1102,6 +1130,7 @@ public class TreeAnalyzer {
             if (sym.type != null) {
                 this.getTypeString(src, sym.type).ifPresent(fqcn -> {
                     methodCall.returnType = this.markFQCN(src, fqcn);
+                    methodCall.argumentIndex = context.getArgumentIndex();
                     context.setArgumentFQCN(methodCall.returnType);
                 });
             }
@@ -1129,6 +1158,7 @@ public class TreeAnalyzer {
             if (sym.type != null) {
                 this.getTypeString(src, sym.type).ifPresent(fqcn -> {
                     fa.returnType = this.markFQCN(src, fqcn);
+                    fa.argumentIndex = context.getArgumentIndex();
                     context.setArgumentFQCN(fa.returnType);
                 });
             }
@@ -1217,6 +1247,7 @@ public class TreeAnalyzer {
 
             this.getTypeString(src, type).ifPresent(fqcn -> {
                 variable.fqcn = this.markFQCN(src, fqcn);
+                variable.argumentIndex = context.getArgumentIndex();
                 context.setArgumentFQCN(variable.fqcn);
             });
 
@@ -1230,6 +1261,7 @@ public class TreeAnalyzer {
                 final String className = currentClass.get().name;
                 if (ClassNameUtils.getSimpleName(className).equals(nm)) {
                     variable.fqcn = this.markFQCN(src, className);
+                    variable.argumentIndex = context.getArgumentIndex();
                     context.setArgumentFQCN(variable.fqcn);
                     src.getCurrentScope().ifPresent(scope -> scope.addVariable(variable));
                     return;
@@ -1238,6 +1270,7 @@ public class TreeAnalyzer {
 
             if (src.importClass.containsKey(nm)) {
                 variable.fqcn = this.markFQCN(src, src.importClass.get(nm));
+                variable.argumentIndex = context.getArgumentIndex();
                 context.setArgumentFQCN(variable.fqcn);
                 src.getCurrentScope().ifPresent(scope -> scope.addVariable(variable));
                 return;
@@ -1247,6 +1280,7 @@ public class TreeAnalyzer {
                 final String className = currentClass.get().name;
                 if (ClassNameUtils.getSimpleName(className).equals(nm)) {
                     variable.fqcn = this.markFQCN(src, className);
+                    variable.argumentIndex = context.getArgumentIndex();
                     context.setArgumentFQCN(variable.fqcn);
                     src.getCurrentScope().ifPresent(scope -> scope.addVariable(variable));
                 }

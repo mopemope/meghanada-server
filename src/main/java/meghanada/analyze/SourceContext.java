@@ -8,6 +8,7 @@ public class SourceContext {
     private boolean isParameter;
     private boolean isArgument;
     private String argumentFQCN;
+    private int argumentIndex = -1;
     private EndPosTable endPosTable;
 
     public SourceContext(final Source source) {
@@ -52,6 +53,18 @@ public class SourceContext {
     }
 
     public void setArgument(boolean argument) {
-        isArgument = argument;
+        this.isArgument = argument;
+    }
+
+    public int getArgumentIndex() {
+        return argumentIndex;
+    }
+
+    public void setArgumentIndex(int argumentIndex) {
+        this.argumentIndex = argumentIndex;
+    }
+
+    public void incrArgumentIndex() {
+        this.argumentIndex++;
     }
 }

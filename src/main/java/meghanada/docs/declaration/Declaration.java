@@ -7,11 +7,13 @@ public class Declaration {
     public final String scopeInfo;
     public final String signature;
     public final Type type;
+    public final int argumentIndex;
 
-    public Declaration(final String scopeInfo, final String signature, final Type type) {
+    public Declaration(final String scopeInfo, final String signature, final Type type, final int index) {
         this.scopeInfo = scopeInfo.trim();
         this.signature = signature.trim();
         this.type = type;
+        this.argumentIndex = index;
     }
 
     @Override

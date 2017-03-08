@@ -18,6 +18,7 @@ public class Variable {
     public boolean def;
     public boolean parameter;
     public boolean isField;
+    public int argumentIndex = -1;
 
     public Variable() {
 

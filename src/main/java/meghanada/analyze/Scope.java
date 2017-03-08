@@ -176,4 +176,9 @@ public abstract class Scope {
         }
         return Collections.emptyMap();
     }
+
+    public Set<Variable> getVariables() {
+        return variables;
+    }
+
 }
