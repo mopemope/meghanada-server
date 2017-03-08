@@ -210,7 +210,8 @@ public class SexpOutputFormatter implements OutputFormatter {
         return LPAREN + String.join(LIST_SEP,
                 declaration.type.name().toLowerCase(),
                 doubleQuote(declaration.scopeInfo),
-                doubleQuote(declaration.signature))
+                doubleQuote(declaration.signature),
+                Integer.toString(declaration.argumentIndex))
                 + RPAREN;
     }
 }
