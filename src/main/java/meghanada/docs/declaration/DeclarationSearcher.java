@@ -198,6 +198,21 @@ public class DeclarationSearcher {
                                 return declaration1;
                             }
                         }
+                        for (final String className : source.importClass.values()) {
+                            final Optional<Declaration> declaration1 = reflector.searchInnerClasses(className).stream()
+                                    .filter(classIndex -> {
+                                        final String returnType = classIndex.getReturnType();
+                                        return returnType.endsWith(symbol);
+                                    })
+                                    .map(classIndex -> new Declaration(symbol,
+                                            classIndex.getReturnType(),
+                                            Declaration.Type.CLASS,
+                                            0))
+                                    .findFirst();
+                            if (declaration1.isPresent()) {
+                                return declaration1;
+                            }
+                        }
                         return Optional.empty();
                     });
                 } else {
