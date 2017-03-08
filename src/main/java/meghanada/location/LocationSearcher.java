@@ -416,7 +416,7 @@ public class LocationSearcher {
                 final List<String> tempList = new ArrayList<>();
                 for (final String decompileFile : decompiledFiles.values()) {
                     final File decompiled = new File(decompileFile);
-                    final File temp = File.createTempFile(TEMP_FILE_PREFIX, FileUtils.JAVA_EXT);
+                    final File temp = File.createTempFile(TEMP_FILE_PREFIX + "-decompile-", FileUtils.JAVA_EXT);
                     Files.copy(decompiled.toPath(), temp.toPath(), StandardCopyOption.REPLACE_EXISTING);
                     tempList.add(temp.getCanonicalPath());
 

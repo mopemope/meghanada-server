@@ -207,6 +207,7 @@ public class LocationSearcherTest extends GradleTestBase {
         LocationSearcher locationSearcher = getSearcher();
         {
             Location result = timeIt(() -> {
+                System.setProperty("disable-source-jar", "true");
                 return locationSearcher.searchDeclarationLocation(f, 388, 76, "decompileArchive");
             });
             assertNotNull(result);
