@@ -113,7 +113,7 @@ public class EmacsServer implements Server {
                 while (start) {
                     final String line = reader.readLine();
                     if (line == null || line.isEmpty()) {
-                        log.info("close from client ... ");
+                        log.info("close from client ...");
                         break;
                     }
                     final SExprParser.SExpr expr = parser.parse(line);
@@ -134,7 +134,7 @@ public class EmacsServer implements Server {
 
                     writer.flush();
                 }
-                log.info("close client ... ");
+                log.info("close client ...");
             } catch (Throwable e) {
                 log.catching(e);
             } finally {
