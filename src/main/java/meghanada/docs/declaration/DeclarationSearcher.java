@@ -1,10 +1,7 @@
 package meghanada.docs.declaration;
 
 import com.google.common.base.Joiner;
-import meghanada.analyze.MethodCall;
-import meghanada.analyze.Source;
-import meghanada.analyze.TypeScope;
-import meghanada.analyze.Variable;
+import meghanada.analyze.*;
 import meghanada.project.Project;
 import meghanada.reflect.MemberDescriptor;
 import meghanada.reflect.asm.CachedASMReflector;
@@ -21,7 +18,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 
-import static meghanada.utils.FileUtils.existsFQCN;
 import static meghanada.utils.FileUtils.getSource;
 
 public class DeclarationSearcher {
@@ -174,7 +170,7 @@ public class DeclarationSearcher {
                                                          final String symbol) {
         final EntryMessage entryMessage = log.traceEntry("line={} col={} symbol={}", line, col, symbol);
         final CachedASMReflector reflector = CachedASMReflector.getInstance();
-        Optional<Declaration> result;
+        Optional<Declaration> result = null;
         String fqcn = source.importClass.get(symbol);
         if (fqcn == null) {
             final Map<String, String> standardClasses = reflector.getStandardClasses();
@@ -182,13 +178,36 @@ public class DeclarationSearcher {
             if (fqcn == null) {
                 if (source.packageName != null) {
                     fqcn = source.packageName + '.' + symbol;
+                    result = reflector.containsClassIndex(fqcn).map(classIndex -> {
+                        final Declaration declaration = new Declaration(symbol, classIndex.getReturnType(), Declaration.Type.CLASS, 0);
+                        return Optional.of(declaration);
+                    }).orElseGet(() -> {
+                        for (final ClassScope classScope : source.getClassScopes()) {
+                            final String className = classScope.getFQCN();
+                            final Optional<Declaration> declaration1 = reflector.searchInnerClasses(className).stream()
+                                    .filter(classIndex -> {
+                                        final String returnType = classIndex.getReturnType();
+                                        return returnType.endsWith(symbol);
+                                    })
+                                    .map(classIndex -> new Declaration(symbol,
+                                            classIndex.getReturnType(),
+                                            Declaration.Type.CLASS,
+                                            0))
+                                    .findFirst();
+                            if (declaration1.isPresent()) {
+                                return declaration1;
+                            }
+                        }
+                        return Optional.empty();
+                    });
                 } else {
                     fqcn = symbol;
+                    result = Optional.empty();
                 }
+            } else {
+                final Declaration declaration = new Declaration(symbol, fqcn, Declaration.Type.CLASS, 0);
+                result = Optional.of(declaration);
             }
-            final String clazzName = fqcn;
-            result = existsFQCN(project.getAllSources(), fqcn)
-                    .map(file -> new Declaration(symbol, clazzName, Declaration.Type.CLASS, 0));
         } else {
             final Declaration declaration = new Declaration(symbol, fqcn, Declaration.Type.CLASS, 0);
             result = Optional.of(declaration);
