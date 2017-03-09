@@ -20,9 +20,9 @@ public class SessionTest {
             File src = new File("./src/main/java/meghanada/session/Session.java").getCanonicalFile();
             assert src.exists();
             String srcPath = src.getCanonicalPath();
-            String testPath = session.switchTest(srcPath);
+            String testPath = session.switchTest(srcPath).orElse(null);
             assertNotNull(testPath);
-            String srcPath2 = session.switchTest(testPath);
+            String srcPath2 = session.switchTest(testPath).orElse(null);
             assertEquals(srcPath, srcPath2);
             assertTrue(testPath.endsWith("src/test/java/meghanada/session/SessionTest.java"));
         } finally {

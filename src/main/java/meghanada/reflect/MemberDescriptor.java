@@ -11,7 +11,7 @@ import java.util.regex.Pattern;
 
 public abstract class MemberDescriptor implements CandidateUnit, Cloneable {
 
-    protected static final Pattern TRIM_RE = Pattern.compile("<[\\w \\?,]+>");
+    protected static final Pattern TRIM_RE = Pattern.compile("<[\\w ?,]+>");
     public String declaringClass;
     public String name;
     public MemberType memberType;

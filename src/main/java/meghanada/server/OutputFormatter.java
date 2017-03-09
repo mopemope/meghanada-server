@@ -40,5 +40,5 @@ public interface OutputFormatter {
 
     String formatCode(String path);
 
-    String showDeclaration(Declaration decl);
+    String showDeclaration(Declaration declaration);
 }

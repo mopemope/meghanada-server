@@ -27,16 +27,15 @@ public class Config {
     public static final String MEGHANADA_CONF_FILE = ".meghanada.conf";
     public static final String GRADLE_PREPARE_COMPILE_TASK = "gradle-prepare-compile-task";
     public static final String GRADLE_PREPARE_TEST_COMPILE_TASK = "gradle-prepare-test-compile-task";
-    public static final String MEGHANADA_DIR = ".meghanada";
-    private static Logger log = LogManager.getLogger(Config.class);
+    private static final String MEGHANADA_DIR = ".meghanada";
+    private static final Logger log = LogManager.getLogger(Config.class);
     private static Config config;
 
-    private com.typesafe.config.Config c;
+    private final com.typesafe.config.Config c;
+    private final Map<File, Map<String, String>> checksumMap = new ConcurrentHashMap<>();
     private boolean debug;
     private List<String> includeList;
     private List<String> excludeList;
-
-    private Map<File, Map<String, String>> checksumMap = new ConcurrentHashMap<>();
 
     private Config() {
         this.c = ConfigFactory.load();
@@ -94,9 +93,13 @@ public class Config {
         }
     }
 
-    public static <T> T debugIt(SimpleSupplier<T> supplier) {
-        Stopwatch stopwatch = Stopwatch.createStarted();
+    public static <T> T debugIt(final SimpleSupplier<T> supplier) {
         Config.load().setDebug();
+        return runSupplier(supplier);
+    }
+
+    private static <T> T runSupplier(SimpleSupplier<T> supplier) {
+        Stopwatch stopwatch = Stopwatch.createStarted();
         try {
             return supplier.get();
         } catch (Exception e) {
@@ -108,16 +111,8 @@ public class Config {
     }
 
     public static <T> T traceIt(SimpleSupplier<T> supplier) {
-        Stopwatch stopwatch = Stopwatch.createStarted();
         Config.load().setTrace();
-        try {
-            return supplier.get();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        } finally {
-            log.info("elapsed:{}", stopwatch.stop());
-            Config.load().setLogLevel("INFO");
-        }
+        return runSupplier(supplier);
     }
 
     public static File getInstalledPath() {
@@ -125,8 +120,8 @@ public class Config {
             return new File(Config.class.getProtectionDomain().getCodeSource().getLocation().toURI().getPath());
         } catch (URISyntaxException e) {
             log.catching(e);
+            throw new RuntimeException(e);
         }
-        return null;
     }
 
     public List<String> gradlePrepareCompileTask() {
@@ -147,11 +142,11 @@ public class Config {
         return Arrays.asList(split);
     }
 
-    public void setDebug() {
+    private void setDebug() {
         this.setLogLevel("Debug");
     }
 
-    public void setTrace() {
+    private void setTrace() {
         this.setLogLevel("Trace");
     }
 
@@ -167,11 +162,11 @@ public class Config {
         this.debug = !logLevel.toLowerCase().equals("info");
     }
 
-    public String getHomeDir() {
+    private String getHomeDir() {
         return c.getString("home");
     }
 
-    public String getUserHomeDir() {
+    private String getUserHomeDir() {
         return c.getString("user-home");
     }
 
@@ -192,7 +187,7 @@ public class Config {
         }
     }
 
-    public String getJavaVersion() {
+    private String getJavaVersion() {
         return c.getString("java-version");
     }
 

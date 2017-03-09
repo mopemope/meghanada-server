@@ -196,7 +196,7 @@ public class EmacsServer implements Server {
                 })
                 .when(headTail(eq("rj"), any())).get(args -> {
                     // rj : Run JUnit Test
-                    // usage: rj <testname>
+                    // usage: rj <testName>
                     if (args.isEmpty()) {
                         handler.runJUnit("");
                     } else {
@@ -277,7 +277,7 @@ public class EmacsServer implements Server {
                 })
                 .getMatch();
 
-        log.info("receive command {}. elpased:{}", argList, stopwatch.stop());
+        log.info("receive command {}. elapsed:{}", argList, stopwatch.stop());
         return result;
     }
 

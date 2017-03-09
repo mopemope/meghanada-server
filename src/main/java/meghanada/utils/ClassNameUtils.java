@@ -17,8 +17,8 @@ public class ClassNameUtils {
 
     public static final String INNER_MARK = "$";
     public static final String CAPTURE_OF = "capture of ";
-    public static final String VA_ARGS = "...";
     public static final String ARRAY = "[]";
+    private static final String VA_ARGS = "...";
     private static final String SLASH = "/";
     private static final String DOT_SEPARATOR = ".";
     private static final Map<String, String> removeCaptureMap;
@@ -48,7 +48,7 @@ public class ClassNameUtils {
             "java.lang.Boolean"
     };
 
-    private static Map<String, String> boxMap = new HashMap<>(16);
+    private static final Map<String, String> boxMap = new HashMap<>(16);
 
     static {
         for (int i = 0; i < primitives.length; i++) {
@@ -73,7 +73,7 @@ public class ClassNameUtils {
     private ClassNameUtils() {
     }
 
-    public static String autoBoxing(final String className) {
+    private static String autoBoxing(final String className) {
         if (boxMap.containsKey(className)) {
             return boxMap.get(className);
         }
@@ -146,7 +146,7 @@ public class ClassNameUtils {
         return sb.toString();
     }
 
-    public static String replaceDotToInnnerMark(String string, boolean last) {
+    public static String replaceDotToInnerMark(String string, boolean last) {
         final StringBuilder sb = new StringBuilder(string);
         final int start = last ? sb.lastIndexOf(DOT_SEPARATOR, 0) : sb.indexOf(DOT_SEPARATOR, 0);
         replaceString(sb, DOT_SEPARATOR, ClassNameUtils.INNER_MARK, start);
@@ -230,7 +230,7 @@ public class ClassNameUtils {
         return name;
     }
 
-    public static String removeArray(String name) {
+    private static String removeArray(String name) {
         // check array parameter
         int idx = name.indexOf('[');
         if (idx >= 0) {

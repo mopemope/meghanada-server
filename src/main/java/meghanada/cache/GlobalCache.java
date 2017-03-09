@@ -159,7 +159,9 @@ public class GlobalCache {
             try (final Input input = new Input(new ZstdInputStream(new ByteBufferInput(new FileInputStream(file), 8192)))) {
                 return kryo.readObject(input, type);
             } catch (Exception e) {
-                file.delete();
+                if (!file.delete()) {
+                    log.warn("{} delete fail", file);
+                }
                 return null;
             }
         });
@@ -177,18 +179,19 @@ public class GlobalCache {
 
     private void writeCacheToFile(final File file, final Object obj) {
         final File parentFile = file.getParentFile();
-        if (!parentFile.exists()) {
-            parentFile.mkdirs();
+        if (!parentFile.exists() && !parentFile.mkdirs()) {
+            log.warn("{} mkdirs fail", parentFile);
         }
         kryoPool.run(kryo -> {
             try (final Output output = new Output(new ZstdOutputStream(new BufferedOutputStream(new FileOutputStream(file), 8192), COMPRESSION_LEVEL))) {
                 kryo.writeObject(output, obj);
-                return obj;
             } catch (Exception e) {
-                file.delete();
+                if (!file.delete()) {
+                    log.warn("{} delete fail", file);
+                }
                 log.catching(e);
-                return null;
             }
+            return true;
         });
     }
 

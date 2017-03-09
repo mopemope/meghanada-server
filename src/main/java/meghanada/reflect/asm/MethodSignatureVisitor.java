@@ -59,6 +59,13 @@ class MethodSignatureVisitor extends SignatureVisitor {
         log.traceExit(message);
     }
 
+    private static MethodSignatureVisitor getTopVisitor(MethodSignatureVisitor visitor) {
+        if (visitor.parent == null) {
+            return visitor;
+        }
+        return getTopVisitor(visitor.parent);
+    }
+
     @Override
     public SignatureVisitor visitTypeArgument(char c) {
         final EntryMessage message = log.traceEntry("params={} current={} c={}", this.parameterTypes, this.current, c);
@@ -180,19 +187,19 @@ class MethodSignatureVisitor extends SignatureVisitor {
         if (this.typeMap != null && typeMap.containsKey(typeVariable)) {
             String val = typeMap.get(typeVariable);
             if (val.equals(typeVariable)) {
-                this.getTopVisitor(this).typeParameters.add(typeVariable);
+                MethodSignatureVisitor.getTopVisitor(this).typeParameters.add(typeVariable);
                 typeVariable = ClassNameUtils.CLASS_TYPE_VARIABLE_MARK + typeVariable;
             } else {
-                ClassNameUtils.getTypeVariable(val).ifPresent(tv -> this.getTopVisitor(this).typeParameters.add(tv));
+                ClassNameUtils.getTypeVariable(val).ifPresent(tv -> MethodSignatureVisitor.getTopVisitor(this).typeParameters.add(tv));
                 typeVariable = val;
             }
         } else {
             if (this.classTypeParameters.contains(typeVariable)) {
                 // mark
-                this.getTopVisitor(this).typeParameters.add(typeVariable);
+                MethodSignatureVisitor.getTopVisitor(this).typeParameters.add(typeVariable);
                 typeVariable = ClassNameUtils.CLASS_TYPE_VARIABLE_MARK + typeVariable;
             } else {
-                this.getTopVisitor(this).typeParameters.add(typeVariable);
+                MethodSignatureVisitor.getTopVisitor(this).typeParameters.add(typeVariable);
                 typeVariable = ClassNameUtils.FORMAL_TYPE_VARIABLE_MARK + typeVariable;
             }
         }
@@ -362,13 +369,6 @@ class MethodSignatureVisitor extends SignatureVisitor {
         log.traceEntry("current={}", this.current);
         super.visitInnerClassType(s);
         log.traceExit();
-    }
-
-    private MethodSignatureVisitor getTopVisitor(MethodSignatureVisitor visitor) {
-        if (visitor.parent == null) {
-            return visitor;
-        }
-        return getTopVisitor(visitor.parent);
     }
 
     List<TypeInfo> getParameterTypes() {

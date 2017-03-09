@@ -10,6 +10,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.message.EntryMessage;
 
+import javax.annotation.Nonnull;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -60,10 +61,12 @@ public class DeclarationSearcher {
         this.project = project;
     }
 
-    public Optional<Declaration> searchDeclaration(final File file,
-                                                   final int line,
-                                                   final int column,
-                                                   final String symbol) throws ExecutionException, IOException {
+    public
+    @Nonnull
+    Optional<Declaration> searchDeclaration(final File file,
+                                            final int line,
+                                            final int column,
+                                            final String symbol) throws ExecutionException, IOException {
 
         log.trace("search symbol={}", symbol);
         return getSource(project, file).flatMap(source -> this.functions.stream()

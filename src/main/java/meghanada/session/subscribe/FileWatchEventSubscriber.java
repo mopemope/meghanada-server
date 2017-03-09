@@ -15,7 +15,7 @@ import java.util.List;
 
 public class FileWatchEventSubscriber extends AbstractSubscriber {
 
-    private static Logger log = LogManager.getLogger(FileWatchEventSubscriber.class);
+    private static final Logger log = LogManager.getLogger(FileWatchEventSubscriber.class);
 
     private FileSystemWatcher fileSystemWatcher;
 
@@ -55,7 +55,7 @@ public class FileWatchEventSubscriber extends AbstractSubscriber {
     }
 
     @Subscribe
-    public void on(final SessionEventBus.FilesWatchRequest request) throws IOException, InterruptedException {
+    public void on(final SessionEventBus.FilesWatchRequest request) throws IOException {
         if (this.fileSystemWatcher == null) {
             this.fileSystemWatcher = new FileSystemWatcher(super.sessionEventBus.getEventBus());
         }
@@ -64,11 +64,11 @@ public class FileWatchEventSubscriber extends AbstractSubscriber {
     }
 
     @Subscribe
-    public void on(final SessionEventBus.FileWatchRequest request) throws IOException, InterruptedException {
+    public void on(final SessionEventBus.FileWatchRequest request) throws IOException {
         if (this.fileSystemWatcher == null) {
             this.fileSystemWatcher = new FileSystemWatcher(super.sessionEventBus.getEventBus());
             if (!this.fileSystemWatcher.started) {
-                this.fileSystemWatcher.start(new ArrayList<>());
+                this.fileSystemWatcher.start(new ArrayList<>(2));
             }
         }
         final File file = request.getFile();

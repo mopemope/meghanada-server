@@ -19,6 +19,7 @@ import meghanada.utils.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.annotation.Nonnull;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
@@ -28,7 +29,7 @@ import java.util.stream.Collectors;
 import static meghanada.utils.FunctionUtils.wrapIO;
 import static meghanada.utils.FunctionUtils.wrapIOConsumer;
 
-public class MemberCacheLoader extends CacheLoader<String, List<MemberDescriptor>> implements RemovalListener<String, List<MemberDescriptor>> {
+class MemberCacheLoader extends CacheLoader<String, List<MemberDescriptor>> implements RemovalListener<String, List<MemberDescriptor>> {
 
     private static final Logger log = LogManager.getLogger(MemberCacheLoader.class);
     private final Map<String, File> classFileMap;
@@ -39,8 +40,6 @@ public class MemberCacheLoader extends CacheLoader<String, List<MemberDescriptor
     public MemberCacheLoader(Map<String, File> classFileMap, Map<ClassIndex, File> reflectIndex) {
         this.classFileMap = classFileMap;
         this.reflectIndex = reflectIndex;
-        Config config = Config.load();
-
         this.cacheChecksumFile = FileUtils.getProjectDataFile(GlobalCache.COMPILE_CHECKSUM_DATA);
         if (this.cacheChecksumFile.exists()) {
             this.cacheChecksum = new ConcurrentHashMap<>(MemberCacheLoader.readCacheChecksum(this.cacheChecksumFile));
@@ -59,9 +58,8 @@ public class MemberCacheLoader extends CacheLoader<String, List<MemberDescriptor
                 .orElseGet(() -> {
                     final String fqcn2 = ClassNameUtils.replaceInnerMark(fqcn);
                     reflector.containsClassIndex(fqcn2)
-                            .ifPresent(wrapIOConsumer(classIndex -> {
-                                CachedASMReflector.writeCache(classIndex, list);
-                            }));
+                            .ifPresent(wrapIOConsumer(classIndex ->
+                                    CachedASMReflector.writeCache(classIndex, list)));
                     return true;
                 });
 
@@ -81,7 +79,7 @@ public class MemberCacheLoader extends CacheLoader<String, List<MemberDescriptor
     }
 
     @Override
-    public List<MemberDescriptor> load(final String className) throws IOException {
+    public List<MemberDescriptor> load(@Nonnull final String className) throws IOException {
 
         final ClassName cn = new ClassName(className);
         final String fqcn = cn.getName();
@@ -177,7 +175,7 @@ public class MemberCacheLoader extends CacheLoader<String, List<MemberDescriptor
     }
 
     @Override
-    public void onRemoval(final RemovalNotification<String, List<MemberDescriptor>> notification) {
+    public void onRemoval(@Nonnull final RemovalNotification<String, List<MemberDescriptor>> notification) {
         final RemovalCause cause = notification.getCause();
         if (cause.equals(RemovalCause.EXPIRED) ||
                 cause.equals(RemovalCause.SIZE) ||
@@ -185,8 +183,6 @@ public class MemberCacheLoader extends CacheLoader<String, List<MemberDescriptor
             final String key = notification.getKey();
             final List<MemberDescriptor> value = notification.getValue();
             MemberCacheLoader.writeFileCache(key, value);
-        } else if (cause.equals(RemovalCause.EXPLICIT)) {
-
         }
     }
 }

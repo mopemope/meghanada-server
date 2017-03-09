@@ -18,9 +18,9 @@ import java.util.Properties;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 class POMParser {
-    private static Logger log = LogManager.getLogger(POMParser.class);
+    private static final Logger log = LogManager.getLogger(POMParser.class);
 
-    private File projectRoot;
+    private final File projectRoot;
 
     public POMParser(File projectRoot) {
         this.projectRoot = projectRoot;
@@ -102,25 +102,21 @@ class POMParser {
             int endIdx = value.indexOf("}");
             String key = value.substring(startIdx + 2, endIdx);
             String replace = value.substring(startIdx, endIdx + 1);
-            if (pomInfo.properties != null) {
-                String newValue = pomInfo.properties.getProperty(key);
-                if (newValue != null) {
-                    value = value.replace(replace, newValue);
-                }
+            String newValue = pomInfo.properties.getProperty(key);
+            if (newValue != null) {
+                value = value.replace(replace, newValue);
             }
         }
         return value;
     }
 
     private void replacePOMProperties(POMInfo pomInfo) {
-        if (pomInfo.properties != null) {
-            for (String key : pomInfo.properties.stringPropertyNames()) {
-                String val = pomInfo.properties.getProperty(key);
-                val = this.getPOMProperties(pomInfo, val);
-                val = this.getPOMProperties(pomInfo, val);
-                if (val != null) {
-                    pomInfo.properties.setProperty(key, val);
-                }
+        for (String key : pomInfo.properties.stringPropertyNames()) {
+            String val = pomInfo.properties.getProperty(key);
+            val = this.getPOMProperties(pomInfo, val);
+            val = this.getPOMProperties(pomInfo, val);
+            if (val != null) {
+                pomInfo.properties.setProperty(key, val);
             }
         }
     }

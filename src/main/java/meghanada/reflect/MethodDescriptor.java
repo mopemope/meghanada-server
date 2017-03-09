@@ -280,7 +280,7 @@ public class MethodDescriptor extends MemberDescriptor implements Serializable {
 
     public String getSignature(final boolean includeReturn) {
 
-        final StringBuilder sb = new StringBuilder();
+        final StringBuilder sb = new StringBuilder(16);
         if (includeReturn) {
             sb.append(this.returnType).append(' ');
         }

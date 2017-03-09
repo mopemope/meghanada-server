@@ -138,8 +138,12 @@ public class CachedASMReflector {
         final File file1 = new File(root, out1);
         final File file2 = new File(root, out2);
 
-        file1.getParentFile().mkdirs();
-        file2.getParentFile().mkdirs();
+        if (!file1.getParentFile().mkdirs()) {
+            log.warn("{} mkdirs fail", file1);
+        }
+        if (!file2.getParentFile().mkdirs()) {
+            log.warn("{} mkdirs fail", file2);
+        }
 
         // ClassIndex
         final GlobalCache globalCache = GlobalCache.getInstance();
@@ -332,9 +336,9 @@ public class CachedASMReflector {
     public List<ClassIndex> searchClasses(final String keyword, final boolean partial, final boolean anno) {
         return this.globalClassIndex.values()
                 .stream()
-                .filter(classIndex -> {
-                    return !(anno && !classIndex.isAnnotation) && CachedASMReflector.containsKeyword(keyword, partial, classIndex);
-                })
+                .filter(classIndex ->
+                        !(anno && !classIndex.isAnnotation) &&
+                                CachedASMReflector.containsKeyword(keyword, partial, classIndex))
                 .map(ClassIndex::clone)
                 .collect(Collectors.toList());
     }

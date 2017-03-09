@@ -14,12 +14,10 @@ class SExprParser {
     private static final String L_PAREN = "(";
     private static final String R_PAREN = ")";
     private static final String ESCAPE = "\\";
-
+    private final Deque<SExprList> currentList = new ArrayDeque<>(2);
     private StringTokenizer tokenizer;
-
     private StringBuilder sb;
     private boolean escape;
-    private Deque<SExprList> currentList = new ArrayDeque<>(2);
 
     SExprParser() {
 
@@ -89,7 +87,7 @@ class SExprParser {
         return getList();
     }
 
-    SExpr getString() {
+    private SExpr getString() {
         final String token = this.nextToken();
         if (token.equals(DOUBLE_QUOTE) && !this.escape) {
             return new AtomString(sb.toString());
@@ -126,7 +124,7 @@ class SExprParser {
 
     private static class SExprList implements SExpr {
 
-        private List<SExpr> value;
+        private final List<SExpr> value;
 
         SExprList() {
             this.value = new ArrayList<>(2);

@@ -110,7 +110,7 @@ public class ClassIndex implements CandidateUnit, Serializable, Cloneable {
         return Objects.hashCode(declaration);
     }
 
-    public boolean isImplements(final String fqcn) {
+    private boolean isImplements(final String fqcn) {
         final String className = ClassNameUtils.removeTypeParameter(this.declaration);
 
         if (className.equals(fqcn)) {

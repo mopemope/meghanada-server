@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 @DefaultSerializer(ProjectSerializer.class)
@@ -27,7 +28,7 @@ public class MavenProject extends Project {
     private static final String SOURCES_TASK = "dependency:sources";
     private static final String BUILD_CLASSPATH_TASK = "dependency:build-classpath";
 
-    private static Logger log = LogManager.getLogger(MavenProject.class);
+    private static final Logger log = LogManager.getLogger(MavenProject.class);
 
     private File pomFile;
     private String mavenCmd = "mvn";
@@ -37,7 +38,7 @@ public class MavenProject extends Project {
         this.pomFile = new File(projectRoot, Project.MVN_PROJECT_FILE);
     }
 
-    public void setMavenPath(String maven) {
+    private void setMavenPath(String maven) {
         this.mavenCmd = maven;
     }
 
@@ -143,11 +144,9 @@ public class MavenProject extends Project {
     }
 
     private int runMvn(final String... args) throws IOException, InterruptedException {
-        final List<String> cmd = new ArrayList<>();
+        final List<String> cmd = new ArrayList<>(4);
         cmd.add(this.mavenCmd);
-        for (String arg : args) {
-            cmd.add(arg);
-        }
+        Collections.addAll(cmd, args);
 
         final ProcessBuilder processBuilder = new ProcessBuilder(cmd);
         processBuilder.directory(this.projectRoot);

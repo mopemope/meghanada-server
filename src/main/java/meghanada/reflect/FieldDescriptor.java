@@ -46,8 +46,7 @@ public class FieldDescriptor extends MemberDescriptor implements Serializable {
 
     @Override
     public String getDisplayDeclaration() {
-        final StringBuilder sb = new StringBuilder(ClassNameUtils.getSimpleName(this.getReturnType()));
-        final String rt = sb.append(' ').append(this.name).toString();
+        final String rt = ClassNameUtils.getSimpleName(this.getReturnType()) + ' ' + this.name;
         return ClassNameUtils.replaceInnerMark(rt);
     }
 

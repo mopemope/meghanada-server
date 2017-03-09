@@ -27,10 +27,10 @@ public class GradleProject extends Project {
 
     private static final Logger log = LogManager.getLogger(GradleProject.class);
     private final File rootProject;
-    private final Map<String, File> projects = new HashMap<>();
-    private List<String> lazyLoadModule = new ArrayList<>();
-    private List<String> prepareCompileTask = new ArrayList<>();
-    private List<String> prepareTestCompileTask = new ArrayList<>();
+    private final Map<String, File> projects = new HashMap<>(4);
+    private final List<String> lazyLoadModule = new ArrayList<>(2);
+    private final List<String> prepareCompileTask = new ArrayList<>(2);
+    private final List<String> prepareTestCompileTask = new ArrayList<>(2);
 
     public GradleProject(final File projectRoot) throws IOException {
         super(projectRoot);

@@ -26,10 +26,10 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.message.EntryMessage;
 
+import javax.annotation.Nonnull;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
@@ -70,13 +70,14 @@ public class Session {
     private static Session createSession(File root) throws IOException {
         root = root.getCanonicalFile();
         final Optional<Project> result = findProject(root);
-        assert result != null;
         return result.map(Session::new)
                 .orElseThrow(() -> new IllegalArgumentException("Project Not Found"));
 
     }
 
-    public static Optional<Project> findProject(File base) throws IOException {
+    public static
+    @Nonnull
+    Optional<Project> findProject(File base) throws IOException {
         while (true) {
 
             log.debug("finding project from '{}' ...", base);
@@ -102,7 +103,7 @@ public class Session {
 
             File parent = base.getParentFile();
             if (parent == null) {
-                return null;
+                return Optional.empty();
             }
             base = base.getParentFile();
         }
@@ -118,8 +119,8 @@ public class Session {
             final String projectSettingDir = config.getProjectSettingDir();
 
             final File settingFile = new File(projectSettingDir);
-            if (!settingFile.exists()) {
-                settingFile.mkdirs();
+            if (!settingFile.exists() && !settingFile.mkdirs()) {
+                log.warn("{} mkdirs fail", settingFile);
             }
             final String id = FileUtils.findProjectID(projectRoot, targetFile);
             if (Project.loadedProject.containsKey(id)) {
@@ -145,7 +146,9 @@ public class Session {
                     }
                 } catch (Exception ex) {
                     // delete broken cache
-                    projectCache.delete();
+                    if (!projectCache.delete()) {
+                        log.warn("{} delete fail", projectCache);
+                    }
                 }
             }
 
@@ -253,17 +256,17 @@ public class Session {
         }
 
         if (currentProject instanceof GradleProject) {
-            return loadProject(projectRoot, Project.GRADLE_PROJECT_FILE).map(project -> {
-                return setProject(projectRoot, project);
-            }).orElse(false);
+            return loadProject(projectRoot, Project.GRADLE_PROJECT_FILE)
+                    .map(project -> setProject(projectRoot, project))
+                    .orElse(false);
         } else if (currentProject instanceof MavenProject) {
-            return loadProject(projectRoot, Project.MVN_PROJECT_FILE).map(project -> {
-                return setProject(projectRoot, project);
-            }).orElse(false);
+            return loadProject(projectRoot, Project.MVN_PROJECT_FILE)
+                    .map(project -> setProject(projectRoot, project))
+                    .orElse(false);
         }
-        return loadProject(projectRoot, Config.MEGHANADA_CONF_FILE).map(project -> {
-            return setProject(projectRoot, project);
-        }).orElse(false);
+        return loadProject(projectRoot, Config.MEGHANADA_CONF_FILE)
+                .map(project -> setProject(projectRoot, project))
+                .orElse(false);
     }
 
     private Boolean setProject(final File projectRoot, final Project project) {
@@ -300,9 +303,8 @@ public class Session {
         reflector.addClasspath(Session.getSystemJars());
         this.sessionEventBus.requestCreateCache();
 
-        this.projects.values().forEach(project -> {
-            this.sessionEventBus.requestWatchFile(project.getProjectRoot());
-        });
+        this.projects.values().forEach(project ->
+                this.sessionEventBus.requestWatchFile(project.getProjectRoot()));
 
         log.debug("session started");
         this.started = true;
@@ -424,10 +426,6 @@ public class Session {
         return source.searchMissingImport();
     }
 
-    public synchronized String getImplementTemplate(String fqcn) {
-        return "";
-    }
-
     private Source parseJavaSource(final File file) throws ExecutionException {
         final GlobalCache globalCache = GlobalCache.getInstance();
         return globalCache.getSource(currentProject, file);
@@ -473,16 +471,6 @@ public class Session {
                 .collect(Collectors.toList());
     }
 
-    public File getOutputDirectory() {
-        return currentProject
-                .getOutputDirectory();
-    }
-
-    public File getTestOutputDirectory() {
-        return currentProject
-                .getTestOutputDirectory();
-    }
-
     private File normalize(String src) {
         File file = new File(src);
         if (!file.isAbsolute()) {
@@ -495,7 +483,9 @@ public class Session {
         return currentProject.runJUnit(test);
     }
 
-    public String switchTest(final String path) throws IOException {
+    public
+    @Nonnull
+    Optional<String> switchTest(final String path) throws IOException {
         Project project = currentProject;
         String root = null;
         Set<File> roots;
@@ -519,7 +509,7 @@ public class Session {
             }
         }
         if (root == null) {
-            return null;
+            return Optional.empty();
         }
 
         String switchPath = path.substring(root.length());
@@ -530,7 +520,7 @@ public class Session {
             for (File srcRoot : project.getSourceDirectories()) {
                 final File srcFile = new File(srcRoot, switchPath);
                 if (srcFile.exists()) {
-                    return srcFile.getCanonicalPath();
+                    return Optional.of(srcFile.getCanonicalPath());
                 }
             }
 
@@ -540,93 +530,25 @@ public class Session {
             for (File srcRoot : project.getTestSourceDirectories()) {
                 final File testFile = new File(srcRoot, switchPath);
                 if (testFile.exists()) {
-                    return testFile.getCanonicalPath();
+                    return Optional.of(testFile.getCanonicalPath());
                 }
             }
         }
 
-        return null;
+        return Optional.empty();
     }
 
-    String createJunitFile(String path) throws IOException, ExecutionException {
-        Project project = currentProject;
-        String root = null;
-        Set<File> roots = project.getSourceDirectories();
+    public synchronized Optional<Location> jumpDeclaration(final String path, final int line, final int column, final String symbol) throws ExecutionException, IOException {
+        final Optional<Location> location = this.getLocationSearcher()
+                .searchDeclarationLocation(new File(path), line, column, symbol);
 
-        for (File file : roots) {
-            String rootPath = file.getCanonicalPath();
-            if (path.startsWith(rootPath)) {
-                root = rootPath;
-                break;
-            }
-        }
-        if (root == null) {
-            return null;
-        }
-
-        String switchPath = path.substring(root.length());
-        switchPath = SWITCH_JAVA_RE.matcher(switchPath).replaceAll(Matcher.quoteReplacement("Test.java"));
-        int srcSize = project.getTestSourceDirectories().size();
-        // to test
-        for (File srcRoot : project.getTestSourceDirectories()) {
-            String srcRootPath = srcRoot.getCanonicalPath();
-            if (srcSize > 1 && srcRootPath.contains(Project.DEFAULT_PATH)) {
-                // skip default root
-                continue;
-            }
-            File testFile = new File(srcRoot, switchPath);
-            if (testFile.exists()) {
-                return testFile.getCanonicalPath();
-            } else {
-                // create Junit
-                this.createTestFile(path, testFile);
-                return testFile.getCanonicalPath();
-            }
-        }
-        return null;
-    }
-
-    private void createTestFile(String path, File testFile) throws IOException, ExecutionException {
-        Source javaSource = this.parseJavaSource(new File(path));
-        String pkg = javaSource.packageName;
-        String testName = SWITCH_JAVA_RE.matcher(testFile.getName()).replaceAll(Matcher.quoteReplacement(""));
-
-        String sb = "package " + pkg + ";\n"
-                + "\n"
-                + "import org.junit.After;\n"
-                + "import org.junit.Before;\n"
-                + "import org.junit.Test;\n"
-                + "\n"
-                + "import static org.junit.Assert.assertEquals;\n"
-                + "\n"
-                + "public class " + testName + " {\n"
-                + "\n"
-                + "    @Before\n"
-                + "    public void setUp() throws Exception {\n"
-                + "\n"
-                + "    }\n"
-                + "\n"
-                + "    @After\n"
-                + "    public void tearDown() throws Exception {\n"
-                + "\n"
-                + "    }\n"
-                + "\n"
-                + "    @Test\n"
-                + "    public void test() throws Exception {\n"
-                + "        assertEquals(1, 1);\n"
-                + "    }\n"
-                + "}\n";
-        com.google.common.io.Files.write(sb, testFile, Charset.forName("UTF-8"));
-    }
-
-    public synchronized Location jumpDeclaration(final String path, final int line, final int column, final String symbol) throws ExecutionException, IOException {
-        Location location = this.getLocationSearcher().searchDeclarationLocation(new File(path), line, column, symbol);
-        if (location != null) {
+        location.ifPresent(a -> {
             Location backLocation = new Location(path, line, column);
             this.jumpDecHistory.addLast(backLocation);
-        } else {
+        });
+
+        if (!location.isPresent()) {
             log.warn("missing location path={} line={} column={} symbol={}", path, line, column, symbol);
-            location = new Location(path, line, column);
         }
         return location;
     }
@@ -650,17 +572,14 @@ public class Session {
         final File projectRoot = currentProject.getProjectRoot();
         this.projects.clear();
         if (currentProject instanceof GradleProject) {
-            loadProject(projectRoot, Project.GRADLE_PROJECT_FILE).ifPresent(project -> {
-                setProject(projectRoot, project);
-            });
+            loadProject(projectRoot, Project.GRADLE_PROJECT_FILE)
+                    .ifPresent(project -> setProject(projectRoot, project));
         } else if (currentProject instanceof MavenProject) {
-            loadProject(projectRoot, Project.MVN_PROJECT_FILE).ifPresent(project -> {
-                setProject(projectRoot, project);
-            });
+            loadProject(projectRoot, Project.MVN_PROJECT_FILE)
+                    .ifPresent(project -> setProject(projectRoot, project));
         } else {
-            loadProject(projectRoot, Config.MEGHANADA_CONF_FILE).ifPresent(project -> {
-                setProject(projectRoot, project);
-            });
+            loadProject(projectRoot, Config.MEGHANADA_CONF_FILE)
+                    .ifPresent(project -> setProject(projectRoot, project));
         }
 
         final Set<File> temp = new HashSet<>(this.currentProject.getSourceDirectories());
@@ -670,9 +589,8 @@ public class Session {
         reflector.resetClassFileMap();
         reflector.addClasspath(Session.getSystemJars());
         this.sessionEventBus.requestCreateCache();
-        this.projects.values().forEach(project -> {
-            this.sessionEventBus.requestWatchFile(project.getProjectRoot());
-        });
+        this.projects.values().forEach(project ->
+                this.sessionEventBus.requestWatchFile(project.getProjectRoot()));
     }
 
     public Optional<Declaration> showDeclaration(final String path,

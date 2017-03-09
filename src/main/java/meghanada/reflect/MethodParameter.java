@@ -18,9 +18,9 @@ public class MethodParameter {
 
     public String getParameter(boolean simple) {
         if (simple) {
-            return ClassNameUtils.getSimpleName(type) + " " + name;
+            return ClassNameUtils.getSimpleName(type) + ' ' + name;
         }
-        return type + " " + name;
+        return type + ' ' + name;
     }
 
     public String getType() {

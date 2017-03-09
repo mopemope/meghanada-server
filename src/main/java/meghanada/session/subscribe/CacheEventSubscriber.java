@@ -10,13 +10,11 @@ import meghanada.session.SessionEventBus;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.io.IOException;
-
 import static meghanada.config.Config.timeItF;
 
 public class CacheEventSubscriber extends AbstractSubscriber {
 
-    private static Logger log = LogManager.getLogger(CacheEventSubscriber.class);
+    private static final Logger log = LogManager.getLogger(CacheEventSubscriber.class);
 
     public CacheEventSubscriber(final SessionEventBus sessionEventBus) {
         super(sessionEventBus);
@@ -24,7 +22,7 @@ public class CacheEventSubscriber extends AbstractSubscriber {
     }
 
     @Subscribe
-    public synchronized void on(final SessionEventBus.ClassCacheRequest request) throws IOException {
+    public synchronized void on(final SessionEventBus.ClassCacheRequest request) {
         if (request.onlyOutputDir) {
             final CachedASMReflector reflector = CachedASMReflector.getInstance();
             reflector.updateClassIndexFromDirectory();
@@ -40,7 +38,7 @@ public class CacheEventSubscriber extends AbstractSubscriber {
         reflector.addClasspath(session.getDependentJars());
         reflector.createClassIndexes();
 
-        boolean result = timeItF("analyzed and compiled. elapsed:{}", () -> {
+        timeItF("analyzed and compiled. elapsed:{}", () -> {
             try {
                 final CompileResult compileResult = project.compileJava(false, true);
                 if (!compileResult.isSuccess()) {

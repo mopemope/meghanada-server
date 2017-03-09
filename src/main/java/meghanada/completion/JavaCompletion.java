@@ -55,9 +55,13 @@ public class JavaCompletion {
     private static Collection<? extends CandidateUnit> completionSuper(final Source source, final int line, final String prefix) {
         final TypeScope typeScope = source.getTypeScope(line);
         final String fqcn = typeScope.getFQCN();
-        return doReflect(fqcn).stream().filter(md -> {
-            return !md.getDeclaringClass().equals(fqcn) && !(prefix != null && !prefix.isEmpty() && !md.getName().toLowerCase().startsWith(prefix));
-        }).collect(Collectors.toList());
+        return doReflect(fqcn).stream()
+                .filter(md ->
+                        !md.getDeclaringClass().equals(fqcn) &&
+                                !(prefix != null &&
+                                        !prefix.isEmpty() &&
+                                        !md.getName().toLowerCase().startsWith(prefix)))
+                .collect(Collectors.toList());
     }
 
     private static boolean publicFilter(final CandidateUnit cu, final boolean isStatic, final boolean withCONSTRUCTOR,
@@ -266,10 +270,6 @@ public class JavaCompletion {
         return JavaCompletion.reflect(ownPackage, fqcn, false, false, prefix);
     }
 
-    public Project getProject() {
-        return project;
-    }
-
     public void setProject(Project project) {
         this.project = project;
     }
@@ -303,8 +303,10 @@ public class JavaCompletion {
         }
     }
 
-    private Collection<? extends CandidateUnit> specialCompletion(final Source source, final int line,
-                                                                  final int column, final String searchWord) throws ExecutionException {
+    private Collection<? extends CandidateUnit> specialCompletion(final Source source,
+                                                                  final int line,
+                                                                  final int column,
+                                                                  final String searchWord) {
 
         // special command
         final boolean useFuzzySearch = Config.load().useClassFuzzySearch();

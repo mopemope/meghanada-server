@@ -158,7 +158,7 @@ public class CommandHandler {
 
     public void switchTest(String path) {
         try {
-            final String openPath = session.switchTest(path);
+            final String openPath = session.switchTest(path).orElse(null);
             final String out = outputFormatter.switchTest(openPath);
             writer.write(out);
             writer.newLine();
@@ -180,11 +180,10 @@ public class CommandHandler {
         int lineInt = Integer.parseInt(line);
         int columnInt = Integer.parseInt(col);
         try {
-            final Location location = session.jumpDeclaration(path, lineInt, columnInt, symbol);
-            if (location != null) {
-                String out = outputFormatter.jumpDeclaration(location);
-                writer.write(out);
-            }
+            final Location location = session.jumpDeclaration(path, lineInt, columnInt, symbol)
+                    .orElseGet(() -> new Location(path, lineInt, columnInt));
+            final String out = outputFormatter.jumpDeclaration(location);
+            writer.write(out);
             writer.newLine();
         } catch (Throwable e) {
             log.catching(e);

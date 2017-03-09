@@ -231,7 +231,7 @@ public class ASMReflector {
         this.allowClass.add(clazz);
     }
 
-    boolean ignorePackage(final String target) {
+    private boolean ignorePackage(final String target) {
         if (target.endsWith(PACKAGE_INFO)) {
             return true;
         }
@@ -431,7 +431,7 @@ public class ASMReflector {
                                 return members;
                             }
                         }
-                        return null;
+                        return Collections.<MemberDescriptor>emptyList();
                     }))
                     .filter(memberDescriptors -> memberDescriptors != null && memberDescriptors.size() > 0)
                     .flatMap(Collection::stream)

@@ -18,9 +18,9 @@ import java.util.stream.Collectors;
 
 public class JavaVariableCompletion {
 
-    private static Logger log = LogManager.getLogger(JavaCompletion.class);
+    private static final Logger log = LogManager.getLogger(JavaCompletion.class);
 
-    private static String[] pluralClass = new String[]{
+    private static final String[] pluralClass = new String[]{
             "List",
             "Set",
             "Collections"
@@ -48,10 +48,6 @@ public class JavaVariableCompletion {
             }
         }
         return log.traceExit(false);
-    }
-
-    public Project getProject() {
-        return project;
     }
 
     public void setProject(Project project) {
@@ -95,9 +91,8 @@ public class JavaVariableCompletion {
         }
 
         final List<String> results = candidates.stream()
-                .map(s -> {
-                    return StringUtils.removePattern(s, "[<> ,$.]");
-                }).collect(Collectors.toList());
+                .map(s -> StringUtils.removePattern(s, "[<> ,$.]"))
+                .collect(Collectors.toList());
 
         return Optional.of(new LocalVariable(returnType, results));
     }

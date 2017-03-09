@@ -207,12 +207,12 @@ public final class FileUtils {
     }
 
     @SuppressWarnings("unchecked")
-    public static synchronized Map<String, String> readMapSetting(final File inFile) throws IOException {
+    public static synchronized Map<String, String> readMapSetting(final File inFile) {
         final GlobalCache globalCache = GlobalCache.getInstance();
         return globalCache.readCacheFromFile(inFile, HashMap.class);
     }
 
-    public static synchronized void writeMapSetting(final Map<String, String> map, final File outFile) throws IOException {
+    public static synchronized void writeMapSetting(final Map<String, String> map, final File outFile) {
         final GlobalCache globalCache = GlobalCache.getInstance();
         globalCache.asyncWriteCache(outFile, map);
     }

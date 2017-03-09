@@ -91,21 +91,17 @@ public class SessionEventBus {
     }
 
     public void requestWatchFile(final File file) {
-        this.eventBus.post(new FileWatchRequest(this.session, file, false));
+        this.eventBus.post(new FileWatchRequest(this.session, file));
     }
 
     static abstract class IORequest {
 
-        protected Session session;
-        protected File file;
+        final Session session;
+        final File file;
 
         IORequest(Session session, File file) {
             this.session = session;
             this.file = file;
-        }
-
-        public Session getSession() {
-            return session;
         }
 
         public File getFile() {
@@ -123,16 +119,12 @@ public class SessionEventBus {
 
     static abstract class IOListRequest {
 
-        protected Session session;
-        protected List<File> files;
+        final Session session;
+        final List<File> files;
 
         IOListRequest(Session session, List<File> files) {
             this.session = session;
             this.files = files;
-        }
-
-        public Session getSession() {
-            return session;
         }
 
         public List<File> getFiles() {
@@ -148,22 +140,6 @@ public class SessionEventBus {
         public ClassCacheRequest(final Session session, boolean onlyOutputDir) {
             super(session, null);
             this.onlyOutputDir = onlyOutputDir;
-        }
-
-    }
-
-    public static class CompileRequest extends IORequest {
-
-        public CompileRequest(Session session, File file) {
-            super(session, file);
-        }
-
-    }
-
-    public static class TestCompileRequest extends IORequest {
-
-        public TestCompileRequest(Session session, File file) {
-            super(session, file);
         }
 
     }
@@ -186,11 +162,8 @@ public class SessionEventBus {
 
     public static class FileWatchRequest extends IORequest {
 
-        public boolean recursive;
-
-        public FileWatchRequest(final Session session, final File file, final boolean recursive) {
+        public FileWatchRequest(final Session session, final File file) {
             super(session, file);
-            this.recursive = recursive;
         }
 
     }
@@ -198,14 +171,6 @@ public class SessionEventBus {
     public static class ParseFilesRequest extends IOListRequest {
 
         public ParseFilesRequest(Session session, List<File> files) {
-            super(session, files);
-        }
-
-    }
-
-    public static class CompileFilesRequest extends IOListRequest {
-
-        public CompileFilesRequest(Session session, List<File> files) {
             super(session, files);
         }
 

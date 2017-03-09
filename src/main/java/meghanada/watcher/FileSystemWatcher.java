@@ -16,7 +16,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class FileSystemWatcher {
 
-    private static Logger log = LogManager.getLogger(FileSystemWatcher.class);
+    private static final Logger log = LogManager.getLogger(FileSystemWatcher.class);
     private final EventBus eventBus;
     public boolean started;
     private boolean abort;
@@ -30,6 +30,17 @@ public class FileSystemWatcher {
     @SuppressWarnings("unchecked")
     private static <T> WatchEvent<T> cast(WatchEvent<?> event) {
         return (WatchEvent<T>) event;
+    }
+
+    private static FileEvent toEvent(final WatchEvent<?> watchEvent, final Path path) {
+        if (watchEvent.kind().name().equals("ENTRY_CREATE")) {
+            return new CreateEvent(path.toFile());
+        } else if (watchEvent.kind().name().equals("ENTRY_MODIFY")) {
+            return new ModifyEvent(path.toFile());
+        } else if (watchEvent.kind().name().equals("ENTRY_DELETE")) {
+            return new DeleteEvent(path.toFile());
+        }
+        return null;
     }
 
     public void stop() {
@@ -57,9 +68,9 @@ public class FileSystemWatcher {
 
     public void start(final List<File> files) throws IOException {
         this.abort = false;
-        final FileSystem fileSystem = FileSystems.getDefault();
 
-        try (final WatchService watchService = fileSystem.newWatchService()) {
+        try (final FileSystem fileSystem = FileSystems.getDefault();
+             final WatchService watchService = fileSystem.newWatchService()) {
 
             this.watchKeyHolder = new WatchKeyHolder(watchService);
             for (final File root : files) {
@@ -116,21 +127,6 @@ public class FileSystemWatcher {
         }
     }
 
-    public EventBus getEventBus() {
-        return eventBus;
-    }
-
-    private FileEvent toEvent(final WatchEvent<?> watchEvent, final Path path) {
-        if (watchEvent.kind().name().equals("ENTRY_CREATE")) {
-            return new CreateEvent(path.toFile());
-        } else if (watchEvent.kind().name().equals("ENTRY_MODIFY")) {
-            return new ModifyEvent(path.toFile());
-        } else if (watchEvent.kind().name().equals("ENTRY_DELETE")) {
-            return new DeleteEvent(path.toFile());
-        }
-        return null;
-    }
-
     static class FileEvent {
         final File file;
 
@@ -171,7 +167,7 @@ public class FileSystemWatcher {
     private static class WatchKeyHolder {
 
         private final WatchService watchService;
-        private final Map<WatchKey, Path> watchKeys = new ConcurrentHashMap<>();
+        private final Map<WatchKey, Path> watchKeys = new ConcurrentHashMap<>(16);
 
         WatchKeyHolder(final WatchService watchService) {
             this.watchService = watchService;

@@ -33,11 +33,10 @@ public abstract class Project {
 
     public static final String GRADLE_PROJECT_FILE = "build.gradle";
     public static final String MVN_PROJECT_FILE = "pom.xml";
-    public static final String PROJECT_CACHE_FILE = "project.dat";
-
     public static final String DEFAULT_PATH = File.separator + "src" + File.separator + "main" + File.separator;
     public static final String PROJECT_ROOT_KEY = "project.root";
-    public final static Map<String, Project> loadedProject = new HashMap<>();
+
+    public final static Map<String, Project> loadedProject = new HashMap<>(4);
     private static final String FORMATTER_FILE_KEY = "meghanada.formatter.file";
     private static final Logger log = LogManager.getLogger(Project.class);
     private static final String JAVA_HOME = "java-home";
@@ -67,12 +66,12 @@ public abstract class Project {
     protected File testOutput;
     protected String compileSource = "1.8";
     protected String compileTarget = "1.8";
-    protected String id;
-    protected Map<String, Set<String>> callerMap = new ConcurrentHashMap<>();
     protected Boolean isAndroidProject = false;
     protected String name;
-    protected String cachedClasspath;
-    protected String cachedAllClasspath;
+    String id;
+    private Map<String, Set<String>> callerMap = new ConcurrentHashMap<>();
+    private String cachedClasspath;
+    private String cachedAllClasspath;
     private JavaAnalyzer javaAnalyzer;
     private String[] prevTest;
     private Properties formatProperties;
@@ -92,6 +91,14 @@ public abstract class Project {
         }
     }
 
+    private static CompileResult clearMemberCache(final CompileResult compileResult) {
+        final Map<File, Source> sourceMap = compileResult.getSources();
+        for (final Source source : sourceMap.values()) {
+            source.invalidateCache();
+        }
+        return compileResult;
+    }
+
     public abstract Project parseProject() throws ProjectParseException;
 
     public Set<File> getAllSources() {
@@ -107,7 +114,7 @@ public abstract class Project {
         return this.sources;
     }
 
-    Set<File> getResourceDirectories() {
+    private Set<File> getResourceDirectories() {
         return this.resources;
     }
 
@@ -119,7 +126,7 @@ public abstract class Project {
         return this.testSources;
     }
 
-    Set<File> getTestResourceDirectories() {
+    private Set<File> getTestResourceDirectories() {
         return this.testResources;
     }
 
@@ -131,7 +138,7 @@ public abstract class Project {
         return this.dependencies;
     }
 
-    public String getCompileSource() {
+    private String getCompileSource() {
         return compileSource;
     }
 
@@ -220,12 +227,12 @@ public abstract class Project {
                 .collect(Collectors.toList());
     }
 
-    public CompileResult compileJava(boolean force) throws IOException {
+    public CompileResult compileJava(final boolean force) throws IOException {
         return compileJava(force, false);
     }
 
     public CompileResult compileJava(boolean force, final boolean fullBuild) throws IOException {
-        final Set<Project> lazyLoad = new HashSet<>();
+        final Set<Project> lazyLoad = new HashSet<>(2);
 
         if (fullBuild) {
             for (final Project p : this.dependencyProjects) {
@@ -255,8 +262,8 @@ public abstract class Project {
                 force = true;
             }
             final File callerFile = FileUtils.getProjectDataFile(GlobalCache.CALLER_DATA);
-            if (force && callerFile.exists()) {
-                callerFile.delete();
+            if (force && callerFile.exists() && !callerFile.delete()) {
+                log.warn("{} delete fail", callerFile);
             }
             files = force ? files : FileUtils.getModifiedSources(files, this.getAllSources(), this.output);
 
@@ -332,8 +339,8 @@ public abstract class Project {
                 force = true;
             }
             final File callerFile = FileUtils.getProjectDataFile(GlobalCache.CALLER_DATA);
-            if (force && callerFile.exists()) {
-                callerFile.delete();
+            if (force && callerFile.exists() && !callerFile.delete()) {
+                log.warn("{} delete fail", callerFile);
             }
 
             files = force ? files : FileUtils.getModifiedSources(files, this.getAllSources(), this.testOutput);
@@ -382,7 +389,7 @@ public abstract class Project {
     public CompileResult parseFile(final File file) throws IOException {
         boolean isTest = false;
         String filepath = file.getCanonicalPath();
-        for (File source : this.getTestSourceDirectories()) {
+        for (File source : this.testSources) {
             String testPath = source.getCanonicalPath();
             if (filepath.startsWith(testPath)) {
                 isTest = true;
@@ -521,7 +528,7 @@ public abstract class Project {
         log.debug("runUnit test:{} prevTest:{}", tests, prevTest);
 
         final Config config = Config.load();
-        final List<String> cmd = new ArrayList<>();
+        final List<String> cmd = new ArrayList<>(16);
         final String binJava = "/bin/java".replace("/", File.separator);
         final String javaCmd = new File(config.getJavaHomeDir(), binJava).getCanonicalPath();
         cmd.add(javaCmd);
@@ -577,7 +584,7 @@ public abstract class Project {
                         .map(path -> {
                             final File file = new File(path);
                             return new ProjectDependency(file.getName(), "COMPILE", "1.0.0", file);
-                        }).forEach(p -> this.dependencies.add(p));
+                        }).forEach(this.dependencies::add);
             }
             // test-dependencies
             if (config.hasPath(TEST_DEPENDENCIES)) {
@@ -586,7 +593,7 @@ public abstract class Project {
                         .map(path -> {
                             final File file = new File(path);
                             return new ProjectDependency(file.getName(), "TEST", "1.0.0", file);
-                        }).forEach(p -> this.dependencies.add(p));
+                        }).forEach(this.dependencies::add);
             }
 
             // sources
@@ -902,13 +909,5 @@ public abstract class Project {
     public void resetCachedClasspath() {
         this.cachedClasspath = null;
         this.cachedAllClasspath = null;
-    }
-
-    public CompileResult clearMemberCache(final CompileResult compileResult) {
-        final Map<File, Source> sourceMap = compileResult.getSources();
-        for (final Source source : sourceMap.values()) {
-            source.invalidateCache();
-        }
-        return compileResult;
     }
 }

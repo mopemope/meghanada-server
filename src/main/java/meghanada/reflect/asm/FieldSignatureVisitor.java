@@ -60,6 +60,13 @@ class FieldSignatureVisitor extends SignatureVisitor {
         holdArray = false;
     }
 
+    private static FieldSignatureVisitor getTopVisitor(FieldSignatureVisitor visitor) {
+        if (visitor.parent == null) {
+            return visitor;
+        }
+        return getTopVisitor(visitor.parent);
+    }
+
     @Override
     public SignatureVisitor visitTypeArgument(final char c) {
         final EntryMessage em = log.traceEntry("name={} typeInfo={} currentType={}", this.name, this.typeInfo, this.currentType);
@@ -183,19 +190,19 @@ class FieldSignatureVisitor extends SignatureVisitor {
         if (this.typeMap != null && typeMap.containsKey(typeVariable)) {
             String val = typeMap.get(typeVariable);
             if (val.equals(typeVariable)) {
-                this.getTopVisitor(this).typeParameters.add(typeVariable);
+                FieldSignatureVisitor.getTopVisitor(this).typeParameters.add(typeVariable);
                 typeVariable = ClassNameUtils.CLASS_TYPE_VARIABLE_MARK + typeVariable;
             } else {
-                ClassNameUtils.getTypeVariable(val).ifPresent(tv -> this.getTopVisitor(this).typeParameters.add(tv));
+                ClassNameUtils.getTypeVariable(val).ifPresent(tv -> FieldSignatureVisitor.getTopVisitor(this).typeParameters.add(tv));
                 typeVariable = val;
             }
         } else {
             if (this.classTypeParameters.contains(typeVariable)) {
                 // mark
-                this.getTopVisitor(this).typeParameters.add(typeVariable);
+                FieldSignatureVisitor.getTopVisitor(this).typeParameters.add(typeVariable);
                 typeVariable = ClassNameUtils.CLASS_TYPE_VARIABLE_MARK + typeVariable;
             } else {
-                this.getTopVisitor(this).typeParameters.add(typeVariable);
+                FieldSignatureVisitor.getTopVisitor(this).typeParameters.add(typeVariable);
                 typeVariable = ClassNameUtils.FORMAL_TYPE_VARIABLE_MARK + typeVariable;
             }
         }
@@ -262,13 +269,6 @@ class FieldSignatureVisitor extends SignatureVisitor {
 
     void setTypeMap(Map<String, String> typeMap) {
         this.typeMap = typeMap;
-    }
-
-    private FieldSignatureVisitor getTopVisitor(FieldSignatureVisitor visitor) {
-        if (visitor.parent == null) {
-            return visitor;
-        }
-        return getTopVisitor(visitor.parent);
     }
 
     private TypeInfo getTypeInfo(String typeVariable) {

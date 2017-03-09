@@ -14,6 +14,7 @@ import javax.tools.JavaFileObject;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 public class SexpOutputFormatter implements OutputFormatter {
@@ -25,7 +26,10 @@ public class SexpOutputFormatter implements OutputFormatter {
     private static final String LIST_SEP = " ";
     private static final String QUOTE = "\"";
 
-    private String doubleQuote(String s) {
+    private static String doubleQuote(final String s) {
+        if (s == null) {
+            return QUOTE + QUOTE;
+        }
         return QUOTE + s + QUOTE;
     }
 
@@ -124,7 +128,7 @@ public class SexpOutputFormatter implements OutputFormatter {
         StringBuilder sb = new StringBuilder(LPAREN);
 
         final String collect = result.stream()
-                .map(this::doubleQuote)
+                .map(SexpOutputFormatter::doubleQuote)
                 .collect(Collectors.joining(LIST_SEP));
         sb.append(collect);
 
@@ -143,13 +147,13 @@ public class SexpOutputFormatter implements OutputFormatter {
                     if (strings != null && strings.size() > 0) {
                         return LPAREN
                                 + strings.stream()
-                                .map(this::doubleQuote)
+                                .map(SexpOutputFormatter::doubleQuote)
                                 .collect(Collectors.joining(LIST_SEP))
                                 + RPAREN;
                     }
                     return null;
                 })
-                .filter(s -> s != null)
+                .filter(Objects::nonNull)
                 .collect(Collectors.joining(LIST_SEP));
         sb.append(str);
 
@@ -181,7 +185,7 @@ public class SexpOutputFormatter implements OutputFormatter {
     public String localVariable(final LocalVariable lv) {
         final StringBuilder sb = new StringBuilder();
         sb.append(LPAREN);
-        sb.append(this.doubleQuote(lv.getReturnType()));
+        sb.append(SexpOutputFormatter.doubleQuote(lv.getReturnType()));
         if (!lv.getCandidates().isEmpty()) {
             sb.append(LIST_SEP);
             sb.append(LPAREN);
@@ -189,7 +193,7 @@ public class SexpOutputFormatter implements OutputFormatter {
             final String values = String.join(LIST_SEP,
                     lv.getCandidates()
                             .stream()
-                            .map(this::doubleQuote)
+                            .map(SexpOutputFormatter::doubleQuote)
                             .collect(Collectors.toList()));
 
             sb.append(values);

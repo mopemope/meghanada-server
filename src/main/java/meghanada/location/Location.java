@@ -3,9 +3,9 @@ package meghanada.location;
 import com.google.common.base.MoreObjects;
 
 public class Location {
-    final String path;
-    final int line;
-    final int column;
+    private final String path;
+    private final int line;
+    private final int column;
 
     public Location(final String path, final int line, final int column) {
         this.path = path;

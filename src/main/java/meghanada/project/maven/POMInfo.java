@@ -6,22 +6,19 @@ import java.io.File;
 import java.io.IOException;
 import java.util.*;
 
-public class POMInfo {
+class POMInfo {
 
-    Set<File> sourceDirectory = new HashSet<>();
-    Set<File> resourceDirectories = new HashSet<>();
+    final Set<File> sourceDirectory = new HashSet<>(2);
+    final Set<File> resourceDirectories = new HashSet<>(2);
+    final Set<File> testSourceDirectory = new HashSet<>(2);
+    final Set<File> testResourceDirectories = new HashSet<>(2);
+    final Properties properties = new Properties();
+    private final Map<String, ProjectDependency> dependencyHashMap = new HashMap<>(8);
     File outputDirectory;
-
-    Set<File> testSourceDirectory = new HashSet<>();
-    Set<File> testResourceDirectories = new HashSet<>();
     File testOutputDirectory;
-    Map<String, ProjectDependency> dependencyHashMap = new HashMap<>();
-
     String groupId;
     String artifactId;
     String version;
-    Properties properties = new Properties();
-
     String compileSource = "1.8";
     String compileTarget = "1.8";
 

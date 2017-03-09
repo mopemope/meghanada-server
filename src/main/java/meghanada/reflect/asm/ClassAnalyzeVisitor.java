@@ -22,8 +22,8 @@ class ClassAnalyzeVisitor extends ClassVisitor {
     final List<MemberDescriptor> members;
     private final boolean classOnly;
     private final boolean includePrivate;
-    int access;
     List<String> classTypeParameters;
+    private int access;
     private ClassIndex classIndex;
     private String classNameWithType;
 
@@ -40,7 +40,7 @@ class ClassAnalyzeVisitor extends ClassVisitor {
         this.classNameWithType = classNameWithTP;
     }
 
-    ClassAnalyzeVisitor(String className) {
+    private ClassAnalyzeVisitor(String className) {
         this(className, false, false);
     }
 
@@ -84,7 +84,7 @@ class ClassAnalyzeVisitor extends ClassVisitor {
 
         // log.debug("Method Name:{}", name);
         if (name.contains("$")) {
-            return null;
+            return super.visitMethod(access, name, desc, sig, exceptions);
         }
         if (includePrivate && !name.equals(CLINIT)) {
             // method
@@ -126,7 +126,7 @@ class ClassAnalyzeVisitor extends ClassVisitor {
                         .parseSignature();
             }
         }
-        return null;
+        return super.visitMethod(access, name, desc, sig, exceptions);
     }
 
 //    @Override
@@ -147,7 +147,7 @@ class ClassAnalyzeVisitor extends ClassVisitor {
             return super.visitField(access, name, desc, sig, o);
         }
         if (name.startsWith("$") || name.startsWith("this$")) {
-            return null;
+            return super.visitField(access, name, desc, sig, o);
         }
         if (includePrivate) {
             return new FieldAnalyzeVisitor(this,
@@ -168,7 +168,7 @@ class ClassAnalyzeVisitor extends ClassVisitor {
                     .setTypeMap(this.getTypeMap())
                     .parseSignature();
         }
-        return null;
+        return super.visitField(access, name, desc, sig, o);
     }
 
     List<MemberDescriptor> getMembers() {

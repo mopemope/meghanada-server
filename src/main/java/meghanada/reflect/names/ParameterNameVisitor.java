@@ -38,7 +38,7 @@ public class ParameterNameVisitor extends VoidVisitorAdapter<Object> {
         if (!ModifierSet.isPrivate(mod)) {
             List<BodyDeclaration> members = n.getMembers();
             String clazz = n.getName();
-            this.className = this.pkg + "." + clazz;
+            this.className = this.pkg + '.' + clazz;
             log.debug("class {}", this.className);
             int i = 0;
             for (BodyDeclaration body : members) {
@@ -51,8 +51,8 @@ public class ParameterNameVisitor extends VoidVisitorAdapter<Object> {
                 } else if (body instanceof ClassOrInterfaceDeclaration) {
                     ClassOrInterfaceDeclaration classOrInterfaceDeclaration = (ClassOrInterfaceDeclaration) body;
                     String name = classOrInterfaceDeclaration.getName();
-                    String key = this.pkg + "." + name;
-                    name = this.originClassName + "." + name;
+                    String key = this.pkg + '.' + name;
+                    name = this.originClassName + '.' + name;
                     for (MethodParameterNames mpn : this.parameterNamesList) {
                         if (mpn != null
                                 && mpn.className != null
@@ -77,11 +77,8 @@ public class ParameterNameVisitor extends VoidVisitorAdapter<Object> {
             String methodName = methodDeclaration.getName();
             List<Parameter> parameters = methodDeclaration.getParameters();
             names.className = this.className;
-            List<List<ParameterName>> parameterNames = names.names.get(methodName);
-            if (parameterNames == null) {
-                parameterNames = new ArrayList<>();
-                names.names.put(methodName, parameterNames);
-            }
+            List<List<ParameterName>> parameterNames = names.names
+                    .computeIfAbsent(methodName, k -> new ArrayList<>(4));
 
             List<ParameterName> temp = new ArrayList<>();
             for (Parameter parameter : parameters) {

@@ -2,11 +2,11 @@ package meghanada.cache;
 
 import java.io.File;
 
-public class CacheRequest {
+class CacheRequest {
 
     private final File file;
+    private final Object target;
     public boolean shutdown;
-    private Object target;
 
     public CacheRequest(final File file, final Object target) {
         this.file = file;

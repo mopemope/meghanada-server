@@ -13,13 +13,14 @@ import meghanada.utils.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.annotation.Nonnull;
 import java.io.File;
 import java.io.IOException;
 import java.util.Map;
 import java.util.Optional;
 
 
-public class JavaSourceLoader extends CacheLoader<File, Source> implements RemovalListener<File, Source> {
+class JavaSourceLoader extends CacheLoader<File, Source> implements RemovalListener<File, Source> {
 
     private static final Logger log = LogManager.getLogger(JavaSourceLoader.class);
 
@@ -38,7 +39,9 @@ public class JavaSourceLoader extends CacheLoader<File, Source> implements Remov
         final String out = Joiner.on(File.separator).join(GlobalCache.SOURCE_CACHE_DIR, path);
         final File file = new File(root, out);
 
-        file.getParentFile().mkdirs();
+        if (!file.getParentFile().exists() && !file.getParentFile().mkdirs()) {
+            log.warn("{} mkdirs fail", file.getParent());
+        }
 
         log.debug("write file:{}", file);
         GlobalCache.getInstance().asyncWriteCache(file, source);
@@ -52,7 +55,9 @@ public class JavaSourceLoader extends CacheLoader<File, Source> implements Remov
         final String path = FileUtils.toHashedPath(sourceFile, GlobalCache.CACHE_EXT);
         final String out = Joiner.on(File.separator).join(GlobalCache.SOURCE_CACHE_DIR, path);
         final File file = new File(root, out);
-        file.delete();
+        if (file.exists() && !file.delete()) {
+            log.warn("{} delete fail", file);
+        }
     }
 
     private static Optional<Source> loadFromCache(final File sourceFile) throws IOException {
@@ -74,10 +79,10 @@ public class JavaSourceLoader extends CacheLoader<File, Source> implements Remov
     }
 
     @Override
-    public Source load(final File file) throws IOException {
+    public Source load(@Nonnull final File file) throws IOException {
         final Config config = Config.load();
-        if (file == null || !file.exists()) {
-            return null;
+        if (!file.exists()) {
+            return new Source(file.getPath());
         }
         if (!config.useSourceCache()) {
             final CompileResult compileResult = project.parseFile(file);
@@ -111,7 +116,7 @@ public class JavaSourceLoader extends CacheLoader<File, Source> implements Remov
     }
 
     @Override
-    public void onRemoval(RemovalNotification<File, Source> notification) {
+    public void onRemoval(@Nonnull final RemovalNotification<File, Source> notification) {
         final RemovalCause cause = notification.getCause();
 
         final Config config = Config.load();
