@@ -9,7 +9,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 
-class ProjectDependencySerializer extends Serializer<ProjectDependency> {
+public class ProjectDependencySerializer extends Serializer<ProjectDependency> {
 
     @Override
     public void write(Kryo kryo, Output output, ProjectDependency pd) {
