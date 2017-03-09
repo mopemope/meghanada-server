@@ -247,6 +247,7 @@ public class Session {
             // loaded project
             this.currentProject = this.projects.get(projectRoot);
             this.getLocationSearcher().setProject(currentProject);
+            this.getDeclarationSearcher().setProject(this.currentProject);
             this.getVariableCompletion().setProject(currentProject);
             return false;
         }
@@ -265,10 +266,11 @@ public class Session {
         }).orElse(false);
     }
 
-    private Boolean setProject(File projectRoot, Project project) {
+    private Boolean setProject(final File projectRoot, final Project project) {
         this.currentProject = project;
         this.projects.put(projectRoot, this.currentProject);
         this.getLocationSearcher().setProject(currentProject);
+        this.getDeclarationSearcher().setProject(this.currentProject);
         this.getVariableCompletion().setProject(currentProject);
         this.getCompletion().setProject(currentProject);
         return true;
@@ -647,32 +649,20 @@ public class Session {
         final Project currentProject = this.currentProject;
         final File projectRoot = currentProject.getProjectRoot();
         this.projects.clear();
-
         if (currentProject instanceof GradleProject) {
             loadProject(projectRoot, Project.GRADLE_PROJECT_FILE).ifPresent(project -> {
-                this.currentProject = project;
-                this.projects.put(projectRoot, this.currentProject);
-                this.getLocationSearcher().setProject(this.currentProject);
-                this.getVariableCompletion().setProject(this.currentProject);
-                this.getCompletion().setProject(this.currentProject);
+                setProject(projectRoot, project);
             });
         } else if (currentProject instanceof MavenProject) {
             loadProject(projectRoot, Project.MVN_PROJECT_FILE).ifPresent(project -> {
-                this.currentProject = project;
-                this.projects.put(projectRoot, this.currentProject);
-                this.getLocationSearcher().setProject(this.currentProject);
-                this.getVariableCompletion().setProject(this.currentProject);
-                this.getCompletion().setProject(this.currentProject);
+                setProject(projectRoot, project);
             });
         } else {
             loadProject(projectRoot, Config.MEGHANADA_CONF_FILE).ifPresent(project -> {
-                this.currentProject = project;
-                this.projects.put(projectRoot, this.currentProject);
-                this.getLocationSearcher().setProject(this.currentProject);
-                this.getVariableCompletion().setProject(this.currentProject);
-                this.getCompletion().setProject(this.currentProject);
+                setProject(projectRoot, project);
             });
         }
+
         final Set<File> temp = new HashSet<>(this.currentProject.getSourceDirectories());
         temp.addAll(this.currentProject.getTestSourceDirectories());
         this.sessionEventBus.requestWatchFiles(new ArrayList<>(temp));

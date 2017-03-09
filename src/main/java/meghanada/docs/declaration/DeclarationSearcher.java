@@ -36,21 +36,28 @@ public class DeclarationSearcher {
                                                              final String symbol) {
         final EntryMessage entryMessage = log.traceEntry("line={} col={} symbol={}", line, col, symbol);
         final Optional<Variable> variable = source.getVariable(line, col);
-        final Declaration declaration = variable.map(var -> {
-            return new Declaration(symbol, var.fqcn, Declaration.Type.VAR, var.argumentIndex);
+
+        final Optional<Declaration> result = variable.map(var -> {
+            final Declaration declaration = new Declaration(symbol, var.fqcn, Declaration.Type.VAR, var.argumentIndex);
+            return Optional.of(declaration);
         }).orElseGet(() -> {
             final TypeScope ts = source.getTypeScope(line);
             if (ts == null) {
-                return null;
+                return Optional.empty();
             }
             final Variable fieldVar = ts.getField(symbol);
             if (fieldVar == null) {
-                return null;
+                return Optional.empty();
             }
-            return new Declaration(symbol, fieldVar.fqcn, Declaration.Type.VAR, fieldVar.argumentIndex);
+            final Declaration declaration = new Declaration(symbol, fieldVar.fqcn, Declaration.Type.VAR, fieldVar.argumentIndex);
+            return Optional.of(declaration);
         });
         log.traceExit(entryMessage);
-        return Optional.ofNullable(declaration);
+        return result;
+    }
+
+    public void setProject(Project project) {
+        this.project = project;
     }
 
     public Optional<Declaration> searchDeclaration(final File file,
@@ -76,7 +83,7 @@ public class DeclarationSearcher {
         return list;
     }
 
-    private Optional<Declaration> searchReserved(final Source source,
+    private Optional<Declaration> searchReserved(@SuppressWarnings("unused") final Source source,
                                                  final Integer line,
                                                  final Integer col,
                                                  final String symbol) {
@@ -144,12 +151,12 @@ public class DeclarationSearcher {
                             })
                             .findFirst()
                             .orElse(null));
-            String decl;
+            String declaration;
             if (method != null) {
-                decl = method.getDeclaration();
+                declaration = method.getDeclaration();
             } else {
                 final String args = Joiner.on(", ").join(arguments);
-                decl = mc.returnType + " " + methodName + "(" + args + ")";
+                declaration = mc.returnType + " " + methodName + "(" + args + ")";
             }
 
             String scope = mc.scope;
@@ -158,7 +165,7 @@ public class DeclarationSearcher {
             } else {
                 scope = symbol;
             }
-            return new Declaration(scope.trim(), decl, Declaration.Type.METHOD, mc.argumentIndex);
+            return new Declaration(scope.trim(), declaration, Declaration.Type.METHOD, mc.argumentIndex);
         });
         log.traceExit(entryMessage);
         return result;
@@ -170,7 +177,7 @@ public class DeclarationSearcher {
                                                          final String symbol) {
         final EntryMessage entryMessage = log.traceEntry("line={} col={} symbol={}", line, col, symbol);
         final CachedASMReflector reflector = CachedASMReflector.getInstance();
-        Optional<Declaration> result = null;
+        Optional<Declaration> result;
         String fqcn = source.importClass.get(symbol);
         if (fqcn == null) {
             final Map<String, String> standardClasses = reflector.getStandardClasses();
@@ -216,7 +223,6 @@ public class DeclarationSearcher {
                         return Optional.empty();
                     });
                 } else {
-                    fqcn = symbol;
                     result = Optional.empty();
                 }
             } else {
