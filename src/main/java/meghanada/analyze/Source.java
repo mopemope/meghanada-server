@@ -426,12 +426,27 @@ public class Source {
 
     public boolean addImportIfAbsent(@Nonnull final String fqcn) {
 
-        log.info("classScope size={}", this.classScopes.size());
         for (final ClassScope classScope : this.classScopes) {
             final String classScopeFQCN = classScope.getFQCN();
-            log.info("compare fqcn={} class={}", fqcn, classScopeFQCN);
             if (fqcn.equals(classScopeFQCN)) {
-                log.info("match fqcn={} class={}", fqcn, classScope.getFQCN());
+                return false;
+            }
+        }
+        final CachedASMReflector reflector = CachedASMReflector.getInstance();
+        if (fqcn.startsWith(this.packageName)) {
+            final Map<String, String> packageClasses = reflector.getPackageClasses(this.packageName);
+            boolean find = packageClasses
+                    .values()
+                    .stream()
+                    .filter(s -> s.equals(fqcn))
+                    .map(s -> true)
+                    .findFirst()
+                    .orElseGet(() -> {
+                        // TODO search inner class
+                        return false;
+                    });
+
+            if (find) {
                 return false;
             }
         }

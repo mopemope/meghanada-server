@@ -83,7 +83,7 @@ class JavaSourceLoader extends CacheLoader<File, Source> implements RemovalListe
     public Source load(@Nonnull final File file) throws IOException {
         final Config config = Config.load();
         if (!file.exists()) {
-            new Source(file.getPath());
+            return new Source(file.getPath());
         }
 
         if (!config.useSourceCache()) {

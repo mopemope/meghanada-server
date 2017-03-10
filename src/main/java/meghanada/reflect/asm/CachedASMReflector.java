@@ -64,9 +64,9 @@ public class CachedASMReflector {
 
     private static boolean containsKeyword(final String keyword, final boolean partial, final ClassIndex index) {
         if (partial) {
-            final String lower = keyword.toLowerCase();
+            final String lowerKeyword = keyword.toLowerCase();
             final String className = index.getName().toLowerCase();
-            return className.contains(lower);
+            return className.contains(lowerKeyword);
         } else {
             final String name = index.getName();
             return name.equals(keyword) ||

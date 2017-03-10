@@ -389,7 +389,7 @@ public class Session {
         if (!FileUtils.isJavaFile(file)) {
             return false;
         }
-        log.info("call addImport path={}", path);
+        log.debug("addImport path={} fqcn={}", path, fqcn);
         return parseJavaSource(file)
                 .map(source -> source.addImportIfAbsent(fqcn))
                 .orElse(false);

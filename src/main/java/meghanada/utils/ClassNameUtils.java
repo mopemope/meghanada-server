@@ -202,15 +202,15 @@ public class ClassNameUtils {
         return fqcn;
     }
 
-    public static String getPackage(String fqcn) {
+    public static String getPackage(final String fqcn) {
         int idx = fqcn.lastIndexOf('.');
         if (idx >= 0) {
             return fqcn.substring(0, idx);
         }
-        return fqcn;
+        return "";
     }
 
-    public static Optional<String> getTypeVariable(String val) {
+    public static Optional<String> getTypeVariable(final String val) {
         int idx = val.indexOf(CLASS_TYPE_VARIABLE_MARK);
         if (idx >= 0) {
             return Optional.of(val.substring(idx + 2, idx + 3));

@@ -234,7 +234,9 @@ public class DeclarationSearcher {
                                                    final int line,
                                                    final int column,
                                                    final String symbol) throws ExecutionException, IOException {
-
+        if (!file.exists()) {
+            return Optional.empty();
+        }
         log.trace("search symbol={}", symbol);
         return getSource(project, file).flatMap(source -> this.functions.stream()
                 .map(f -> f.apply(source, line, column, symbol))
