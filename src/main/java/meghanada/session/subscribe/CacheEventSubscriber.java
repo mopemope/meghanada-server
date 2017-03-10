@@ -35,8 +35,11 @@ public class CacheEventSubscriber extends AbstractSubscriber {
         final Session session = super.sessionEventBus.getSession();
         final Project project = session.getCurrentProject();
         final CachedASMReflector reflector = CachedASMReflector.getInstance();
-        reflector.addClasspath(session.getDependentJars());
-        reflector.createClassIndexes();
+
+        timeItF("create jar index elapsed:{}", () -> {
+            reflector.addClasspath(session.getDependentJars());
+            reflector.createClassIndexes();
+        });
 
         timeItF("analyzed and compiled. elapsed:{}", () -> {
             try {
@@ -53,7 +56,6 @@ public class CacheEventSubscriber extends AbstractSubscriber {
             } catch (Exception e) {
                 log.catching(e);
             }
-            return true;
         });
 
         final Stopwatch stopwatch = Stopwatch.createStarted();

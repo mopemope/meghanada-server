@@ -28,6 +28,8 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
+import static meghanada.config.Config.debugTimeItF;
+
 @DefaultSerializer(ProjectSerializer.class)
 public abstract class Project {
 
@@ -234,8 +236,8 @@ public abstract class Project {
     public CompileResult compileJava(boolean force, final boolean fullBuild) throws IOException {
         final Set<Project> lazyLoad = new HashSet<>(2);
 
-        final boolean build = Config.load().buildDependencyModule();
-        if (fullBuild && build) {
+        final boolean buildDependencyModule = Config.load().buildDependencyModule();
+        if (fullBuild && buildDependencyModule) {
             this.compileDependencyProjects(force, lazyLoad);
         }
 
@@ -243,28 +245,39 @@ public abstract class Project {
 
         List<File> files = this.collectJavaFiles(this.sources);
         if (files != null && !files.isEmpty()) {
-            if (callerMap.size() == 0) {
-                force = true;
-            }
-            final File callerFile = FileUtils.getProjectDataFile(GlobalCache.CALLER_DATA);
+
+//            if (callerMap.size() == 0) {
+//                force = true;
+//            }
+
+            final Stopwatch stopwatch = Stopwatch.createStarted();
+            final File callerFile = FileUtils.getProjectDataFile(this.projectRoot, GlobalCache.CALLER_DATA);
             if (force && callerFile.exists() && !callerFile.delete()) {
                 log.warn("{} delete fail", callerFile);
             }
-            files = force ? files : FileUtils.getModifiedSources(files, this.getAllSources(), this.output);
 
-            files = addDepends(this.getAllSources(), files);
-
+            final List<File> f = files;
+            files = force ? files : FileUtils.getModifiedSources(this.projectRoot, f, this.getAllSources(), this.output);
+            if (!force) {
+                files = addDepends(this.getAllSources(), files);
+            }
             final String projectName = projectRoot.getName();
             this.prepareCompile(files);
-            final Stopwatch stopwatch = Stopwatch.createStarted();
-            final CompileResult compileResult = clearMemberCache(getJavaAnalyzer().analyzeAndCompile(files,
-                    this.allClasspath(),
-                    output.getCanonicalPath()));
-            log.info("project {}: compile(java) {} files. elapsed:{}", projectName, files.size(), stopwatch.stop());
-
-            this.postCompile(force, fullBuild, lazyLoad);
+            final CompileResult compileResult = clearMemberCache(getJavaAnalyzer()
+                    .analyzeAndCompile(files,
+                            this.allClasspath(),
+                            output.getCanonicalPath()));
+            log.info("project {}: compile(java) {} files. force:{} elapsed:{}",
+                    projectName,
+                    files.size(),
+                    force,
+                    stopwatch.stop());
+            if (buildDependencyModule) {
+                this.postCompile(force, fullBuild, lazyLoad);
+            }
             System.setProperty(PROJECT_ROOT_KEY, projectRoot.getCanonicalPath());
-            return this.updateSourceCache(compileResult);
+            return debugTimeItF("updateSourceCache elapsed:{}", () ->
+                    this.updateSourceCache(compileResult));
         }
         return new CompileResult(true);
     }
@@ -331,27 +344,30 @@ public abstract class Project {
         System.setProperty(PROJECT_ROOT_KEY, projectRoot.getCanonicalPath());
         List<File> files = this.collectJavaFiles(this.testSources);
         if (files != null && !files.isEmpty()) {
-            if (callerMap.size() == 0) {
-                force = true;
-            }
-            final File callerFile = FileUtils.getProjectDataFile(GlobalCache.CALLER_DATA);
+//            if (callerMap.size() == 0) {
+//                force = true;
+//            }
+            final File callerFile = FileUtils.getProjectDataFile(this.projectRoot, GlobalCache.CALLER_DATA);
             if (force && callerFile.exists() && !callerFile.delete()) {
                 log.warn("{} delete fail", callerFile);
             }
 
-            files = force ? files : FileUtils.getModifiedSources(files, this.getAllSources(), this.testOutput);
-            files = addDepends(this.getAllSources(), files);
+            files = force ? files : FileUtils.getModifiedSources(projectRoot, files, this.getAllSources(), this.testOutput);
+            if (!force) {
+                files = addDepends(this.getAllSources(), files);
+            }
             final String projectName = projectRoot.getName();
             this.prepareTestCompile(files);
             final Stopwatch stopwatch = Stopwatch.createStarted();
             final CompileResult compileResult = clearMemberCache(getJavaAnalyzer().analyzeAndCompile(files,
                     this.allClasspath(),
                     testOutput.getCanonicalPath()));
-            log.info("project {}: compile(test) {} files. elapsed:{}", projectName, files.size(), stopwatch.stop());
+            log.info("project {}: compile(test) {} files. force:{} elapsed:{}", projectName, files.size(), force, stopwatch.stop());
 
             this.postCompileTest(force, fullBuild, lazyLoad);
             System.setProperty(PROJECT_ROOT_KEY, projectRoot.getCanonicalPath());
-            return this.updateSourceCache(compileResult);
+            return debugTimeItF("updateSourceCache elapsed:{}", () ->
+                    this.updateSourceCache(compileResult));
         }
         return new CompileResult(true);
     }
@@ -452,7 +468,7 @@ public abstract class Project {
             List<File> files = new ArrayList<>(8);
             files.add(file);
 
-            files = force ? files : FileUtils.getModifiedSources(files, this.getAllSources(), new File(output));
+            files = force ? files : FileUtils.getModifiedSources(projectRoot, files, this.getAllSources(), new File(output));
             files = addDepends(this.getAllSources(), files);
             return clearMemberCache(getJavaAnalyzer().analyzeAndCompile(files, this.allClasspath(), output));
         }
@@ -481,7 +497,7 @@ public abstract class Project {
                 .filter(FileUtils::filterFile)
                 .collect(Collectors.toList());
 
-        filesList = force ? filesList : FileUtils.getModifiedSources(files, this.getAllSources(), new File(output));
+        filesList = force ? filesList : FileUtils.getModifiedSources(projectRoot, files, this.getAllSources(), new File(output));
         filesList = addDepends(this.getAllSources(), filesList);
         return clearMemberCache(getJavaAnalyzer().analyzeAndCompile(filesList, this.allClasspath(), output));
     }
@@ -710,7 +726,7 @@ public abstract class Project {
             final Map<File, Source> sourceMap = compileResult.getSources();
             final Map<File, Map<String, String>> checksum = config.getAllChecksumMap();
 
-            final File checksumFile = FileUtils.getProjectDataFile(GlobalCache.SOURCE_CHECKSUM_DATA);
+            final File checksumFile = FileUtils.getProjectDataFile(this.projectRoot, GlobalCache.SOURCE_CHECKSUM_DATA);
             final Map<String, String> checksumMap = checksum.getOrDefault(checksumFile, new ConcurrentHashMap<>(64));
 
             for (final Source source : sourceMap.values()) {
@@ -786,17 +802,17 @@ public abstract class Project {
         return new ArrayList<>(temp);
     }
 
-    private synchronized void writeCaller() {
-        final File callerFile = FileUtils.getProjectDataFile(GlobalCache.CALLER_DATA);
+    private synchronized void writeCaller() throws IOException {
+        final File callerFile = FileUtils.getProjectDataFile(this.projectRoot, GlobalCache.CALLER_DATA);
         GlobalCache.getInstance().asyncWriteCache(callerFile, callerMap);
     }
 
-    synchronized void loadCaller() {
-        final File callerFile = FileUtils.getProjectDataFile(GlobalCache.CALLER_DATA);
+    synchronized void loadCaller() throws IOException {
+        System.setProperty(PROJECT_ROOT_KEY, projectRoot.getCanonicalPath());
+        final File callerFile = FileUtils.getProjectDataFile(this.projectRoot, GlobalCache.CALLER_DATA);
         if (!callerFile.exists()) {
             return;
         }
-
         @SuppressWarnings("unchecked")
         final Map<String, Set<String>> map =
                 GlobalCache.getInstance().readCacheFromFile(callerFile, ConcurrentHashMap.class);
@@ -825,10 +841,9 @@ public abstract class Project {
             p.clearCache();
         }
         System.setProperty(PROJECT_ROOT_KEY, this.projectRoot.getCanonicalPath());
-        final Config config = Config.load();
-        final String projectSettingDir = config.getProjectSettingDir();
+        final File projectSettingDir = new File(projectRoot, Config.MEGHANADA_DIR);
         log.info("clear cache {}", projectSettingDir);
-        FileUtils.deleteFiles(new File(projectSettingDir), false);
+        FileUtils.deleteFiles(projectSettingDir, false);
     }
 
     private Properties readFormatProperties() {

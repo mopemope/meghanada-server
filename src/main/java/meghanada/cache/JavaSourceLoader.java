@@ -30,11 +30,9 @@ class JavaSourceLoader extends CacheLoader<File, Source> implements RemovalListe
         this.project = project;
     }
 
-    private static void writeSourceCache(final Source source) throws IOException {
+    private void writeSourceCache(final Source source) throws IOException {
         final File sourceFile = source.getFile();
-        final Config config = Config.load();
-        final String dir = config.getProjectSettingDir();
-        final File root = new File(dir);
+        final File root = new File(this.project.getProjectRoot(), Config.MEGHANADA_DIR);
         final String path = FileUtils.toHashedPath(sourceFile, GlobalCache.CACHE_EXT);
         final String out = Joiner.on(File.separator).join(GlobalCache.SOURCE_CACHE_DIR, path);
         final File file = new File(root, out);
@@ -47,11 +45,9 @@ class JavaSourceLoader extends CacheLoader<File, Source> implements RemovalListe
         GlobalCache.getInstance().asyncWriteCache(file, source);
     }
 
-    private static void removeSourceCache(final Source source) throws IOException {
+    private void removeSourceCache(final Source source) throws IOException {
         final File sourceFile = source.getFile();
-        final Config config = Config.load();
-        final String dir = config.getProjectSettingDir();
-        final File root = new File(dir);
+        final File root = new File(this.project.getProjectRoot(), Config.MEGHANADA_DIR);
         final String path = FileUtils.toHashedPath(sourceFile, GlobalCache.CACHE_EXT);
         final String out = Joiner.on(File.separator).join(GlobalCache.SOURCE_CACHE_DIR, path);
         final File file = new File(root, out);
@@ -60,11 +56,9 @@ class JavaSourceLoader extends CacheLoader<File, Source> implements RemovalListe
         }
     }
 
-    private static Optional<Source> loadFromCache(final File sourceFile) throws IOException {
+    private Optional<Source> loadFromCache(final File sourceFile) throws IOException {
 
-        final Config config = Config.load();
-        final String dir = config.getProjectSettingDir();
-        final File root = new File(dir);
+        final File root = new File(this.project.getProjectRoot(), Config.MEGHANADA_DIR);
         final String path = FileUtils.toHashedPath(sourceFile, GlobalCache.CACHE_EXT);
         final String out = Joiner.on(File.separator).join(GlobalCache.SOURCE_CACHE_DIR, path);
         final File file = new File(root, out);
@@ -90,8 +84,8 @@ class JavaSourceLoader extends CacheLoader<File, Source> implements RemovalListe
             final CompileResult compileResult = project.parseFile(file);
             return compileResult.getSources().get(file);
         }
-
-        final File checksumFile = FileUtils.getProjectDataFile(GlobalCache.SOURCE_CHECKSUM_DATA);
+        final File projectRoot = this.project.getProjectRoot();
+        final File checksumFile = FileUtils.getProjectDataFile(projectRoot, GlobalCache.SOURCE_CHECKSUM_DATA);
         final Map<String, String> finalChecksumMap = config.getChecksumMap(checksumFile);
 
         final String path = file.getCanonicalPath();
@@ -103,7 +97,7 @@ class JavaSourceLoader extends CacheLoader<File, Source> implements RemovalListe
                 // not modify
                 // load from cache
                 try {
-                    final Optional<Source> source = JavaSourceLoader.loadFromCache(file);
+                    final Optional<Source> source = loadFromCache(file);
                     if (source.isPresent()) {
                         return source.get();
                     }

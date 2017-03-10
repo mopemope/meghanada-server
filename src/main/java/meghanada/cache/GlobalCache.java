@@ -17,6 +17,7 @@ import meghanada.reflect.names.MethodParameterNames;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.annotation.Nonnull;
 import java.io.*;
 import java.util.HashMap;
 import java.util.List;
@@ -139,6 +140,7 @@ public class GlobalCache {
         }
     }
 
+    @Nonnull
     public Source getSource(final Project project, final File file) throws ExecutionException {
         final LoadingCache<File, Source> sourceCache = this.getSourceCache(project);
         return sourceCache.get(file);
@@ -154,12 +156,16 @@ public class GlobalCache {
         sourceCache.invalidate(file);
     }
 
-    public <T> T readCacheFromFile(final File file, final Class<T> type) {
+    public <T> T readCacheFromFile(@Nonnull final File file, final Class<T> type) {
+        if (!file.exists()) {
+            return null;
+        }
         return kryoPool.run(kryo -> {
             try (final Input input = new Input(new ZstdInputStream(new ByteBufferInput(new FileInputStream(file), 8192)))) {
                 return kryo.readObject(input, type);
             } catch (Exception e) {
-                if (!file.delete()) {
+                log.catching(e);
+                if (file.exists() && !file.delete()) {
                     log.warn("{} delete fail", file);
                 }
                 return null;
@@ -186,10 +192,10 @@ public class GlobalCache {
             try (final Output output = new Output(new ZstdOutputStream(new BufferedOutputStream(new FileOutputStream(file), 8192), COMPRESSION_LEVEL))) {
                 kryo.writeObject(output, obj);
             } catch (Exception e) {
+                log.catching(e);
                 if (!file.delete()) {
                     log.warn("{} delete fail", file);
                 }
-                log.catching(e);
             }
             return true;
         });

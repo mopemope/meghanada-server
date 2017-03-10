@@ -27,7 +27,7 @@ public class Config {
     public static final String MEGHANADA_CONF_FILE = ".meghanada.conf";
     public static final String GRADLE_PREPARE_COMPILE_TASK = "gradle-prepare-compile-task";
     public static final String GRADLE_PREPARE_TEST_COMPILE_TASK = "gradle-prepare-test-compile-task";
-    private static final String MEGHANADA_DIR = ".meghanada";
+    public static final String MEGHANADA_DIR = ".meghanada";
     private static final Logger log = LogManager.getLogger(Config.class);
     private static Config config;
 
@@ -58,7 +58,6 @@ public class Config {
         log.debug("java-version:{}", getJavaVersion());
         log.debug("user-home:{}", getUserHomeDir());
         log.debug("project-root-dir:{}", getProjectRootDir());
-        log.debug("project-setting-dir:{}", getProjectSettingDir());
         log.debug("fast-boot:{}", useFastBoot());
         log.debug("class-fuzzy-search:{}", useClassFuzzySearch());
         log.debug("build-dependency-module:{}", buildDependencyModule());
@@ -73,9 +72,20 @@ public class Config {
     }
 
     public static <T> T timeIt(final SimpleSupplier<T> supplier) {
-        Stopwatch stopwatch = Stopwatch.createStarted();
+        final Stopwatch stopwatch = Stopwatch.createStarted();
         try {
             return supplier.get();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        } finally {
+            log.info("elapsed:{}", stopwatch.stop());
+        }
+    }
+
+    public static void timeIt(final SimpleConsumer consumer) {
+        final Stopwatch stopwatch = Stopwatch.createStarted();
+        try {
+            consumer.accept();
         } catch (Exception e) {
             throw new RuntimeException(e);
         } finally {
@@ -91,6 +101,39 @@ public class Config {
             throw new RuntimeException(e);
         } finally {
             log.info(format, stopwatch.stop());
+        }
+    }
+
+    public static void timeItF(final String format, final SimpleConsumer consumer) {
+        final Stopwatch stopwatch = Stopwatch.createStarted();
+        try {
+            consumer.accept();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        } finally {
+            log.info(format, stopwatch.stop());
+        }
+    }
+
+    public static <T> T debugTimeItF(final String format, final SimpleSupplier<T> supplier) {
+        Stopwatch stopwatch = Stopwatch.createStarted();
+        try {
+            return supplier.get();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        } finally {
+            log.debug(format, stopwatch.stop());
+        }
+    }
+
+    public static void debugTimeItF(final String format, final SimpleConsumer consumer) {
+        final Stopwatch stopwatch = Stopwatch.createStarted();
+        try {
+            consumer.accept();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        } finally {
+            log.debug(format, stopwatch.stop());
         }
     }
 
@@ -278,5 +321,12 @@ public class Config {
 
         R get() throws Exception;
     }
+
+    @FunctionalInterface
+    public interface SimpleConsumer {
+
+        void accept() throws IOException;
+    }
+
 
 }

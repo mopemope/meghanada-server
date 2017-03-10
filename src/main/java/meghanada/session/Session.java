@@ -1,6 +1,7 @@
 package meghanada.session;
 
 import com.google.common.base.Joiner;
+import com.google.common.base.Stopwatch;
 import meghanada.analyze.CompileResult;
 import meghanada.analyze.Source;
 import meghanada.cache.GlobalCache;
@@ -113,9 +114,7 @@ public class Session {
 
         try {
             final Config config = Config.load();
-            final String projectSettingDir = config.getProjectSettingDir();
-
-            final File settingFile = new File(projectSettingDir);
+            final File settingFile = new File(projectRoot, Config.MEGHANADA_DIR);
             if (!settingFile.exists() && !settingFile.mkdirs()) {
                 log.warn("{} mkdirs fail", settingFile);
             }
@@ -130,7 +129,8 @@ public class Session {
 
             log.trace("project projectID={} projectRoot={}", id, projectRoot);
 
-            final File projectCache = FileUtils.getProjectDataFile(GlobalCache.PROJECT_DATA);
+            final File projectCache = FileUtils.getProjectDataFile(projectRoot, GlobalCache.PROJECT_DATA);
+
             if (config.useFastBoot() && projectCache.exists()) {
                 try {
                     final Project tempProject = Session.readProjectCache(projectCache);
@@ -162,12 +162,12 @@ public class Session {
                     break;
             }
             project.setId(id);
-
+            final Stopwatch stopwatch = Stopwatch.createStarted();
             final Project parsed = project.parseProject();
             if (config.useFastBoot()) {
                 Session.writeProjectCache(projectCache, parsed);
             }
-            log.info("load project projectRoot:{}", project.getProjectRoot());
+            log.info("load project projectRoot:{} elapsed:{}", project.getProjectRoot(), stopwatch.stop());
             log.traceExit(entryMessage);
             return Optional.of(parsed.mergeFromProjectConfig());
         } finally {

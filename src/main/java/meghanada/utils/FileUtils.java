@@ -196,13 +196,13 @@ public final class FileUtils {
         return properties.getProperty("version");
     }
 
-    public static File getProjectDataFile(final String key) {
-        final String settingDir = Config.load().getProjectSettingDir();
-        final File root = new File(settingDir, GlobalCache.DATA_DIR);
+    public static File getProjectDataFile(final File projectRoot, final String key) throws IOException {
+        final File settingDirFile = new File(projectRoot, Config.MEGHANADA_DIR);
+        final File root = new File(settingDirFile, GlobalCache.DATA_DIR);
         if (!root.exists() && !root.mkdirs()) {
             log.warn("fail create directory={}", root);
         }
-        final String path = FileUtils.toHashedPath(settingDir + ':' + key, GlobalCache.CACHE_EXT);
+        final String path = FileUtils.toHashedPath(settingDirFile.getCanonicalPath() + ':' + key, GlobalCache.CACHE_EXT);
         return new File(root, path);
     }
 
@@ -285,9 +285,12 @@ public final class FileUtils {
         return new ArrayList<>(temp);
     }
 
-    public static List<File> getModifiedSources(final List<File> sourceFiles, final Set<File> sourceRoots, final File output) throws IOException {
+    public static List<File> getModifiedSources(final File projectRoot,
+                                                final List<File> sourceFiles,
+                                                final Set<File> sourceRoots,
+                                                final File output) throws IOException {
 
-        final File checksumFile = FileUtils.getProjectDataFile(GlobalCache.SOURCE_CHECKSUM_DATA);
+        final File checksumFile = FileUtils.getProjectDataFile(projectRoot, GlobalCache.SOURCE_CHECKSUM_DATA);
         final Config config = Config.load();
         final Map<String, String> map = config.getChecksumMap(checksumFile);
 

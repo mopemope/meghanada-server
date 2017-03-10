@@ -7,6 +7,7 @@ import com.google.common.cache.RemovalCause;
 import com.google.common.cache.RemovalListener;
 import com.google.common.cache.RemovalNotification;
 import meghanada.config.Config;
+import meghanada.project.Project;
 import meghanada.reflect.CandidateUnit;
 import meghanada.reflect.ClassIndex;
 import meghanada.reflect.MemberDescriptor;
@@ -34,18 +35,10 @@ class MemberCacheLoader extends CacheLoader<String, List<MemberDescriptor>> impl
     private static final Logger log = LogManager.getLogger(MemberCacheLoader.class);
     private final Map<String, File> classFileMap;
     private final Map<ClassIndex, File> reflectIndex;
-    private final Map<String, String> cacheChecksum;
-    private final File cacheChecksumFile;
 
-    public MemberCacheLoader(Map<String, File> classFileMap, Map<ClassIndex, File> reflectIndex) {
+    MemberCacheLoader(Map<String, File> classFileMap, Map<ClassIndex, File> reflectIndex) {
         this.classFileMap = classFileMap;
         this.reflectIndex = reflectIndex;
-        this.cacheChecksumFile = FileUtils.getProjectDataFile(GlobalCache.COMPILE_CHECKSUM_DATA);
-        if (this.cacheChecksumFile.exists()) {
-            this.cacheChecksum = new ConcurrentHashMap<>(MemberCacheLoader.readCacheChecksum(this.cacheChecksumFile));
-        } else {
-            this.cacheChecksum = new ConcurrentHashMap<>(64);
-        }
     }
 
     private static void writeFileCache(final String fqcn, final List<MemberDescriptor> list) {
@@ -56,8 +49,8 @@ class MemberCacheLoader extends CacheLoader<String, List<MemberDescriptor>> impl
                     return true;
                 }))
                 .orElseGet(() -> {
-                    final String fqcn2 = ClassNameUtils.replaceInnerMark(fqcn);
-                    reflector.containsClassIndex(fqcn2)
+                    final String innerFQCN = ClassNameUtils.replaceInnerMark(fqcn);
+                    reflector.containsClassIndex(innerFQCN)
                             .ifPresent(wrapIOConsumer(classIndex ->
                                     CachedASMReflector.writeCache(classIndex, list)));
                     return true;
@@ -78,55 +71,9 @@ class MemberCacheLoader extends CacheLoader<String, List<MemberDescriptor>> impl
         return GlobalCache.getInstance().readCacheFromFile(inFile, HashMap.class);
     }
 
-    @Override
-    public List<MemberDescriptor> load(@Nonnull final String className) throws IOException {
-
-        final ClassName cn = new ClassName(className);
-        final String fqcn = cn.getName();
-        final Config config = Config.load();
-        final String dir = config.getProjectSettingDir();
-        final File root = new File(dir);
-        final String path = FileUtils.toHashedPath(fqcn, GlobalCache.CACHE_EXT);
-        final String out = Joiner.on(File.separator).join(GlobalCache.MEMBER_CACHE_DIR, path);
-        final File cacheFilePath = new File(root, out);
-
-        File classFile = this.classFileMap.get(fqcn);
-        if (classFile == null) {
-            // try inner class
-            classFile = this.classFileMap.get(ClassNameUtils.replaceInnerMark(fqcn));
-            if (classFile == null) {
-                log.debug("Missing FQCN:{}'s file is null", fqcn);
-                return Collections.emptyList();
-            }
-        }
-
-        @SuppressWarnings("unchecked")
-        final List<MemberDescriptor> cachedResult = this.getCachedMemberDescriptors(fqcn, cacheFilePath, classFile);
-        if (cachedResult != null) {
-            return cachedResult;
-        }
-        final String initName = ClassNameUtils.getSimpleName(fqcn);
-
-        final Stopwatch stopwatch = Stopwatch.createStarted();
-        final ASMReflector asmReflector = ASMReflector.getInstance();
-        final InheritanceInfo info = asmReflector.getReflectInfo(reflectIndex, fqcn);
-        final List<MemberDescriptor> list = asmReflector.reflectAll(info);
-
-        final List<MemberDescriptor> memberDescriptors = list.stream().filter(md -> {
-            if (md.matchType(CandidateUnit.MemberType.CONSTRUCTOR)) {
-                final String name = ClassNameUtils.getSimpleName(md.getName());
-                return name.equals(initName);
-            }
-            return true;
-        }).collect(Collectors.toList());
-
-        // this.writeFileCache(fqcn, memberDescriptors);
-        log.trace("load fqcn:{} elapsed:{}", fqcn, stopwatch.stop());
-        GlobalCache.getInstance().asyncWriteCache(this.cacheChecksumFile, this.cacheChecksum);
-        return memberDescriptors;
-    }
-
-    private List<MemberDescriptor> getCachedMemberDescriptors(final String fqcn, final File cacheFilePath, final File file) throws IOException {
+    private static List<MemberDescriptor> getCachedMemberDescriptors(final String fqcn,
+                                                                     final File cacheFilePath,
+                                                                     final File file) throws IOException {
         if (file.exists()) {
             final String fileName = file.getName();
             if (file.isFile() && fileName.endsWith(".class")) {
@@ -157,21 +104,89 @@ class MemberCacheLoader extends CacheLoader<String, List<MemberDescriptor>> impl
         return null;
     }
 
-    private List<MemberDescriptor> getCachedMemberDescriptors(final File cacheFilePath, final String md5sum, final String filePath) {
-        if (this.cacheChecksum.containsKey(filePath)) {
-            if (this.cacheChecksum.get(filePath).equals(md5sum)) {
+    private static List<MemberDescriptor> getCachedMemberDescriptors(final File cacheFilePath,
+                                                                     final String md5sum,
+                                                                     final String filePath) throws IOException {
+        final String projectRoot = System.getProperty(Project.PROJECT_ROOT_KEY);
+        final File checksumMapFile = FileUtils.getProjectDataFile(new File(projectRoot), GlobalCache.COMPILE_CHECKSUM_DATA);
+        Map<String, String> checksumMap;
+        if (checksumMapFile.exists()) {
+            checksumMap = new ConcurrentHashMap<>(MemberCacheLoader.readCacheChecksum(checksumMapFile));
+        } else {
+            checksumMap = new ConcurrentHashMap<>(64);
+        }
+
+        if (checksumMap.containsKey(filePath)) {
+            if (checksumMap.get(filePath).equals(md5sum)) {
                 // not modified
                 final List<MemberDescriptor> cachedResult = MemberCacheLoader.loadFromCache(cacheFilePath);
                 if (cachedResult != null) {
                     return cachedResult;
                 }
             } else {
-                this.cacheChecksum.put(filePath, md5sum);
+                checksumMap.put(filePath, md5sum);
             }
         } else {
-            this.cacheChecksum.put(filePath, md5sum);
+            checksumMap.put(filePath, md5sum);
         }
         return null;
+    }
+
+    @Override
+    public List<MemberDescriptor> load(@Nonnull final String className) throws IOException {
+
+        final ClassName cn = new ClassName(className);
+        final String fqcn = cn.getName();
+        final Config config = Config.load();
+        final String dir = config.getProjectSettingDir();
+        final File root = new File(dir);
+        final String path = FileUtils.toHashedPath(fqcn, GlobalCache.CACHE_EXT);
+        final String out = Joiner.on(File.separator).join(GlobalCache.MEMBER_CACHE_DIR, path);
+        final File cacheFilePath = new File(root, out);
+
+        final String projectRoot = System.getProperty(Project.PROJECT_ROOT_KEY);
+        final File checksumMapFile = FileUtils.getProjectDataFile(new File(projectRoot), GlobalCache.COMPILE_CHECKSUM_DATA);
+
+        Map<String, String> checksumMap;
+        if (checksumMapFile.exists()) {
+            checksumMap = new ConcurrentHashMap<>(MemberCacheLoader.readCacheChecksum(checksumMapFile));
+        } else {
+            checksumMap = new ConcurrentHashMap<>(64);
+        }
+
+        File classFile = this.classFileMap.get(fqcn);
+        if (classFile == null) {
+            // try inner class
+            classFile = this.classFileMap.get(ClassNameUtils.replaceInnerMark(fqcn));
+            if (classFile == null) {
+                log.debug("Missing FQCN:{}'s file is null", fqcn);
+                return Collections.emptyList();
+            }
+        }
+
+        @SuppressWarnings("unchecked")
+        final List<MemberDescriptor> cachedResult = MemberCacheLoader.getCachedMemberDescriptors(fqcn, cacheFilePath, classFile);
+        if (cachedResult != null) {
+            return cachedResult;
+        }
+        final String initName = ClassNameUtils.getSimpleName(fqcn);
+
+        final Stopwatch stopwatch = Stopwatch.createStarted();
+        final ASMReflector asmReflector = ASMReflector.getInstance();
+        final InheritanceInfo info = asmReflector.getReflectInfo(reflectIndex, fqcn);
+        final List<MemberDescriptor> list = asmReflector.reflectAll(info);
+
+        final List<MemberDescriptor> memberDescriptors = list.stream().filter(md -> {
+            if (md.matchType(CandidateUnit.MemberType.CONSTRUCTOR)) {
+                final String name = ClassNameUtils.getSimpleName(md.getName());
+                return name.equals(initName);
+            }
+            return true;
+        }).collect(Collectors.toList());
+
+        log.trace("load fqcn:{} elapsed:{}", fqcn, stopwatch.stop());
+        GlobalCache.getInstance().asyncWriteCache(checksumMapFile, checksumMap);
+        return memberDescriptors;
     }
 
     @Override

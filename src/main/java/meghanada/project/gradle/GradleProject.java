@@ -21,23 +21,27 @@ import org.gradle.tooling.model.idea.*;
 
 import java.io.*;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+
+import static meghanada.config.Config.debugTimeItF;
+import static meghanada.utils.FunctionUtils.wrapIOConsumer;
 
 @DefaultSerializer(ProjectSerializer.class)
 public class GradleProject extends Project {
 
     private static final Logger log = LogManager.getLogger(GradleProject.class);
     private final File rootProject;
-    private final Map<String, File> projects = new HashMap<>(4);
+    private final Map<String, File> projects = new ConcurrentHashMap<>(4);
     private final List<String> lazyLoadModule = new ArrayList<>(2);
     private final List<String> prepareCompileTask = new ArrayList<>(2);
     private final List<String> prepareTestCompileTask = new ArrayList<>(2);
 
     public GradleProject(final File projectRoot) throws IOException {
         super(projectRoot);
-        this.rootProject = this.searchRootProject(projectRoot);
+        this.rootProject = GradleProject.searchRootProject(projectRoot);
     }
 
-    private File searchRootProject(File dir) throws IOException {
+    private static File searchRootProject(File dir) throws IOException {
 
         File result = dir;
         dir = dir.getParentFile();
@@ -69,58 +73,65 @@ public class GradleProject extends Project {
     public Project parseProject() throws ProjectParseException {
         final ProjectConnection connection = getProjectConnection();
         try {
-            final ModelBuilder<IdeaProject> ideaProjectModelBuilder = connection.model(IdeaProject.class);
-            final IdeaProject ideaProject = ideaProjectModelBuilder.get();
+            final IdeaProject ideaProject = debugTimeItF("get idea project model elapsed={}", () ->
+                    connection.getModel(IdeaProject.class));
             this.setCompileTarget(ideaProject);
 
             log.trace("load project main module name:{} projectRoot:{}", ideaProject.getName(), this.projectRoot);
 
-            for (final IdeaModule ideaModule : ideaProject.getModules().getAll()) {
+            ideaProject.getModules()
+                    .stream()
+                    .parallel()
+                    .forEach(wrapIOConsumer(this::parseIdeaModule));
 
-                final org.gradle.tooling.model.GradleProject gradleProject = ideaModule.getGradleProject();
-                final AndroidProject androidProject = AndroidSupport.getAndroidProject(this.rootProject, gradleProject);
-                final String projectName = gradleProject.getName();
-                final File moduleProjectRoot = gradleProject.getProjectDirectory();
-                log.trace("find project module name:{} projectRoot:{}", projectName, moduleProjectRoot);
-
-                if (moduleProjectRoot.equals(this.getProjectRoot())) {
-                    this.name = gradleProject.getPath();
-                    if (androidProject != null) {
-                        // parse android
-                        this.isAndroidProject = true;
-                        final AndroidSupport androidSupport = new AndroidSupport(this);
-                        androidSupport.parseAndroid(gradleProject, androidProject);
-                    } else {
-                        // normal
-                        this.parseIdeaModule(gradleProject, ideaModule);
-                    }
-                } else {
-                    log.trace("load sub module. name:{} projectRoot:{}", projectName, moduleProjectRoot);
-                    this.projects.putIfAbsent(projectName, moduleProjectRoot);
-                }
-            }
-
-            for (final String name : this.lazyLoadModule) {
+            this.lazyLoadModule.parallelStream().forEach(name -> {
                 if (projects.containsKey(name)) {
-                    this.loadModule(name);
+                    debugTimeItF("load lazy module name=" + name + " elapsed={}", () ->
+                            this.loadModule(name));
                 } else {
                     final String[] split = name.split("-");
                     if (split.length > 0) {
-                        final String nm = split[split.length - 1];
-                        if (projects.containsKey(nm)) {
-                            this.loadModule(nm);
+                        final String separatedName = split[split.length - 1];
+                        if (projects.containsKey(separatedName)) {
+                            debugTimeItF("load lazy module name=" + separatedName + " elapsed={}", () ->
+                                    this.loadModule(separatedName));
                         } else {
                             log.warn("fail load module={}", name);
                         }
                     }
                 }
-            }
+            });
 
             return this;
         } catch (Exception e) {
             throw new ProjectParseException(e);
         } finally {
             connection.close();
+        }
+    }
+
+    private void parseIdeaModule(final IdeaModule ideaModule) throws IOException {
+        final org.gradle.tooling.model.GradleProject gradleProject = ideaModule.getGradleProject();
+
+        final String projectName = gradleProject.getName();
+        final File moduleProjectRoot = gradleProject.getProjectDirectory();
+        log.trace("find project module name:{} projectRoot:{}", projectName, moduleProjectRoot);
+
+        if (moduleProjectRoot.equals(this.getProjectRoot())) {
+            this.name = gradleProject.getPath();
+            final AndroidProject androidProject = AndroidSupport.getAndroidProject(this.rootProject, gradleProject);
+            if (androidProject != null) {
+                // parse android
+                this.isAndroidProject = true;
+                final AndroidSupport androidSupport = new AndroidSupport(this);
+                androidSupport.parseAndroid(gradleProject, androidProject);
+            } else {
+                // normal
+                this.parseIdeaModule(gradleProject, ideaModule);
+            }
+        } else {
+            log.trace("load sub module. name:{} projectRoot:{}", projectName, moduleProjectRoot);
+            this.projects.putIfAbsent(projectName, moduleProjectRoot);
         }
     }
 
@@ -190,103 +201,10 @@ public class GradleProject extends Project {
 
     }
 
-    private void parseIdeaProject(ProjectConnection projectConnection) throws IOException {
-        final ModelBuilder<IdeaProject> ideaProjectModelBuilder = projectConnection.model(IdeaProject.class);
-        final IdeaProject ideaProject = ideaProjectModelBuilder.get();
-        this.setCompileTarget(ideaProject);
-        log.trace("load project main module name:{} projectRoot:{}", ideaProject.getName(), this.projectRoot);
-
-        for (final IdeaModule ideaModule : ideaProject.getModules().getAll()) {
-
-            org.gradle.tooling.model.GradleProject gradleProject = ideaModule.getGradleProject();
-            final String projectName = gradleProject.getName();
-            final File moduleProjectRoot = gradleProject.getProjectDirectory();
-            log.trace("find project module name:{} projectRoot:{}", projectName, moduleProjectRoot);
-
-            if (moduleProjectRoot.equals(this.getProjectRoot())) {
-                log.debug("find target project name:{} projectRoot:{}", projectName, projectRoot);
-
-                if (this.output == null) {
-                    final String buildDir = gradleProject.getBuildDirectory().getCanonicalPath();
-                    String build = Joiner.on(File.separator).join(buildDir, "classes", "main");
-                    this.output = this.normalize(build);
-                }
-                if (this.testOutput == null) {
-                    final String buildDir = gradleProject.getBuildDirectory().getCanonicalPath();
-                    String build = Joiner.on(File.separator).join(buildDir, "classes", "test");
-                    this.testOutput = this.normalize(build);
-                }
-                final Set<ProjectDependency> dependency = this.getDependency(ideaModule);
-                final Map<String, Set<File>> sources = this.searchProjectSources(ideaModule);
-                log.debug("{} sources {}", projectName, sources);
-
-                this.sources.addAll(sources.get("sources"));
-                this.resources.addAll(sources.get("resources"));
-                this.testSources.addAll(sources.get("testSources"));
-                this.testResources.addAll(sources.get("testResources"));
-                this.dependencies.addAll(dependency);
-
-                // merge other project
-                if (this.sources.isEmpty()) {
-                    this.sources.add(new File("src/main/java"));
-                }
-                if (this.testSources.isEmpty()) {
-                    this.testSources.add(new File("src/test/java"));
-                }
-
-                if (this.output == null) {
-                    final String buildDir = new File(this.projectRoot, "build").getCanonicalPath();
-                    String build = Joiner.on(File.separator).join(buildDir, "classes", "main");
-                    this.output = this.normalize(build);
-                }
-                if (this.testOutput == null) {
-                    final String buildDir = new File(this.projectRoot, "build").getCanonicalPath();
-                    String build = Joiner.on(File.separator).join(buildDir, "classes", "test");
-                    this.testOutput = this.normalize(build);
-                }
-
-                log.debug("sources {}", this.sources);
-                log.debug("resources {}", this.resources);
-                log.debug("output {}", this.output);
-                log.debug("test sources {}", this.testSources);
-                log.debug("test resources {}", this.testResources);
-                log.debug("test output {}", this.testOutput);
-
-                for (final ProjectDependency projectDependency : this.getDependencies()) {
-                    log.debug("dependency {}", projectDependency);
-                }
-
-                if (this.sources.isEmpty()) {
-                    log.warn("target source is empty. please change working directory to sub project");
-                }
-
-            } else {
-                log.trace("load sub module. name:{} projectRoot:{}", projectName, moduleProjectRoot);
-                this.projects.putIfAbsent(projectName, moduleProjectRoot);
-            }
-        }
-
-        for (final String name : this.lazyLoadModule) {
-            if (projects.containsKey(name)) {
-                this.loadModule(name);
-            } else {
-                final String[] split = name.split("-");
-                if (split.length > 0) {
-                    final String nm = split[split.length - 1];
-                    if (projects.containsKey(nm)) {
-                        this.loadModule(nm);
-                    } else {
-                        log.warn("fail load module={}", name);
-                    }
-                }
-            }
-        }
-    }
-
     private void loadModule(final String name) throws IOException {
-        final File root = projects.get(name);
-        final Optional<Project> p = Session.findProject(root);
-        p.ifPresent(project -> {
+        final File root = this.projects.get(name);
+        final Optional<Project> result = Session.findProject(root);
+        result.ifPresent(project -> {
 
             final File outputFile = project.getOutputDirectory();
             final ProjectDependency output = new ProjectDependency(name, "COMPILE", "", outputFile);
@@ -301,24 +219,19 @@ public class GradleProject extends Project {
         });
     }
 
-    public ProjectConnection getProjectConnection() {
-        log.debug("start project connection");
-        try {
-            final String gradleVersion = Config.load().getGradleVersion();
-            GradleConnector connector;
-            if (gradleVersion.isEmpty()) {
-                connector = GradleConnector.newConnector()
-                        .forProjectDirectory(this.rootProject);
-            } else {
-                log.debug("use gradle version:'{}'", gradleVersion);
-                connector = GradleConnector.newConnector()
-                        .useGradleVersion(gradleVersion)
-                        .forProjectDirectory(this.rootProject);
-            }
-            return connector.connect();
-        } finally {
-            log.debug("fin project connection");
+    ProjectConnection getProjectConnection() {
+        final String gradleVersion = Config.load().getGradleVersion();
+        GradleConnector connector;
+        if (gradleVersion.isEmpty()) {
+            connector = GradleConnector.newConnector()
+                    .forProjectDirectory(this.rootProject);
+        } else {
+            log.debug("use gradle version:'{}'", gradleVersion);
+            connector = GradleConnector.newConnector()
+                    .useGradleVersion(gradleVersion)
+                    .forProjectDirectory(this.rootProject);
         }
+        return connector.connect();
     }
 
     @Override
@@ -417,15 +330,15 @@ public class GradleProject extends Project {
     }
 
     private Set<ProjectDependency> getDependency(final IdeaModule ideaModule) throws IOException {
-        final Set<ProjectDependency> dependencies = new HashSet<>();
+        final Set<ProjectDependency> dependencies = new HashSet<>(16);
 
         for (final IdeaDependency dependency : ideaModule.getDependencies().getAll()) {
             if (dependency instanceof IdeaSingleEntryLibraryDependency) {
                 final IdeaSingleEntryLibraryDependency libraryDependency = (IdeaSingleEntryLibraryDependency) dependency;
 
-                final String scope = libraryDependency.getScope().getScope();
                 final File file = libraryDependency.getFile();
                 final GradleModuleVersion gradleModuleVersion = libraryDependency.getGradleModuleVersion();
+                String scope = libraryDependency.getScope().getScope();
                 String id;
                 String version;
                 if (gradleModuleVersion == null) {
@@ -439,19 +352,16 @@ public class GradleProject extends Project {
                             gradleModuleVersion.getVersion());
                     version = gradleModuleVersion.getVersion();
                 }
-
+                if (scope == null) {
+                    scope = "COMPILE";
+                }
                 final ProjectDependency projectDependency = new ProjectDependency(id, scope, version, file);
                 dependencies.add(projectDependency);
             } else if (dependency instanceof IdeaModuleDependency) {
                 final IdeaModuleDependency moduleDependency = (IdeaModuleDependency) dependency;
-                final String targetModuleName = moduleDependency.getTargetModuleName();
-                log.debug("find module dependency name={}", targetModuleName);
-
-                if (projects.containsKey(targetModuleName)) {
-                    this.loadModule(targetModuleName);
-                } else {
-                    this.lazyLoadModule.add(targetModuleName);
-                }
+                final String moduleName = moduleDependency.getTargetModuleName();
+                log.info("find module dependency project={} dependOn={} ", this.name, moduleName);
+                this.lazyLoadModule.add(moduleName);
             } else {
                 log.warn("dep ??? class={}", dependency.getClass());
             }
