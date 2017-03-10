@@ -138,10 +138,10 @@ public class CachedASMReflector {
         final File file1 = new File(root, out1);
         final File file2 = new File(root, out2);
 
-        if (!file1.getParentFile().mkdirs()) {
+        if (!file1.getParentFile().exists() && !file1.getParentFile().mkdirs()) {
             log.warn("{} mkdirs fail", file1);
         }
-        if (!file2.getParentFile().mkdirs()) {
+        if (!file2.getParentFile().exists() && !file2.getParentFile().mkdirs()) {
             log.warn("{} mkdirs fail", file2);
         }
 
