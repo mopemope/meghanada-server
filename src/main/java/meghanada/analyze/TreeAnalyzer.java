@@ -171,7 +171,7 @@ public class TreeAnalyzer {
         if (fqcn.startsWith("capture of") ||
                 fqcn.equals("any") ||
                 fqcn.equals("<any>")) {
-            log.warn("unknown type={}", fqcn);
+            // log.warn("unknown type={}", fqcn);
             return fqcn;
         }
 
