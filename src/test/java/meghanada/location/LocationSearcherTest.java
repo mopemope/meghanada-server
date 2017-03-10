@@ -37,10 +37,10 @@ public class LocationSearcherTest extends GradleTestBase {
 
         LocationSearcher searcher = getSearcher();
         Location result = timeIt(() ->
-                searcher.searchDeclarationLocation(f, 73, 18, "result"))
+                searcher.searchDeclarationLocation(f, 71, 16, "result"))
                 .orElse(null);
         assertNotNull(result);
-        assertEquals(72, result.getLine());
+        assertEquals(70, result.getLine());
         assertEquals(33, result.getColumn());
     }
 
@@ -55,8 +55,8 @@ public class LocationSearcherTest extends GradleTestBase {
                 searcher.searchDeclarationLocation(f, 95, 36, "base"))
                 .orElse(null);
         assertNotNull(result);
-        assertEquals(80, result.getLine());
-        assertEquals(40, result.getColumn());
+        assertEquals(77, result.getLine());
+        assertEquals(54, result.getColumn());
     }
 
     @Test
@@ -70,7 +70,7 @@ public class LocationSearcherTest extends GradleTestBase {
                 searcher.searchDeclarationLocation(f, 234, 14, "currentProject"))
                 .orElse(null);
         assertNotNull(result);
-        assertEquals(51, result.getLine());
+        assertEquals(49, result.getLine());
         assertEquals(21, result.getColumn());
     }
 
@@ -109,12 +109,12 @@ public class LocationSearcherTest extends GradleTestBase {
 
         LocationSearcher searcher = getSearcher();
         Location result = timeIt(() ->
-                searcher.searchDeclarationLocation(f, 414, 31, "parseJavaSource"))
+                searcher.searchDeclarationLocation(f, 405, 16, "parseJavaSource"))
                 .orElse(null);
 
         assertNotNull(result);
-        assertEquals(429, result.getLine());
-        assertEquals(20, result.getColumn());
+        assertEquals(423, result.getLine());
+        assertEquals(30, result.getColumn());
     }
 
     @Test
@@ -124,11 +124,11 @@ public class LocationSearcherTest extends GradleTestBase {
 
         LocationSearcher searcher = getSearcher();
         // return source.searchMissingImport();
-        Location result = searcher.searchDeclarationLocation(f, 426, 24, "searchMissingImport")
+        Location result = searcher.searchDeclarationLocation(f, 418, 30, "searchMissingImport")
                 .orElse(null);
         assertNotNull(result);
         assertTrue(result.getPath().contains("Source.java"));
-        assertEquals(303, result.getLine());
+        assertEquals(300, result.getLine());
         assertEquals(38, result.getColumn());
     }
 
@@ -187,11 +187,11 @@ public class LocationSearcherTest extends GradleTestBase {
 
         LocationSearcher searcher = getSearcher();
         Location result = timeIt(() ->
-                searcher.searchDeclarationLocation(f, 204, 24, "searchField"))
+                searcher.searchDeclarationLocation(f, 205, 24, "searchField"))
                 .orElse(null);
         assertNotNull(result);
         assertTrue(result.getPath().contains("LocationSearcher.java"));
-        assertEquals(474, result.getLine());
+        assertEquals(484, result.getLine());
         assertEquals(32, result.getColumn());
 
     }
@@ -204,7 +204,7 @@ public class LocationSearcherTest extends GradleTestBase {
         LocationSearcher searcher = getSearcher();
         Location result = timeIt(() -> {
             System.setProperty("disable-source-jar", "true");
-            return searcher.searchDeclarationLocation(f, 383, 76, "decompileArchive");
+            return searcher.searchDeclarationLocation(f, 392, 76, "decompileArchive");
         }).orElse(null);
         assertNotNull(result);
         assertTrue(result.getPath().contains(".java"));
@@ -234,11 +234,11 @@ public class LocationSearcherTest extends GradleTestBase {
 
         LocationSearcher searcher = getSearcher();
         Location result = timeIt(() ->
-                searcher.searchDeclarationLocation(f, 372, 15, "Source"))
+                searcher.searchDeclarationLocation(f, 406, 22, "Source"))
                 .orElse(null);
         assertNotNull(result);
         assertTrue(result.getPath().contains("Source.java"));
-        assertEquals(19, result.getLine());
+        assertEquals(20, result.getLine());
         assertEquals(14, result.getColumn());
     }
 

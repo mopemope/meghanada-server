@@ -50,9 +50,11 @@ public class LocationSearcher {
         this.project = project;
     }
 
-    private static
     @Nonnull
-    Optional<Location> searchLocalVariable(final Source source, final int line, final int col, final String symbol) {
+    private static Optional<Location> searchLocalVariable(final Source source,
+                                                          final int line,
+                                                          final int col,
+                                                          final String symbol) {
         final EntryMessage entryMessage = log.traceEntry("line={} col={} symbol={}", line, col, symbol);
 
         final Map<String, Variable> variableMap = source.getDeclaratorMap(line);
@@ -186,9 +188,8 @@ public class LocationSearcher {
         this.project = project;
     }
 
-    public
     @Nonnull
-    Optional<Location> searchDeclarationLocation(final File file, final int line, final int column, final String symbol) throws ExecutionException, IOException {
+    public Optional<Location> searchDeclarationLocation(final File file, final int line, final int column, final String symbol) throws ExecutionException, IOException {
         final Source source = getSource(project, file);
         log.trace("search symbol {}", symbol);
 
@@ -208,7 +209,11 @@ public class LocationSearcher {
         return list;
     }
 
-    private Optional<Location> searchMethodCall(final Source source, final int line, final int col, final String symbol) {
+    @Nonnull
+    private Optional<Location> searchMethodCall(final Source source,
+                                                final int line,
+                                                final int col,
+                                                final String symbol) {
         final EntryMessage entryMessage = log.traceEntry("line={} col={} symbol={}", line, col, symbol);
         final Optional<MethodCall> methodCall = source.getMethodCall(line, col, true);
         final Optional<Location> result = methodCall.flatMap(mc -> {
@@ -273,7 +278,11 @@ public class LocationSearcher {
         }
     }
 
-    private Optional<Location> searchClassOrInterface(final Source source, final int line, final int col, final String symbol) {
+    @Nonnull
+    private Optional<Location> searchClassOrInterface(final Source source,
+                                                      final int line,
+                                                      final int col,
+                                                      final String symbol) {
         final EntryMessage entryMessage = log.traceEntry("line={} col={} symbol={}", line, col, symbol);
         String fqcn = source.importClass.get(symbol);
         if (fqcn == null) {
@@ -389,7 +398,7 @@ public class LocationSearcher {
                         if (name.equals(search)) {
                             return Filter.Result.ACCEPT;
                         }
-                        final String inner = base + "$";
+                        final String inner = base + '$';
                         if (name.startsWith(inner)) {
                             return Filter.Result.ACCEPT;
                         }
@@ -408,7 +417,7 @@ public class LocationSearcher {
                 }
             } else {
                 final Map<String, String> decompiledFiles = decompilationResult.getDecompiledFiles();
-                final List<String> tempList = new ArrayList<>();
+                final List<String> tempList = new ArrayList<>(4);
                 for (final String decompileFile : decompiledFiles.values()) {
                     final File decompiled = new File(decompileFile);
                     final File temp = File.createTempFile(TEMP_FILE_PREFIX + "-decompile-", FileUtils.JAVA_EXT);
@@ -471,7 +480,11 @@ public class LocationSearcher {
         }
     }
 
-    private Optional<Location> searchField(final Source src, final int line, final int col, final String symbol) {
+    @Nonnull
+    private Optional<Location> searchField(final Source src,
+                                           final int line,
+                                           final int col,
+                                           final String symbol) {
         final EntryMessage entryMessage = log.traceEntry("line={} col={} symbol={}", line, col, symbol);
 
         final Optional<Location> result = src.searchFieldAccess(line, symbol).flatMap(fa -> {

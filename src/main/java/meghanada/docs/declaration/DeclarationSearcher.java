@@ -27,7 +27,7 @@ public class DeclarationSearcher {
     private Project project;
 
     public DeclarationSearcher(final Project project) {
-        this.functions = this.getFunctions();
+        this.functions = DeclarationSearcher.getFunctions();
         this.project = project;
     }
 
@@ -57,39 +57,21 @@ public class DeclarationSearcher {
         return result;
     }
 
-    public void setProject(Project project) {
-        this.project = project;
-    }
-
-    public
-    @Nonnull
-    Optional<Declaration> searchDeclaration(final File file,
-                                            final int line,
-                                            final int column,
-                                            final String symbol) throws ExecutionException, IOException {
-
-        log.trace("search symbol={}", symbol);
-        return getSource(project, file).flatMap(source -> this.functions.stream()
-                .map(f -> f.apply(source, line, column, symbol))
-                .filter(Optional::isPresent)
-                .findFirst()
-                .orElse(Optional.empty()));
-    }
-
-    private List<DeclarationSearchFunction> getFunctions() {
+    private static List<DeclarationSearchFunction> getFunctions() {
         final List<DeclarationSearchFunction> list = new ArrayList<>(4);
-        list.add(this::searchReserved);
-        list.add(this::searchField);
-        list.add(this::searchMethodCall);
-        list.add(this::searchClassOrInterface);
+        list.add(DeclarationSearcher::searchReserved);
+        list.add(DeclarationSearcher::searchField);
+        list.add(DeclarationSearcher::searchMethodCall);
+        list.add(DeclarationSearcher::searchClassOrInterface);
         list.add(DeclarationSearcher::searchLocalVariable);
         return list;
     }
 
-    private Optional<Declaration> searchReserved(@SuppressWarnings("unused") final Source source,
-                                                 final Integer line,
-                                                 final Integer col,
-                                                 final String symbol) {
+    @Nonnull
+    private static Optional<Declaration> searchReserved(@SuppressWarnings("unused") final Source source,
+                                                        final Integer line,
+                                                        final Integer col,
+                                                        final String symbol) {
         final EntryMessage entryMessage = log.traceEntry("line={} col={} symbol={}", line, col, symbol);
         Optional<Declaration> result = Optional.empty();
         if (symbol.equals("package") ||
@@ -110,15 +92,16 @@ public class DeclarationSearcher {
         return result;
     }
 
-    private Optional<Declaration> searchField(final Source source,
-                                              final Integer line,
-                                              final Integer col,
-                                              final String symbol) {
+    @Nonnull
+    private static Optional<Declaration> searchField(final Source source,
+                                                     final Integer line,
+                                                     final Integer col,
+                                                     final String symbol) {
         final EntryMessage entryMessage = log.traceEntry("line={} col={} symbol={}", line, col, symbol);
         final Optional<Declaration> result = source.searchFieldAccess(line, symbol).map(fa -> {
             String scope = fa.scope;
             if (scope != null && !scope.isEmpty()) {
-                scope = scope + "." + symbol;
+                scope = scope + '.' + symbol;
             } else {
                 scope = symbol;
             }
@@ -128,10 +111,11 @@ public class DeclarationSearcher {
         return result;
     }
 
-    private Optional<Declaration> searchMethodCall(final Source source,
-                                                   final Integer line,
-                                                   final Integer col,
-                                                   final String symbol) {
+    @Nonnull
+    private static Optional<Declaration> searchMethodCall(final Source source,
+                                                          final Integer line,
+                                                          final Integer col,
+                                                          final String symbol) {
 
         final EntryMessage entryMessage = log.traceEntry("line={} col={} symbol={}", line, col, symbol);
         final Optional<MethodCall> methodCall = source.getMethodCall(line, col, true);
@@ -159,12 +143,12 @@ public class DeclarationSearcher {
                 declaration = method.getDeclaration();
             } else {
                 final String args = Joiner.on(", ").join(arguments);
-                declaration = mc.returnType + " " + methodName + "(" + args + ")";
+                declaration = mc.returnType + ' ' + methodName + '(' + args + ')';
             }
 
             String scope = mc.scope;
             if (scope != null && !scope.isEmpty()) {
-                scope = scope + "." + symbol;
+                scope = scope + '.' + symbol;
             } else {
                 scope = symbol;
             }
@@ -174,10 +158,11 @@ public class DeclarationSearcher {
         return result;
     }
 
-    private Optional<Declaration> searchClassOrInterface(final Source source,
-                                                         final Integer line,
-                                                         final Integer col,
-                                                         final String symbol) {
+    @Nonnull
+    private static Optional<Declaration> searchClassOrInterface(final Source source,
+                                                                final Integer line,
+                                                                final Integer col,
+                                                                final String symbol) {
         final EntryMessage entryMessage = log.traceEntry("line={} col={} symbol={}", line, col, symbol);
         final CachedASMReflector reflector = CachedASMReflector.getInstance();
         Optional<Declaration> result;
@@ -240,8 +225,27 @@ public class DeclarationSearcher {
         return result;
     }
 
+    public void setProject(Project project) {
+        this.project = project;
+    }
+
+    @Nonnull
+    public Optional<Declaration> searchDeclaration(final File file,
+                                                   final int line,
+                                                   final int column,
+                                                   final String symbol) throws ExecutionException, IOException {
+
+        log.trace("search symbol={}", symbol);
+        return getSource(project, file).flatMap(source -> this.functions.stream()
+                .map(f -> f.apply(source, line, column, symbol))
+                .filter(Optional::isPresent)
+                .findFirst()
+                .orElse(Optional.empty()));
+    }
+
     @FunctionalInterface
     interface DeclarationSearchFunction {
+        @Nonnull
         Optional<Declaration> apply(Source javaSource, Integer line, Integer column, String symbol);
     }
 

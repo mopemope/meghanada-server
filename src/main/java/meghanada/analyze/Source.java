@@ -11,6 +11,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.message.EntryMessage;
 
+import javax.annotation.Nonnull;
 import java.io.*;
 import java.nio.charset.Charset;
 import java.util.*;
@@ -18,7 +19,7 @@ import java.util.stream.Collectors;
 
 public class Source {
 
-    public static final String REPORT_UNKNOWN_TREE = "report-unknown-tree";
+    private static final String REPORT_UNKNOWN_TREE = "report-unknown-tree";
     private static final Logger log = LogManager.getLogger(Source.class);
     // K: className V: FQCN
     public final Map<String, String> importClass = new HashMap<>(8);
@@ -182,8 +183,8 @@ public class Source {
         return this.classScopes;
     }
 
-    public TypeScope getTypeScope(int line) {
-        Scope scope = Scope.getScope(line, this.classScopes);
+    public TypeScope getTypeScope(final int line) {
+        final Scope scope = Scope.getScope(line, this.classScopes);
         if (scope != null) {
             return (TypeScope) scope;
         }
@@ -263,14 +264,10 @@ public class Source {
     public Optional<Variable> getVariable(final int line, final int col) {
         final Scope scope = Scope.getInnerScope(line, this.classScopes);
         if (scope != null) {
-            final Set<Variable> variables = scope.getVariables();
-
             return scope.getVariables()
                     .stream()
-                    .filter(variable -> {
-                        return variable.range.begin.line == line &&
-                                variable.range.containsColumn(col);
-                    })
+                    .filter(variable -> variable.range.begin.line == line &&
+                            variable.range.containsColumn(col))
                     .findFirst();
         }
         return Optional.empty();
@@ -427,4 +424,19 @@ public class Source {
         return key != null && key.equals("true");
     }
 
+    public boolean addImportIfAbsent(@Nonnull final String fqcn) {
+
+        log.info("classScope size={}", this.classScopes.size());
+        for (final ClassScope classScope : this.classScopes) {
+            final String classScopeFQCN = classScope.getFQCN();
+            log.info("compare fqcn={} class={}", fqcn, classScopeFQCN);
+            if (fqcn.equals(classScopeFQCN)) {
+                log.info("match fqcn={} class={}", fqcn, classScope.getFQCN());
+                return false;
+            }
+        }
+
+        this.importClass.putIfAbsent(ClassNameUtils.getSimpleName(fqcn), fqcn);
+        return true;
+    }
 }

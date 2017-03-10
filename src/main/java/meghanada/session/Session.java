@@ -1,7 +1,6 @@
 package meghanada.session;
 
 import com.google.common.base.Joiner;
-import meghanada.analyze.ClassScope;
 import meghanada.analyze.CompileResult;
 import meghanada.analyze.Source;
 import meghanada.cache.GlobalCache;
@@ -20,7 +19,6 @@ import meghanada.project.maven.MavenProject;
 import meghanada.project.meghanada.MeghanadaProject;
 import meghanada.reflect.CandidateUnit;
 import meghanada.reflect.asm.CachedASMReflector;
-import meghanada.utils.ClassNameUtils;
 import meghanada.utils.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -75,9 +73,8 @@ public class Session {
 
     }
 
-    public static
     @Nonnull
-    Optional<Project> findProject(File base) throws IOException {
+    public static Optional<Project> findProject(File base) throws IOException {
         while (true) {
 
             log.debug("finding project from '{}' ...", base);
@@ -392,16 +389,10 @@ public class Session {
         if (!FileUtils.isJavaFile(file)) {
             return false;
         }
-
-        final Source source = parseJavaSource(file);
-        for (final ClassScope classScope : source.getClassScopes()) {
-            if (fqcn.equals(classScope.getFQCN())) {
-                return false;
-            }
-        }
-
-        source.importClass.put(ClassNameUtils.getSimpleName(fqcn), fqcn);
-        return true;
+        log.info("call addImport path={}", path);
+        return parseJavaSource(file)
+                .map(source -> source.addImportIfAbsent(fqcn))
+                .orElse(false);
     }
 
     public synchronized List<String> optimizeImport(String path) throws ExecutionException {
@@ -411,8 +402,9 @@ public class Session {
             return Collections.emptyList();
         }
 
-        final Source source = parseJavaSource(file);
-        return source.optimizeImports();
+        return parseJavaSource(file)
+                .map(Source::optimizeImports)
+                .orElse(Collections.emptyList());
     }
 
     public synchronized Map<String, List<String>> searchMissingImport(String path) throws ExecutionException {
@@ -422,13 +414,18 @@ public class Session {
             return Collections.emptyMap();
         }
 
-        final Source source = parseJavaSource(file);
-        return source.searchMissingImport();
+        return parseJavaSource(file)
+                .map(Source::searchMissingImport)
+                .orElse(Collections.emptyMap());
     }
 
-    private Source parseJavaSource(final File file) throws ExecutionException {
+    @Nonnull
+    private Optional<Source> parseJavaSource(final File file) throws ExecutionException {
+        if (!FileUtils.isJavaFile(file)) {
+            return Optional.empty();
+        }
         final GlobalCache globalCache = GlobalCache.getInstance();
-        return globalCache.getSource(currentProject, file);
+        return Optional.of(globalCache.getSource(currentProject, file));
     }
 
     public synchronized boolean parseFile(final String path) throws ExecutionException {
@@ -483,9 +480,8 @@ public class Session {
         return currentProject.runJUnit(test);
     }
 
-    public
     @Nonnull
-    Optional<String> switchTest(final String path) throws IOException {
+    public Optional<String> switchTest(final String path) throws IOException {
         Project project = currentProject;
         String root = null;
         Set<File> roots;
