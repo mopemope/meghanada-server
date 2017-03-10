@@ -290,7 +290,7 @@ public class LocationSearcher {
             final Map<String, String> standardClasses = reflector.getStandardClasses();
             fqcn = standardClasses.get(symbol);
             if (fqcn == null) {
-                if (source.packageName != null) {
+                if (source.packageName != null && !source.packageName.isEmpty()) {
                     fqcn = source.packageName + '.' + symbol;
                 } else {
                     fqcn = symbol;
