@@ -56,20 +56,20 @@ public abstract class Project {
     private static final String FORMATTER_FILE = "meghanadaFormatter.properties";
 
     protected final File projectRoot;
-    protected final Set<ProjectDependency> dependencies = new HashSet<>();
-    protected final Set<Project> dependencyProjects = new HashSet<>();
-    protected Set<File> sources = new HashSet<>();
-    protected Set<File> resources = new HashSet<>();
+    protected final Set<ProjectDependency> dependencies = new HashSet<>(16);
+    protected final Set<Project> dependencyProjects = new HashSet<>(2);
+    protected Set<File> sources = new HashSet<>(2);
+    protected Set<File> resources = new HashSet<>(2);
     protected File output;
-    protected Set<File> testSources = new HashSet<>();
-    protected Set<File> testResources = new HashSet<>();
+    protected Set<File> testSources = new HashSet<>(2);
+    protected Set<File> testResources = new HashSet<>(2);
     protected File testOutput;
     protected String compileSource = "1.8";
     protected String compileTarget = "1.8";
     protected Boolean isAndroidProject = false;
     protected String name;
     String id;
-    private Map<String, Set<String>> callerMap = new ConcurrentHashMap<>();
+    private Map<String, Set<String>> callerMap = new ConcurrentHashMap<>(64);
     private String cachedClasspath;
     private String cachedAllClasspath;
     private JavaAnalyzer javaAnalyzer;
@@ -102,11 +102,11 @@ public abstract class Project {
     public abstract Project parseProject() throws ProjectParseException;
 
     public Set<File> getAllSources() {
-        Set<File> temp = new HashSet<>();
-        temp.addAll(this.getSourceDirectories());
-        temp.addAll(this.getResourceDirectories());
-        temp.addAll(this.getTestSourceDirectories());
-        temp.addAll(this.getTestResourceDirectories());
+        Set<File> temp = new HashSet<>(8);
+        temp.addAll(this.sources);
+        temp.addAll(this.resources);
+        temp.addAll(this.testSources);
+        temp.addAll(this.testResources);
         return temp;
     }
 
@@ -165,7 +165,7 @@ public abstract class Project {
         if (this.cachedClasspath != null) {
             return this.cachedClasspath;
         }
-        List<String> classpath = new ArrayList<>();
+        List<String> classpath = new ArrayList<>(16);
 
         this.dependencies.stream()
                 .filter(input -> input.getScope().equals("COMPILE"))
@@ -186,7 +186,7 @@ public abstract class Project {
             return this.cachedAllClasspath;
         }
 
-        List<String> classpath = new ArrayList<>();
+        List<String> classpath = new ArrayList<>(16);
         this.dependencies.stream()
                 .map(this::getCanonicalPath)
                 .forEach(classpath::add);
@@ -234,29 +234,14 @@ public abstract class Project {
     public CompileResult compileJava(boolean force, final boolean fullBuild) throws IOException {
         final Set<Project> lazyLoad = new HashSet<>(2);
 
-        if (fullBuild) {
-            for (final Project p : this.dependencyProjects) {
-                if (p.equals(this)) {
-                    // skip
-                    continue;
-                }
-                final Set<Project> dependencyProjects = p.getDependencyProjects();
-                if (dependencyProjects.contains(this)) {
-                    lazyLoad.add(p);
-                    continue;
-                }
-                System.setProperty(PROJECT_ROOT_KEY, p.getProjectRoot().getCanonicalPath());
-                final CompileResult compileResult = p.compileJava(force, true);
-                if (!compileResult.isSuccess()) {
-                    log.warn("dependency module compile error {}", p.getProjectRoot());
-                    log.warn("{}", compileResult.getDiagnosticsSummary());
-                }
-            }
+        final boolean build = Config.load().buildDependencyModule();
+        if (fullBuild && build) {
+            this.compileDependencyProjects(force, lazyLoad);
         }
 
-        System.setProperty(PROJECT_ROOT_KEY, this.getProjectRoot().getCanonicalPath());
+        System.setProperty(PROJECT_ROOT_KEY, projectRoot.getCanonicalPath());
 
-        List<File> files = this.collectJavaFiles(this.getSourceDirectories());
+        List<File> files = this.collectJavaFiles(this.sources);
         if (files != null && !files.isEmpty()) {
             if (callerMap.size() == 0) {
                 force = true;
@@ -269,40 +254,66 @@ public abstract class Project {
 
             files = addDepends(this.getAllSources(), files);
 
-            final String projectName = this.getProjectRoot().getName();
+            final String projectName = projectRoot.getName();
             this.prepareCompile(files);
             final Stopwatch stopwatch = Stopwatch.createStarted();
-            final CompileResult compileResult = clearMemberCache(getJavaAnalyzer().analyzeAndCompile(files, this.allClasspath(), output.getCanonicalPath()));
+            final CompileResult compileResult = clearMemberCache(getJavaAnalyzer().analyzeAndCompile(files,
+                    this.allClasspath(),
+                    output.getCanonicalPath()));
             log.info("project {}: compile(java) {} files. elapsed:{}", projectName, files.size(), stopwatch.stop());
 
-            for (final Project p : lazyLoad) {
-                if (p.equals(this)) {
-                    // skip
-                    continue;
-                }
-
-                final Set<Project> dependencyProjects = p.getDependencyProjects();
-                System.setProperty(PROJECT_ROOT_KEY, p.getProjectRoot().getCanonicalPath());
-                if (dependencyProjects.contains(this)) {
-                    dependencyProjects.remove(this);
-                    final CompileResult tempCR = p.compileJava(force, fullBuild);
-                    if (!tempCR.isSuccess()) {
-                        log.warn("dependency module compile error {}", p.getProjectRoot());
-                        log.warn("{}", tempCR.getDiagnosticsSummary());
-                    }
-                    dependencyProjects.add(this);
-                } else {
-                    final CompileResult tempCR = p.compileJava(force, fullBuild);
-                    if (!tempCR.isSuccess()) {
-                        log.warn("dependency module compile error {}", p.getProjectRoot());
-                        log.warn("{}", tempCR.getDiagnosticsSummary());
-                    }
-                }
-            }
-            System.setProperty(PROJECT_ROOT_KEY, this.getProjectRoot().getCanonicalPath());
+            this.postCompile(force, fullBuild, lazyLoad);
+            System.setProperty(PROJECT_ROOT_KEY, projectRoot.getCanonicalPath());
             return this.updateSourceCache(compileResult);
         }
         return new CompileResult(true);
+    }
+
+    private void postCompile(boolean force, boolean fullBuild, Set<Project> lazyLoad) throws IOException {
+        for (final Project p : lazyLoad) {
+            if (p.equals(this)) {
+                // skip
+                continue;
+            }
+
+            final Set<Project> dependencyProjects = p.dependencyProjects;
+            System.setProperty(PROJECT_ROOT_KEY, p.projectRoot.getCanonicalPath());
+            if (dependencyProjects.contains(this)) {
+                dependencyProjects.remove(this);
+                final CompileResult tempCR = p.compileJava(force, fullBuild);
+                if (!tempCR.isSuccess()) {
+                    log.warn("dependency module compile error {}", p.projectRoot);
+                    log.warn("{}", tempCR.getDiagnosticsSummary());
+                }
+                dependencyProjects.add(this);
+            } else {
+                final CompileResult tempCR = p.compileJava(force, fullBuild);
+                if (!tempCR.isSuccess()) {
+                    log.warn("dependency module compile error {}", p.projectRoot);
+                    log.warn("{}", tempCR.getDiagnosticsSummary());
+                }
+            }
+        }
+    }
+
+    private void compileDependencyProjects(boolean force, Set<Project> lazyLoad) throws IOException {
+        for (final Project p : this.dependencyProjects) {
+            if (p.equals(this)) {
+                // skip
+                continue;
+            }
+            final Set<Project> dependencyProjects = p.dependencyProjects;
+            if (dependencyProjects.contains(this)) {
+                lazyLoad.add(p);
+                continue;
+            }
+            System.setProperty(PROJECT_ROOT_KEY, p.projectRoot.getCanonicalPath());
+            final CompileResult compileResult = p.compileJava(force, true);
+            if (!compileResult.isSuccess()) {
+                log.warn("dependency module compile error {}", p.projectRoot);
+                log.warn("{}", compileResult.getDiagnosticsSummary());
+            }
+        }
     }
 
     public CompileResult compileTestJava(boolean force) throws IOException {
@@ -310,30 +321,15 @@ public abstract class Project {
     }
 
     public CompileResult compileTestJava(boolean force, final boolean fullBuild) throws IOException {
-        final Set<Project> lazyLoad = new HashSet<>();
+        final Set<Project> lazyLoad = new HashSet<>(2);
 
-        if (fullBuild) {
-            for (final Project p : dependencyProjects) {
-                if (p.equals(this)) {
-                    // skip
-                    continue;
-                }
-                final Set<Project> dependencyProjects = p.getDependencyProjects();
-                if (dependencyProjects.contains(this)) {
-                    lazyLoad.add(p);
-                    continue;
-                }
-                System.setProperty(PROJECT_ROOT_KEY, p.getProjectRoot().getCanonicalPath());
-                final CompileResult compileResult = p.compileTestJava(force, true);
-                if (!compileResult.isSuccess()) {
-                    log.warn("dependency module test compile error {}", p.getProjectRoot());
-                    log.warn("{}", compileResult.getDiagnosticsSummary());
-                }
-            }
+        final boolean build = Config.load().buildDependencyModule();
+        if (fullBuild && build) {
+            this.compileTestDependencyProjects(force, lazyLoad);
         }
 
-        System.setProperty(PROJECT_ROOT_KEY, this.getProjectRoot().getCanonicalPath());
-        List<File> files = this.collectJavaFiles(this.getTestSourceDirectories());
+        System.setProperty(PROJECT_ROOT_KEY, projectRoot.getCanonicalPath());
+        List<File> files = this.collectJavaFiles(this.testSources);
         if (files != null && !files.isEmpty()) {
             if (callerMap.size() == 0) {
                 force = true;
@@ -345,39 +341,65 @@ public abstract class Project {
 
             files = force ? files : FileUtils.getModifiedSources(files, this.getAllSources(), this.testOutput);
             files = addDepends(this.getAllSources(), files);
-            final String projectName = this.getProjectRoot().getName();
+            final String projectName = projectRoot.getName();
             this.prepareTestCompile(files);
             final Stopwatch stopwatch = Stopwatch.createStarted();
-            final CompileResult compileResult = clearMemberCache(getJavaAnalyzer().analyzeAndCompile(files, this.allClasspath(), testOutput.getCanonicalPath()));
+            final CompileResult compileResult = clearMemberCache(getJavaAnalyzer().analyzeAndCompile(files,
+                    this.allClasspath(),
+                    testOutput.getCanonicalPath()));
             log.info("project {}: compile(test) {} files. elapsed:{}", projectName, files.size(), stopwatch.stop());
 
-            for (final Project p : lazyLoad) {
-                if (p.equals(this)) {
-                    // skip
-                    continue;
-                }
-                final Set<Project> dependencyProjects = p.getDependencyProjects();
-                System.setProperty(PROJECT_ROOT_KEY, p.getProjectRoot().getCanonicalPath());
-                if (dependencyProjects.contains(this)) {
-                    dependencyProjects.remove(this);
-                    final CompileResult tempCR = p.compileTestJava(force, fullBuild);
-                    if (!tempCR.isSuccess()) {
-                        log.warn("dependency module test compile error {}", p.getProjectRoot());
-                        log.warn("{}", tempCR.getDiagnosticsSummary());
-                    }
-                    dependencyProjects.add(this);
-                } else {
-                    final CompileResult tempCR = p.compileTestJava(force, fullBuild);
-                    if (!tempCR.isSuccess()) {
-                        log.warn("dependency module test compile error {}", p.getProjectRoot());
-                        log.warn("{}", tempCR.getDiagnosticsSummary());
-                    }
-                }
-            }
-            System.setProperty(PROJECT_ROOT_KEY, this.getProjectRoot().getCanonicalPath());
+            this.postCompileTest(force, fullBuild, lazyLoad);
+            System.setProperty(PROJECT_ROOT_KEY, projectRoot.getCanonicalPath());
             return this.updateSourceCache(compileResult);
         }
         return new CompileResult(true);
+    }
+
+    private void postCompileTest(boolean force, boolean fullBuild, Set<Project> lazyLoad) throws IOException {
+        for (final Project p : lazyLoad) {
+            if (p.equals(this)) {
+                // skip
+                continue;
+            }
+            final Set<Project> dependencyProjects = p.dependencyProjects;
+            System.setProperty(PROJECT_ROOT_KEY, p.projectRoot.getCanonicalPath());
+            if (dependencyProjects.contains(this)) {
+                dependencyProjects.remove(this);
+                final CompileResult tempCR = p.compileTestJava(force, fullBuild);
+                if (!tempCR.isSuccess()) {
+                    log.warn("dependency module test compile error {}", p.projectRoot);
+                    log.warn("{}", tempCR.getDiagnosticsSummary());
+                }
+                dependencyProjects.add(this);
+            } else {
+                final CompileResult tempCR = p.compileTestJava(force, fullBuild);
+                if (!tempCR.isSuccess()) {
+                    log.warn("dependency module test compile error {}", p.projectRoot);
+                    log.warn("{}", tempCR.getDiagnosticsSummary());
+                }
+            }
+        }
+    }
+
+    private void compileTestDependencyProjects(boolean force, Set<Project> lazyLoad) throws IOException {
+        for (final Project p : dependencyProjects) {
+            if (p.equals(this)) {
+                // skip
+                continue;
+            }
+            final Set<Project> dependencyProjects = p.dependencyProjects;
+            if (dependencyProjects.contains(this)) {
+                lazyLoad.add(p);
+                continue;
+            }
+            System.setProperty(PROJECT_ROOT_KEY, p.projectRoot.getCanonicalPath());
+            final CompileResult compileResult = p.compileTestJava(force, true);
+            if (!compileResult.isSuccess()) {
+                log.warn("dependency module test compile error {}", p.projectRoot);
+                log.warn("{}", compileResult.getDiagnosticsSummary());
+            }
+        }
     }
 
     protected void prepareCompile(final List<File> files) {
@@ -403,7 +425,7 @@ public abstract class Project {
             output = this.output.getCanonicalPath();
         }
         if (FileUtils.filterFile(file)) {
-            List<File> files = new ArrayList<>();
+            List<File> files = new ArrayList<>(2);
             files.add(file);
             return getJavaAnalyzer().analyzeAndCompile(files, this.allClasspath(), output, false);
         }
@@ -413,7 +435,7 @@ public abstract class Project {
     public CompileResult compileFileNoCache(final File file, final boolean force) throws IOException {
         boolean isTest = false;
         String filepath = file.getCanonicalPath();
-        for (File source : this.getTestSourceDirectories()) {
+        for (File source : this.testSources) {
             String testPath = source.getCanonicalPath();
             if (filepath.startsWith(testPath)) {
                 isTest = true;
@@ -427,7 +449,7 @@ public abstract class Project {
             output = this.output.getCanonicalPath();
         }
         if (FileUtils.filterFile(file)) {
-            List<File> files = new ArrayList<>();
+            List<File> files = new ArrayList<>(8);
             files.add(file);
 
             files = force ? files : FileUtils.getModifiedSources(files, this.getAllSources(), new File(output));
@@ -441,7 +463,7 @@ public abstract class Project {
         boolean isTest = false;
         // sampling
         String filepath = files.get(0).getCanonicalPath();
-        for (File source : this.getTestSourceDirectories()) {
+        for (File source : this.testSources) {
             String testPath = source.getCanonicalPath();
             if (filepath.startsWith(testPath)) {
                 isTest = true;
@@ -653,18 +675,18 @@ public abstract class Project {
 
         // freeze
         this.sources = new ImmutableSet.Builder<File>().addAll(this.sources).build();
-        log.debug("sources {}", this.getSourceDirectories());
+        log.debug("sources {}", this.sources);
         this.resources = new ImmutableSet.Builder<File>().addAll(this.resources).build();
-        log.debug("resources {}", this.getResourceDirectories());
+        log.debug("resources {}", this.resources);
 
-        log.debug("output {}", this.getOutputDirectory());
+        log.debug("output {}", this.output);
 
         this.testSources = new ImmutableSet.Builder<File>().addAll(this.testSources).build();
-        log.debug("test sources {}", this.getTestSourceDirectories());
+        log.debug("test sources {}", this.testSources);
         this.testResources = new ImmutableSet.Builder<File>().addAll(this.testResources).build();
-        log.debug("test resources {}", this.getTestResourceDirectories());
+        log.debug("test resources {}", this.testResources);
 
-        log.debug("test output {}", this.getTestOutputDirectory());
+        log.debug("test output {}", this.testOutput);
         log.debug("dependencyProjects output {}", this.dependencyProjects);
 
         return this;
@@ -689,7 +711,7 @@ public abstract class Project {
             final Map<File, Map<String, String>> checksum = config.getAllChecksumMap();
 
             final File checksumFile = FileUtils.getProjectDataFile(GlobalCache.SOURCE_CHECKSUM_DATA);
-            final Map<String, String> checksumMap = checksum.getOrDefault(checksumFile, new ConcurrentHashMap<>());
+            final Map<String, String> checksumMap = checksum.getOrDefault(checksumFile, new ConcurrentHashMap<>(64));
 
             for (final Source source : sourceMap.values()) {
 
@@ -701,7 +723,7 @@ public abstract class Project {
                             set.add(fqcn);
                             this.callerMap.put(s, set);
                         } else {
-                            final Set<String> set = new HashSet<>();
+                            final Set<String> set = new HashSet<>(4);
                             set.add(fqcn);
                             this.callerMap.put(s, set);
                         }
@@ -736,7 +758,7 @@ public abstract class Project {
     }
 
     private List<File> addDepends(final Set<File> sourceRoots, final List<File> files) {
-        final Set<File> temp = Collections.newSetFromMap(new ConcurrentHashMap<File, Boolean>());
+        final Set<File> temp = Collections.newSetFromMap(new ConcurrentHashMap<File, Boolean>(16));
         temp.addAll(files);
 
         sourceRoots.parallelStream().forEach(root -> {
@@ -846,9 +868,9 @@ public abstract class Project {
         }
         final Properties properties = this.readFormatProperties();
         // merge
-        properties.setProperty(JavaCore.COMPILER_SOURCE, this.getCompileSource());
-        properties.setProperty(JavaCore.COMPILER_COMPLIANCE, this.getCompileSource());
-        properties.setProperty(JavaCore.COMPILER_CODEGEN_TARGET_PLATFORM, this.getCompileSource());
+        properties.setProperty(JavaCore.COMPILER_SOURCE, compileSource);
+        properties.setProperty(JavaCore.COMPILER_COMPLIANCE, compileSource);
+        properties.setProperty(JavaCore.COMPILER_CODEGEN_TARGET_PLATFORM, compileSource);
 
         this.formatProperties = properties;
         return this.formatProperties;

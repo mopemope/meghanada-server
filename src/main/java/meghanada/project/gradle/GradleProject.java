@@ -302,18 +302,23 @@ public class GradleProject extends Project {
     }
 
     public ProjectConnection getProjectConnection() {
-        final String gradleVersion = Config.load().getGradleVersion();
-        GradleConnector connector;
-        if (gradleVersion.isEmpty()) {
-            connector = GradleConnector.newConnector()
-                    .forProjectDirectory(this.rootProject);
-        } else {
-            log.debug("use gradle version:'{}'", gradleVersion);
-            connector = GradleConnector.newConnector()
-                    .useGradleVersion(gradleVersion)
-                    .forProjectDirectory(this.rootProject);
+        log.debug("start project connection");
+        try {
+            final String gradleVersion = Config.load().getGradleVersion();
+            GradleConnector connector;
+            if (gradleVersion.isEmpty()) {
+                connector = GradleConnector.newConnector()
+                        .forProjectDirectory(this.rootProject);
+            } else {
+                log.debug("use gradle version:'{}'", gradleVersion);
+                connector = GradleConnector.newConnector()
+                        .useGradleVersion(gradleVersion)
+                        .forProjectDirectory(this.rootProject);
+            }
+            return connector.connect();
+        } finally {
+            log.debug("fin project connection");
         }
-        return connector.connect();
     }
 
     @Override

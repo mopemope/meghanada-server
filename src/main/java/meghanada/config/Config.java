@@ -61,6 +61,7 @@ public class Config {
         log.debug("project-setting-dir:{}", getProjectSettingDir());
         log.debug("fast-boot:{}", useFastBoot());
         log.debug("class-fuzzy-search:{}", useClassFuzzySearch());
+        log.debug("build-dependency-module:{}", buildDependencyModule());
 
     }
 
@@ -243,6 +244,10 @@ public class Config {
 
     public boolean useExternalBuilder() {
         return c.getBoolean("external-builder");
+    }
+
+    public boolean buildDependencyModule() {
+        return c.getBoolean("build-dependency-module");
     }
 
     public boolean clearCacheOnStart() {
