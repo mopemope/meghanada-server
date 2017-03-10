@@ -348,7 +348,10 @@ public class JavaCompletion {
         }
 
         {
-            final String fqcn = ownPackage + '.' + var;
+            String fqcn = var;
+            if (ownPackage != null && !ownPackage.isEmpty()) {
+                fqcn = ownPackage + '.' + var;
+            }
             final Collection<? extends CandidateUnit> reflectResults = JavaCompletion.reflect(ownPackage, fqcn, true, false, target);
             res.addAll(reflectResults);
             final CachedASMReflector reflector = CachedASMReflector.getInstance();
