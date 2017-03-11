@@ -167,7 +167,7 @@ public class Session {
             if (config.useFastBoot()) {
                 Session.writeProjectCache(projectCache, parsed);
             }
-            log.info("load project projectRoot:{} elapsed:{}", project.getProjectRoot(), stopwatch.stop());
+            log.info("loaded gradle project:{} elapsed:{}", project.getProjectRoot(), stopwatch.stop());
             log.traceExit(entryMessage);
             return Optional.of(parsed.mergeFromProjectConfig());
         } finally {

@@ -29,6 +29,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 import static meghanada.config.Config.debugTimeItF;
+import static meghanada.utils.FunctionUtils.wrapIOConsumer;
 
 @DefaultSerializer(ProjectSerializer.class)
 public abstract class Project {
@@ -70,6 +71,7 @@ public abstract class Project {
     protected String compileTarget = "1.8";
     protected Boolean isAndroidProject = false;
     protected String name;
+    protected Boolean buildWithDependency = null;
     String id;
     private Map<String, Set<String>> callerMap = new ConcurrentHashMap<>(64);
     private String cachedClasspath;
@@ -236,8 +238,8 @@ public abstract class Project {
     public CompileResult compileJava(boolean force, final boolean fullBuild) throws IOException {
         final Set<Project> lazyLoad = new HashSet<>(2);
 
-        final boolean buildDependencyModule = Config.load().buildDependencyModule();
-        if (fullBuild && buildDependencyModule) {
+        final boolean buildWithDependency = isBuildWithDependency();
+        if (fullBuild && buildWithDependency) {
             this.compileDependencyProjects(force, lazyLoad);
         }
 
@@ -246,9 +248,9 @@ public abstract class Project {
         List<File> files = this.collectJavaFiles(this.sources);
         if (files != null && !files.isEmpty()) {
 
-//            if (callerMap.size() == 0) {
-//                force = true;
-//            }
+            if (callerMap.size() == 0) {
+                force = true;
+            }
 
             final Stopwatch stopwatch = Stopwatch.createStarted();
             final File callerFile = FileUtils.getProjectDataFile(this.projectRoot, GlobalCache.CALLER_DATA);
@@ -272,14 +274,21 @@ public abstract class Project {
                     files.size(),
                     force,
                     stopwatch.stop());
-            if (buildDependencyModule) {
+            if (buildWithDependency) {
                 this.postCompile(force, fullBuild, lazyLoad);
             }
             System.setProperty(PROJECT_ROOT_KEY, projectRoot.getCanonicalPath());
-            return debugTimeItF("updateSourceCache elapsed:{}", () ->
-                    this.updateSourceCache(compileResult));
+            return this.updateSourceCache(compileResult);
         }
         return new CompileResult(true);
+    }
+
+    private boolean isBuildWithDependency() {
+        if (this.buildWithDependency != null) {
+            return this.buildWithDependency;
+        }
+        this.buildWithDependency = Config.load().isBuildWithDependency();
+        return this.buildWithDependency;
     }
 
     private void postCompile(boolean force, boolean fullBuild, Set<Project> lazyLoad) throws IOException {
@@ -336,8 +345,8 @@ public abstract class Project {
     public CompileResult compileTestJava(boolean force, final boolean fullBuild) throws IOException {
         final Set<Project> lazyLoad = new HashSet<>(2);
 
-        final boolean build = Config.load().buildDependencyModule();
-        if (fullBuild && build) {
+        final boolean buildWithDependency = isBuildWithDependency();
+        if (fullBuild && buildWithDependency) {
             this.compileTestDependencyProjects(force, lazyLoad);
         }
 
@@ -718,6 +727,7 @@ public abstract class Project {
     }
 
     private CompileResult updateSourceCache(final CompileResult compileResult) throws IOException {
+        final Stopwatch stopwatch = Stopwatch.createStarted();
         final Config config = Config.load();
         final GlobalCache globalCache = GlobalCache.getInstance();
         if (config.useSourceCache()) {
@@ -729,8 +739,7 @@ public abstract class Project {
             final File checksumFile = FileUtils.getProjectDataFile(this.projectRoot, GlobalCache.SOURCE_CHECKSUM_DATA);
             final Map<String, String> checksumMap = checksum.getOrDefault(checksumFile, new ConcurrentHashMap<>(64));
 
-            for (final Source source : sourceMap.values()) {
-
+            sourceMap.values().parallelStream().forEach(wrapIOConsumer(source -> {
                 source.getClassScopes().forEach(cs -> {
                     final String fqcn = cs.getFQCN();
                     source.usingClasses.forEach(s -> {
@@ -765,11 +774,12 @@ public abstract class Project {
                         throw new UncheckedExecutionException(e);
                     }
                 }
-            }
+            }));
             FileUtils.writeMapSetting(checksumMap, checksumFile);
             checksum.put(checksumFile, checksumMap);
         }
         this.writeCaller();
+        log.trace("updateSourceCache {}", stopwatch.stop());
         return compileResult;
     }
 

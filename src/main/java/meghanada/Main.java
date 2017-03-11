@@ -16,6 +16,7 @@ import org.apache.logging.log4j.core.layout.PatternLayout;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Objects;
 
 public class Main {
 
@@ -60,8 +61,7 @@ public class Main {
 
         System.setProperty("home", Config.getInstalledPath().getParentFile().getCanonicalPath());
 
-        final String dev = System.getenv("MEGHANADA_DEVELOP");
-        if (dev != null && dev.equals("1")) {
+        if (isDevelop()) {
             addFileAppender();
         }
 
@@ -163,4 +163,10 @@ public class Main {
         options.addOption(clearCache);
         return options;
     }
+
+    public static boolean isDevelop() {
+        final String dev = System.getenv("MEGHANADA_DEVELOP");
+        return Objects.equals(dev, "1");
+    }
+
 }

@@ -55,7 +55,7 @@ public class GlobalCache {
             kryo.register(MemberDescriptor.class);
             kryo.register(MethodParameterNames.class);
             return kryo;
-        }).softReferences().build();
+        }).build();
 
         executorService.submit(() -> {
             while (!this.isTerminated) {
@@ -97,8 +97,8 @@ public class GlobalCache {
         }
         final MemberCacheLoader memberCacheLoader = new MemberCacheLoader(classFileMap, reflectIndex);
         this.memberCache = CacheBuilder.newBuilder()
-                .maximumSize(64)
-                .expireAfterAccess(1, TimeUnit.MINUTES)
+                .maximumSize(256)
+                .expireAfterAccess(5, TimeUnit.MINUTES)
                 .removalListener(memberCacheLoader)
                 .build(memberCacheLoader);
     }
@@ -131,8 +131,8 @@ public class GlobalCache {
         } else {
             final JavaSourceLoader javaSourceLoader = new JavaSourceLoader(project);
             final LoadingCache<File, Source> loadingCache = CacheBuilder.newBuilder()
-                    .maximumSize(16)
-                    .expireAfterAccess(1, TimeUnit.MINUTES)
+                    .maximumSize(1024)
+                    .expireAfterAccess(5, TimeUnit.MINUTES)
                     .removalListener(javaSourceLoader)
                     .build(javaSourceLoader);
             this.sourceCaches.put(projectRoot, loadingCache);

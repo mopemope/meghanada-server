@@ -32,10 +32,11 @@ public class Config {
     private static Config config;
 
     private final com.typesafe.config.Config c;
-    private final Map<File, Map<String, String>> checksumMap = new ConcurrentHashMap<>();
+    private final Map<File, Map<String, String>> checksumMap = new ConcurrentHashMap<>(4);
     private boolean debug;
     private List<String> includeList;
     private List<String> excludeList;
+    private boolean buildWithDependency = true;
 
     private Config() {
         this.c = ConfigFactory.load();
@@ -60,7 +61,6 @@ public class Config {
         log.debug("project-root-dir:{}", getProjectRootDir());
         log.debug("fast-boot:{}", useFastBoot());
         log.debug("class-fuzzy-search:{}", useClassFuzzySearch());
-        log.debug("build-dependency-module:{}", buildDependencyModule());
 
     }
 
@@ -289,8 +289,8 @@ public class Config {
         return c.getBoolean("external-builder");
     }
 
-    public boolean buildDependencyModule() {
-        return c.getBoolean("build-dependency-module");
+    public boolean androidDevelopment() {
+        return c.getBoolean("android-development");
     }
 
     public boolean clearCacheOnStart() {
@@ -310,6 +310,14 @@ public class Config {
             this.checksumMap.put(file, checksumMap);
         }
         return checksumMap.get(file);
+    }
+
+    public boolean isBuildWithDependency() {
+        return buildWithDependency;
+    }
+
+    public void setBuildWithDependency(boolean buildWithDependency) {
+        this.buildWithDependency = buildWithDependency;
     }
 
     public List<String> getAllowClass() {

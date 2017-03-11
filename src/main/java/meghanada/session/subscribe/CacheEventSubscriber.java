@@ -10,6 +10,9 @@ import meghanada.session.SessionEventBus;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.io.File;
+import java.util.Collection;
+
 import static meghanada.config.Config.timeItF;
 
 public class CacheEventSubscriber extends AbstractSubscriber {
@@ -36,8 +39,10 @@ public class CacheEventSubscriber extends AbstractSubscriber {
         final Project project = session.getCurrentProject();
         final CachedASMReflector reflector = CachedASMReflector.getInstance();
 
-        timeItF("create jar index elapsed:{}", () -> {
-            reflector.addClasspath(session.getDependentJars());
+        final Collection<File> dependentJars = session.getDependentJars();
+        final int size = dependentJars.size();
+        timeItF("create class index. read " + size + " jars. elapsed:{}", () -> {
+            reflector.addClasspath(dependentJars);
             reflector.createClassIndexes();
         });
 
@@ -66,7 +71,7 @@ public class CacheEventSubscriber extends AbstractSubscriber {
             reflector.addClasspath(dependency.getTestOutputDirectory());
         }
         reflector.updateClassIndexFromDirectory();
-        log.info("create class index.size:{} elapsed:{}", reflector.getGlobalClassIndex().size(), stopwatch.stop());
+        log.info("create class index. size:{} elapsed:{}", reflector.getGlobalClassIndex().size(), stopwatch.stop());
         log.info("Done indexing");
     }
 }

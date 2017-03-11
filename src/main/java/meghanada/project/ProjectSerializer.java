@@ -35,7 +35,7 @@ public class ProjectSerializer extends Serializer<Project> {
 
             // protected File projectRoot;
             final String projectRoot = project.getProjectRoot().getCanonicalPath();
-            kryo.writeClassAndObject(output, projectRoot);
+            output.writeString(projectRoot);
 
             // protected Set<ProjectDependency> dependencies = new HashSet<>();
             final Set<ProjectDependency> dependencies = project.dependencies;
@@ -48,54 +48,54 @@ public class ProjectSerializer extends Serializer<Project> {
             final Set<File> sources = project.sources;
             output.writeInt(sources.size(), true);
             for (final File f : sources) {
-                kryo.writeClassAndObject(output, f.getCanonicalPath());
+                output.writeString(f.getCanonicalPath());
             }
 
             // protected Set<File> resources = new HashSet<>();
             final Set<File> resources = project.resources;
             output.writeInt(resources.size(), true);
             for (final File f : resources) {
-                kryo.writeClassAndObject(output, f.getCanonicalPath());
+                output.writeString(f.getCanonicalPath());
             }
 
             // protected File output;
             final File out = project.output;
             if (out != null) {
-                kryo.writeClassAndObject(output, out.getCanonicalPath());
+                output.writeString(out.getCanonicalPath());
             } else {
-                kryo.writeClassAndObject(output, null);
+                output.writeString(null);
             }
 
             // protected Set<File> testSources = new HashSet<>();
             final Set<File> testSources = project.testSources;
             output.writeInt(testSources.size(), true);
             for (final File f : testSources) {
-                kryo.writeClassAndObject(output, f.getCanonicalPath());
+                output.writeString(f.getCanonicalPath());
             }
 
             // protected Set<File> testResources = new HashSet<>();
             final Set<File> testResources = project.testResources;
             output.writeInt(testResources.size(), true);
             for (final File f : testResources) {
-                kryo.writeClassAndObject(output, f.getCanonicalPath());
+                output.writeString(f.getCanonicalPath());
             }
 
             // protected File testOutput;
             final File testOutput = project.testOutput;
             if (testOutput != null) {
-                kryo.writeClassAndObject(output, testOutput.getCanonicalPath());
+                output.writeString(testOutput.getCanonicalPath());
             } else {
-                kryo.writeClassAndObject(output, null);
+                output.writeString(null);
             }
 
             // protected String compileSource = "1.8";
-            kryo.writeClassAndObject(output, project.compileSource);
+            output.writeString(project.compileSource);
 
             // protected String compileTarget = "1.8";
-            kryo.writeClassAndObject(output, project.compileTarget);
+            output.writeString(project.compileTarget);
 
             // protected String id;
-            kryo.writeClassAndObject(output, project.id);
+            output.writeString(project.id);
 
             // protected List<Project> dependencyProjects;
             final Set<Project> dependencyProjects = project.dependencyProjects;
@@ -104,9 +104,17 @@ public class ProjectSerializer extends Serializer<Project> {
                 kryo.writeClassAndObject(output, p);
             }
             // protected boolean isAndroidProject;
-            kryo.writeClassAndObject(output, project.isAndroidProject);
+            output.writeBoolean(project.isAndroidProject);
             // protected String name;
-            kryo.writeClassAndObject(output, project.name);
+            output.writeString(project.name);
+
+            // protected Boolean buildWithDependency = null;
+            Boolean buildWithDependency = project.buildWithDependency;
+            if (buildWithDependency == null) {
+                buildWithDependency = false;
+            }
+            output.writeBoolean(buildWithDependency);
+
         } catch (IOException ex) {
             throw new UncheckedIOException(ex);
         }
@@ -117,7 +125,7 @@ public class ProjectSerializer extends Serializer<Project> {
         try {
             final int typeInt = input.readInt(true);
             // protected File projectRoot;
-            final String projectRoot = (String) kryo.readClassAndObject(input);
+            final String projectRoot = input.readString().trim();
 
             Project project;
             if (typeInt == TYPE_GRADLE) {
@@ -141,8 +149,8 @@ public class ProjectSerializer extends Serializer<Project> {
             {
                 final int size = input.readInt(true);
                 for (int i = 0; i < size; i++) {
-                    final String path = (String) kryo.readClassAndObject(input);
-                    project.sources.add(new File(path));
+                    final String path = input.readString();
+                    project.sources.add(new File(path.trim()));
                 }
             }
 
@@ -150,16 +158,16 @@ public class ProjectSerializer extends Serializer<Project> {
             {
                 final int size = input.readInt(true);
                 for (int i = 0; i < size; i++) {
-                    final String path = (String) kryo.readClassAndObject(input);
-                    project.resources.add(new File(path));
+                    final String path = input.readString();
+                    project.resources.add(new File(path.trim()));
                 }
             }
 
             // protected File output;
             {
-                final Object o = kryo.readClassAndObject(input);
-                if (o != null) {
-                    project.output = new File((String) o);
+                final String path = input.readString();
+                if (path != null) {
+                    project.output = new File(path.trim());
                 }
             }
 
@@ -167,8 +175,8 @@ public class ProjectSerializer extends Serializer<Project> {
             {
                 final int size = input.readInt(true);
                 for (int i = 0; i < size; i++) {
-                    final String path = (String) kryo.readClassAndObject(input);
-                    project.testSources.add(new File(path));
+                    final String path = input.readString();
+                    project.testSources.add(new File(path.trim()));
                 }
             }
 
@@ -176,39 +184,39 @@ public class ProjectSerializer extends Serializer<Project> {
             {
                 final int size = input.readInt(true);
                 for (int i = 0; i < size; i++) {
-                    final String path = (String) kryo.readClassAndObject(input);
-                    project.testResources.add(new File(path));
+                    final String path = input.readString();
+                    project.testResources.add(new File(path.trim()));
                 }
             }
 
             // protected File testOutput;
             {
-                final Object o = kryo.readClassAndObject(input);
-                if (o != null) {
-                    project.testOutput = new File((String) o);
+                final String path = input.readString();
+                if (path != null) {
+                    project.testOutput = new File(path.trim());
                 }
             }
 
             // protected String compileSource = "1.8";
             {
-                final Object o = kryo.readClassAndObject(input);
-                if (o != null) {
-                    project.compileSource = (String) o;
+                final String s = input.readString();
+                if (s != null) {
+                    project.compileSource = s.trim();
                 }
             }
             // protected String compileTarget = "1.8";
             {
-                final Object o = kryo.readClassAndObject(input);
-                if (o != null) {
-                    project.compileTarget = (String) o;
+                final String s = input.readString();
+                if (s != null) {
+                    project.compileTarget = s.trim();
                 }
             }
 
             // protected String ID;
             {
-                final Object o = kryo.readClassAndObject(input);
-                if (o != null) {
-                    project.id = (String) o;
+                final String s = input.readString();
+                if (s != null) {
+                    project.id = s.trim();
                 }
             }
 
@@ -222,8 +230,11 @@ public class ProjectSerializer extends Serializer<Project> {
                     }
                 }
             }
-            project.isAndroidProject = (Boolean) kryo.readClassAndObject(input);
+
+            project.isAndroidProject = input.readBoolean();
             project.name = input.readString().trim();
+            project.buildWithDependency = input.readBoolean();
+
             project.loadCaller();
             return project;
         } catch (IOException ex) {

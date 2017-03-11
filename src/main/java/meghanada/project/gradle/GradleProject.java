@@ -15,6 +15,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.gradle.tooling.*;
+import org.gradle.tooling.model.DomainObjectSet;
 import org.gradle.tooling.model.GradleModuleVersion;
 import org.gradle.tooling.model.UnsupportedMethodException;
 import org.gradle.tooling.model.idea.*;
@@ -30,9 +31,10 @@ import static meghanada.utils.FunctionUtils.wrapIOConsumer;
 public class GradleProject extends Project {
 
     private static final Logger log = LogManager.getLogger(GradleProject.class);
+    private static final int LARGE_PROJECT = 5;
     private final File rootProject;
     private final Map<String, File> projects = new ConcurrentHashMap<>(4);
-    private final List<String> lazyLoadModule = new ArrayList<>(2);
+    private final List<String> dependencyModules = new ArrayList<>(2);
     private final List<String> prepareCompileTask = new ArrayList<>(2);
     private final List<String> prepareTestCompileTask = new ArrayList<>(2);
 
@@ -72,35 +74,45 @@ public class GradleProject extends Project {
     @Override
     public Project parseProject() throws ProjectParseException {
         final ProjectConnection connection = getProjectConnection();
+        log.info("loading gradle project:{}", new File(this.projectRoot, Project.GRADLE_PROJECT_FILE));
         try {
             final IdeaProject ideaProject = debugTimeItF("get idea project model elapsed={}", () ->
                     connection.getModel(IdeaProject.class));
             this.setCompileTarget(ideaProject);
 
+            final Config config = Config.load();
+            final boolean buildWithDependency = config.isBuildWithDependency();
             log.trace("load project main module name:{} projectRoot:{}", ideaProject.getName(), this.projectRoot);
+            final DomainObjectSet<? extends IdeaModule> modules = ideaProject.getModules();
+
+            if (modules.size() > LARGE_PROJECT) {
+                config.setBuildWithDependency(false);
+            }
 
             ideaProject.getModules()
                     .stream()
                     .parallel()
                     .forEach(wrapIOConsumer(this::parseIdeaModule));
 
-            this.lazyLoadModule.parallelStream().forEach(name -> {
-                if (projects.containsKey(name)) {
-                    debugTimeItF("load lazy module name=" + name + " elapsed={}", () ->
-                            this.loadModule(name));
-                } else {
-                    final String[] split = name.split("-");
-                    if (split.length > 0) {
-                        final String separatedName = split[split.length - 1];
-                        if (projects.containsKey(separatedName)) {
-                            debugTimeItF("load lazy module name=" + separatedName + " elapsed={}", () ->
-                                    this.loadModule(separatedName));
-                        } else {
-                            log.warn("fail load module={}", name);
+            if (buildWithDependency) {
+                this.dependencyModules.parallelStream().forEach(name -> {
+                    if (projects.containsKey(name)) {
+                        debugTimeItF("load lazy module name=" + name + " elapsed={}", () ->
+                                this.loadModuleDependency(name));
+                    } else {
+                        final String[] split = name.split("-");
+                        if (split.length > 0) {
+                            final String separatedName = split[split.length - 1];
+                            if (projects.containsKey(separatedName)) {
+                                debugTimeItF("load lazy module name=" + separatedName + " elapsed={}", () ->
+                                        this.loadModuleDependency(separatedName));
+                            } else {
+                                log.warn("fail load module={}", name);
+                            }
                         }
                     }
-                }
-            });
+                });
+            }
 
             return this;
         } catch (Exception e) {
@@ -116,9 +128,11 @@ public class GradleProject extends Project {
         final String projectName = gradleProject.getName();
         final File moduleProjectRoot = gradleProject.getProjectDirectory();
         log.trace("find project module name:{} projectRoot:{}", projectName, moduleProjectRoot);
-
+        final Config config = Config.load();
         if (moduleProjectRoot.equals(this.getProjectRoot())) {
             this.name = gradleProject.getPath();
+//            final AndroidProject androidProject = config.androidDevelopment() ?
+//                    AndroidSupport.getAndroidProject(this.rootProject, gradleProject) : null;
             final AndroidProject androidProject = AndroidSupport.getAndroidProject(this.rootProject, gradleProject);
             if (androidProject != null) {
                 // parse android
@@ -201,10 +215,9 @@ public class GradleProject extends Project {
 
     }
 
-    private void loadModule(final String name) throws IOException {
-        final File root = this.projects.get(name);
-        final Optional<Project> result = Session.findProject(root);
-        result.ifPresent(project -> {
+    private void loadModuleDependency(final String name) throws IOException {
+        final File moduleRoot = this.projects.get(name);
+        Session.findProject(moduleRoot).ifPresent(project -> {
 
             final File outputFile = project.getOutputDirectory();
             final ProjectDependency output = new ProjectDependency(name, "COMPILE", "", outputFile);
@@ -360,8 +373,8 @@ public class GradleProject extends Project {
             } else if (dependency instanceof IdeaModuleDependency) {
                 final IdeaModuleDependency moduleDependency = (IdeaModuleDependency) dependency;
                 final String moduleName = moduleDependency.getTargetModuleName();
-                log.info("find module dependency project={} dependOn={} ", this.name, moduleName);
-                this.lazyLoadModule.add(moduleName);
+                log.debug("find module dependency project {} dependsOn {} ", this.name, moduleName);
+                this.dependencyModules.add(moduleName);
             } else {
                 log.warn("dep ??? class={}", dependency.getClass());
             }

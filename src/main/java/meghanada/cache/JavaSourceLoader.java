@@ -37,7 +37,8 @@ class JavaSourceLoader extends CacheLoader<File, Source> implements RemovalListe
         final String out = Joiner.on(File.separator).join(GlobalCache.SOURCE_CACHE_DIR, path);
         final File file = new File(root, out);
 
-        if (!file.getParentFile().exists() && !file.getParentFile().mkdirs()) {
+        final File parentFile = file.getParentFile();
+        if (!parentFile.exists() && !parentFile.mkdirs()) {
             log.warn("{} mkdirs fail", file.getParent());
         }
 
