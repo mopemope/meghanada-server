@@ -94,25 +94,23 @@ public class GradleProject extends Project {
                     .parallel()
                     .forEach(wrapIOConsumer(this::parseIdeaModule));
 
-            if (buildWithDependency) {
-                this.dependencyModules.parallelStream().forEach(name -> {
-                    if (projects.containsKey(name)) {
-                        debugTimeItF("load lazy module name=" + name + " elapsed={}", () ->
-                                this.loadModuleDependency(name));
-                    } else {
-                        final String[] split = name.split("-");
-                        if (split.length > 0) {
-                            final String separatedName = split[split.length - 1];
-                            if (projects.containsKey(separatedName)) {
-                                debugTimeItF("load lazy module name=" + separatedName + " elapsed={}", () ->
-                                        this.loadModuleDependency(separatedName));
-                            } else {
-                                log.warn("fail load module={}", name);
-                            }
+            this.dependencyModules.parallelStream().forEach(name -> {
+                if (projects.containsKey(name)) {
+                    debugTimeItF("load lazy module name=" + name + " elapsed={}", () ->
+                            this.loadModuleDependency(name));
+                } else {
+                    final String[] split = name.split("-");
+                    if (split.length > 0) {
+                        final String separatedName = split[split.length - 1];
+                        if (projects.containsKey(separatedName)) {
+                            debugTimeItF("load lazy module name=" + separatedName + " elapsed={}", () ->
+                                    this.loadModuleDependency(separatedName));
+                        } else {
+                            log.warn("fail load module={}", name);
                         }
                     }
-                });
-            }
+                }
+            });
 
             return this;
         } catch (Exception e) {
