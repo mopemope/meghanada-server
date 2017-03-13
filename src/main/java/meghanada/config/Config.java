@@ -289,10 +289,6 @@ public class Config {
         return c.getBoolean("external-builder");
     }
 
-    public boolean androidDevelopment() {
-        return c.getBoolean("android-development");
-    }
-
     public boolean clearCacheOnStart() {
         return c.getBoolean("clear-cache-on-start");
     }

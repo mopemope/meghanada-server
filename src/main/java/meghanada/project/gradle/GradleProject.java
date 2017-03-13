@@ -128,11 +128,8 @@ public class GradleProject extends Project {
         final String projectName = gradleProject.getName();
         final File moduleProjectRoot = gradleProject.getProjectDirectory();
         log.trace("find project module name:{} projectRoot:{}", projectName, moduleProjectRoot);
-        final Config config = Config.load();
         if (moduleProjectRoot.equals(this.getProjectRoot())) {
             this.name = gradleProject.getPath();
-//            final AndroidProject androidProject = config.androidDevelopment() ?
-//                    AndroidSupport.getAndroidProject(this.rootProject, gradleProject) : null;
             final AndroidProject androidProject = AndroidSupport.getAndroidProject(this.rootProject, gradleProject);
             if (androidProject != null) {
                 // parse android
@@ -250,10 +247,10 @@ public class GradleProject extends Project {
     @Override
     public InputStream runTask(final List<String> args) throws IOException {
         try {
-            List<String> tasks = new ArrayList<>();
-            List<String> taskArgs = new ArrayList<>();
-            for (String temp : args) {
-                for (String arg : temp.split(" ")) {
+            final List<String> tasks = new ArrayList<>(4);
+            final List<String> taskArgs = new ArrayList<>(4);
+            for (final String temp : args) {
+                for (final String arg : temp.split(" ")) {
                     if (arg.startsWith("-")) {
                         taskArgs.add(arg.trim());
                     } else {
@@ -265,43 +262,19 @@ public class GradleProject extends Project {
             log.debug("task:{}:{} args:{}:{}", tasks, tasks.size(), taskArgs, taskArgs.size());
 
             final ProjectConnection projectConnection = getProjectConnection();
-            BuildLauncher build = projectConnection.newBuild();
+            final BuildLauncher build = projectConnection.newBuild();
             build.forTasks(tasks.toArray(new String[tasks.size()]));
             if (taskArgs.size() > 0) {
                 build.withArguments(taskArgs.toArray(new String[taskArgs.size()]));
             }
-
 
             final PipedOutputStream outputStream = new PipedOutputStream();
             PipedInputStream inputStream = new PipedInputStream(outputStream);
             build.setStandardError(outputStream);
             build.setStandardOutput(outputStream);
 
-            build.run(new ResultHandler<Void>() {
-                @Override
-                public void onComplete(Void result) {
-                    try {
-                        outputStream.close();
-                        inputStream.close();
-                    } catch (IOException e) {
-                        log.error(e.getMessage(), e);
-                    } finally {
-                        projectConnection.close();
-                    }
-                }
-
-                @Override
-                public void onFailure(GradleConnectionException failure) {
-                    try {
-                        outputStream.close();
-                        inputStream.close();
-                    } catch (IOException e) {
-                        log.error(e.getMessage(), e);
-                    } finally {
-                        projectConnection.close();
-                    }
-                }
-            });
+            final VoidResultHandler handler = new VoidResultHandler(outputStream, inputStream, projectConnection);
+            build.run(handler);
             return inputStream;
         } finally {
             System.setProperty(PROJECT_ROOT_KEY, this.projectRoot.getCanonicalPath());
@@ -310,11 +283,11 @@ public class GradleProject extends Project {
 
 
     private Map<String, Set<File>> searchProjectSources(final IdeaModule ideaModule) throws IOException {
-        final Map<String, Set<File>> result = new HashMap<>();
-        result.put("sources", new HashSet<>());
-        result.put("resources", new HashSet<>());
-        result.put("testSources", new HashSet<>());
-        result.put("testResources", new HashSet<>());
+        final Map<String, Set<File>> result = new HashMap<>(8);
+        result.put("sources", new HashSet<>(2));
+        result.put("resources", new HashSet<>(2));
+        result.put("testSources", new HashSet<>(2));
+        result.put("testResources", new HashSet<>(2));
 
         for (final IdeaContentRoot ideaContentRoot : ideaModule.getContentRoots().getAll()) {
             // log.debug("{}", ideaContentRoot.getExcludeDirectories());
@@ -342,7 +315,7 @@ public class GradleProject extends Project {
         return result;
     }
 
-    private Set<ProjectDependency> getDependency(final IdeaModule ideaModule) throws IOException {
+    private Set<ProjectDependency> getDependency(final IdeaModule ideaModule) {
         final Set<ProjectDependency> dependencies = new HashSet<>(16);
 
         for (final IdeaDependency dependency : ideaModule.getDependencies().getAll()) {
@@ -441,21 +414,57 @@ public class GradleProject extends Project {
         if (configFile.exists()) {
             final com.typesafe.config.Config config = ConfigFactory.parseFile(configFile);
             if (config.hasPath(Config.GRADLE_PREPARE_COMPILE_TASK)) {
-                final String val = config.getString(Config.GRADLE_PREPARE_COMPILE_TASK);
-                final String[] vals = StringUtils.split(val, ",");
-                if (vals != null) {
-                    Collections.addAll(this.prepareCompileTask, vals);
+                final String taskConfig = config.getString(Config.GRADLE_PREPARE_COMPILE_TASK);
+                final String[] tasks = StringUtils.split(taskConfig, ",");
+                if (tasks != null) {
+                    Collections.addAll(this.prepareCompileTask, tasks);
                 }
             }
             if (config.hasPath(Config.GRADLE_PREPARE_TEST_COMPILE_TASK)) {
-                final String val = config.getString(Config.GRADLE_PREPARE_TEST_COMPILE_TASK);
-                final String[] vals = StringUtils.split(val, ",");
-                if (vals != null) {
-                    Collections.addAll(this.prepareTestCompileTask, vals);
+                final String taskConfig = config.getString(Config.GRADLE_PREPARE_TEST_COMPILE_TASK);
+                final String[] tasks = StringUtils.split(taskConfig, ",");
+                if (tasks != null) {
+                    Collections.addAll(this.prepareTestCompileTask, tasks);
                 }
             }
         }
         return super.mergeFromProjectConfig();
     }
 
+    private static class VoidResultHandler implements ResultHandler<Void> {
+        private final PipedOutputStream outputStream;
+        private final PipedInputStream inputStream;
+        private final ProjectConnection projectConnection;
+
+        VoidResultHandler(final PipedOutputStream outputStream, final PipedInputStream inputStream, final ProjectConnection projectConnection) {
+            this.outputStream = outputStream;
+            this.inputStream = inputStream;
+            this.projectConnection = projectConnection;
+        }
+
+        @Override
+        public void onComplete(Void result) {
+            try {
+                outputStream.close();
+                inputStream.close();
+            } catch (IOException e) {
+                log.error(e.getMessage(), e);
+            } finally {
+                projectConnection.close();
+            }
+        }
+
+        @Override
+        public void onFailure(GradleConnectionException failure) {
+            try {
+                log.catching(failure.getCause());
+                outputStream.close();
+                inputStream.close();
+            } catch (IOException e) {
+                log.error(e.getMessage(), e);
+            } finally {
+                projectConnection.close();
+            }
+        }
+    }
 }

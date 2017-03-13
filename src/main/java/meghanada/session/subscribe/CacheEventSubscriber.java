@@ -35,6 +35,7 @@ public class CacheEventSubscriber extends AbstractSubscriber {
     }
 
     private void createFullIndex() {
+        final Stopwatch stopwatch = Stopwatch.createStarted();
         final Session session = super.sessionEventBus.getSession();
         final Project project = session.getCurrentProject();
         final CachedASMReflector reflector = CachedASMReflector.getInstance();
@@ -63,7 +64,6 @@ public class CacheEventSubscriber extends AbstractSubscriber {
             }
         });
 
-        final Stopwatch stopwatch = Stopwatch.createStarted();
         reflector.addClasspath(project.getOutputDirectory());
         reflector.addClasspath(project.getTestOutputDirectory());
         for (final Project dependency : project.getDependencyProjects()) {
@@ -71,7 +71,7 @@ public class CacheEventSubscriber extends AbstractSubscriber {
             reflector.addClasspath(dependency.getTestOutputDirectory());
         }
         reflector.updateClassIndexFromDirectory();
-        log.info("create class index. size:{} elapsed:{}", reflector.getGlobalClassIndex().size(), stopwatch.stop());
+        log.info("create class index. size:{} total elapsed:{}", reflector.getGlobalClassIndex().size(), stopwatch.stop());
         log.info("Done indexing");
     }
 }
