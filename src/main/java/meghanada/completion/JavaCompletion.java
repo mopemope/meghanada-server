@@ -162,7 +162,9 @@ public class JavaCompletion {
     }
 
     private static Collection<? extends CandidateUnit> completionConstructors(final Source source) {
-        return source.importClass.values().parallelStream().map(JavaCompletion::doReflect).flatMap(Collection::parallelStream)
+        return source.importClasses.parallelStream()
+                .map(JavaCompletion::doReflect)
+                .flatMap(Collection::parallelStream)
                 .filter(md -> md.getType().equals(CandidateUnit.MemberType.CONSTRUCTOR.name()))
                 .collect(Collectors.toSet());
     }
@@ -225,12 +227,14 @@ public class JavaCompletion {
             }
         });
 
-        source.importClass.entrySet().forEach(entry -> {
-            final String key = entry.getKey();
-            if (key.startsWith(prefix)) {
-                result.add(ClassIndex.createClass(entry.getValue()));
-            }
-        });
+        source.getImportedClassMap()
+                .entrySet()
+                .forEach(entry -> {
+                    final String key = entry.getKey();
+                    if (key.startsWith(prefix)) {
+                        result.add(ClassIndex.createClass(entry.getValue()));
+                    }
+                });
 
         // Add class
         if (Character.isUpperCase(prefix.charAt(0))) {
@@ -247,8 +251,10 @@ public class JavaCompletion {
         return result;
     }
 
-    private static Collection<? extends CandidateUnit> reflect(final String ownPackage, final String fqcn,
-                                                               final boolean isStatic, final boolean withConstructor, final String prefix) {
+    private static Collection<? extends CandidateUnit> reflect(final String ownPackage,
+                                                               final String fqcn,
+                                                               final boolean isStatic,
+                                                               final boolean withConstructor, final String prefix) {
         if (fqcn.startsWith(ownPackage)) {
             // package
             return JavaCompletion.packageReflect(fqcn, isStatic, withConstructor, prefix);
@@ -292,7 +298,7 @@ public class JavaCompletion {
 
         {
             // completion static method
-            String fqcn = source.importClass.get(var);
+            String fqcn = source.getImportedClassMap().get(var);
             if (fqcn != null) {
                 if (!fqcn.contains(".") && ownPackage != null) {
                     fqcn = ownPackage + '.' + fqcn;

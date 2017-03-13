@@ -10,9 +10,9 @@ import java.util.stream.Collectors;
 public class BlockScope extends Scope {
 
     private static final Logger log = LogManager.getLogger(ClassScope.class);
-    public final List<BlockScope> scopes = new ArrayList<>(8);
+    public final List<BlockScope> scopes = new ArrayList<>(16);
     public final Deque<BlockScope> currentScope = new ArrayDeque<>(8);
-    public final List<ExpressionScope> expressions = new ArrayList<>(8);
+    public final List<ExpressionScope> expressions = new ArrayList<>(16);
     public final Deque<ExpressionScope> currentExpr = new ArrayDeque<>(8);
     public BlockScope parent;
 

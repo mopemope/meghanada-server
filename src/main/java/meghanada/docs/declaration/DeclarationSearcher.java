@@ -166,7 +166,7 @@ public class DeclarationSearcher {
         final EntryMessage entryMessage = log.traceEntry("line={} col={} symbol={}", line, col, symbol);
         final CachedASMReflector reflector = CachedASMReflector.getInstance();
         Optional<Declaration> result;
-        String fqcn = source.importClass.get(symbol);
+        String fqcn = source.getImportedClassMap().get(symbol);
         if (fqcn == null) {
             final Map<String, String> standardClasses = reflector.getStandardClasses();
             fqcn = standardClasses.get(symbol);
@@ -193,8 +193,9 @@ public class DeclarationSearcher {
                                 return declaration1;
                             }
                         }
-                        for (final String className : source.importClass.values()) {
-                            final Optional<Declaration> declaration1 = reflector.searchInnerClasses(className).stream()
+                        for (final String className : source.importClasses) {
+                            final Optional<Declaration> declaration1 = reflector.searchInnerClasses(className)
+                                    .stream()
                                     .filter(classIndex -> {
                                         final String returnType = classIndex.getReturnType();
                                         return returnType.endsWith(symbol);

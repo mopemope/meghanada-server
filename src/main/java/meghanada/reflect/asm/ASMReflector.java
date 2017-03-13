@@ -43,7 +43,7 @@ public class ASMReflector {
     };
     private static final Logger log = LogManager.getLogger(ASMReflector.class);
     private static ASMReflector asmReflector;
-    private final Set<String> allowClass = new HashSet<>(8);
+    private final Set<String> allowClass = new HashSet<>(16);
 
     private ASMReflector() {
         Config.load()
@@ -212,21 +212,6 @@ public class ASMReflector {
         return supers;
     }
 
-    private static Stream<File> getClassFileStream(final File file) throws IOException {
-        return Files.walk(file.toPath())
-                .map(Path::toFile)
-                .filter(f -> f.isFile() && f.getName().endsWith(".class"))
-                .collect(Collectors.toList())
-                .stream();
-    }
-
-    private static Stream<JarEntry> getJarEntryStream(final JarFile jarFile) {
-        return jarFile.stream()
-                .filter(jarEntry -> jarEntry.getName().endsWith(".class"))
-                .collect(Collectors.toList())
-                .stream();
-    }
-
     private void addAllowClass(final String clazz) {
         this.allowClass.add(clazz);
     }
@@ -252,8 +237,14 @@ public class ASMReflector {
         final Map<ClassIndex, File> indexes = new ConcurrentHashMap<>(8);
 
         if (file.isFile() && file.getName().endsWith("jar")) {
-            try (final JarFile jarFile = new JarFile(file)) {
-                ASMReflector.getJarEntryStream(jarFile).forEach(wrapIOConsumer(jarEntry -> {
+            try (final JarFile jarFile = new JarFile(file);
+                 final Stream<JarEntry> jarStream = jarFile.stream().parallel();
+                 final Stream<JarEntry> stream = jarStream
+                         .filter(jarEntry -> jarEntry.getName().endsWith(".class"))
+                         .collect(Collectors.toList())
+                         .parallelStream()) {
+
+                stream.forEach(wrapIOConsumer(jarEntry -> {
                     final String entryName = jarEntry.getName();
                     if (!entryName.endsWith(".class")) {
                         return;
@@ -281,19 +272,26 @@ public class ASMReflector {
                 ASMReflector.readClassIndex(indexes, in, file, true);
             }
         } else if (file.isDirectory()) {
-            ASMReflector.getClassFileStream(file).forEach(wrapIOConsumer(classFile -> {
-                final String entryName = classFile.getName();
-                if (!entryName.endsWith(".class")) {
-                    return;
-                }
-                final String className = ClassNameUtils.replaceSlash(entryName.substring(0, entryName.length() - 6));
-                if (this.ignorePackage(className)) {
-                    return;
-                }
-                try (InputStream in = new FileInputStream(classFile)) {
-                    ASMReflector.readClassIndex(indexes, in, file, true);
-                }
-            }));
+            try (final Stream<Path> pathStream = Files.walk(file.toPath());
+                 final Stream<File> stream = pathStream.map(Path::toFile)
+                         .filter(f -> f.isFile() && f.getName().endsWith(".class"))
+                         .collect(Collectors.toList())
+                         .stream()) {
+
+                stream.forEach(wrapIOConsumer(classFile -> {
+                    final String entryName = classFile.getName();
+                    if (!entryName.endsWith(".class")) {
+                        return;
+                    }
+                    final String className = ClassNameUtils.replaceSlash(entryName.substring(0, entryName.length() - 6));
+                    if (this.ignorePackage(className)) {
+                        return;
+                    }
+                    try (final InputStream in = new FileInputStream(classFile)) {
+                        ASMReflector.readClassIndex(indexes, in, file, true);
+                    }
+                }));
+            }
         }
         return indexes;
     }
@@ -403,39 +401,45 @@ public class ASMReflector {
             }
             return Collections.emptyList();
         } else if (file.isDirectory()) {
-            return ASMReflector.getClassFileStream(file)
-                    .map(wrapIO(f -> {
+            try (final Stream<Path> pathStream = Files.walk(file.toPath());
+                 final Stream<File> stream = pathStream.map(Path::toFile)
+                         .filter(f -> f.isFile() && f.getName().endsWith(".class"))
+                         .collect(Collectors.toList())
+                         .stream()) {
 
-                        final String rootPath = file.getCanonicalPath();
-                        final String path = f.getCanonicalPath();
-                        final String className = ClassNameUtils.replaceSlash(path.substring(rootPath.length() + 1, path.length() - 6));
+                return stream.map(wrapIO(f -> {
 
-                        final Iterator<String> stringIterator = targetClasses.iterator();
-                        while (stringIterator.hasNext()) {
-                            final String nameWithTP = stringIterator.next();
-                            final boolean isSuper = !targetClass.equals(nameWithTP);
-                            final String fqcn = ClassNameUtils.removeTypeParameter(nameWithTP);
+                    final String rootPath = file.getCanonicalPath();
+                    final String path = f.getCanonicalPath();
+                    final String className = ClassNameUtils.replaceSlash(path.substring(rootPath.length() + 1, path.length() - 6));
 
-                            if (!className.equals(fqcn)) {
-                                continue;
-                            }
+                    final Iterator<String> stringIterator = targetClasses.iterator();
+                    while (stringIterator.hasNext()) {
+                        final String nameWithTP = stringIterator.next();
+                        final boolean isSuper = !targetClass.equals(nameWithTP);
+                        final String fqcn = ClassNameUtils.removeTypeParameter(nameWithTP);
 
-                            final List<MemberDescriptor> members = getMembersFromClassFile(file, f, fqcn, false);
-                            if (members != null) {
-
-                                if (isSuper) {
-                                    replaceDescriptorsType(nameWithTP, members);
-                                }
-                                // found
-                                stringIterator.remove();
-                                return members;
-                            }
+                        if (!className.equals(fqcn)) {
+                            continue;
                         }
-                        return Collections.<MemberDescriptor>emptyList();
-                    }))
-                    .filter(memberDescriptors -> memberDescriptors != null && memberDescriptors.size() > 0)
-                    .flatMap(Collection::stream)
-                    .collect(Collectors.toList());
+
+                        final List<MemberDescriptor> members = getMembersFromClassFile(file, f, fqcn, false);
+                        if (members != null) {
+
+                            if (isSuper) {
+                                replaceDescriptorsType(nameWithTP, members);
+                            }
+                            // found
+                            stringIterator.remove();
+                            return members;
+                        }
+                    }
+                    return Collections.<MemberDescriptor>emptyList();
+                }))
+                        .filter(memberDescriptors -> memberDescriptors != null && memberDescriptors.size() > 0)
+                        .flatMap(Collection::stream)
+                        .collect(Collectors.toList());
+            }
         }
         return Collections.emptyList();
     }
@@ -443,35 +447,40 @@ public class ASMReflector {
     private List<MemberDescriptor> reflect(final File file, final String name) throws IOException {
         final String nameWithoutTP = ClassNameUtils.removeTypeParameter(name);
         if (file.isFile() && file.getName().endsWith(".jar")) {
-            try (final JarFile jarFile = new JarFile(file)) {
-                return ASMReflector.getJarEntryStream(jarFile)
-                        .map(wrapIO(jarEntry -> {
-                            final String entryName = jarEntry.getName();
-                            if (!entryName.endsWith(".class")) {
-                                return new ArrayList<MemberDescriptor>(0);
-                            }
-                            String className = ClassNameUtils.replaceSlash(entryName.substring(0, entryName.length() - 6));
-                            if (this.ignorePackage(className)) {
-                                return new ArrayList<MemberDescriptor>(0);
-                            }
-                            if (className.equals(nameWithoutTP)) {
-                                try (final InputStream in = jarFile.getInputStream(jarEntry)) {
-                                    final ClassReader classReader = new ClassReader(in);
-                                    return getMemberFromJar(file, classReader, nameWithoutTP, name);
-                                }
-                            }
+            try (final JarFile jarFile = new JarFile(file);
+                 final Stream<JarEntry> jarStream = jarFile.stream().parallel();
+                 final Stream<JarEntry> stream = jarStream
+                         .filter(jarEntry -> jarEntry.getName().endsWith(".class"))
+                         .collect(Collectors.toList())
+                         .parallelStream()) {
 
-                            // To bin name
-                            className = ClassNameUtils.replaceInnerMark(className);
-                            if (className.equals(nameWithoutTP)) {
-                                try (final InputStream in = jarFile.getInputStream(jarEntry)) {
-                                    final ClassReader classReader = new ClassReader(in);
-                                    return getMemberFromJar(file, classReader, nameWithoutTP, name);
-                                }
-                            }
+                return stream.map(wrapIO(jarEntry -> {
+                    final String entryName = jarEntry.getName();
+                    if (!entryName.endsWith(".class")) {
+                        return new ArrayList<MemberDescriptor>(0);
+                    }
+                    String className = ClassNameUtils.replaceSlash(entryName.substring(0, entryName.length() - 6));
+                    if (this.ignorePackage(className)) {
+                        return new ArrayList<MemberDescriptor>(0);
+                    }
+                    if (className.equals(nameWithoutTP)) {
+                        try (final InputStream in = jarFile.getInputStream(jarEntry)) {
+                            final ClassReader classReader = new ClassReader(in);
+                            return getMemberFromJar(file, classReader, nameWithoutTP, name);
+                        }
+                    }
 
-                            return new ArrayList<MemberDescriptor>(0);
-                        }))
+                    // To bin name
+                    className = ClassNameUtils.replaceInnerMark(className);
+                    if (className.equals(nameWithoutTP)) {
+                        try (final InputStream in = jarFile.getInputStream(jarEntry)) {
+                            final ClassReader classReader = new ClassReader(in);
+                            return getMemberFromJar(file, classReader, nameWithoutTP, name);
+                        }
+                    }
+
+                    return new ArrayList<MemberDescriptor>(0);
+                }))
                         .filter(list -> list.size() > 0)
                         .findFirst()
                         .orElse(Collections.emptyList());
@@ -482,12 +491,13 @@ public class ASMReflector {
                 return members;
             }
         } else if (file.isDirectory()) {
-            return Files.walk(file.toPath())
-                    .map(Path::toFile)
-                    .filter(f -> f.isFile() && f.getName().endsWith(".class"))
-                    .map(wrapIO(f -> getMembersFromClassFile(file, f, nameWithoutTP)))
-                    .filter(descriptors -> descriptors != null && descriptors.size() > 0)
-                    .findFirst().orElse(Collections.emptyList());
+            try (final Stream<Path> stream = Files.walk(file.toPath())) {
+                return stream.map(Path::toFile)
+                        .filter(f -> f.isFile() && f.getName().endsWith(".class"))
+                        .map(wrapIO(f -> getMembersFromClassFile(file, f, nameWithoutTP)))
+                        .filter(descriptors -> descriptors != null && descriptors.size() > 0)
+                        .findFirst().orElse(Collections.emptyList());
+            }
         }
         return Collections.emptyList();
     }

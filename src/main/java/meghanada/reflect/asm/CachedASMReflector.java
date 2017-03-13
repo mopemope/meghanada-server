@@ -21,8 +21,6 @@ import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
-import java.util.jar.JarEntry;
-import java.util.jar.JarFile;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -32,21 +30,21 @@ import static meghanada.utils.FunctionUtils.wrapIOConsumer;
 
 public class CachedASMReflector {
 
-    private static final int BASE_CACHE_SIZE = 1024;
+    private static final int CACHE_SIZE = 1024 * 16;
     private static final Logger log = LogManager.getLogger(CachedASMReflector.class);
 
     private static final Pattern PACKAGE_RE = Pattern.compile("\\.\\*");
     private static CachedASMReflector cachedASMReflector;
 
-    private final Map<String, ClassIndex> globalClassIndex = new ConcurrentHashMap<>(BASE_CACHE_SIZE * 8);
+    private final Map<String, ClassIndex> globalClassIndex = new ConcurrentHashMap<>(CACHE_SIZE);
 
     // Key:FQCN Val:JarFile
-    private final Map<String, File> classFileMap = new ConcurrentHashMap<>(BASE_CACHE_SIZE * 8);
+    private final Map<String, File> classFileMap = new ConcurrentHashMap<>(CACHE_SIZE);
 
-    private final Map<ClassIndex, File> reflectIndex = new ConcurrentHashMap<>(BASE_CACHE_SIZE * 8);
+    private final Map<ClassIndex, File> reflectIndex = new ConcurrentHashMap<>(CACHE_SIZE);
 
-    private final List<File> jars = new ArrayList<>(32);
-    private final List<File> directories = new ArrayList<>(4);
+    private final Set<File> jars = new HashSet<>(64);
+    private final Set<File> directories = new HashSet<>(8);
 
     private Map<String, String> standardClasses;
 
@@ -102,13 +100,6 @@ public class CachedASMReflector {
             }
         }
         return members;
-    }
-
-    private static Stream<JarEntry> getJarEntryStream(final JarFile jarFile) {
-        return jarFile.stream()
-                .filter(jarEntry -> jarEntry.getName().endsWith(".class"))
-                .collect(Collectors.toList())
-                .stream();
     }
 
     private static boolean existsClassCache(final String className) {
@@ -180,7 +171,7 @@ public class CachedASMReflector {
     public void createClassIndexes() {
         log.debug("start createClassIndexes");
 
-        this.jars.stream().parallel().forEach(wrapIOConsumer(file -> {
+        this.jars.parallelStream().forEach(wrapIOConsumer(file -> {
             if (file.getName().endsWith(".jar") && this.classFileMap.containsValue(file)) {
                 //skip cached jar
                 return;
@@ -205,25 +196,27 @@ public class CachedASMReflector {
     }
 
     public void updateClassIndexFromDirectory() {
-        this.directories.stream().parallel().forEach(wrapIOConsumer(file -> {
-            if (file.getName().endsWith(".jar") && this.classFileMap.containsValue(file)) {
-                //skip cached jar
-                return;
-            }
-            final ASMReflector reflector = ASMReflector.getInstance();
-            reflector.getClasses(file)
-                    .entrySet()
-                    .parallelStream()
-                    .forEach(classIndexFileEntry -> {
-                        final ClassIndex classIndex1 = classIndexFileEntry.getKey();
-                        final File file1 = classIndexFileEntry.getValue();
-                        final String fqcn = classIndex1.getRawDeclaration();
-                        this.globalClassIndex.put(fqcn, classIndex1);
-                        this.classFileMap.put(fqcn, file1);
-                        this.reflectIndex.put(classIndex1, file1);
-                    });
+        try (Stream<File> stream = this.directories.stream().parallel()) {
+            stream.forEach(wrapIOConsumer(file -> {
+                if (file.getName().endsWith(".jar") && this.classFileMap.containsValue(file)) {
+                    //skip cached jar
+                    return;
+                }
+                final ASMReflector reflector = ASMReflector.getInstance();
+                reflector.getClasses(file)
+                        .entrySet()
+                        .parallelStream()
+                        .forEach(classIndexFileEntry -> {
+                            final ClassIndex classIndex1 = classIndexFileEntry.getKey();
+                            final File file1 = classIndexFileEntry.getValue();
+                            final String fqcn = classIndex1.getRawDeclaration();
+                            this.globalClassIndex.put(fqcn, classIndex1);
+                            this.classFileMap.put(fqcn, file1);
+                            this.reflectIndex.put(classIndex1, file1);
+                        });
 
-        }));
+            }));
+        }
     }
 
     public boolean containsFQCN(String fqcn) {

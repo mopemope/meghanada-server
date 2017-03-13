@@ -35,17 +35,23 @@ public class GlobalCache {
     public static final String CALLER_DATA = "source_caller";
     public static final String PROJECT_DATA = "project";
     public static final String CACHE_EXT = ".dat";
+
     private static final int COMPRESSION_LEVEL = 3;
+    private static final int SOURCE_CACHE_MAX = 64;
+    private static final int MEMBER_CACHE_MAX = SOURCE_CACHE_MAX;
+    private static final int BURST_LIMIT = 32;
 
     private static final Logger log = LogManager.getLogger(GlobalCache.class);
+
     private static GlobalCache globalCache;
     private final KryoPool kryoPool;
     private final Map<File, LoadingCache<File, Source>> sourceCaches;
     private final ExecutorService executorService = Executors.newCachedThreadPool();
-    private final BlockingQueue<CacheRequest> blockingQueue = new LinkedBlockingQueue<>();
+    private final BlockingQueue<CacheRequest> blockingQueue = new LinkedBlockingDeque<>();
 
     private LoadingCache<String, List<MemberDescriptor>> memberCache;
     private boolean isTerminated = false;
+    private boolean ioBurstMode;
 
     private GlobalCache() {
         this.sourceCaches = new HashMap<>(1);
@@ -57,7 +63,7 @@ public class GlobalCache {
             return kryo;
         }).build();
 
-        executorService.submit(() -> {
+        this.executorService.submit(() -> {
             while (!this.isTerminated) {
                 try {
                     final CacheRequest cr = blockingQueue.take();
@@ -97,7 +103,7 @@ public class GlobalCache {
         }
         final MemberCacheLoader memberCacheLoader = new MemberCacheLoader(classFileMap, reflectIndex);
         this.memberCache = CacheBuilder.newBuilder()
-                .maximumSize(256)
+                .maximumSize(MEMBER_CACHE_MAX)
                 .expireAfterAccess(5, TimeUnit.MINUTES)
                 .removalListener(memberCacheLoader)
                 .build(memberCacheLoader);
@@ -118,6 +124,31 @@ public class GlobalCache {
         } catch (InterruptedException e) {
             log.catching(e);
         }
+
+        if (!this.ioBurstMode && this.blockingQueue.size() > BURST_LIMIT) {
+            this.ioBurstMode = true;
+            this.executorService.submit(() -> {
+                boolean readyShutdown = false;
+                while (!this.isTerminated && this.ioBurstMode) {
+                    try {
+                        final CacheRequest cr = blockingQueue.poll(5, TimeUnit.SECONDS);
+                        if (cr != null && !cr.shutdown) {
+                            this.writeCacheToFile(cr.getFile(), cr.getTarget());
+                            readyShutdown = false;
+                        }
+                        if (this.blockingQueue.isEmpty()) {
+                            if (readyShutdown) {
+                                this.ioBurstMode = false;
+                            } else {
+                                readyShutdown = true;
+                            }
+                        }
+                    } catch (Exception e) {
+                        log.catching(e);
+                    }
+                }
+            });
+        }
     }
 
     public void invalidateMemberDescriptors(final String fqcn) {
@@ -131,7 +162,7 @@ public class GlobalCache {
         } else {
             final JavaSourceLoader javaSourceLoader = new JavaSourceLoader(project);
             final LoadingCache<File, Source> loadingCache = CacheBuilder.newBuilder()
-                    .maximumSize(1024)
+                    .maximumSize(SOURCE_CACHE_MAX)
                     .expireAfterAccess(5, TimeUnit.MINUTES)
                     .removalListener(javaSourceLoader)
                     .build(javaSourceLoader);
@@ -146,12 +177,14 @@ public class GlobalCache {
         return sourceCache.get(file);
     }
 
-    public void replaceSource(final Project project, final Source source) {
+    public void replaceSource(@Nonnull final Project project,
+                              @Nonnull final Source source) {
         final LoadingCache<File, Source> sourceCache = this.getSourceCache(project);
         sourceCache.put(source.getFile(), source);
     }
 
-    public void invalidateSource(final Project project, final File file) {
+    public void invalidateSource(@Nonnull final Project project,
+                                 @Nonnull final File file) {
         final LoadingCache<File, Source> sourceCache = this.getSourceCache(project);
         sourceCache.invalidate(file);
     }

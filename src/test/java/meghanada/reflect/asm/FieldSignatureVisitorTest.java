@@ -80,7 +80,7 @@ public class FieldSignatureVisitorTest extends GradleTestBase {
     }
 
     private FieldSignatureVisitor doAnalyzeJar(File file, String fqcn) throws IOException {
-        try (JarFile jarFile = new JarFile(file)) {
+        try (final JarFile jarFile = new JarFile(file)) {
             Enumeration<JarEntry> entries = jarFile.entries();
 
             while (entries.hasMoreElements()) {

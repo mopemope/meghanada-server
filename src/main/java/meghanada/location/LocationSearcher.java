@@ -284,7 +284,7 @@ public class LocationSearcher {
                                                       final int col,
                                                       final String symbol) {
         final EntryMessage entryMessage = log.traceEntry("line={} col={} symbol={}", line, col, symbol);
-        String fqcn = source.importClass.get(symbol);
+        String fqcn = source.getImportedClassMap().get(symbol);
         if (fqcn == null) {
             final CachedASMReflector reflector = CachedASMReflector.getInstance();
             final Map<String, String> standardClasses = reflector.getStandardClasses();

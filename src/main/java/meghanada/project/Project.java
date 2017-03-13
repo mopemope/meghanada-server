@@ -28,9 +28,6 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
-import static meghanada.config.Config.debugTimeItF;
-import static meghanada.utils.FunctionUtils.wrapIOConsumer;
-
 @DefaultSerializer(ProjectSerializer.class)
 public abstract class Project {
 
@@ -73,7 +70,7 @@ public abstract class Project {
     protected String name;
     protected Boolean buildWithDependency = null;
     String id;
-    private Map<String, Set<String>> callerMap = new ConcurrentHashMap<>(64);
+    private Map<String, Set<String>> callerMap = new ConcurrentHashMap<>(128);
     private String cachedClasspath;
     private String cachedAllClasspath;
     private JavaAnalyzer javaAnalyzer;
@@ -265,10 +262,15 @@ public abstract class Project {
             }
             final String projectName = projectRoot.getName();
             this.prepareCompile(files);
+
+            final CompiledSourceHandler handler = new CompiledSourceHandler(this, this.callerMap);
             final CompileResult compileResult = clearMemberCache(getJavaAnalyzer()
                     .analyzeAndCompile(files,
                             this.allClasspath(),
-                            output.getCanonicalPath()));
+                            output.getCanonicalPath(),
+                            true,
+                            handler));
+
             log.info("project {}: compile(java) {} files. force:{} elapsed:{}",
                     projectName,
                     files.size(),
@@ -278,7 +280,7 @@ public abstract class Project {
                 this.postCompile(force, fullBuild, lazyLoad);
             }
             System.setProperty(PROJECT_ROOT_KEY, projectRoot.getCanonicalPath());
-            return this.updateSourceCache(compileResult);
+            return compileResult;
         }
         return new CompileResult(true);
     }
@@ -353,9 +355,9 @@ public abstract class Project {
         System.setProperty(PROJECT_ROOT_KEY, projectRoot.getCanonicalPath());
         List<File> files = this.collectJavaFiles(this.testSources);
         if (files != null && !files.isEmpty()) {
-//            if (callerMap.size() == 0) {
-//                force = true;
-//            }
+            if (callerMap.size() == 0) {
+                force = true;
+            }
             final File callerFile = FileUtils.getProjectDataFile(this.projectRoot, GlobalCache.CALLER_DATA);
             if (force && callerFile.exists() && !callerFile.delete()) {
                 log.warn("{} delete fail", callerFile);
@@ -367,16 +369,21 @@ public abstract class Project {
             }
             final String projectName = projectRoot.getName();
             this.prepareTestCompile(files);
+
+            final CompiledSourceHandler handler = new CompiledSourceHandler(this, this.callerMap);
+
             final Stopwatch stopwatch = Stopwatch.createStarted();
             final CompileResult compileResult = clearMemberCache(getJavaAnalyzer().analyzeAndCompile(files,
                     this.allClasspath(),
-                    testOutput.getCanonicalPath()));
+                    testOutput.getCanonicalPath(),
+                    true,
+                    handler));
+
             log.info("project {}: compile(test) {} files. force:{} elapsed:{}", projectName, files.size(), force, stopwatch.stop());
 
             this.postCompileTest(force, fullBuild, lazyLoad);
             System.setProperty(PROJECT_ROOT_KEY, projectRoot.getCanonicalPath());
-            return debugTimeItF("updateSourceCache elapsed:{}", () ->
-                    this.updateSourceCache(compileResult));
+            return compileResult;
         }
         return new CompileResult(true);
     }
@@ -726,62 +733,62 @@ public abstract class Project {
         Project.loadedProject.put(id, this);
     }
 
-    private CompileResult updateSourceCache(final CompileResult compileResult) throws IOException {
-        final Stopwatch stopwatch = Stopwatch.createStarted();
-        final Config config = Config.load();
-        final GlobalCache globalCache = GlobalCache.getInstance();
-        if (config.useSourceCache()) {
-
-            final Set<File> errorFiles = compileResult.getErrorFiles();
-            final Map<File, Source> sourceMap = compileResult.getSources();
-            final Map<File, Map<String, String>> checksum = config.getAllChecksumMap();
-
-            final File checksumFile = FileUtils.getProjectDataFile(this.projectRoot, GlobalCache.SOURCE_CHECKSUM_DATA);
-            final Map<String, String> checksumMap = checksum.getOrDefault(checksumFile, new ConcurrentHashMap<>(64));
-
-            sourceMap.values().parallelStream().forEach(wrapIOConsumer(source -> {
-                source.getClassScopes().forEach(cs -> {
-                    final String fqcn = cs.getFQCN();
-                    source.usingClasses.forEach(s -> {
-                        if (this.callerMap.containsKey(s)) {
-                            final Set<String> set = this.callerMap.get(s);
-                            set.add(fqcn);
-                            this.callerMap.put(s, set);
-                        } else {
-                            final Set<String> set = new HashSet<>(4);
-                            set.add(fqcn);
-                            this.callerMap.put(s, set);
-                        }
-                    });
-                });
-
-                final File sourceFile = source.getFile();
-                final String path = sourceFile.getCanonicalPath();
-                if (!errorFiles.contains(sourceFile)) {
-                    final String md5sum = FileUtils.getChecksum(sourceFile);
-                    checksumMap.put(path, md5sum);
-                    try {
-                        globalCache.replaceSource(this, source);
-                    } catch (Exception e) {
-                        throw new UncheckedExecutionException(e);
-                    }
-                } else {
-                    // error
-                    checksumMap.remove(path);
-                    try {
-                        globalCache.invalidateSource(this, sourceFile);
-                    } catch (Exception e) {
-                        throw new UncheckedExecutionException(e);
-                    }
-                }
-            }));
-            FileUtils.writeMapSetting(checksumMap, checksumFile);
-            checksum.put(checksumFile, checksumMap);
-        }
-        this.writeCaller();
-        log.trace("updateSourceCache {}", stopwatch.stop());
-        return compileResult;
-    }
+//    private CompileResult updateSourceCache(final CompileResult compileResult) throws IOException {
+//        final Stopwatch stopwatch = Stopwatch.createStarted();
+//        final Config config = Config.load();
+//        final GlobalCache globalCache = GlobalCache.getInstance();
+//        if (config.useSourceCache()) {
+//
+//            final Set<File> errorFiles = compileResult.getErrorFiles();
+//            final Map<File, Source> sourceMap = compileResult.getSources();
+//            final Map<File, Map<String, String>> checksum = config.getAllChecksumMap();
+//
+//            final File checksumFile = FileUtils.getProjectDataFile(this.projectRoot, GlobalCache.SOURCE_CHECKSUM_DATA);
+//            final Map<String, String> checksumMap = checksum.getOrDefault(checksumFile, new ConcurrentHashMap<>(64));
+//
+//            sourceMap.values().parallelStream().forEach(wrapIOConsumer(source -> {
+//                source.getClassScopes().forEach(cs -> {
+//                    final String fqcn = cs.getFQCN();
+//                    source.usingClasses.forEach(s -> {
+//                        if (this.callerMap.containsKey(s)) {
+//                            final Set<String> set = this.callerMap.get(s);
+//                            set.add(fqcn);
+//                            this.callerMap.put(s, set);
+//                        } else {
+//                            final Set<String> set = new HashSet<>(4);
+//                            set.add(fqcn);
+//                            this.callerMap.put(s, set);
+//                        }
+//                    });
+//                });
+//
+//                final File sourceFile = source.getFile();
+//                final String path = sourceFile.getCanonicalPath();
+//                if (!errorFiles.contains(sourceFile)) {
+//                    final String md5sum = FileUtils.getChecksum(sourceFile);
+//                    checksumMap.put(path, md5sum);
+//                    try {
+//                        globalCache.replaceSource(this, source);
+//                    } catch (Exception e) {
+//                        throw new UncheckedExecutionException(e);
+//                    }
+//                } else {
+//                    // error
+//                    checksumMap.remove(path);
+//                    try {
+//                        globalCache.invalidateSource(this, sourceFile);
+//                    } catch (Exception e) {
+//                        throw new UncheckedExecutionException(e);
+//                    }
+//                }
+//            }));
+//            FileUtils.writeMapSetting(checksumMap, checksumFile);
+//            checksum.put(checksumFile, checksumMap);
+//        }
+//        this.writeCaller();
+//        log.trace("updateSourceCache {}", stopwatch.stop());
+//        return compileResult;
+//    }
 
     private List<File> addDepends(final Set<File> sourceRoots, final List<File> files) {
         final Set<File> temp = Collections.newSetFromMap(new ConcurrentHashMap<File, Boolean>(16));
@@ -812,7 +819,7 @@ public abstract class Project {
         return new ArrayList<>(temp);
     }
 
-    private synchronized void writeCaller() throws IOException {
+    synchronized void writeCaller() throws IOException {
         final File callerFile = FileUtils.getProjectDataFile(this.projectRoot, GlobalCache.CALLER_DATA);
         GlobalCache.getInstance().asyncWriteCache(callerFile, callerMap);
     }
@@ -956,5 +963,87 @@ public abstract class Project {
     public void resetCachedClasspath() {
         this.cachedClasspath = null;
         this.cachedAllClasspath = null;
+    }
+
+    private static class CompiledSourceHandler implements JavaAnalyzer.SourceAnalyzedHandler {
+
+        private final boolean useSourceCache;
+        private final Map<String, Set<String>> callerMap;
+        private final Map<String, String> checksumMap;
+        private final Project project;
+        private final File checksumFile;
+
+        CompiledSourceHandler(final Project project, final Map<String, Set<String>> callerMap) throws IOException {
+            this.project = project;
+            this.callerMap = callerMap;
+            final Config config = Config.load();
+            this.useSourceCache = config.useSourceCache();
+            final Map<File, Map<String, String>> checksum = config.getAllChecksumMap();
+            this.checksumFile = FileUtils.getProjectDataFile(project.projectRoot, GlobalCache.SOURCE_CHECKSUM_DATA);
+            this.checksumMap = checksum.getOrDefault(checksumFile, new ConcurrentHashMap<>(64));
+        }
+
+        @Override
+        public void analyzed(final Source source) throws IOException {
+            if (useSourceCache) {
+                final GlobalCache globalCache = GlobalCache.getInstance();
+                source.getClassScopes().forEach(cs -> {
+                    final String fqcn = cs.getFQCN();
+                    source.usingClasses.forEach(s -> {
+                        if (this.callerMap.containsKey(s)) {
+                            final Set<String> set = this.callerMap.get(s);
+                            set.add(fqcn);
+                            this.callerMap.put(s, set);
+                        } else {
+                            final Set<String> set = new HashSet<>(16);
+                            set.add(fqcn);
+                            this.callerMap.put(s, set);
+                        }
+                    });
+                    source.usingClasses.clear();
+                });
+                final File sourceFile = source.getFile();
+                final String path = sourceFile.getCanonicalPath();
+                try {
+                    if (!source.hasCompileError) {
+                        final String md5sum = FileUtils.getChecksum(sourceFile);
+                        checksumMap.put(path, md5sum);
+                        globalCache.replaceSource(this.project, source);
+                    } else {
+                        // error
+                        checksumMap.remove(path);
+                        globalCache.invalidateSource(this.project, sourceFile);
+                    }
+                } catch (Exception e) {
+                    throw new UncheckedExecutionException(e);
+                }
+            }
+        }
+
+        @Override
+        public void complete() throws IOException {
+            final Config config = Config.load();
+            final Map<File, Map<String, String>> checksum = config.getAllChecksumMap();
+            FileUtils.writeMapSetting(checksumMap, checksumFile);
+            checksum.put(checksumFile, checksumMap);
+            project.writeCaller();
+        }
+
+        private void writeSourceCache(final Source source) throws IOException {
+            final File sourceFile = source.getFile();
+            final File root = new File(this.project.getProjectRoot(), Config.MEGHANADA_DIR);
+            final String path = FileUtils.toHashedPath(sourceFile, GlobalCache.CACHE_EXT);
+            final String out = Joiner.on(File.separator).join(GlobalCache.SOURCE_CACHE_DIR, path);
+            final File file = new File(root, out);
+
+            final File parentFile = file.getParentFile();
+            if (!parentFile.exists() && !parentFile.mkdirs()) {
+                log.warn("{} mkdirs fail", file.getParent());
+            }
+
+            log.debug("write file:{}", file);
+            GlobalCache.getInstance().asyncWriteCache(file, source);
+        }
+
     }
 }

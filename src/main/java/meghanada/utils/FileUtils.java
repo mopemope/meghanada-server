@@ -21,6 +21,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public final class FileUtils {
 
@@ -39,7 +40,7 @@ public final class FileUtils {
         final EntryMessage entryMessage = log.traceEntry("file={}", file);
         try {
             final MessageDigest md = MessageDigest.getInstance(ALGORITHM_SHA_512);
-            try (InputStream is = Files.newInputStream(file.toPath());
+            try (final InputStream is = Files.newInputStream(file.toPath());
                  DigestInputStream dis = new DigestInputStream(is, md)) {
                 final byte[] buf = new byte[8192];
                 while (dis.read(buf) != -1) {
@@ -79,22 +80,21 @@ public final class FileUtils {
         if (!root.exists()) {
             return Collections.emptyList();
         }
-        try {
-            return Files.walk(root.toPath())
-                    .map(Path::toFile)
+        try (final Stream<Path> stream = Files.walk(root.toPath())) {
+            return stream.map(Path::toFile)
                     .filter(file -> file.isFile() && file.getName().endsWith(ext))
                     .collect(Collectors.toList());
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
-
     }
 
     public static Optional<File> collectFile(final File root, final String ext) throws IOException {
-        return Files.walk(root.toPath())
-                .map(Path::toFile)
-                .filter(file -> file.isFile() && file.getName().endsWith(ext))
-                .findFirst();
+        try (final Stream<Path> stream = Files.walk(root.toPath())) {
+            return stream.map(Path::toFile)
+                    .filter(file -> file.isFile() && file.getName().endsWith(ext))
+                    .findFirst();
+        }
     }
 
     public static void deleteFiles(final File root, final boolean deleteRoot) throws IOException {

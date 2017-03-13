@@ -192,8 +192,8 @@ public class ClassSignatureVisitorTest extends GradleTestBase {
     }
 
     private ClassSignatureVisitor doAnalyze(File file, String fqcn) throws IOException {
-        try (JarFile jarFile = new JarFile(file)) {
-            Enumeration<JarEntry> entries = jarFile.entries();
+        try (final JarFile jarFile = new JarFile(file)) {
+            final Enumeration<JarEntry> entries = jarFile.entries();
 
             while (entries.hasMoreElements()) {
                 JarEntry entry = entries.nextElement();

@@ -36,6 +36,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class Session {
 
@@ -180,12 +181,15 @@ public class Session {
         final File jvmDir = new File(javaHome);
         final String toolsJarPath = Joiner.on(File.separator).join("..", "lib", "tools.jar");
         final File toolsJar = new File(jvmDir, toolsJarPath);
-        final List<File> files = Files.walk(jvmDir.toPath())
-                .map(Path::toFile)
-                .filter(f -> f.getName().endsWith(".jar") && !f.getName().endsWith("policy.jar"))
-                .collect(Collectors.toList());
-        files.add(toolsJar.getCanonicalFile());
-        return files;
+
+        try (final Stream<Path> stream = Files.walk(jvmDir.toPath())) {
+            final List<File> files = stream
+                    .map(Path::toFile)
+                    .filter(f -> f.getName().endsWith(".jar") && !f.getName().endsWith("policy.jar"))
+                    .collect(Collectors.toList());
+            files.add(toolsJar.getCanonicalFile());
+            return files;
+        }
     }
 
     private static void writeProjectCache(final File cacheFile, final Project project) {

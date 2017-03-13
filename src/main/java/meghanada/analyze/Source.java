@@ -21,16 +21,14 @@ public class Source {
 
     private static final String REPORT_UNKNOWN_TREE = "report-unknown-tree";
     private static final Logger log = LogManager.getLogger(Source.class);
-    // K: className V: FQCN
-    public final Map<String, String> importClass = new HashMap<>(8);
+
+    public final Set<String> importClasses = new HashSet<>(16);
     public final Map<String, String> staticImportClass = new HashMap<>(8);
     public final Set<String> unused = new HashSet<>(8);
     public final Set<String> unknown = new HashSet<>(8);
-
-    public final Set<String> usingClasses = new HashSet<>(8);
-
     public final List<ClassScope> classScopes = new ArrayList<>(1);
     public final Deque<ClassScope> currentClassScope = new ArrayDeque<>(1);
+    public Set<String> usingClasses = new HashSet<>(8);
     public String filePath;
     public String packageName;
     public List<LineRange> lineRange;
@@ -46,15 +44,13 @@ public class Source {
     }
 
     public void addImport(final String fqcn) {
-        final String className = ClassNameUtils.getSimpleName(fqcn);
-        this.importClass.putIfAbsent(className, fqcn);
+        this.importClasses.add(fqcn);
         this.unused.add(fqcn);
         log.trace("unused class {}", fqcn);
     }
 
     public void addStaticImport(final String method, final String clazz) {
-        final String className = ClassNameUtils.getSimpleName(clazz);
-        this.importClass.putIfAbsent(className, clazz);
+        this.importClasses.add(clazz);
         this.staticImportClass.putIfAbsent(method, clazz);
         log.trace("static unused class {} {}", clazz, method);
     }
@@ -165,7 +161,6 @@ public class Source {
             cs.dump();
         }
         log.trace("unused={}", this.unused);
-        log.trace("usingClass={}", this.usingClasses);
         log.trace("unknown={}", this.unknown);
         log.traceExit(entryMessage);
     }
@@ -354,7 +349,7 @@ public class Source {
 
     public List<String> optimizeImports() {
         // shallow copy
-        Map<String, String> importMap = new HashMap<>(this.importClass);
+        Map<String, String> importMap = new HashMap<>(this.getImportedClassMap());
 
         log.debug("unused:{}", this.unused);
         // remove unused
@@ -451,7 +446,36 @@ public class Source {
             }
         }
 
-        this.importClass.putIfAbsent(ClassNameUtils.getSimpleName(fqcn), fqcn);
+        this.importClasses.add(fqcn);
         return true;
+    }
+
+    public void resetLineRange() {
+        this.lineRange = null;
+    }
+
+    public String getImportedClassFQCN(@Nonnull final String shortName,
+                                       final String defaultValue) {
+        return this.importClasses.stream()
+                .filter(s -> {
+                    if (s.indexOf('.') > 0) {
+                        return s.endsWith('.' + shortName);
+                    }
+                    return s.endsWith(shortName);
+                })
+                .findFirst()
+                .orElseGet(() -> {
+                    final Map<String, String> standardClasses = CachedASMReflector.getInstance().getStandardClasses();
+                    return standardClasses.getOrDefault(shortName, defaultValue);
+                });
+    }
+
+    public Map<String, String> getImportedClassMap() {
+        final Map<String, String> map = this.importClasses.stream()
+                .collect(Collectors.toMap(ClassNameUtils::getSimpleName,
+                        s -> s));
+        final Map<String, String> standardClasses = CachedASMReflector.getInstance().getStandardClasses();
+        map.putAll(standardClasses);
+        return map;
     }
 }

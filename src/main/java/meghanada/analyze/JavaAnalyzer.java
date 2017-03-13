@@ -24,8 +24,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class JavaAnalyzer {
 
     private static final Logger log = LogManager.getLogger(JavaAnalyzer.class);
-    private final JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
-    private final TreeAnalyzer treeAnalyzer = new TreeAnalyzer();
+
     private String compileSource = "1.8";
     private String compileTarget = "1.8";
 
@@ -35,11 +34,44 @@ public class JavaAnalyzer {
         log.debug("Compiler settings compileSource:{} compileTarget:{}", this.compileSource, this.compileTarget);
     }
 
+    private static Set<File> getErrorFiles(final List<Diagnostic<? extends JavaFileObject>> diagnostics) {
+        final Set<File> temp = Collections.newSetFromMap(new ConcurrentHashMap<File, Boolean>(diagnostics.size()));
+        diagnostics.forEach(diagnostic -> {
+            final Diagnostic.Kind kind = diagnostic.getKind();
+            final JavaFileObject fileObject = diagnostic.getSource();
+            if (fileObject != null && kind.equals(Diagnostic.Kind.ERROR)) {
+                final URI uri = fileObject.toUri();
+                try {
+                    temp.add(new File(uri.normalize()).getCanonicalFile());
+                } catch (IOException e) {
+                    throw new UncheckedIOException(e);
+                }
+            }
+        });
+
+        return temp;
+    }
+
+    private static void replaceParser(final JavaCompiler.CompilationTask compilerTask) {
+        final JavacTaskImpl javacTaskImpl = (JavacTaskImpl) compilerTask;
+        final Context context = javacTaskImpl.getContext();
+
+        FuzzyParserFactory.instance(context);
+    }
+
     public CompileResult analyzeAndCompile(final List<File> files, final String classpath, final String out) throws IOException {
         return analyzeAndCompile(files, classpath, out, true);
     }
 
     public CompileResult analyzeAndCompile(final List<File> files, final String classpath, final String out, final boolean generate) throws IOException {
+        return analyzeAndCompile(files, classpath, out, generate, null);
+    }
+
+    public CompileResult analyzeAndCompile(final List<File> files,
+                                           final String classpath,
+                                           final String out,
+                                           final boolean generate,
+                                           final SourceAnalyzedHandler handler) throws IOException {
 
         if (files == null || files.isEmpty()) {
             final Map<File, Source> analyzedMap = new HashMap<>(0);
@@ -52,12 +84,18 @@ public class JavaAnalyzer {
             log.warn("fail mkdirs path:{}", tempOut);
         }
         log.trace("start compile classpath={} files={} output={}", classpath, files, out);
-        return this.runAnalyzeAndCompile(classpath, out, files, generate);
+        return this.runAnalyzeAndCompile(classpath, out, files, generate, handler);
     }
 
-    private CompileResult runAnalyzeAndCompile(final String classpath, final String out, final List<File> compileFiles, final boolean generate) throws IOException {
+    private CompileResult runAnalyzeAndCompile(final String classpath,
+                                               final String out,
+                                               final List<File> compileFiles,
+                                               final boolean generate,
+                                               final SourceAnalyzedHandler handler) throws IOException {
 
-        try (StandardJavaFileManager fileManager = compiler.getStandardFileManager(null, null, Charset.forName("UTF-8"))) {
+        final JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
+        final TreeAnalyzer treeAnalyzer = new TreeAnalyzer();
+        try (final StandardJavaFileManager fileManager = compiler.getStandardFileManager(null, null, Charset.forName("UTF-8"))) {
             final Iterable<? extends JavaFileObject> compilationUnits = fileManager.getJavaFileObjectsFromFiles(compileFiles);
             final DiagnosticCollector<JavaFileObject> diagnosticCollector = new DiagnosticCollector<>();
             final List<String> compileOptions = Arrays.asList(
@@ -91,41 +129,24 @@ public class JavaAnalyzer {
             final Iterable<? extends Element> analyzed = javacTask.analyze();
 
             final List<Diagnostic<? extends JavaFileObject>> diagnostics = diagnosticCollector.getDiagnostics();
-            final Set<File> errorFiles = this.getErrorFiles(diagnostics);
+            final Set<File> errorFiles = JavaAnalyzer.getErrorFiles(diagnostics);
 
-            final Map<File, Source> analyzedMap = treeAnalyzer.analyze(parsedIter, compileFiles.size(), errorFiles);
+            final Map<File, Source> analyzedMap = treeAnalyzer.analyze(parsedIter,
+                    errorFiles,
+                    handler);
 
             if (generate && !Config.load().useExternalBuilder()) {
                 final Iterable<? extends JavaFileObject> generated = javacTask.generate();
             }
 
-            boolean success = errorFiles.size() == 0;
+            final boolean success = errorFiles.size() == 0;
             return new CompileResult(success, analyzedMap, diagnostics, errorFiles);
         }
     }
 
-    private Set<File> getErrorFiles(final List<Diagnostic<? extends JavaFileObject>> diagnostics) {
-        final Set<File> temp = Collections.newSetFromMap(new ConcurrentHashMap<File, Boolean>(diagnostics.size()));
-        diagnostics.forEach(diagnostic -> {
-            final Diagnostic.Kind kind = diagnostic.getKind();
-            final JavaFileObject fileObject = diagnostic.getSource();
-            if (fileObject != null && kind.equals(Diagnostic.Kind.ERROR)) {
-                final URI uri = fileObject.toUri();
-                try {
-                    temp.add(new File(uri.normalize()).getCanonicalFile());
-                } catch (IOException e) {
-                    throw new UncheckedIOException(e);
-                }
-            }
-        });
-
-        return temp;
-    }
-
-    private void replaceParser(final JavaCompiler.CompilationTask compilerTask) {
-        final JavacTaskImpl javacTaskImpl = (JavacTaskImpl) compilerTask;
-        final Context context = javacTaskImpl.getContext();
-        FuzzyParserFactory.instance(context);
+    public interface SourceAnalyzedHandler {
+        void analyzed(final Source javaSource) throws IOException;
+        void complete() throws IOException;
     }
 
 }

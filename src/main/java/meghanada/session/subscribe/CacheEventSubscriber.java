@@ -71,7 +71,13 @@ public class CacheEventSubscriber extends AbstractSubscriber {
             reflector.addClasspath(dependency.getTestOutputDirectory());
         }
         reflector.updateClassIndexFromDirectory();
+
+        final Runtime runtime = Runtime.getRuntime();
+        final float maxMemory = runtime.maxMemory() / 1024 / 1024;
+        final float usedMemory = (runtime.totalMemory() - runtime.freeMemory()) / 1024 / 1024;
+
         log.info("create class index. size:{} total elapsed:{}", reflector.getGlobalClassIndex().size(), stopwatch.stop());
+        log.info("jvm memory (max/) class index. size:{} total elapsed:{}", reflector.getGlobalClassIndex().size(), stopwatch.stop());
         log.info("Done indexing");
     }
 }

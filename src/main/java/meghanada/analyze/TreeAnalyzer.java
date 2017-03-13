@@ -29,6 +29,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import static meghanada.utils.FunctionUtils.wrapIOConsumer;
@@ -36,6 +37,7 @@ import static meghanada.utils.FunctionUtils.wrapIOConsumer;
 public class TreeAnalyzer {
 
     private static final Logger log = LogManager.getLogger(TreeAnalyzer.class);
+    private static final int SOURCE_LIMIT = 16;
 
     TreeAnalyzer() {
     }
@@ -77,7 +79,7 @@ public class TreeAnalyzer {
             if (type != null) {
                 typeArgType = type.tsym.flatName().toString();
             } else {
-                typeArgType = src.importClass.getOrDefault(typeArgType, typeArgType);
+                typeArgType = src.getImportedClassFQCN(typeArgType, typeArgType);
             }
             return Optional.ofNullable(typeArgType);
         }
@@ -93,7 +95,7 @@ public class TreeAnalyzer {
                 methodReturn = type.tsym.flatName().toString();
             } else {
                 final String clazz = typeApply.getType().toString();
-                methodReturn = src.importClass.getOrDefault(clazz, clazz);
+                methodReturn = src.getImportedClassFQCN(clazz, clazz);
             }
 
             final List<JCTree.JCExpression> typeArguments = typeApply.getTypeArguments();
@@ -129,7 +131,7 @@ public class TreeAnalyzer {
                 }
             }
             final String ident = tree.toString();
-            return src.importClass.getOrDefault(ident, ident);
+            return src.getImportedClassFQCN(ident, ident);
         } else if (tree instanceof JCTree.JCPrimitiveTypeTree) {
             return tree.toString();
         } else if (tree instanceof JCTree.JCArrayTypeTree) {
@@ -137,7 +139,7 @@ public class TreeAnalyzer {
             final JCTree type = arrayTypeTree.getType();
             if (type != null) {
                 final String k = type.toString();
-                return src.importClass.getOrDefault(k, k) + "[]";
+                return src.getImportedClassFQCN(k, k) + "[]";
             }
         } else {
             log.warn("tree={} {}", tree, tree.getClass());
@@ -194,7 +196,8 @@ public class TreeAnalyzer {
             }
         });
         final CachedASMReflector cachedASMReflector = CachedASMReflector.getInstance();
-        if (!src.importClass.containsValue(simpleName) && !cachedASMReflector.getGlobalClassIndex().containsKey(simpleName)) {
+        if (!src.importClasses.contains(simpleName) &&
+                !cachedASMReflector.getGlobalClassIndex().containsKey(simpleName)) {
             src.unknown.add(simpleName);
         } else {
             // contains
@@ -897,7 +900,7 @@ public class TreeAnalyzer {
                 if (expression instanceof JCTree.JCIdent) {
                     final JCTree.JCIdent ident = (JCTree.JCIdent) expression;
                     final String nm = ident.getName().toString();
-                    final String clazz = src.importClass.get(nm);
+                    final String clazz = src.getImportedClassFQCN(nm, null);
                     if (clazz != null) {
                         methodCall.declaringClass = TreeAnalyzer.markFQCN(src, clazz);
                     } else {
@@ -919,7 +922,7 @@ public class TreeAnalyzer {
                 if (expression instanceof JCTree.JCIdent) {
                     final JCTree.JCIdent ident = (JCTree.JCIdent) expression;
                     final String nm = ident.getName().toString();
-                    final String clazz = src.importClass.get(nm);
+                    final String clazz = src.getImportedClassFQCN(nm, null);
                     if (clazz != null) {
                         methodCall.returnType = TreeAnalyzer.markFQCN(src, clazz);
                         methodCall.argumentIndex = context.getArgumentIndex();
@@ -1291,8 +1294,9 @@ public class TreeAnalyzer {
                 }
             }
 
-            if (src.importClass.containsKey(nm)) {
-                variable.fqcn = TreeAnalyzer.markFQCN(src, src.importClass.get(nm));
+            final String clazz = src.getImportedClassFQCN(nm, null);
+            if (clazz != null) {
+                variable.fqcn = TreeAnalyzer.markFQCN(src, clazz);
                 variable.argumentIndex = context.getArgumentIndex();
                 context.setArgumentFQCN(variable.fqcn);
                 src.getCurrentScope().ifPresent(scope -> scope.addVariable(variable));
@@ -1407,7 +1411,7 @@ public class TreeAnalyzer {
                 for (final JCTree.JCExpression expression : union.getTypeAlternatives()) {
                     String type = expression.toString();
                     final Variable variable = new Variable(name.toString(), preferredPos, range);
-                    type = src.importClass.getOrDefault(type, type);
+                    type = src.getImportedClassFQCN(type, type);
                     variable.fqcn = TreeAnalyzer.markFQCN(src, type);
                     src.getCurrentScope().ifPresent(scope -> scope.addVariable(variable));
                 }
@@ -1429,7 +1433,7 @@ public class TreeAnalyzer {
                         if (type == null && expression instanceof JCTree.JCIdent) {
                             final JCTree.JCIdent ident = (JCTree.JCIdent) expression;
                             final String nm = ident.getName().toString();
-                            final String identClazz = src.importClass.get(nm);
+                            final String identClazz = src.getImportedClassFQCN(nm, null);
                             if (identClazz != null) {
                                 variable.fqcn = TreeAnalyzer.markFQCN(src, identClazz);
                             } else {
@@ -1471,35 +1475,68 @@ public class TreeAnalyzer {
         }));
     }
 
-    public Map<File, Source> analyze(final Iterable<? extends CompilationUnitTree> parsed, final int size, final Set<File> errorFiles) {
-        final Map<File, Source> analyzeMap = new ConcurrentHashMap<>(size);
+    public Map<File, Source> analyze(final Iterable<? extends CompilationUnitTree> parsed,
+                                     final Set<File> errorFiles,
+                                     final JavaAnalyzer.SourceAnalyzedHandler handler) {
+
+        final Map<File, Source> analyzeMap = new ConcurrentHashMap<>(SOURCE_LIMIT);
+
         if (log.isDebugEnabled()) {
-            parsed.forEach(wrapIOConsumer(cut ->
-                    this.analyzeUnit(analyzeMap, cut, errorFiles)));
+            parsed.forEach(wrapIOConsumer(cut -> {
+                final Source source = this.analyzeUnit(cut, errorFiles);
+                if (handler != null) {
+                    handler.analyzed(source);
+                }
+                if (analyzeMap.size() < SOURCE_LIMIT) {
+                    final File file = source.getFile();
+                    analyzeMap.putIfAbsent(file, source);
+                }
+            }));
         } else {
-            StreamSupport.stream(parsed.spliterator(), true)
-                    .forEach(wrapIOConsumer(cut ->
-                            this.analyzeUnit(analyzeMap, cut, errorFiles)));
+            try (Stream<? extends CompilationUnitTree> stream = StreamSupport.stream(parsed.spliterator(), true)) {
+                stream.forEach(wrapIOConsumer(cut -> {
+                    final Source source = this.analyzeUnit(cut, errorFiles);
+                    if (handler != null) {
+                        handler.analyzed(source);
+                    }
+                    if (analyzeMap.size() < SOURCE_LIMIT) {
+                        final File file = source.getFile();
+                        analyzeMap.putIfAbsent(file, source);
+                    }
+                }));
+            }
+        }
+
+        if (handler != null) {
+            try {
+                handler.complete();
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
         }
 
         return analyzeMap;
     }
 
-    private void analyzeUnit(final Map<File, Source> analyzeMap, final CompilationUnitTree cut, final Set<File> errorFiles) throws IOException {
+    private Source analyzeUnit(final CompilationUnitTree cut,
+                               final Set<File> errorFiles) throws IOException {
         final URI uri = cut.getSourceFile().toUri();
         final File file = new File(uri.normalize());
         final String path = file.getCanonicalPath();
         final Source source = new Source(path);
-        final Map<String, String> standardClasses = CachedASMReflector.getInstance().getStandardClasses();
-        source.importClass.putAll(standardClasses);
+
+        // final Map<String, String> standardClasses = CachedASMReflector.getInstance().getStandardClasses();
+        // source.importClass.putAll(standardClasses);
+
         if (errorFiles.contains(file)) {
             source.hasCompileError = true;
         }
         final SourceContext context = new SourceContext(source);
         final EntryMessage entryMessage = log.traceEntry("---------- analyze file:{} ----------", file);
         this.analyzeCompilationUnitTree(context, cut);
+        source.resetLineRange();
         log.traceExit(entryMessage);
-        analyzeMap.put(file, source);
+        return source;
     }
 
 }
