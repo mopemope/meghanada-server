@@ -271,7 +271,7 @@ public abstract class Project {
                             true,
                             handler));
 
-            log.info("project {}: compile(java) {} files. force:{} elapsed:{}",
+            log.info("project {}: compile and analyze (java) {} files. force:{} elapsed:{}",
                     projectName,
                     files.size(),
                     force,
@@ -379,7 +379,7 @@ public abstract class Project {
                     true,
                     handler));
 
-            log.info("project {}: compile(test) {} files. force:{} elapsed:{}", projectName, files.size(), force, stopwatch.stop());
+            log.info("project {}: compile and analyze (test) {} files. force:{} elapsed:{}", projectName, files.size(), force, stopwatch.stop());
 
             this.postCompileTest(force, fullBuild, lazyLoad);
             System.setProperty(PROJECT_ROOT_KEY, projectRoot.getCanonicalPath());
