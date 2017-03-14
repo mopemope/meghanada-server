@@ -298,7 +298,7 @@ public class JavaCompletion {
 
         {
             // completion static method
-            String fqcn = source.getImportedClassMap().get(var);
+            String fqcn = source.getImportedClassFQCN(var, null);
             if (fqcn != null) {
                 if (!fqcn.contains(".") && ownPackage != null) {
                     fqcn = ownPackage + '.' + fqcn;

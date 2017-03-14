@@ -166,7 +166,7 @@ public class DeclarationSearcher {
         final EntryMessage entryMessage = log.traceEntry("line={} col={} symbol={}", line, col, symbol);
         final CachedASMReflector reflector = CachedASMReflector.getInstance();
         Optional<Declaration> result;
-        String fqcn = source.getImportedClassMap().get(symbol);
+        String fqcn = source.getImportedClassFQCN(symbol, null);
         if (fqcn == null) {
             final Map<String, String> standardClasses = reflector.getStandardClasses();
             fqcn = standardClasses.get(symbol);

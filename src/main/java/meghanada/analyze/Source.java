@@ -471,9 +471,11 @@ public class Source {
     }
 
     public Map<String, String> getImportedClassMap() {
-        final Map<String, String> map = this.importClasses.stream()
-                .collect(Collectors.toMap(ClassNameUtils::getSimpleName,
-                        s -> s));
+        final Map<String, String> map = new HashMap<>(32);
+        this.importClasses.forEach(s -> {
+            final String key = ClassNameUtils.getSimpleName(s);
+            map.putIfAbsent(key, s);
+        });
         final Map<String, String> standardClasses = CachedASMReflector.getInstance().getStandardClasses();
         map.putAll(standardClasses);
         return map;
