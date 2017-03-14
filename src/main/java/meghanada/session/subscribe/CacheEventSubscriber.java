@@ -77,7 +77,7 @@ public class CacheEventSubscriber extends AbstractSubscriber {
         final float usedMemory = (runtime.totalMemory() - runtime.freeMemory()) / 1024 / 1024;
 
         log.info("create class index. size:{} total elapsed:{}", reflector.getGlobalClassIndex().size(), stopwatch.stop());
-        log.info("jvm memory (max/) class index. size:{} total elapsed:{}", reflector.getGlobalClassIndex().size(), stopwatch.stop());
+        log.info("jvm memory (used/max): {}MB / {}MB", String.format("%.2f", usedMemory), String.format("%.2f", maxMemory));
         log.info("Done indexing");
     }
 }
