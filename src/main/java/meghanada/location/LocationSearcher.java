@@ -9,6 +9,7 @@ import meghanada.analyze.*;
 import meghanada.cache.GlobalCache;
 import meghanada.config.Config;
 import meghanada.project.Project;
+import meghanada.project.ProjectDependency;
 import meghanada.reflect.asm.CachedASMReflector;
 import meghanada.utils.ClassNameUtils;
 import meghanada.utils.FileUtils;
@@ -358,6 +359,30 @@ public class LocationSearcher {
         final File classFile = reflector.getClassFile(searchFQCN);
         final String tempDir = System.getProperty("java.io.tmpdir");
         if (classFile != null && classFile.exists() && classFile.getName().endsWith(FileUtils.JAR_EXT)) {
+
+            final String androidHome = System.getenv("ANDROID_HOME");
+            boolean android = false;
+            if (androidHome != null) {
+                final Optional<ProjectDependency> dependencyOptional = this.project.getDependencies()
+                        .stream()
+                        .filter(dependency -> dependency.getFile().equals(classFile))
+                        .findFirst();
+                if (dependencyOptional.isPresent()) {
+                    final ProjectDependency dependency = dependencyOptional.get();
+                    final String sourceJar = ClassNameUtils.getSimpleName(dependency.getId()) + '-' + dependency.getVersion() + "-sources.jar";
+                    final File root = new File(androidHome, "extras");
+                    return FileUtils.collectFile(root, sourceJar).map(wrapIO(srcJar -> {
+                        final File file = copyFromSrcZip(searchFQCN, srcJar);
+                        if (file == null) {
+                            return searchLocationFromDecompileFile(context, searchFQCN, classFile, tempDir);
+                        }
+                        final String fqcn = ClassNameUtils.getParentClass(context.searchFQCN);
+                        return searchLocationFromFile(context, fqcn, file);
+                    })).orElseGet(wrapIO(() ->
+                            searchLocationFromDecompileFile(context, searchFQCN, classFile, tempDir)));
+                }
+            }
+
             final File depParent = classFile.getParentFile();
             final File dependencyDir = depParent.getParentFile();
             final String srcName = ClassNameUtils.replace(classFile.getName(), FileUtils.JAR_EXT, "-sources.jar");

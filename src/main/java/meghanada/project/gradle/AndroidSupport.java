@@ -3,6 +3,7 @@ package meghanada.project.gradle;
 import com.android.builder.model.*;
 import com.google.common.base.Joiner;
 import meghanada.project.ProjectDependency;
+import meghanada.reflect.asm.CachedASMReflector;
 import meghanada.utils.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -13,6 +14,8 @@ import org.gradle.tooling.ProjectConnection;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
+
+import static meghanada.utils.FunctionUtils.wrapIOConsumer;
 
 class AndroidSupport {
 
@@ -56,7 +59,7 @@ class AndroidSupport {
         }
     }
 
-    void parseAndroid(final org.gradle.tooling.model.GradleProject gradleProject, final AndroidProject androidProject) throws IOException {
+    void parseAndroidProject(final org.gradle.tooling.model.GradleProject gradleProject, final AndroidProject androidProject) throws IOException {
 
         final JavaCompileOptions javaCompileOptions = androidProject.getJavaCompileOptions();
         this.project.setCompileSource(javaCompileOptions.getSourceCompatibility());
@@ -76,7 +79,6 @@ class AndroidSupport {
         }
 
         final Map<String, Set<File>> androidSources = this.getAndroidSources(defaultConfig);
-        // TODO add generated jars
         final Set<ProjectDependency> dependencies = this.getAndroidDependencies(androidProject);
 
         this.project.getSources().addAll(androidSources.get(SOURCES_KEY));
@@ -106,6 +108,15 @@ class AndroidSupport {
             this.project.setTestOutput(this.project.normalize(build));
         }
 
+        // load exists aar
+        final String aar = Joiner.on(File.separator)
+                .join(this.project.getProjectRoot(),
+                        BUILD_DIR,
+                        INTERMEDIATE_DIR,
+                        EXPLODED_DIR);
+        FileUtils.collectFiles(new File(aar), EXT_JAR)
+                .forEach(wrapIOConsumer(this::addAAR));
+
         log.debug("sources {}", this.project.getSources());
         log.debug("resources {}", this.project.getResources());
         log.debug("output {}", this.project.getOutput());
@@ -118,8 +129,17 @@ class AndroidSupport {
         }
     }
 
+    private void addAAR(final File jar) {
+        final String pkg = jar.getParentFile().getParentFile().getParentFile().getParentFile().getName();
+        final String name = jar.getParentFile().getParentFile().getParentFile().getName();
+        final String id = pkg + '.' + name;
+        final String version = jar.getParentFile().getParentFile().getName();
+        final ProjectDependency projectDependency = new ProjectDependency(id, DEFAULT_SCOPE, version, jar);
+        this.project.getDependencies().add(projectDependency);
+    }
+
     private Set<ProjectDependency> getAndroidDependencies(final AndroidProject androidProject) {
-        final Set<ProjectDependency> dependencies = new HashSet<>();
+        final Set<ProjectDependency> dependencies = new HashSet<>(16);
         final Collection<String> bootClasspath = androidProject.getBootClasspath();
         for (final String cp : bootClasspath) {
             final File file = new File(cp);
@@ -155,7 +175,6 @@ class AndroidSupport {
                 final Dependencies compileDependencies = androidArtifact.getCompileDependencies();
                 // getLibraries
                 final Collection<AndroidLibrary> libraries = compileDependencies.getLibraries();
-
                 for (final AndroidLibrary androidLibrary : libraries) {
                     final String name = androidLibrary.getName();
                     final Collection<File> localJars = androidLibrary.getLocalJars();
@@ -356,19 +375,19 @@ class AndroidSupport {
 
             final int size = this.project.getDependencies().size();
 
-            final String aar = Joiner.on(File.separator).join(this.project.getProjectRoot(),
-                    BUILD_DIR, INTERMEDIATE_DIR, EXPLODED_DIR);
+            final String aar = Joiner.on(File.separator)
+                    .join(this.project.getProjectRoot(),
+                            BUILD_DIR,
+                            INTERMEDIATE_DIR,
+                            EXPLODED_DIR);
             final List<File> jars = FileUtils.collectFiles(new File(aar), EXT_JAR);
             for (final File jar : jars) {
-                final String id = jar.getCanonicalPath();
-                final String version = DEFAULT_VERSION;
-                final String scope = DEFAULT_SCOPE;
-                final ProjectDependency projectDependency = new ProjectDependency(id, scope, version, jar);
-                this.project.getDependencies().add(projectDependency);
+                addAAR(jar);
             }
 
             final int after = this.project.getDependencies().size();
             if (size != after) {
+                CachedASMReflector.getInstance().createClassIndexes(jars);
                 this.project.resetCachedClasspath();
             }
         } finally {
@@ -387,19 +406,19 @@ class AndroidSupport {
 
             final int size = this.project.getDependencies().size();
 
-            final String aar = Joiner.on(File.separator).join(this.project.getProjectRoot(),
-                    BUILD_DIR, INTERMEDIATE_DIR, EXPLODED_DIR);
+            final String aar = Joiner.on(File.separator)
+                    .join(this.project.getProjectRoot(),
+                            BUILD_DIR,
+                            INTERMEDIATE_DIR,
+                            EXPLODED_DIR);
             final List<File> jars = FileUtils.collectFiles(new File(aar), EXT_JAR);
             for (final File jar : jars) {
-                final String id = jar.getCanonicalPath();
-                final String version = DEFAULT_VERSION;
-                final String scope = DEFAULT_SCOPE;
-                final ProjectDependency projectDependency = new ProjectDependency(id, scope, version, jar);
-                this.project.getDependencies().add(projectDependency);
+                addAAR(jar);
             }
 
             final int after = this.project.getDependencies().size();
             if (size != after) {
+                CachedASMReflector.getInstance().createClassIndexes(jars);
                 this.project.resetCachedClasspath();
             }
         } finally {

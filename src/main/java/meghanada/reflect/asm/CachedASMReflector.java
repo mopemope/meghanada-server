@@ -195,6 +195,32 @@ public class CachedASMReflector {
         this.updateClassIndexFromDirectory();
     }
 
+    public void createClassIndexes(final Collection<File> jars) {
+        jars.parallelStream().forEach(wrapIOConsumer(file -> {
+            if (file.getName().endsWith(".jar") && this.classFileMap.containsValue(file)) {
+                //skip cached jar
+                return;
+            }
+            if (this.jars.contains(file)) {
+                return;
+            }
+            final ASMReflector reflector = ASMReflector.getInstance();
+            reflector.getClasses(file)
+                    .entrySet()
+                    .parallelStream()
+                    .forEach(classIndexFileEntry -> {
+                        final ClassIndex classIndex1 = classIndexFileEntry.getKey();
+                        final File file1 = classIndexFileEntry.getValue();
+                        final String fqcn = classIndex1.getRawDeclaration();
+                        this.globalClassIndex.put(fqcn, classIndex1);
+                        this.classFileMap.put(fqcn, file1);
+                        this.reflectIndex.put(classIndex1, file1);
+                    });
+
+        }));
+        this.jars.addAll(jars);
+    }
+
     public void updateClassIndexFromDirectory() {
         try (Stream<File> stream = this.directories.stream().parallel()) {
             stream.forEach(wrapIOConsumer(file -> {

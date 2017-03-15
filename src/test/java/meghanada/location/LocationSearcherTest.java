@@ -173,11 +173,11 @@ public class LocationSearcherTest extends GradleTestBase {
 
         LocationSearcher searcher = getSearcher();
         Location result = timeIt(() ->
-                searcher.searchDeclarationLocation(f, 205, 24, "searchField"))
+                searcher.searchDeclarationLocation(f, 206, 24, "searchField"))
                 .orElse(null);
         assertNotNull(result);
         assertTrue(result.getPath().contains("LocationSearcher.java"));
-        assertEquals(484, result.getLine());
+        assertEquals(509, result.getLine());
         assertEquals(32, result.getColumn());
 
     }
@@ -190,7 +190,7 @@ public class LocationSearcherTest extends GradleTestBase {
         LocationSearcher searcher = getSearcher();
         Location result = timeIt(() -> {
             System.setProperty("disable-source-jar", "true");
-            return searcher.searchDeclarationLocation(f, 392, 76, "decompileArchive");
+            return searcher.searchDeclarationLocation(f, 417, 76, "decompileArchive");
         }).orElse(null);
         assertNotNull(result);
         assertTrue(result.getPath().contains(".java"));

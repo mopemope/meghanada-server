@@ -133,7 +133,7 @@ public class GradleProject extends Project {
                 // parse android
                 this.isAndroidProject = true;
                 final AndroidSupport androidSupport = new AndroidSupport(this);
-                androidSupport.parseAndroid(gradleProject, androidProject);
+                androidSupport.parseAndroidProject(gradleProject, androidProject);
             } else {
                 // normal
                 this.parseIdeaModule(gradleProject, ideaModule);
