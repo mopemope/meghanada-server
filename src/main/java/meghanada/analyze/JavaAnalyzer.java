@@ -126,7 +126,7 @@ public class JavaAnalyzer {
             // this.replaceParser(compilerTask);
 
             final Iterable<? extends CompilationUnitTree> parsedIter = javacTask.parse();
-            final Iterable<? extends Element> analyzed = javacTask.analyze();
+            javacTask.analyze();
 
             final List<Diagnostic<? extends JavaFileObject>> diagnostics = diagnosticCollector.getDiagnostics();
             final Set<File> errorFiles = JavaAnalyzer.getErrorFiles(diagnostics);
@@ -136,7 +136,7 @@ public class JavaAnalyzer {
                     handler);
 
             if (generate && !Config.load().useExternalBuilder()) {
-                final Iterable<? extends JavaFileObject> generated = javacTask.generate();
+                javacTask.generate();
             }
 
             final boolean success = errorFiles.size() == 0;

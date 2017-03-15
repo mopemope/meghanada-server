@@ -1531,10 +1531,6 @@ public class TreeAnalyzer {
         final File file = new File(uri.normalize());
         final String path = file.getCanonicalPath();
         final Source source = new Source(path);
-
-        // final Map<String, String> standardClasses = CachedASMReflector.getInstance().getStandardClasses();
-        // source.importClass.putAll(standardClasses);
-
         if (errorFiles.contains(file)) {
             source.hasCompileError = true;
         }
