@@ -1142,7 +1142,7 @@ public class TreeAnalyzer {
         if (kind.equals(ElementKind.FIELD)) {
             //
             final FieldAccess fa = new FieldAccess(identifier.toString(), preferredPos + 1, range);
-            fa.scope = selectScope;
+            fa.scope = getFieldScope(fa, selectScope);
             final Symbol owner = sym.owner;
 
             if (owner.type != null) {
@@ -1175,7 +1175,7 @@ public class TreeAnalyzer {
             }
         } else if (kind.equals(ElementKind.ENUM_CONSTANT)) {
             final FieldAccess fa = new FieldAccess(identifier.toString(), preferredPos + 1, range);
-            fa.scope = selectScope;
+            fa.scope = getFieldScope(fa, selectScope);
             fa.isEnum = true;
             final Symbol owner = sym.owner;
 
@@ -1209,6 +1209,13 @@ public class TreeAnalyzer {
         } else {
             log.warn("other kind:{}", kind);
         }
+    }
+
+    private static String getFieldScope(final FieldAccess fa, final String selectScope) {
+        if (selectScope != null && selectScope.length() <= AccessSymbol.SCOPE_LIMIT) {
+            return selectScope.trim();
+        }
+        return fa.name;
     }
 
     private void setReturnTypeAndArgType(SourceContext context, Source src, Type type, AccessSymbol as) {

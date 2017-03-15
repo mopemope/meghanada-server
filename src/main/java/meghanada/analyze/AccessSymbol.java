@@ -4,6 +4,7 @@ import com.google.common.base.MoreObjects;
 
 public abstract class AccessSymbol {
 
+    static final int SCOPE_LIMIT = 32;
     public String declaringClass;
     public String scope = "";
     public String name;

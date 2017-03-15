@@ -1,9 +1,14 @@
 package meghanada.analyze;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.util.ArrayList;
 import java.util.List;
 
 public class MethodCall extends AccessSymbol {
+
+    private static final Logger log = LogManager.getLogger(MethodCall.class);
 
     public Range nameRange;
     public List<String> arguments = new ArrayList<>(0);
@@ -20,7 +25,11 @@ public class MethodCall extends AccessSymbol {
     public MethodCall(final String scope, final String name, final int pos, final Range nameRange, final Range range) {
         super(name, pos, range);
         this.nameRange = nameRange;
-        super.scope = scope;
+        if (scope != null && scope.length() <= SCOPE_LIMIT) {
+            super.scope = scope;
+        } else {
+            super.scope = name;
+        }
     }
 
     @Override
