@@ -226,7 +226,7 @@ public final class FileUtils {
         try {
             final MessageDigest md = MessageDigest.getInstance(ALGORITHM_SHA_512);
             md.update(path.getBytes(UTF_8));
-            md.update(Main.VERSION.getBytes(UTF_8));
+            md.update(Main.getVersion().getBytes(UTF_8));
             final byte[] digest = md.digest();
             final StringBuilder sb = new StringBuilder(128);
             for (final int b : digest) {
@@ -235,7 +235,7 @@ public final class FileUtils {
             }
             sb.append(suffix);
             return sb.toString();
-        } catch (NoSuchAlgorithmException | UnsupportedEncodingException e) {
+        } catch (IOException | NoSuchAlgorithmException e) {
             throw new RuntimeException(e);
         }
     }
