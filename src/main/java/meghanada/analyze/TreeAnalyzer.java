@@ -224,6 +224,13 @@ public class TreeAnalyzer {
         }
     }
 
+    private static String getFieldScope(final FieldAccess fa, final String selectScope) {
+        if (selectScope != null && selectScope.length() <= AccessSymbol.SCOPE_LIMIT) {
+            return selectScope.trim();
+        }
+        return fa.name;
+    }
+
     private void analyzeCompilationUnitTree(final SourceContext context, final CompilationUnitTree cut) {
         final ExpressionTree packageExpr = cut.getPackageName();
         final Source src = context.getSource();
@@ -243,10 +250,9 @@ public class TreeAnalyzer {
             final String simpleName = ClassNameUtils.getSimpleName(importClass);
             if (simpleName.equals("*")) {
                 // wild
-                Map<String, String> symbols = cachedASMReflector.getPackageClasses(importClass);
-                for (final String entry : symbols.values()) {
-                    src.addImport(entry);
-                }
+                cachedASMReflector.getPackageClasses(importClass)
+                        .values()
+                        .forEach(src::addImport);
             } else {
                 if (imp.isStatic()) {
                     final Tree tree = imp.getQualifiedIdentifier();
@@ -1209,13 +1215,6 @@ public class TreeAnalyzer {
         } else {
             log.warn("other kind:{}", kind);
         }
-    }
-
-    private static String getFieldScope(final FieldAccess fa, final String selectScope) {
-        if (selectScope != null && selectScope.length() <= AccessSymbol.SCOPE_LIMIT) {
-            return selectScope.trim();
-        }
-        return fa.name;
     }
 
     private void setReturnTypeAndArgType(SourceContext context, Source src, Type type, AccessSymbol as) {

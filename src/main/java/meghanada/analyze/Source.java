@@ -430,7 +430,9 @@ public class Source {
     }
 
     public boolean addImportIfAbsent(@Nonnull final String fqcn) {
-
+        if (this.importClasses.contains(fqcn)) {
+            return false;
+        }
         for (final ClassScope classScope : this.classScopes) {
             final String classScopeFQCN = classScope.getFQCN();
             if (fqcn.equals(classScopeFQCN)) {
@@ -440,7 +442,7 @@ public class Source {
         final CachedASMReflector reflector = CachedASMReflector.getInstance();
         if (fqcn.startsWith(this.packageName)) {
             final Map<String, String> packageClasses = reflector.getPackageClasses(this.packageName);
-            boolean find = packageClasses
+            final boolean find = packageClasses
                     .values()
                     .stream()
                     .filter(s -> s.equals(fqcn))
@@ -455,7 +457,6 @@ public class Source {
                 return false;
             }
         }
-
         this.importClasses.add(fqcn);
         return true;
     }
@@ -474,10 +475,9 @@ public class Source {
                     return s.endsWith(shortName);
                 })
                 .findFirst()
-                .orElseGet(() -> {
-                    final Map<String, String> standardClasses = CachedASMReflector.getInstance().getStandardClasses();
-                    return standardClasses.getOrDefault(shortName, defaultValue);
-                });
+                .orElseGet(() -> CachedASMReflector.getInstance()
+                        .getStandardClasses()
+                        .getOrDefault(shortName, defaultValue));
     }
 
     public Map<String, String> getImportedClassMap() {
