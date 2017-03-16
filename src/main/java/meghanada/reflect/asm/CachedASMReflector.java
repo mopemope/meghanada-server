@@ -338,8 +338,25 @@ public class CachedASMReflector {
     public List<ClassIndex> searchInnerClasses(final String parent) {
         return this.globalClassIndex
                 .values()
-                .stream()
+                .parallelStream()
                 .filter(classIndex -> classIndex.getReturnType().startsWith(parent + '$'))
+                .map(ClassIndex::clone)
+                .collect(Collectors.toList());
+    }
+
+    public List<ClassIndex> searchInnerClasses(final Set<String> parents) {
+        return this.globalClassIndex
+                .values()
+                .parallelStream()
+                .filter(classIndex -> {
+                    final String returnType = classIndex.getReturnType();
+                    for (final String parent : parents) {
+                        if (returnType.startsWith(parent + '$')) {
+                            return true;
+                        }
+                    }
+                    return false;
+                })
                 .map(ClassIndex::clone)
                 .collect(Collectors.toList());
     }

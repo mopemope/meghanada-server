@@ -13,10 +13,7 @@ import org.apache.logging.log4j.message.EntryMessage;
 import javax.annotation.Nonnull;
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.ExecutionException;
 
 import static meghanada.utils.FileUtils.getSource;
@@ -163,60 +160,45 @@ public class DeclarationSearcher {
                                                                 final Integer line,
                                                                 final Integer col,
                                                                 final String symbol) {
+        // TODO need tune
         final EntryMessage entryMessage = log.traceEntry("line={} col={} symbol={}", line, col, symbol);
         final CachedASMReflector reflector = CachedASMReflector.getInstance();
         Optional<Declaration> result;
         String fqcn = source.getImportedClassFQCN(symbol, null);
         if (fqcn == null) {
-            final Map<String, String> standardClasses = reflector.getStandardClasses();
-            fqcn = standardClasses.get(symbol);
-            if (fqcn == null) {
-                if (source.packageName != null) {
-                    fqcn = source.packageName + '.' + symbol;
-                    result = reflector.containsClassIndex(fqcn).map(classIndex -> {
-                        final Declaration declaration = new Declaration(symbol, classIndex.getReturnType(), Declaration.Type.CLASS, 0);
-                        return Optional.of(declaration);
-                    }).orElseGet(() -> {
-                        for (final ClassScope classScope : source.getClassScopes()) {
-                            final String className = classScope.getFQCN();
-                            final Optional<Declaration> declaration1 = reflector.searchInnerClasses(className).stream()
-                                    .filter(classIndex -> {
-                                        final String returnType = classIndex.getReturnType();
-                                        return returnType.endsWith(symbol);
-                                    })
-                                    .map(classIndex -> new Declaration(symbol,
-                                            classIndex.getReturnType(),
-                                            Declaration.Type.CLASS,
-                                            0))
-                                    .findFirst();
-                            if (declaration1.isPresent()) {
-                                return declaration1;
-                            }
-                        }
-                        for (final String className : source.importClasses) {
-                            final Optional<Declaration> declaration1 = reflector.searchInnerClasses(className)
-                                    .stream()
-                                    .filter(classIndex -> {
-                                        final String returnType = classIndex.getReturnType();
-                                        return returnType.endsWith(symbol);
-                                    })
-                                    .map(classIndex -> new Declaration(symbol,
-                                            classIndex.getReturnType(),
-                                            Declaration.Type.CLASS,
-                                            0))
-                                    .findFirst();
-                            if (declaration1.isPresent()) {
-                                return declaration1;
-                            }
-                        }
-                        return Optional.empty();
-                    });
-                } else {
-                    result = Optional.empty();
-                }
+            if (source.packageName != null) {
+                fqcn = source.packageName + '.' + symbol;
+                result = reflector.containsClassIndex(fqcn).map(classIndex -> {
+                    final Declaration declaration = new Declaration(symbol, classIndex.getReturnType(), Declaration.Type.CLASS, 0);
+                    return Optional.of(declaration);
+                }).orElseGet(() -> {
+                    final Set<String> parents = new HashSet<>(8);
+                    for (final ClassScope classScope : source.getClassScopes()) {
+                        final String className = classScope.getFQCN();
+                        parents.add(className);
+                    }
+                    for (final String className : source.importClasses) {
+                        parents.add(className);
+                    }
+
+                    final Optional<Declaration> innerDeclaration = reflector.searchInnerClasses(parents)
+                            .stream()
+                            .filter(classIndex -> {
+                                final String returnType = classIndex.getReturnType();
+                                return returnType.endsWith(symbol);
+                            })
+                            .map(classIndex -> new Declaration(symbol,
+                                    classIndex.getReturnType(),
+                                    Declaration.Type.CLASS,
+                                    0))
+                            .findFirst();
+                    if (innerDeclaration.isPresent()) {
+                        return innerDeclaration;
+                    }
+                    return Optional.empty();
+                });
             } else {
-                final Declaration declaration = new Declaration(symbol, fqcn, Declaration.Type.CLASS, 0);
-                result = Optional.of(declaration);
+                result = Optional.empty();
             }
         } else {
             final Declaration declaration = new Declaration(symbol, fqcn, Declaration.Type.CLASS, 0);
