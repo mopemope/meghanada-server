@@ -512,7 +512,7 @@ public class LocationSearcher {
                                            final String symbol) {
         final EntryMessage entryMessage = log.traceEntry("line={} col={} symbol={}", line, col, symbol);
 
-        final Optional<Location> result = src.searchFieldAccess(line, symbol).flatMap(fa -> {
+        final Optional<Location> result = src.searchFieldAccess(line, col, symbol).flatMap(fa -> {
             final String fieldName = fa.name;
             final String declaringClass = fa.declaringClass;
 

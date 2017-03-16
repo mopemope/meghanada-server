@@ -12,6 +12,7 @@ import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.message.EntryMessage;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.io.*;
 import java.nio.charset.Charset;
 import java.util.*;
@@ -279,14 +280,23 @@ public class Source {
         return memberDescriptors;
     }
 
-    public Optional<FieldAccess> searchFieldAccess(final int line, final String name) {
+    @Nonnull
+    public Optional<FieldAccess> searchFieldAccess(final int line,
+                                                   final int col,
+                                                   @Nullable final String name) {
         final Scope scope = Scope.getScope(line, this.classScopes);
         if (scope != null && (scope instanceof TypeScope)) {
             final TypeScope ts = (TypeScope) scope;
             final Collection<FieldAccess> fieldAccesses = ts.getFieldAccess(line);
             return fieldAccesses
                     .stream()
-                    .filter(fieldAccess -> fieldAccess.name.equals(name))
+                    .filter(fa -> {
+                        final Range range = fa.range;
+                        final Position begin = fa.range.begin;
+                        return range.begin.line == line &&
+                                range.containsColumn(col) &&
+                                fa.name.equals(name);
+                    })
                     .findFirst();
         }
         return Optional.empty();

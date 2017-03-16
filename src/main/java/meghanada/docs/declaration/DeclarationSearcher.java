@@ -98,7 +98,7 @@ public class DeclarationSearcher {
                                                      final Integer col,
                                                      final String symbol) {
         final EntryMessage entryMessage = log.traceEntry("line={} col={} symbol={}", line, col, symbol);
-        final Optional<Declaration> result = source.searchFieldAccess(line, symbol).map(fa -> {
+        final Optional<Declaration> result = source.searchFieldAccess(line, col, symbol).map(fa -> {
             String scope = fa.scope;
             if (scope != null && !scope.isEmpty()) {
                 scope = scope + '.' + symbol;
