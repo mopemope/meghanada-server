@@ -63,7 +63,7 @@ public class GlobalCache {
             return kryo;
         }).build();
 
-        this.executorService.submit(() -> {
+        this.executorService.execute(() -> {
             while (!this.isTerminated) {
                 try {
                     final CacheRequest cr = blockingQueue.take();
@@ -127,7 +127,7 @@ public class GlobalCache {
 
         if (!this.ioBurstMode && this.blockingQueue.size() > BURST_LIMIT) {
             this.ioBurstMode = true;
-            this.executorService.submit(() -> {
+            this.executorService.execute(() -> {
                 boolean readyShutdown = false;
                 while (!this.isTerminated && this.ioBurstMode) {
                     try {

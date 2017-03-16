@@ -8,7 +8,7 @@ plugins {
     id 'com.github.ben-manes.versions' version '0.14.0'
     id 'com.jfrog.bintray' version '1.7.3'
     id 'org.ajoberstar.grgit' version '1.6.0'
-    id 'net.ltgt.errorprone' version '0.0.8'
+    id 'net.ltgt.errorprone' version '0.0.9'
 }
 
 ext {
@@ -45,7 +45,7 @@ repositories {
 }
 
 configurations.errorprone {
-    resolutionStrategy.force 'com.google.errorprone:error_prone_core:2.0.15'
+    resolutionStrategy.force 'com.google.errorprone:error_prone_core:2.0.18'
 }
 
 bintray {
