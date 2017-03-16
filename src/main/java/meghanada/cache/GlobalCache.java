@@ -1,10 +1,11 @@
 package meghanada.cache;
 
 import com.esotericsoftware.kryo.Kryo;
-import com.esotericsoftware.kryo.io.*;
+import com.esotericsoftware.kryo.io.Input;
+import com.esotericsoftware.kryo.io.Output;
+import com.esotericsoftware.kryo.io.UnsafeInput;
+import com.esotericsoftware.kryo.io.UnsafeOutput;
 import com.esotericsoftware.kryo.pool.KryoPool;
-import com.github.luben.zstd.ZstdInputStream;
-import com.github.luben.zstd.ZstdOutputStream;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.LoadingCache;
 import meghanada.analyze.Source;
@@ -16,7 +17,10 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import javax.annotation.Nonnull;
-import java.io.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.InputStream;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -34,10 +38,10 @@ public class GlobalCache {
     public static final String PROJECT_DATA = "project";
     public static final String CACHE_EXT = ".dat";
 
-    private static final int COMPRESSION_LEVEL = 3;
     private static final int SOURCE_CACHE_MAX = 64;
     private static final int MEMBER_CACHE_MAX = SOURCE_CACHE_MAX;
     private static final int BURST_LIMIT = 32;
+    private static final int BUFFER_SIZE = 1024 * 32;
 
     private static final Logger log = LogManager.getLogger(GlobalCache.class);
 
@@ -55,6 +59,7 @@ public class GlobalCache {
         this.sourceCaches = new HashMap<>(1);
         this.kryoPool = new KryoPool.Builder(() -> {
             final Kryo kryo = new Kryo();
+            kryo.getFieldSerializerConfig().setUseAsm(false);
             kryo.register(ClassIndex.class);
             kryo.register(MemberDescriptor.class);
             kryo.register(MethodParameterNames.class);
@@ -192,7 +197,7 @@ public class GlobalCache {
             return null;
         }
         return kryoPool.run(kryo -> {
-            try (final Input input = new UnsafeInput(new ZstdInputStream(new ByteBufferInput(new FileInputStream(file), 8192)))) {
+            try (final Input input = new UnsafeInput(new FileInputStream(file), BUFFER_SIZE)) {
                 return kryo.readObject(input, type);
             } catch (Exception e) {
                 log.catching(e);
@@ -220,7 +225,7 @@ public class GlobalCache {
             log.warn("{} mkdirs fail", parentFile);
         }
         kryoPool.run(kryo -> {
-            try (final Output output = new UnsafeOutput(new ZstdOutputStream(new BufferedOutputStream(new FileOutputStream(file), 8192), COMPRESSION_LEVEL))) {
+            try (final Output output = new UnsafeOutput(new FileOutputStream(file), BUFFER_SIZE)) {
                 kryo.writeObject(output, obj);
             } catch (Exception e) {
                 log.catching(e);
