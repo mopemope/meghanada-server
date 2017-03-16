@@ -174,7 +174,7 @@ public class CachedASMReflectorTest extends GradleTestBase {
             // System.out.println(md);
             // }
             memberDescriptors.forEach(md -> System.out.println(md.getDisplayDeclaration()));
-            assertEquals(83, memberDescriptors.size());
+            assertEquals(86, memberDescriptors.size());
         }
 
     }

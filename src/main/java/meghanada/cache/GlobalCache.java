@@ -1,9 +1,7 @@
 package meghanada.cache;
 
 import com.esotericsoftware.kryo.Kryo;
-import com.esotericsoftware.kryo.io.ByteBufferInput;
-import com.esotericsoftware.kryo.io.Input;
-import com.esotericsoftware.kryo.io.Output;
+import com.esotericsoftware.kryo.io.*;
 import com.esotericsoftware.kryo.pool.KryoPool;
 import com.github.luben.zstd.ZstdInputStream;
 import com.github.luben.zstd.ZstdOutputStream;
@@ -194,7 +192,7 @@ public class GlobalCache {
             return null;
         }
         return kryoPool.run(kryo -> {
-            try (final Input input = new Input(new ZstdInputStream(new ByteBufferInput(new FileInputStream(file), 8192)))) {
+            try (final Input input = new UnsafeInput(new ZstdInputStream(new ByteBufferInput(new FileInputStream(file), 8192)))) {
                 return kryo.readObject(input, type);
             } catch (Exception e) {
                 log.catching(e);
@@ -208,7 +206,7 @@ public class GlobalCache {
 
     public <T> T readCacheFromInputStream(final InputStream in, final Class<T> type) {
         return kryoPool.run(kryo -> {
-            try (final Input input = new Input(in)) {
+            try (final Input input = new UnsafeInput(in)) {
                 return kryo.readObject(input, type);
             } catch (Exception e) {
                 return null;
@@ -222,7 +220,7 @@ public class GlobalCache {
             log.warn("{} mkdirs fail", parentFile);
         }
         kryoPool.run(kryo -> {
-            try (final Output output = new Output(new ZstdOutputStream(new BufferedOutputStream(new FileOutputStream(file), 8192), COMPRESSION_LEVEL))) {
+            try (final Output output = new UnsafeOutput(new ZstdOutputStream(new BufferedOutputStream(new FileOutputStream(file), 8192), COMPRESSION_LEVEL))) {
                 kryo.writeObject(output, obj);
             } catch (Exception e) {
                 log.catching(e);

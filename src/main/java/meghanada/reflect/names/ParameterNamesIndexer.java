@@ -3,6 +3,8 @@ package meghanada.reflect.names;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
+import com.esotericsoftware.kryo.io.UnsafeInput;
+import com.esotericsoftware.kryo.io.UnsafeOutput;
 import com.github.javaparser.JavaParser;
 import com.github.javaparser.ParseException;
 import com.github.javaparser.ast.CompilationUnit;
@@ -86,12 +88,12 @@ public class ParameterNamesIndexer {
 
                     File outFile = new File("./resources/params/" + dirPath, fileName);
                     boolean result = outFile.getParentFile().mkdirs();
-                    try (Output out = new Output(new FileOutputStream(outFile))) {
+                    try (Output out = new UnsafeOutput(new FileOutputStream(outFile))) {
                         kryo.writeObject(out, mpn);
                         log.debug("output {}", outFile);
                     }
 
-                    try (Input input = new Input(new FileInputStream(outFile))) {
+                    try (Input input = new UnsafeInput(new FileInputStream(outFile))) {
                         MethodParameterNames mpn2 = kryo.readObject(input, MethodParameterNames.class);
                         // log.debug("mpn {}", mpn);
                     }
