@@ -361,7 +361,6 @@ public class LocationSearcher {
         if (classFile != null && classFile.exists() && classFile.getName().endsWith(FileUtils.JAR_EXT)) {
 
             final String androidHome = System.getenv("ANDROID_HOME");
-            boolean android = false;
             if (androidHome != null) {
                 final Optional<ProjectDependency> dependencyOptional = this.project.getDependencies()
                         .stream()
@@ -371,15 +370,17 @@ public class LocationSearcher {
                     final ProjectDependency dependency = dependencyOptional.get();
                     final String sourceJar = ClassNameUtils.getSimpleName(dependency.getId()) + '-' + dependency.getVersion() + "-sources.jar";
                     final File root = new File(androidHome, "extras");
-                    return FileUtils.collectFile(root, sourceJar).map(wrapIO(srcJar -> {
-                        final File file = copyFromSrcZip(searchFQCN, srcJar);
-                        if (file == null) {
-                            return searchLocationFromDecompileFile(context, searchFQCN, classFile, tempDir);
-                        }
-                        final String fqcn = ClassNameUtils.getParentClass(context.searchFQCN);
-                        return searchLocationFromFile(context, fqcn, file);
-                    })).orElseGet(wrapIO(() ->
-                            searchLocationFromDecompileFile(context, searchFQCN, classFile, tempDir)));
+                    if (root.exists()) {
+                        return FileUtils.collectFile(root, sourceJar).map(wrapIO(srcJar -> {
+                            final File file = copyFromSrcZip(searchFQCN, srcJar);
+                            if (file == null) {
+                                return searchLocationFromDecompileFile(context, searchFQCN, classFile, tempDir);
+                            }
+                            final String fqcn = ClassNameUtils.getParentClass(context.searchFQCN);
+                            return searchLocationFromFile(context, fqcn, file);
+                        })).orElseGet(wrapIO(() ->
+                                searchLocationFromDecompileFile(context, searchFQCN, classFile, tempDir)));
+                    }
                 }
             }
 
