@@ -146,6 +146,7 @@ public class JavaAnalyzer {
 
     public interface SourceAnalyzedHandler {
         void analyzed(final Source javaSource) throws IOException;
+
         void complete() throws IOException;
     }
 
