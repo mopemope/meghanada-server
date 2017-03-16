@@ -3,6 +3,11 @@
 ## Highlights
 
 * Support show declaration (eldoc support)
+* Using kryo 4
+* Improve build performance
+* Fix memory leaks
+* Fix broken android project completions
+* Fix many bugs.
 
 # Version 0.6.6 (2017-03-01)
 
