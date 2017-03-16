@@ -9,7 +9,7 @@ import org.junit.Test;
 import java.io.File;
 import java.util.Collection;
 
-import static meghanada.config.Config.debugIt;
+import static meghanada.config.Config.timeIt;
 import static meghanada.config.Config.traceIt;
 import static org.junit.Assert.assertEquals;
 
@@ -30,7 +30,7 @@ public class JavaCompletionTest extends GradleTestBase {
         JavaCompletion completion = getCompletion();
         File file = new File("./src/test/java/meghanada/TopClass.java").getCanonicalFile();
         assert file.exists();
-        final Collection<? extends CandidateUnit> units = debugIt(() -> {
+        final Collection<? extends CandidateUnit> units = timeIt(() -> {
             return completion.completionAt(file, 8, 9, "*this");
         });
         units.forEach(a -> System.out.println(a.getDeclaration()));
@@ -42,7 +42,7 @@ public class JavaCompletionTest extends GradleTestBase {
         JavaCompletion completion = getCompletion();
         File file = new File("./src/test/java/meghanada/TopClass.java").getCanonicalFile();
         assert file.exists();
-        final Collection<? extends CandidateUnit> units = debugIt(() -> {
+        final Collection<? extends CandidateUnit> units = timeIt(() -> {
             return completion.completionAt(file, 14, 9, "*this");
         });
         units.forEach(a -> System.out.println(a.getDeclaration()));
@@ -55,7 +55,7 @@ public class JavaCompletionTest extends GradleTestBase {
         File file = new File("./src/test/java/meghanada/TopClass.java").getCanonicalFile();
         assert file.exists();
 
-        final Collection<? extends CandidateUnit> units = debugIt(() -> {
+        final Collection<? extends CandidateUnit> units = timeIt(() -> {
             return completion.completionAt(file, 8, 9, "fo");
         });
         units.forEach(a -> System.out.println(a.getDeclaration()));
@@ -68,7 +68,7 @@ public class JavaCompletionTest extends GradleTestBase {
         File file = new File("./src/test/java/meghanada/TopClass.java").getCanonicalFile();
         assert file.exists();
 
-        final Collection<? extends CandidateUnit> units = debugIt(() -> {
+        final Collection<? extends CandidateUnit> units = timeIt(() -> {
             return completion.completionAt(file, 8, 9, "@Test");
         });
         units.forEach(a -> System.out.println(a.getDeclaration()));
@@ -80,13 +80,13 @@ public class JavaCompletionTest extends GradleTestBase {
         JavaCompletion completion = getCompletion();
         File file = new File("./src/main/java/meghanada/analyze/ExpressionScope.java").getCanonicalFile();
         assert file.exists();
-        final Collection<? extends CandidateUnit> staticLog = debugIt(() -> {
+        final Collection<? extends CandidateUnit> staticLog = timeIt(() -> {
             return completion.completionAt(file, 17, 4, "lo");
         });
         staticLog.forEach(a -> System.out.println(a.getDeclaration()));
         assertEquals(staticLog.size(), 1);
 
-        final Collection<? extends CandidateUnit> pos = debugIt(() -> {
+        final Collection<? extends CandidateUnit> pos = timeIt(() -> {
             return completion.completionAt(file, 17, 8, "po");
         });
         pos.forEach(a -> System.out.println(a.getDeclaration()));
@@ -98,7 +98,7 @@ public class JavaCompletionTest extends GradleTestBase {
         JavaCompletion completion = getCompletion();
         File file = new File("./src/main/java/meghanada/analyze/ExpressionScope.java").getCanonicalFile();
         assert file.exists();
-        final Collection<? extends CandidateUnit> logMethod = debugIt(() -> {
+        final Collection<? extends CandidateUnit> logMethod = timeIt(() -> {
             return completion.completionAt(file, 17, 4, "*log#");
         });
         logMethod.forEach(a -> System.out.println(a.getDeclaration()));
@@ -112,7 +112,7 @@ public class JavaCompletionTest extends GradleTestBase {
         File file = new File("./src/main/java/meghanada/analyze/ExpressionScope.java").getCanonicalFile();
         assert file.exists();
 
-        final Collection<? extends CandidateUnit> logMethod = debugIt(() -> {
+        final Collection<? extends CandidateUnit> logMethod = timeIt(() -> {
             return completion.completionAt(file, 17, 4, "*method:java.lang.System#");
         });
         logMethod.forEach(a -> System.out.println(a.getDeclaration()));
@@ -126,7 +126,7 @@ public class JavaCompletionTest extends GradleTestBase {
         File file = new File("./src/main/java/meghanada/project/gradle/GradleProject.java").getCanonicalFile();
         assert file.exists();
 
-        final Collection<? extends CandidateUnit> logMethod = debugIt(() -> {
+        final Collection<? extends CandidateUnit> logMethod = timeIt(() -> {
             return completion.completionAt(file, 31, 4, "lo");
         });
         logMethod.forEach(a -> System.out.println(a.getDeclaration()));

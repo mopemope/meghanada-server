@@ -16,7 +16,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import static meghanada.config.Config.debugIt;
 import static meghanada.config.Config.timeIt;
 import static org.junit.Assert.assertEquals;
 
@@ -71,8 +70,8 @@ public class SourceTest extends GradleTestBase {
             return compileResult.getSources().get(file);
         });
 
-        Map<String, List<String>> missingImport = debugIt(source::searchMissingImport);
-        List<String> optimizeImports = debugIt(source::optimizeImports);
+        Map<String, List<String>> missingImport = timeIt(source::searchMissingImport);
+        List<String> optimizeImports = timeIt(source::optimizeImports);
         assertEquals(0, missingImport.size());
         assertEquals(12, optimizeImports.size());
     }
@@ -94,7 +93,7 @@ public class SourceTest extends GradleTestBase {
             return compileResult.getSources().get(file);
         });
 
-        Map<String, List<String>> missingImport = debugIt(source::searchMissingImport);
+        Map<String, List<String>> missingImport = timeIt(source::searchMissingImport);
         System.out.println(missingImport);
         assertEquals(2, missingImport.size());
     }
@@ -117,7 +116,7 @@ public class SourceTest extends GradleTestBase {
             return compileResult.getSources().get(file);
         });
 
-        Map<String, List<String>> missingImport = debugIt(source::searchMissingImport);
+        Map<String, List<String>> missingImport = timeIt(source::searchMissingImport);
         System.out.println(missingImport);
         assertEquals(5, missingImport.size());
     }

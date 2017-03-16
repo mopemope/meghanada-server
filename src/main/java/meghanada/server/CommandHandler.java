@@ -10,10 +10,11 @@ import meghanada.utils.ClassNameUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.annotation.Nonnull;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.InputStream;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -29,33 +30,37 @@ public class CommandHandler {
     private final BufferedWriter writer;
     private final OutputFormatter outputFormatter;
 
-    public CommandHandler(final Session session, final BufferedWriter writer, final OutputFormatter formatter) {
+    public CommandHandler(@Nonnull final Session session,
+                          @Nonnull final BufferedWriter writer,
+                          @Nonnull final OutputFormatter formatter) {
         this.session = session;
         this.writer = writer;
         this.outputFormatter = formatter;
     }
 
-    public void changeProject(String path) {
+    public void changeProject(final String path) {
         try {
-            path = new File(path).getCanonicalPath();
-            final boolean result = session.changeProject(path);
+            final String canonicalPath = new File(path).getCanonicalPath();
+            final boolean result = session.changeProject(canonicalPath);
             final String out = outputFormatter.changeProject(result);
             writer.write(out);
             writer.newLine();
         } catch (Throwable e) {
             log.catching(e);
+            throw new CommandException(e);
         }
     }
 
-    public void diagnostics(String path) {
+    public void diagnostics(final String path) {
         try {
-            path = new File(path).getCanonicalPath();
+            final String canonicalPath = new File(path).getCanonicalPath();
             final CompileResult compileResult = session.compileProject();
-            final String out = outputFormatter.diagnostics(compileResult, path);
+            final String out = outputFormatter.diagnostics(compileResult, canonicalPath);
             writer.write(out);
             writer.newLine();
         } catch (Throwable e) {
             log.catching(e);
+            throw new CommandException(e);
         }
     }
 
@@ -68,6 +73,7 @@ public class CommandHandler {
             writer.newLine();
         } catch (Throwable e) {
             log.catching(e);
+            throw new CommandException(e);
         }
     }
 
@@ -79,62 +85,66 @@ public class CommandHandler {
             writer.newLine();
         } catch (Throwable e) {
             log.catching(e);
+            throw new CommandException(e);
         }
     }
 
-    public void autocomplete(String path, String line, String column, String prefix) {
-        // String path line column ^String prefix fmt]
+    public void autocomplete(final String path, final String line, final String column, final String prefix) {
         try {
-            int lineInt = Integer.parseInt(line);
-            int columnInt = Integer.parseInt(column);
+            final int lineInt = Integer.parseInt(line);
+            final int columnInt = Integer.parseInt(column);
             final Collection<? extends CandidateUnit> units = session.completionAt(path, lineInt, columnInt, prefix);
             final String out = outputFormatter.autocomplete(units);
             writer.write(out);
             writer.newLine();
         } catch (Throwable e) {
             log.catching(e);
+            throw new CommandException(e);
         }
     }
 
-    public void runJUnit(String test) {
-        try (InputStream in = this.session.runJUnit(test)) {
-            byte[] buf = new byte[512];
+    public void runJUnit(final String test) {
+        try (final InputStream in = this.session.runJUnit(test)) {
+            final byte[] buf = new byte[1024];
             int read;
             while ((read = in.read(buf)) > 0) {
-                writer.write(new String(buf, 0, read, Charset.forName("UTF8")));
+                writer.write(new String(buf, 0, read, StandardCharsets.UTF_8));
                 writer.flush();
             }
             writer.newLine();
         } catch (Throwable e) {
             log.catching(e);
+            throw new CommandException(e);
         }
 
     }
 
-    public void parse(String path) {
+    public void parse(final String path) {
         try {
-            boolean result = session.parseFile(path);
+            final boolean result = session.parseFile(path);
             final String out = outputFormatter.parse(result);
             writer.write(out);
             writer.newLine();
         } catch (Throwable e) {
             log.catching(e);
+            throw new CommandException(e);
         }
     }
 
     public void addImport(final String path, final String fqcn) {
         try {
-            boolean result = session.addImport(path, fqcn);
+            final boolean result = session.addImport(path, fqcn);
             final String out = outputFormatter.addImport(result, ClassNameUtils.replaceInnerMark(fqcn));
             writer.write(out);
             writer.newLine();
         } catch (Throwable e) {
             log.catching(e);
+            throw new CommandException(e);
         }
 
     }
 
-    public void optimizeImport(String path) {
+    public void optimizeImport(final String path) {
         try {
             final List<String> result = session.optimizeImport(path);
             final String out = outputFormatter.optimizeImport(result);
@@ -142,10 +152,11 @@ public class CommandHandler {
             writer.newLine();
         } catch (Throwable e) {
             log.catching(e);
+            throw new CommandException(e);
         }
     }
 
-    public void importAll(String path) {
+    public void importAll(final String path) {
         try {
             final Map<String, List<String>> result = session.searchMissingImport(path);
             final String out = outputFormatter.importAll(result);
@@ -153,17 +164,19 @@ public class CommandHandler {
             writer.newLine();
         } catch (Throwable e) {
             log.catching(e);
+            throw new CommandException(e);
         }
     }
 
-    public void switchTest(String path) {
+    public void switchTest(final String path) {
         try {
-            final String openPath = session.switchTest(path).orElse(null);
+            final String openPath = session.switchTest(path).orElse(path);
             final String out = outputFormatter.switchTest(openPath);
             writer.write(out);
             writer.newLine();
         } catch (Throwable e) {
             log.catching(e);
+            throw new CommandException(e);
         }
     }
 
@@ -173,12 +186,13 @@ public class CommandHandler {
             writer.newLine();
         } catch (Throwable e) {
             log.catching(e);
+            throw new CommandException(e);
         }
     }
 
-    public void jumpDeclaration(String path, String line, String col, String symbol) {
-        int lineInt = Integer.parseInt(line);
-        int columnInt = Integer.parseInt(col);
+    public void jumpDeclaration(final String path, final String line, final String col, final String symbol) {
+        final int lineInt = Integer.parseInt(line);
+        final int columnInt = Integer.parseInt(col);
         try {
             final Location location = session.jumpDeclaration(path, lineInt, columnInt, symbol)
                     .orElseGet(() -> new Location(path, lineInt, columnInt));
@@ -187,34 +201,37 @@ public class CommandHandler {
             writer.newLine();
         } catch (Throwable e) {
             log.catching(e);
+            throw new CommandException(e);
         }
 
     }
 
     public void backJump() {
-        Location location = session.backDeclaration();
+        final Location location = session.backDeclaration();
         try {
             if (location != null) {
-                String out = outputFormatter.jumpDeclaration(location);
+                final String out = outputFormatter.jumpDeclaration(location);
                 writer.write(out);
             }
             writer.newLine();
         } catch (Throwable e) {
             log.catching(e);
+            throw new CommandException(e);
         }
     }
 
-    public void runTask(List<String> args) {
-        try (InputStream in = this.session.runTask(args)) {
-            byte[] buf = new byte[512];
+    public void runTask(final List<String> args) {
+        try (final InputStream in = this.session.runTask(args)) {
+            final byte[] buf = new byte[512];
             int read;
             while ((read = in.read(buf)) > 0) {
-                writer.write(new String(buf, 0, read, Charset.forName("UTF8")));
+                writer.write(new String(buf, 0, read, StandardCharsets.UTF_8));
                 writer.flush();
             }
             writer.newLine();
         } catch (Throwable e) {
             log.catching(e);
+            throw new CommandException(e);
         }
     }
 
@@ -226,6 +243,7 @@ public class CommandHandler {
             writer.newLine();
         } catch (Throwable e) {
             log.catching(e);
+            throw new CommandException(e);
         }
 
     }
@@ -241,6 +259,7 @@ public class CommandHandler {
             writer.newLine();
         } catch (Throwable e) {
             log.catching(e);
+            throw new CommandException(e);
         }
     }
 
@@ -252,12 +271,13 @@ public class CommandHandler {
             writer.newLine();
         } catch (Throwable e) {
             log.catching(e);
+            throw new CommandException(e);
         }
     }
 
     public void showDeclaration(final String path, final String line, final String col, final String symbol) {
-        int lineInt = Integer.parseInt(line);
-        int columnInt = Integer.parseInt(col);
+        final int lineInt = Integer.parseInt(line);
+        final int columnInt = Integer.parseInt(col);
         try {
             final Declaration declaration = session.showDeclaration(path, lineInt, columnInt, symbol)
                     .orElse(new Declaration("", "", Declaration.Type.OTHER, 0));
@@ -267,8 +287,7 @@ public class CommandHandler {
             writer.flush();
         } catch (Throwable e) {
             log.catching(e);
+            throw new CommandException(e);
         }
-
     }
-
 }
