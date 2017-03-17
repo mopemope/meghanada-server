@@ -3,9 +3,9 @@
 ## Highlights
 
 * Support show declaration (eldoc support)
-* Using kryo 4
-* Improve build performance
-* Fix memory leaks
+* Using kryo 4 and improve cache performance
+* Improve gradle sub module build performance
+* Fix zip and file stream memory leaks
 * Fix broken android project completions
 * Fix many bugs.
 
