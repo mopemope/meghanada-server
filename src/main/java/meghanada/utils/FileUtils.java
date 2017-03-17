@@ -357,7 +357,7 @@ public final class FileUtils {
     }
 
     public static Optional<File> existsFQCN(final Set<File> roots, final String fqcn) {
-        return roots.stream()
+        return roots.parallelStream()
                 .map(root -> convertFQCNToFile(root, fqcn))
                 .filter(File::exists)
                 .findFirst();

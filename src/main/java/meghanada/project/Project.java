@@ -101,7 +101,7 @@ public abstract class Project {
     public abstract Project parseProject() throws ProjectParseException;
 
     public Set<File> getAllSources() {
-        Set<File> temp = new HashSet<>(8);
+        final Set<File> temp = new HashSet<>(8);
         temp.addAll(this.sources);
         temp.addAll(this.resources);
         temp.addAll(this.testSources);
@@ -109,6 +109,12 @@ public abstract class Project {
         return temp;
     }
 
+    public Set<File> getAllSourcesWithDependencies() {
+        final Set<File> temp = getAllSources();
+        this.dependencies.forEach(projectDependency ->
+                temp.addAll(projectDependency.getProjectSources()));
+        return temp;
+    }
 
     public Set<ProjectDependency> getDependencies() {
         return this.dependencies;

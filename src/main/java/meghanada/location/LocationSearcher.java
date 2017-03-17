@@ -222,7 +222,7 @@ public class LocationSearcher {
                 searchTargets.addAll(supers);
             });
 
-            return searchTargets.stream().map(targetFqcn -> existsFQCN(project.getAllSources(), targetFqcn)
+            return searchTargets.stream().map(targetFqcn -> existsFQCN(project.getAllSourcesWithDependencies(), targetFqcn)
                     .flatMap(file ->
                             getMethodLocationFromProject(methodName, arguments, file))
                     .orElseGet(wrapIO(() -> {
@@ -291,7 +291,7 @@ public class LocationSearcher {
         }
         final String searchFQCN = fqcn;
 
-        final Location location = existsFQCN(project.getAllSources(), fqcn).flatMap(f -> {
+        final Location location = existsFQCN(project.getAllSourcesWithDependencies(), fqcn).flatMap(f -> {
             try {
                 final Source declaringClassSrc = getSource(project, f);
                 final String path = declaringClassSrc.getFile().getPath();
@@ -516,7 +516,7 @@ public class LocationSearcher {
                 searchTargets.addAll(supers);
             });
 
-            return searchTargets.stream().map(fqcn -> existsFQCN(project.getAllSources(), fqcn)
+            return searchTargets.stream().map(fqcn -> existsFQCN(project.getAllSourcesWithDependencies(), fqcn)
                     .flatMap(file ->
                             getFieldLocationFromProject(fieldName, file))
                     .orElseGet(wrapIO(() -> {

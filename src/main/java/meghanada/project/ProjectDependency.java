@@ -13,7 +13,9 @@ import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 
 import static meghanada.utils.FunctionUtils.wrapIO;
 
@@ -28,6 +30,7 @@ public class ProjectDependency {
     private final File file;
     private final Type type;
     private String dependencyFilePath;
+    private Set<File> cachedSrc;
 
     public ProjectDependency(final String id,
                              final String scope,
@@ -141,6 +144,23 @@ public class ProjectDependency {
             } else {
                 return file.getCanonicalPath();
             }
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    public Set<File> getProjectSources() {
+        try {
+            if (type.equals(Type.PROJECT)) {
+                if (cachedSrc != null) {
+                    return cachedSrc;
+                }
+                this.cachedSrc = Session.findProject(this.file)
+                        .map(wrapIO(Project::getAllSources))
+                        .orElse(Collections.emptySet());
+                return this.cachedSrc;
+            }
+            return Collections.emptySet();
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
