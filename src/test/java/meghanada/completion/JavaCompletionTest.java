@@ -123,20 +123,6 @@ public class JavaCompletionTest extends GradleTestBase {
     @Test
     public void testCompletion08() throws Exception {
         JavaCompletion completion = getCompletion();
-        File file = new File("./src/main/java/meghanada/project/gradle/GradleProject.java").getCanonicalFile();
-        assert file.exists();
-
-        final Collection<? extends CandidateUnit> logMethod = timeIt(() -> {
-            return completion.completionAt(file, 31, 4, "lo");
-        });
-        logMethod.forEach(a -> System.out.println(a.getDeclaration()));
-        assertEquals(4, logMethod.size());
-
-    }
-
-    @Test
-    public void testCompletion09() throws Exception {
-        JavaCompletion completion = getCompletion();
         File file = new File("./src/main/java/meghanada/analyze/JavaAnalyzer.java").getCanonicalFile();
         assert file.exists();
 
@@ -154,7 +140,7 @@ public class JavaCompletionTest extends GradleTestBase {
     }
 
     @Test
-    public void testCompletion10() throws Exception {
+    public void testCompletion09() throws Exception {
         JavaCompletion completion = getCompletion();
         File file = new File("./src/main/java/meghanada/analyze/JavaAnalyzer.java").getCanonicalFile();
         assert file.exists();

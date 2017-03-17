@@ -29,7 +29,7 @@ public class Source {
     public final Set<String> unknown = new HashSet<>(8);
     public final List<ClassScope> classScopes = new ArrayList<>(1);
     public final Deque<ClassScope> currentClassScope = new ArrayDeque<>(1);
-    public Set<String> usingClasses = new HashSet<>(8);
+    public final Set<String> usingClasses = new HashSet<>(8);
     public String filePath;
     public String packageName;
     public List<LineRange> lineRange;

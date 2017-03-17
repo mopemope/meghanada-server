@@ -295,8 +295,8 @@ public class Session {
         this.setupSubscribes();
         log.debug("session start");
 
-        final Set<File> temp = new HashSet<>(currentProject.getSourceDirectories());
-        temp.addAll(currentProject.getTestSourceDirectories());
+        final Set<File> temp = new HashSet<>(currentProject.getSources());
+        temp.addAll(currentProject.getTestSources());
         this.sessionEventBus.requestWatchFiles(new ArrayList<>(temp));
 
         // load once
@@ -493,11 +493,11 @@ public class Session {
 
         if (path.endsWith("Test.java")) {
             // test -> src
-            roots = project.getTestSourceDirectories();
+            roots = project.getTestSources();
             isTest = true;
         } else {
             // src -> test
-            roots = project.getSourceDirectories();
+            roots = project.getSources();
             isTest = false;
         }
 
@@ -517,7 +517,7 @@ public class Session {
         if (isTest) {
             switchPath = SWITCH_TEST_RE.matcher(switchPath).replaceAll(Matcher.quoteReplacement(".java"));
             // to src
-            for (File srcRoot : project.getSourceDirectories()) {
+            for (File srcRoot : project.getSources()) {
                 final File srcFile = new File(srcRoot, switchPath);
                 if (srcFile.exists()) {
                     return Optional.of(srcFile.getCanonicalPath());
@@ -527,7 +527,7 @@ public class Session {
         } else {
             switchPath = SWITCH_JAVA_RE.matcher(switchPath).replaceAll(Matcher.quoteReplacement("Test.java"));
             // to test
-            for (File srcRoot : project.getTestSourceDirectories()) {
+            for (File srcRoot : project.getTestSources()) {
                 final File testFile = new File(srcRoot, switchPath);
                 if (testFile.exists()) {
                     return Optional.of(testFile.getCanonicalPath());
@@ -582,8 +582,8 @@ public class Session {
                     .ifPresent(project -> setProject(projectRoot, project));
         }
 
-        final Set<File> temp = new HashSet<>(this.currentProject.getSourceDirectories());
-        temp.addAll(this.currentProject.getTestSourceDirectories());
+        final Set<File> temp = new HashSet<>(this.currentProject.getSources());
+        temp.addAll(this.currentProject.getTestSources());
         this.sessionEventBus.requestWatchFiles(new ArrayList<>(temp));
         final CachedASMReflector reflector = CachedASMReflector.getInstance();
         reflector.resetClassFileMap();

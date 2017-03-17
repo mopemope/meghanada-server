@@ -46,11 +46,11 @@ public class SourceTest extends GradleTestBase {
     }
 
     protected static File getOutputDir() {
-        return project.getOutputDirectory();
+        return project.getOutput();
     }
 
     protected static File getTestOutputDir() {
-        return project.getTestOutputDirectory();
+        return project.getTestOutput();
     }
 
     @Test

@@ -97,23 +97,10 @@ public class ProjectSerializer extends Serializer<Project> {
             // protected String id;
             output.writeString(project.id);
 
-            // protected List<Project> dependencyProjects;
-            final Set<Project> dependencyProjects = project.dependencyProjects;
-            output.writeInt(dependencyProjects.size(), true);
-            for (final Project p : dependencyProjects) {
-                kryo.writeClassAndObject(output, p);
-            }
             // protected boolean isAndroidProject;
             output.writeBoolean(project.isAndroidProject);
             // protected String name;
             output.writeString(project.name);
-
-            // protected Boolean buildWithDependency = null;
-            Boolean buildWithDependency = project.buildWithDependency;
-            if (buildWithDependency == null) {
-                buildWithDependency = false;
-            }
-            output.writeBoolean(buildWithDependency);
 
         } catch (IOException ex) {
             throw new UncheckedIOException(ex);
@@ -220,20 +207,8 @@ public class ProjectSerializer extends Serializer<Project> {
                 }
             }
 
-            // protected List<Project> dependencyProjects;
-            {
-                final int size = input.readInt(true);
-                for (int i = 0; i < size; i++) {
-                    final Project p = (Project) kryo.readClassAndObject(input);
-                    if (p != null) {
-                        project.dependencyProjects.add(p);
-                    }
-                }
-            }
-
             project.isAndroidProject = input.readBoolean();
             project.name = input.readString().trim();
-            project.buildWithDependency = input.readBoolean();
 
             project.loadCaller();
             return project;

@@ -102,11 +102,6 @@ public class TypeScope extends MethodScope {
         return this.returnType;
     }
 
-    public void addMemberDescriptor(MemberDescriptor memberDescriptor) {
-        // TODO call this
-        this.memberDescriptors.add(memberDescriptor);
-    }
-
     public List<MemberDescriptor> getMemberDescriptors() {
         return memberDescriptors;
     }

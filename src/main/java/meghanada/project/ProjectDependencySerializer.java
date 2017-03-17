@@ -16,12 +16,13 @@ public class ProjectDependencySerializer extends Serializer<ProjectDependency> {
     private static final Logger log = LogManager.getLogger(ProjectDependencySerializer.class);
 
     @Override
-    public void write(Kryo kryo, Output output, ProjectDependency pd) {
+    public void write(final Kryo kryo, final Output output, final ProjectDependency pd) {
         try {
             output.writeString(pd.getId());
             output.writeString(pd.getScope());
             output.writeString(pd.getVersion());
             output.writeString(pd.getFile().getCanonicalPath());
+            output.writeString(pd.getType().toString());
         } catch (IOException ex) {
             log.catching(ex);
             throw new UncheckedIOException(ex);
@@ -29,11 +30,14 @@ public class ProjectDependencySerializer extends Serializer<ProjectDependency> {
     }
 
     @Override
-    public ProjectDependency read(final Kryo kryo, final Input input, final Class<ProjectDependency> type) {
+    public ProjectDependency read(final Kryo kryo, Input input, final Class<ProjectDependency> type) {
         final String id = input.readString();
         final String scope = input.readString();
         final String version = input.readString();
         final String path = input.readString();
-        return new ProjectDependency(id, scope, version, new File(path));
+        final String typeStr = input.readString();
+        final ProjectDependency.Type depType = ProjectDependency.Type.valueOf(typeStr);
+        return new ProjectDependency(id, scope, version, new File(path), depType);
     }
+
 }

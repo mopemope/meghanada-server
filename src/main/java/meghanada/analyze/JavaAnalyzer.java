@@ -11,7 +11,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import javax.lang.model.element.Element;
 import javax.tools.*;
 import java.io.File;
 import java.io.IOException;
@@ -31,7 +30,7 @@ public class JavaAnalyzer {
     public JavaAnalyzer(final String compileSource, final String compileTarget) {
         this.compileSource = compileSource;
         this.compileTarget = compileTarget;
-        log.debug("Compiler settings compileSource:{} compileTarget:{}", this.compileSource, this.compileTarget);
+        log.debug("compiler settings compileSource:{} compileTarget:{}", this.compileSource, this.compileTarget);
     }
 
     private static Set<File> getErrorFiles(final List<Diagnostic<? extends JavaFileObject>> diagnostics) {
@@ -110,7 +109,7 @@ public class JavaAnalyzer {
             if (Main.isDevelop()) {
                 log.info("---------- development compile log. output={} ----------", out);
                 for (final String cp : StringUtils.split(classpath, File.pathSeparatorChar)) {
-                    log.info("* {}", cp);
+                    log.info("{}", cp);
                 }
             }
 

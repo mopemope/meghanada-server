@@ -3,26 +3,48 @@ package meghanada.project;
 import com.esotericsoftware.kryo.DefaultSerializer;
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Objects;
+import meghanada.analyze.CompileResult;
+import meghanada.reflect.asm.CachedASMReflector;
+import meghanada.session.Session;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import javax.annotation.Nonnull;
 import java.io.File;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.util.ArrayList;
+import java.util.List;
+
+import static meghanada.utils.FunctionUtils.wrapIO;
 
 @DefaultSerializer(ProjectDependencySerializer.class)
 public class ProjectDependency {
+
+    private static final Logger log = LogManager.getLogger(ProjectDependency.class);
 
     private final String id;
     private final String scope;
     private final String version;
     private final File file;
+    private final Type type;
+    private String dependencyFilePath;
 
     public ProjectDependency(@Nonnull final String id,
                              @Nonnull final String scope,
                              @Nonnull final String version,
-                             @Nonnull final File file) {
+                             @Nonnull final File file,
+                             @Nonnull final Type type) {
         this.id = id;
         this.scope = scope.toUpperCase();
         this.version = version;
         this.file = file;
+        this.type = type;
+    }
+
+    @Nonnull
+    public static Type getFileType(@Nonnull final File file) {
+        return file.isFile() ? Type.JAR : Type.DIRECTORY;
     }
 
     public String getId() {
@@ -38,27 +60,29 @@ public class ProjectDependency {
     }
 
     public File getFile() {
-        return file;
+        if (type.equals(Type.PROJECT)) {
+            // eval project
+            return file;
+        } else {
+            return file;
+        }
     }
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (!(o instanceof ProjectDependency)) {
-            return false;
-        }
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
         ProjectDependency that = (ProjectDependency) o;
-        return Objects.equal(id, that.id)
-                && Objects.equal(scope, that.scope)
-                && Objects.equal(version, that.version)
-                && Objects.equal(file, that.file);
+        return Objects.equal(id, that.id) &&
+                Objects.equal(scope, that.scope) &&
+                Objects.equal(version, that.version) &&
+                Objects.equal(file, that.file) &&
+                type == that.type;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hashCode(id, scope, version, file);
+        return Objects.hashCode(id, scope, version, file, type);
     }
 
     @Override
@@ -68,6 +92,65 @@ public class ProjectDependency {
                 .add("scope", scope)
                 .add("version", version)
                 .add("file", file)
+                .add("type", type)
                 .toString();
+    }
+
+    public String string() {
+        return MoreObjects.toStringHelper(this)
+                .add("type", type)
+                .add("file", file)
+                .toString();
+    }
+
+    public Type getType() {
+        return type;
+    }
+
+    public String getDependencyFilePath() {
+        try {
+            if (type.equals(Type.PROJECT)) {
+                if (this.dependencyFilePath != null) {
+                    return this.dependencyFilePath;
+                }
+                // get gradle's project archive
+                final File projectArchive = new File(file, "build" + File.separator + "libs" + File.separator + this.id + ".jar");
+                if (projectArchive.exists()) {
+                    // add index
+                    final List<File> temp = new ArrayList<>(1);
+                    temp.add(projectArchive);
+                    final CachedASMReflector reflector = CachedASMReflector.getInstance();
+                    reflector.createClassIndexes(temp);
+                    this.dependencyFilePath = projectArchive.getCanonicalPath();
+                } else {
+                    if (this.dependencyFilePath != null) {
+                        return this.dependencyFilePath;
+                    }
+                    final File output = Session.findProject(this.file)
+                            .map(wrapIO(project -> {
+                                // cache build result
+                                final CompileResult compileResult = project.compileJava();
+                                if (!compileResult.isSuccess()) {
+                                    log.warn("Compile Error : {}", compileResult.getDiagnosticsSummary());
+                                }
+                                return project.getOutput();
+                            }))
+                            .orElse(this.file);
+
+                    this.dependencyFilePath = output.getCanonicalPath();
+                }
+                return this.dependencyFilePath;
+            } else {
+                return file.getCanonicalPath();
+            }
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    public enum Type {
+        JAR,
+        DIRECTORY,
+        PROJECT
     }
 }

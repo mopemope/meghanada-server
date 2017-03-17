@@ -91,11 +91,11 @@ public class GradleTestBase {
     }
 
     protected static File getOutputDir() {
-        return project.getOutputDirectory();
+        return project.getOutput();
     }
 
     protected static File getTestOutputDir() {
-        return project.getTestOutputDirectory();
+        return project.getTestOutput();
     }
 
     protected static Set<File> getSourceDir() {

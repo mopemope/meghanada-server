@@ -50,19 +50,19 @@ public abstract class Scope {
 
     public FieldAccess addFieldAccess(final FieldAccess fieldAccess) {
         this.fieldAccesses.add(fieldAccess);
-        log.debug("add fieldAccess={} to range={} {}", fieldAccess, this.range, this.getClassName());
+        log.trace("add fieldAccess={} to range={} {}", fieldAccess, this.range, this.getClassName());
         return fieldAccess;
     }
 
     public MethodCall addMethodCall(final MethodCall methodCall) {
         this.methodCalls.add(methodCall);
-        log.debug("add methodCall={} to range={} {}", methodCall, this.range, this.getClassName());
+        log.trace("add methodCall={} to range={} {}", methodCall, this.range, this.getClassName());
         return methodCall;
     }
 
     public Variable addVariable(final Variable variable) {
         this.variables.add(variable);
-        log.debug("add variable={} to range={} {}", variable, this.range, this.getClassName());
+        log.trace("add variable={} to range={} {}", variable, this.range, this.getClassName());
         return variable;
     }
 

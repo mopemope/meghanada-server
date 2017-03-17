@@ -14,7 +14,4 @@ public class ProjectParseException extends IOException {
         super(cause);
     }
 
-    public ProjectParseException(String message, Throwable cause) {
-        super(message, cause);
-    }
 }

@@ -2,14 +2,16 @@ package meghanada.project.gradle;
 
 import meghanada.analyze.CompileResult;
 import meghanada.project.Project;
+import org.apache.commons.lang3.StringUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.io.File;
-import java.util.Set;
 
 import static meghanada.config.Config.timeIt;
+import static meghanada.config.Config.traceIt;
+import static org.junit.Assert.assertTrue;
 
 public class GradleProjectTest {
 
@@ -17,8 +19,6 @@ public class GradleProjectTest {
     
     @Before
     public void setUp() throws Exception {
-        // System.setProperty("log-level", "DEBUG");
-        // printEnv();
         if (this.project == null) {
             this.project = new GradleProject(new File("./").getCanonicalFile());
         }
@@ -32,20 +32,18 @@ public class GradleProjectTest {
     @Test
     public void testRunTask1() throws Exception {
         this.project.parseProject();
-        final File outputDirectory = this.project.getOutputDirectory();
+        final File outputDirectory = this.project.getOutput();
         System.out.println(outputDirectory);
     }
 
     @Test
     public void testParse1() throws Exception {
-        final Project project = timeIt(() -> {
+        final Project project = traceIt(() -> {
             return this.project.parseProject();
         });
-
-        final Set<Project> projects = project.getDependencyProjects();
-        System.out.println(projects.size());
-        for (Project p : projects) {
-            System.out.println(p);
+        final String classpath = project.classpath();
+        for (final String cp : StringUtils.split(classpath, File.pathSeparatorChar)) {
+            System.out.println(cp);
         }
     }
 
@@ -53,13 +51,15 @@ public class GradleProjectTest {
     public void testCompile1() throws Exception {
         final CompileResult compileResult = timeIt(() -> {
             project.parseProject();
-            this.project.compileJava(false);
-            return this.project.compileTestJava(false);
+            return this.project.compileJava();
         });
-
-        if (!compileResult.isSuccess()) {
-            System.out.println(compileResult.getDiagnosticsSummary());
+        final String classpath = project.classpath();
+        for (final String cp : StringUtils.split(classpath, File.pathSeparatorChar)) {
+            System.out.println(cp);
         }
+
+        System.out.println(compileResult.getDiagnosticsSummary());
+        assertTrue(compileResult.isSuccess());
         // this.project.compileJava(false);
     }
 

@@ -26,6 +26,20 @@ class POMParser {
         this.projectRoot = projectRoot;
     }
 
+    private static String getPOMProperties(POMInfo pomInfo, String value) {
+        if (value != null && value.contains("$")) {
+            int startIdx = value.indexOf('$');
+            int endIdx = value.indexOf('}');
+            String key = value.substring(startIdx + 2, endIdx);
+            String replace = value.substring(startIdx, endIdx + 1);
+            String newValue = pomInfo.properties.getProperty(key);
+            if (newValue != null) {
+                value = value.replace(replace, newValue);
+            }
+        }
+        return value;
+    }
+
     POMInfo parsePom(File pom) throws ProjectParseException {
 
         try {
@@ -96,25 +110,11 @@ class POMParser {
         }
     }
 
-    private String getPOMProperties(POMInfo pomInfo, String value) {
-        if (value != null && value.contains("$")) {
-            int startIdx = value.indexOf("$");
-            int endIdx = value.indexOf("}");
-            String key = value.substring(startIdx + 2, endIdx);
-            String replace = value.substring(startIdx, endIdx + 1);
-            String newValue = pomInfo.properties.getProperty(key);
-            if (newValue != null) {
-                value = value.replace(replace, newValue);
-            }
-        }
-        return value;
-    }
-
     private void replacePOMProperties(POMInfo pomInfo) {
         for (String key : pomInfo.properties.stringPropertyNames()) {
             String val = pomInfo.properties.getProperty(key);
-            val = this.getPOMProperties(pomInfo, val);
-            val = this.getPOMProperties(pomInfo, val);
+            val = POMParser.getPOMProperties(pomInfo, val);
+            val = POMParser.getPOMProperties(pomInfo, val);
             if (val != null) {
                 pomInfo.properties.setProperty(key, val);
             }

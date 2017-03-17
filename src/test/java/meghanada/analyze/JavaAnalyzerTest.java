@@ -28,8 +28,8 @@ public class JavaAnalyzerTest extends GradleTestBase {
     public static void beforeClass() throws Exception {
         GradleTestBase.setupReflector();
         CachedASMReflector cachedASMReflector = CachedASMReflector.getInstance();
-        cachedASMReflector.addClasspath(getOutputDir());
-        cachedASMReflector.addClasspath(getTestOutputDir());
+        cachedASMReflector.addClasspath(getOutput());
+        cachedASMReflector.addClasspath(getTestOutput());
         cachedASMReflector.createClassIndexes();
     }
 
@@ -46,12 +46,12 @@ public class JavaAnalyzerTest extends GradleTestBase {
         Config.load();
     }
 
-    protected static File getOutputDir() {
-        return project.getOutputDirectory();
+    protected static File getOutput() {
+        return project.getOutput();
     }
 
-    protected static File getTestOutputDir() {
-        return project.getTestOutputDirectory();
+    protected static File getTestOutput() {
+        return project.getTestOutput();
     }
 
     @Test
@@ -611,9 +611,9 @@ public class JavaAnalyzerTest extends GradleTestBase {
             }
         });
 
-        final String out = getOutputDir().getCanonicalPath();
+        final String out = getOutput().getCanonicalPath();
         classpath.add(out);
-        classpath.add(getTestOutputDir().getCanonicalPath());
+        classpath.add(getTestOutput().getCanonicalPath());
 
         return String.join(File.pathSeparator, classpath);
     }
@@ -630,9 +630,9 @@ public class JavaAnalyzerTest extends GradleTestBase {
                     }
                 }).collect(Collectors.toList());
 
-        final String out = getOutputDir().getCanonicalPath();
+        final String out = getOutput().getCanonicalPath();
         classpath.add(out);
-        classpath.add(getTestOutputDir().getCanonicalPath());
+        classpath.add(getTestOutput().getCanonicalPath());
 
         return String.join(File.pathSeparator, classpath);
     }

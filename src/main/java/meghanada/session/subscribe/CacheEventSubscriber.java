@@ -4,6 +4,7 @@ import com.google.common.base.Stopwatch;
 import com.google.common.eventbus.Subscribe;
 import meghanada.analyze.CompileResult;
 import meghanada.project.Project;
+import meghanada.project.ProjectDependency;
 import meghanada.reflect.asm.CachedASMReflector;
 import meghanada.session.Session;
 import meghanada.session.SessionEventBus;
@@ -49,35 +50,43 @@ public class CacheEventSubscriber extends AbstractSubscriber {
 
         timeItF("analyzed and compiled. elapsed:{}", () -> {
             try {
-                final CompileResult compileResult = project.compileJava(false, true);
-                if (!compileResult.isSuccess()) {
+                final CompileResult compileResult = project.compileJava();
+                if (compileResult.isSuccess()) {
+                    final CompileResult testCompileResult = project.compileTestJava();
+                    if (!testCompileResult.isSuccess()) {
+                        log.warn("Test Compile Error : {}", testCompileResult.getDiagnosticsSummary());
+                    }
+                } else {
                     log.warn("Compile Error : {}", compileResult.getDiagnosticsSummary());
                 }
-
-                final CompileResult testCompileResult = project.compileTestJava(false, true);
-                if (!testCompileResult.isSuccess()) {
-                    log.warn("Test Compile Error : {}", testCompileResult.getDiagnosticsSummary());
-                }
-
             } catch (Exception e) {
                 log.catching(e);
             }
         });
 
-        reflector.addClasspath(project.getOutputDirectory());
-        reflector.addClasspath(project.getTestOutputDirectory());
-        for (final Project dependency : project.getDependencyProjects()) {
-            reflector.addClasspath(dependency.getOutputDirectory());
-            reflector.addClasspath(dependency.getTestOutputDirectory());
-        }
+        reflector.addClasspath(project.getOutput());
+        reflector.addClasspath(project.getTestOutput());
+        project.getDependencies()
+                .stream()
+                .filter(pd -> pd.getType().equals(ProjectDependency.Type.PROJECT))
+                .forEach(pd -> {
+                    final File df = new File(pd.getDependencyFilePath());
+                    if (df.exists() && df.isDirectory()) {
+                        reflector.addClasspath(df);
+                    }
+                });
         reflector.updateClassIndexFromDirectory();
 
         final Runtime runtime = Runtime.getRuntime();
         final float maxMemory = runtime.maxMemory() / 1024 / 1024;
+        final float totalMemory = runtime.totalMemory() / 1024 / 1024;
         final float usedMemory = (runtime.totalMemory() - runtime.freeMemory()) / 1024 / 1024;
 
         log.info("create class index. size:{} total elapsed:{}", reflector.getGlobalClassIndex().size(), stopwatch.stop());
-        log.info("jvm memory (used/max): {}MB / {}MB", String.format("%.2f", usedMemory), String.format("%.2f", maxMemory));
+        log.info("jvm memory (used/total/max): {}MB / {}MB / {}MB",
+                String.format("%.2f", usedMemory),
+                String.format("%.2f", totalMemory),
+                String.format("%.2f", maxMemory));
         log.info("Done indexing");
     }
 }

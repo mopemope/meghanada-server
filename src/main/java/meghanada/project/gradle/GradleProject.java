@@ -10,7 +10,7 @@ import meghanada.project.Project;
 import meghanada.project.ProjectDependency;
 import meghanada.project.ProjectParseException;
 import meghanada.project.ProjectSerializer;
-import meghanada.session.Session;
+import meghanada.utils.ClassNameUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -20,9 +20,11 @@ import org.gradle.tooling.model.GradleModuleVersion;
 import org.gradle.tooling.model.UnsupportedMethodException;
 import org.gradle.tooling.model.idea.*;
 
+import javax.annotation.Nonnull;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 import static meghanada.config.Config.debugTimeItF;
 import static meghanada.utils.FunctionUtils.wrapIOConsumer;
@@ -31,10 +33,8 @@ import static meghanada.utils.FunctionUtils.wrapIOConsumer;
 public class GradleProject extends Project {
 
     private static final Logger log = LogManager.getLogger(GradleProject.class);
-    private static final int LARGE_PROJECT = 5;
     private final File rootProject;
-    private final Map<String, File> projects = new ConcurrentHashMap<>(4);
-    private final List<String> dependencyModules = new ArrayList<>(2);
+    private final Map<String, File> allModules = new ConcurrentHashMap<>(4);
     private final List<String> prepareCompileTask = new ArrayList<>(2);
     private final List<String> prepareTestCompileTask = new ArrayList<>(2);
 
@@ -43,7 +43,7 @@ public class GradleProject extends Project {
         this.rootProject = GradleProject.searchRootProject(projectRoot);
     }
 
-    private static File searchRootProject(File dir) throws IOException {
+    private static File searchRootProject(@Nonnull File dir) throws IOException {
 
         File result = dir;
         dir = dir.getParentFile();
@@ -71,6 +71,15 @@ public class GradleProject extends Project {
         return result;
     }
 
+    private static String convertName(final String path) {
+        final String replaced = ClassNameUtils.replace(path, ":", "-");
+        if (replaced.startsWith("-")) {
+            return replaced.substring(1);
+        }
+        return replaced;
+    }
+
+    @Nonnull
     @Override
     public Project parseProject() throws ProjectParseException {
         final ProjectConnection connection = getProjectConnection();
@@ -80,38 +89,18 @@ public class GradleProject extends Project {
                     connection.getModel(IdeaProject.class));
             this.setCompileTarget(ideaProject);
 
-            final Config config = Config.load();
-            final boolean buildWithDependency = config.isBuildWithDependency();
-            log.trace("load project main module name:{} projectRoot:{}", ideaProject.getName(), this.projectRoot);
+            log.trace("load root project path:{}", this.rootProject);
             final DomainObjectSet<? extends IdeaModule> modules = ideaProject.getModules();
 
-            if (modules.size() > LARGE_PROJECT) {
-                config.setBuildWithDependency(false);
-            }
-
-            ideaProject.getModules()
-                    .stream()
-                    .parallel()
-                    .forEach(wrapIOConsumer(this::parseIdeaModule));
-
-            this.dependencyModules.parallelStream().forEach(name -> {
-                if (projects.containsKey(name)) {
-                    debugTimeItF("load lazy module name=" + name + " elapsed={}", () ->
-                            this.loadModuleDependency(name));
-                } else {
-                    final String[] split = name.split("-");
-                    if (split.length > 0) {
-                        final String separatedName = split[split.length - 1];
-                        if (projects.containsKey(separatedName)) {
-                            debugTimeItF("load lazy module name=" + separatedName + " elapsed={}", () ->
-                                    this.loadModuleDependency(separatedName));
-                        } else {
-                            log.warn("fail load module={}", name);
-                        }
-                    }
-                }
-            });
-
+            final List<? extends IdeaModule> mainModules = modules.parallelStream().filter(ideaModule -> {
+                final org.gradle.tooling.model.GradleProject gradleProject = ideaModule.getGradleProject();
+                final File moduleProjectRoot = gradleProject.getProjectDirectory();
+                final String name = ideaModule.getName();
+                log.trace("find sub-module name {}:{} path:{} ", name, moduleProjectRoot);
+                this.allModules.putIfAbsent(name, moduleProjectRoot);
+                return moduleProjectRoot.equals(this.getProjectRoot());
+            }).collect(Collectors.toList());
+            mainModules.forEach(wrapIOConsumer(this::parseIdeaModule));
             return this;
         } catch (Exception e) {
             throw new ProjectParseException(e);
@@ -120,31 +109,22 @@ public class GradleProject extends Project {
         }
     }
 
-    private void parseIdeaModule(final IdeaModule ideaModule) throws IOException {
+    private void parseIdeaModule(@Nonnull final IdeaModule ideaModule) throws IOException {
         final org.gradle.tooling.model.GradleProject gradleProject = ideaModule.getGradleProject();
-
-        final String projectName = gradleProject.getName();
-        final File moduleProjectRoot = gradleProject.getProjectDirectory();
-        log.trace("find project module name:{} projectRoot:{}", projectName, moduleProjectRoot);
-        if (moduleProjectRoot.equals(this.getProjectRoot())) {
-            this.name = gradleProject.getPath();
-            final AndroidProject androidProject = AndroidSupport.getAndroidProject(this.rootProject, gradleProject);
-            if (androidProject != null) {
-                // parse android
-                this.isAndroidProject = true;
-                final AndroidSupport androidSupport = new AndroidSupport(this);
-                androidSupport.parseAndroidProject(gradleProject, androidProject);
-            } else {
-                // normal
-                this.parseIdeaModule(gradleProject, ideaModule);
-            }
+        this.name = convertName(gradleProject.getPath());
+        final AndroidProject androidProject = AndroidSupport.getAndroidProject(this.rootProject, gradleProject);
+        if (androidProject != null) {
+            // parse android
+            this.isAndroidProject = true;
+            final AndroidSupport androidSupport = new AndroidSupport(this);
+            androidSupport.parseAndroidProject(androidProject);
         } else {
-            log.trace("load sub module. name:{} projectRoot:{}", projectName, moduleProjectRoot);
-            this.projects.putIfAbsent(projectName, moduleProjectRoot);
+            // normal
+            this.parseIdeaModule(gradleProject, ideaModule);
         }
     }
 
-    private void setCompileTarget(IdeaProject ideaProject) {
+    private void setCompileTarget(@Nonnull final IdeaProject ideaProject) {
         final IdeaJavaLanguageSettings javaLanguageSettings = ideaProject.getJavaLanguageSettings();
         try {
             final String srcLevel = javaLanguageSettings.getLanguageLevel().toString();
@@ -156,7 +136,8 @@ public class GradleProject extends Project {
         }
     }
 
-    private void parseIdeaModule(final org.gradle.tooling.model.GradleProject gradleProject, final IdeaModule ideaModule) throws IOException {
+    private void parseIdeaModule(@Nonnull final org.gradle.tooling.model.GradleProject gradleProject,
+                                 @Nonnull final IdeaModule ideaModule) throws IOException {
         if (this.output == null) {
             final String buildDir = gradleProject.getBuildDirectory().getCanonicalPath();
             String build = Joiner.on(File.separator).join(buildDir, "classes", "main");
@@ -167,7 +148,7 @@ public class GradleProject extends Project {
             String build = Joiner.on(File.separator).join(buildDir, "classes", "test");
             this.testOutput = this.normalize(build);
         }
-        final Set<ProjectDependency> dependencies = this.getDependency(ideaModule);
+        final Set<ProjectDependency> dependencies = this.analyzeDependencies(ideaModule);
         final Map<String, Set<File>> sources = this.searchProjectSources(ideaModule);
 
         this.sources.addAll(sources.get("sources"));
@@ -205,28 +186,12 @@ public class GradleProject extends Project {
         log.debug("test output {}", this.testOutput);
 
         for (final ProjectDependency projectDependency : this.getDependencies()) {
-            log.debug("dependency {}", projectDependency);
+            log.debug("{}", projectDependency.string());
         }
 
     }
 
-    private void loadModuleDependency(final String name) throws IOException {
-        final File moduleRoot = this.projects.get(name);
-        Session.findProject(moduleRoot).ifPresent(project -> {
-
-            final File outputFile = project.getOutputDirectory();
-            final ProjectDependency output = new ProjectDependency(name, "COMPILE", "", outputFile);
-            dependencies.add(output);
-
-            final File testOutputFile = project.getTestOutputDirectory();
-            final ProjectDependency testOutput = new ProjectDependency(name + "Test", "COMPILE", "", testOutputFile);
-            dependencies.add(testOutput);
-
-            this.dependencyProjects.add(project);
-            log.debug("load module dependency name={}", name);
-        });
-    }
-
+    @Nonnull
     ProjectConnection getProjectConnection() {
         final String gradleVersion = Config.load().getGradleVersion();
         GradleConnector connector;
@@ -279,7 +244,6 @@ public class GradleProject extends Project {
         }
     }
 
-
     private Map<String, Set<File>> searchProjectSources(final IdeaModule ideaModule) throws IOException {
         final Map<String, Set<File>> result = new HashMap<>(8);
         result.put("sources", new HashSet<>(2));
@@ -288,8 +252,6 @@ public class GradleProject extends Project {
         result.put("testResources", new HashSet<>(2));
 
         for (final IdeaContentRoot ideaContentRoot : ideaModule.getContentRoots().getAll()) {
-            // log.debug("{}", ideaContentRoot.getExcludeDirectories());
-            // log.debug("IdeaContentRoot {}", ideaContentRoot.getSourceDirectories());
             for (final IdeaSourceDirectory sourceDirectory : ideaContentRoot.getSourceDirectories().getAll()) {
                 final File file = normalizeFile(sourceDirectory.getDirectory());
                 final String path = file.getCanonicalPath();
@@ -300,7 +262,6 @@ public class GradleProject extends Project {
                 }
             }
             for (final IdeaSourceDirectory sourceDirectory : ideaContentRoot.getTestDirectories().getAll()) {
-                // log.debug("IdeaSourceDirectory {}", ideaContentRoot.getSourceDirectories());
                 final File file = normalizeFile(sourceDirectory.getDirectory());
                 final String path = file.getCanonicalPath();
                 if (path.contains("resources")) {
@@ -313,7 +274,7 @@ public class GradleProject extends Project {
         return result;
     }
 
-    private Set<ProjectDependency> getDependency(final IdeaModule ideaModule) {
+    private Set<ProjectDependency> analyzeDependencies(final IdeaModule ideaModule) {
         final Set<ProjectDependency> dependencies = new HashSet<>(16);
 
         for (final IdeaDependency dependency : ideaModule.getDependencies().getAll()) {
@@ -339,13 +300,27 @@ public class GradleProject extends Project {
                 if (scope == null) {
                     scope = "COMPILE";
                 }
-                final ProjectDependency projectDependency = new ProjectDependency(id, scope, version, file);
+                final ProjectDependency.Type type = ProjectDependency.getFileType(file);
+                final ProjectDependency projectDependency = new ProjectDependency(id, scope, version, file, type);
                 dependencies.add(projectDependency);
             } else if (dependency instanceof IdeaModuleDependency) {
                 final IdeaModuleDependency moduleDependency = (IdeaModuleDependency) dependency;
+                final String scope = moduleDependency.getScope().getScope();
                 final String moduleName = moduleDependency.getTargetModuleName();
-                log.debug("find module dependency project {} dependsOn {} ", this.name, moduleName);
-                this.dependencyModules.add(moduleName);
+                this.allModules.computeIfPresent(moduleName, (key, projectRoot) -> {
+                    final ProjectDependency projectDependency = new ProjectDependency(key,
+                            scope,
+                            "1.0.0",
+                            projectRoot,
+                            ProjectDependency.Type.PROJECT);
+                    dependencies.add(projectDependency);
+                    return projectRoot;
+                });
+
+                if (!this.allModules.containsKey(moduleName)) {
+                    log.warn("missing module:{}", moduleName);
+                }
+
             } else {
                 log.warn("dep ??? class={}", dependency.getClass());
             }
@@ -355,13 +330,18 @@ public class GradleProject extends Project {
     }
 
     @Override
-    public CompileResult compileJava(boolean force, boolean fullBuild) throws IOException {
+    public CompileResult compileJava() throws IOException {
+        return this.compileJava(false);
+    }
+
+    @Override
+    public CompileResult compileJava(boolean force) throws IOException {
         this.runPrepareCompileTask();
         if (this.isAndroidProject) {
             new AndroidSupport(this).prepareCompileAndroidJava();
-            return super.compileJava(force, fullBuild);
+            return super.compileJava(force);
         } else {
-            return super.compileJava(force, fullBuild);
+            return super.compileJava(force);
         }
     }
 
@@ -371,6 +351,7 @@ public class GradleProject extends Project {
             try {
                 final String[] tasks = prepareCompileTask.toArray(new String[prepareCompileTask.size()]);
                 final BuildLauncher buildLauncher = connection.newBuild();
+                log.info("project {} run tasks:{}", this.name, (Object) tasks);
                 buildLauncher.forTasks(tasks).run();
             } finally {
                 connection.close();
@@ -379,13 +360,18 @@ public class GradleProject extends Project {
     }
 
     @Override
-    public CompileResult compileTestJava(boolean force, boolean fullBuild) throws IOException {
+    public CompileResult compileTestJava() throws IOException {
+        return this.compileTestJava(false);
+    }
+
+    @Override
+    public CompileResult compileTestJava(boolean force) throws IOException {
         this.runPrepareTestCompileTask();
         if (this.isAndroidProject) {
             new AndroidSupport(this).prepareCompileAndroidTestJava();
-            return super.compileTestJava(force, fullBuild);
+            return super.compileTestJava(force);
         } else {
-            return super.compileTestJava(force, fullBuild);
+            return super.compileTestJava(force);
         }
     }
 
@@ -395,6 +381,7 @@ public class GradleProject extends Project {
             try {
                 final String[] tasks = prepareTestCompileTask.toArray(new String[prepareTestCompileTask.size()]);
                 final BuildLauncher buildLauncher = connection.newBuild();
+                log.info("project {} run tasks:{}", this.name, (Object) tasks);
                 buildLauncher.forTasks(tasks).run();
             } finally {
                 connection.close();
@@ -441,7 +428,7 @@ public class GradleProject extends Project {
         }
 
         @Override
-        public void onComplete(Void result) {
+        public void onComplete(final Void result) {
             try {
                 outputStream.close();
                 inputStream.close();
@@ -453,7 +440,7 @@ public class GradleProject extends Project {
         }
 
         @Override
-        public void onFailure(GradleConnectionException failure) {
+        public void onFailure(final GradleConnectionException failure) {
             try {
                 log.catching(failure.getCause());
                 outputStream.close();

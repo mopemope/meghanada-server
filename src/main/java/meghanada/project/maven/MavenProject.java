@@ -38,15 +38,11 @@ public class MavenProject extends Project {
         this.pomFile = new File(projectRoot, Project.MVN_PROJECT_FILE);
     }
 
-    private void setMavenPath(String maven) {
-        this.mavenCmd = maven;
-    }
-
-    private String getVersion(final String path) {
+    private static String getVersion(final String path) {
         return new File(path).getName();
     }
 
-    private String getArtifactCode(final String path) {
+    private static String getArtifactCode(final String path) {
         final File parentFile = new File(path).getParentFile();
         final String artifactID = parentFile.getName();
 
@@ -56,7 +52,11 @@ public class MavenProject extends Project {
             parent = parent.substring(i + 10);
         }
         final String groupID = ClassNameUtils.replace(parent, File.separator, ".");
-        return groupID + ":" + artifactID;
+        return groupID + ':' + artifactID;
+    }
+
+    private void setMavenPath(String maven) {
+        this.mavenCmd = maven;
     }
 
     @Override
@@ -64,7 +64,7 @@ public class MavenProject extends Project {
         try {
             final String mavenPath = Config.load().getMavenPath();
             if (!Strings.isNullOrEmpty(mavenPath)) {
-                this.setMavenPath(mavenPath);
+                this.mavenCmd = mavenPath;
             }
 
             final File logFile = File.createTempFile("meghanada-maven-classpath", ".log");
@@ -87,9 +87,10 @@ public class MavenProject extends Project {
                 for (final String dep : depends) {
                     final File file = new File(dep);
                     final String parentPath = file.getParent();
-                    final String version = this.getVersion(parentPath);
-                    final String code = this.getArtifactCode(parentPath);
-                    final ProjectDependency dependency = new ProjectDependency(code, "COMPILE", version, file);
+                    final String version = MavenProject.getVersion(parentPath);
+                    final String code = MavenProject.getArtifactCode(parentPath);
+                    final ProjectDependency.Type type = ProjectDependency.getFileType(file);
+                    final ProjectDependency dependency = new ProjectDependency(code, "COMPILE", version, file, type);
                     super.dependencies.add(dependency);
                 }
             }
@@ -137,7 +138,7 @@ public class MavenProject extends Project {
 
     @Override
     public InputStream runTask(List<String> args) throws IOException {
-        List<String> mvnCmd = new ArrayList<>();
+        List<String> mvnCmd = new ArrayList<>(8);
         mvnCmd.add(this.mavenCmd);
         mvnCmd.addAll(args);
         return super.runProcess(mvnCmd);
