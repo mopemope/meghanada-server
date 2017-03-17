@@ -149,18 +149,6 @@ public abstract class MemberDescriptor implements CandidateUnit, Cloneable {
         return !temp.contains(ClassNameUtils.CLASS_TYPE_VARIABLE_MARK) && !temp.contains(ClassNameUtils.FORMAL_TYPE_VARIABLE_MARK);
     }
 
-    public String getReturnTypeKey() {
-        final int idx1 = this.returnType.indexOf(ClassNameUtils.CLASS_TYPE_VARIABLE_MARK);
-        if (idx1 > -1) {
-            return this.returnType.substring(idx1 + 2, idx1 + 3);
-        }
-        final int idx2 = this.returnType.indexOf(ClassNameUtils.FORMAL_TYPE_VARIABLE_MARK);
-        if (idx2 > -1) {
-            return this.returnType.substring(idx2 + 2, idx2 + 3);
-        }
-        return null;
-    }
-
     @Override
     public boolean equals(Object o) {
         if (this == o) {

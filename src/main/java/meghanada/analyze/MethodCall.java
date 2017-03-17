@@ -25,7 +25,7 @@ public class MethodCall extends AccessSymbol {
     public MethodCall(final String scope, final String name, final int pos, final Range nameRange, final Range range) {
         super(name, pos, range);
         this.nameRange = nameRange;
-        if (scope != null && scope.length() <= SCOPE_LIMIT) {
+        if (scope.length() <= SCOPE_LIMIT) {
             super.scope = scope;
         } else {
             super.scope = name;

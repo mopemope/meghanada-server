@@ -20,6 +20,7 @@ import java.util.stream.Collectors;
 
 import static meghanada.config.Config.timeIt;
 
+@SuppressWarnings("CheckReturnValue")
 public class JavaAnalyzerTest extends GradleTestBase {
 
     private static Project project;
@@ -636,5 +637,5 @@ public class JavaAnalyzerTest extends GradleTestBase {
 
         return String.join(File.pathSeparator, classpath);
     }
-    
+
 }

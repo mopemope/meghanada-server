@@ -5,6 +5,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.message.EntryMessage;
 
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -23,11 +24,18 @@ public class MethodScope extends BlockScope {
 
     }
 
-    public MethodScope(final String name, final Range nameRange, final int pos, final Range range) {
+    public MethodScope(final String name,
+                       @Nullable final Range nameRange,
+                       final int pos,
+                       final Range range) {
         this(name, nameRange, pos, range, false);
     }
 
-    public MethodScope(final String name, final Range nameRange, final int pos, final Range range, final boolean isConstructor) {
+    public MethodScope(final String name,
+                       @Nullable final Range nameRange,
+                       final int pos,
+                       final Range range,
+                       final boolean isConstructor) {
         super(pos, range);
         this.name = name;
         this.nameRange = nameRange;

@@ -14,6 +14,7 @@ import java.io.File;
 import java.util.List;
 import java.util.stream.Collectors;
 
+@SuppressWarnings("CheckReturnValue")
 @RunWith(ClasspathSuite.class)
 @ClassnameFilters({".*Test"})
 @IncludeJars(true)

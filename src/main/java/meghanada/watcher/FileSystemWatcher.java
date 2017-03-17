@@ -55,17 +55,6 @@ public class FileSystemWatcher {
         }
     }
 
-    public void watchFiles(final List<File> files) throws IOException {
-        if (this.watchKeyHolder != null) {
-            for (final File root : files) {
-                if (root.exists()) {
-                    final Path rootPath = root.toPath();
-                    this.watchKeyHolder.walk(rootPath);
-                }
-            }
-        }
-    }
-
     public void start(final List<File> files) throws IOException {
         this.abort = false;
 
@@ -184,9 +173,6 @@ public class FileSystemWatcher {
         }
 
         void register(final Path path) throws IOException {
-            if (path == null) {
-                return;
-            }
             if (meghanada.utils.FileUtils.filterFile(path.toFile())) {
                 final WatchKey key = path.register(this.watchService,
                         StandardWatchEventKinds.ENTRY_CREATE,

@@ -20,7 +20,6 @@ import org.gradle.tooling.model.GradleModuleVersion;
 import org.gradle.tooling.model.UnsupportedMethodException;
 import org.gradle.tooling.model.idea.*;
 
-import javax.annotation.Nonnull;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -43,7 +42,7 @@ public class GradleProject extends Project {
         this.rootProject = GradleProject.searchRootProject(projectRoot);
     }
 
-    private static File searchRootProject(@Nonnull File dir) throws IOException {
+    private static File searchRootProject(File dir) throws IOException {
 
         File result = dir;
         dir = dir.getParentFile();
@@ -79,7 +78,6 @@ public class GradleProject extends Project {
         return replaced;
     }
 
-    @Nonnull
     @Override
     public Project parseProject() throws ProjectParseException {
         final ProjectConnection connection = getProjectConnection();
@@ -109,7 +107,7 @@ public class GradleProject extends Project {
         }
     }
 
-    private void parseIdeaModule(@Nonnull final IdeaModule ideaModule) throws IOException {
+    private void parseIdeaModule(final IdeaModule ideaModule) throws IOException {
         final org.gradle.tooling.model.GradleProject gradleProject = ideaModule.getGradleProject();
         this.name = convertName(gradleProject.getPath());
         final AndroidProject androidProject = AndroidSupport.getAndroidProject(this.rootProject, gradleProject);
@@ -124,7 +122,7 @@ public class GradleProject extends Project {
         }
     }
 
-    private void setCompileTarget(@Nonnull final IdeaProject ideaProject) {
+    private void setCompileTarget(final IdeaProject ideaProject) {
         final IdeaJavaLanguageSettings javaLanguageSettings = ideaProject.getJavaLanguageSettings();
         try {
             final String srcLevel = javaLanguageSettings.getLanguageLevel().toString();
@@ -136,8 +134,8 @@ public class GradleProject extends Project {
         }
     }
 
-    private void parseIdeaModule(@Nonnull final org.gradle.tooling.model.GradleProject gradleProject,
-                                 @Nonnull final IdeaModule ideaModule) throws IOException {
+    private void parseIdeaModule(final org.gradle.tooling.model.GradleProject gradleProject,
+                                 final IdeaModule ideaModule) throws IOException {
         if (this.output == null) {
             final String buildDir = gradleProject.getBuildDirectory().getCanonicalPath();
             String build = Joiner.on(File.separator).join(buildDir, "classes", "main");
@@ -191,7 +189,6 @@ public class GradleProject extends Project {
 
     }
 
-    @Nonnull
     ProjectConnection getProjectConnection() {
         final String gradleVersion = Config.load().getGradleVersion();
         GradleConnector connector;

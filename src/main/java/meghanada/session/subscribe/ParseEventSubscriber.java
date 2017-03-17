@@ -22,7 +22,7 @@ public class ParseEventSubscriber extends AbstractSubscriber {
     }
 
     private static void parseFile(final Session session, final File file) throws IOException, ExecutionException {
-        session.parseFile(file.getCanonicalPath());
+        final boolean b = session.parseFile(file.getCanonicalPath());
     }
 
     @Subscribe

@@ -11,6 +11,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.annotation.Nullable;
 import javax.tools.*;
 import java.io.File;
 import java.io.IOException;
@@ -51,10 +52,10 @@ public class JavaAnalyzer {
         return temp;
     }
 
+    @SuppressWarnings("CheckReturnValue")
     private static void replaceParser(final JavaCompiler.CompilationTask compilerTask) {
         final JavacTaskImpl javacTaskImpl = (JavacTaskImpl) compilerTask;
         final Context context = javacTaskImpl.getContext();
-
         FuzzyParserFactory.instance(context);
     }
 
@@ -70,9 +71,9 @@ public class JavaAnalyzer {
                                            final String classpath,
                                            final String out,
                                            final boolean generate,
-                                           final SourceAnalyzedHandler handler) throws IOException {
+                                           @Nullable final SourceAnalyzedHandler handler) throws IOException {
 
-        if (files == null || files.isEmpty()) {
+        if (files.isEmpty()) {
             final Map<File, Source> analyzedMap = new HashMap<>(0);
             log.debug("compile targets is empty");
             return new CompileResult(true, analyzedMap);
@@ -90,7 +91,7 @@ public class JavaAnalyzer {
                                                final String out,
                                                final List<File> compileFiles,
                                                final boolean generate,
-                                               final SourceAnalyzedHandler handler) throws IOException {
+                                               @Nullable final SourceAnalyzedHandler handler) throws IOException {
 
         final JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
         final TreeAnalyzer treeAnalyzer = new TreeAnalyzer();

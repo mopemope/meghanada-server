@@ -61,11 +61,10 @@ public class JavaVariableCompletion {
 
     public Optional<LocalVariable> localVariable(final File file, final int line) throws ExecutionException, IOException {
         final Source source = this.getSource(file);
-        final AccessSymbol accessSymbol = source.getExpressionReturn(line);
-        if (accessSymbol != null && accessSymbol.returnType != null) {
-            return createLocalVariable(accessSymbol, accessSymbol.returnType);
-        }
-        return Optional.empty();
+        return source.getExpressionReturn(line)
+                .filter(as -> as.returnType != null)
+                .flatMap(as ->
+                        createLocalVariable(as, as.returnType));
     }
 
     Optional<LocalVariable> createLocalVariable(final AccessSymbol accessSymbol, final String returnType) {
@@ -152,7 +151,7 @@ public class JavaVariableCompletion {
     }
 
     private void addName(final Set<String> names, final List<String> strings) {
-        if (strings == null || strings.isEmpty()) {
+        if (strings.isEmpty()) {
             return;
         }
         final String joins = StringUtils.join(strings, "");

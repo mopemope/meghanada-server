@@ -10,7 +10,6 @@ import meghanada.utils.ClassNameUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import javax.annotation.Nonnull;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.InputStream;
@@ -30,9 +29,9 @@ public class CommandHandler {
     private final BufferedWriter writer;
     private final OutputFormatter outputFormatter;
 
-    public CommandHandler(@Nonnull final Session session,
-                          @Nonnull final BufferedWriter writer,
-                          @Nonnull final OutputFormatter formatter) {
+    public CommandHandler(final Session session,
+                          final BufferedWriter writer,
+                          final OutputFormatter formatter) {
         this.session = session;
         this.writer = writer;
         this.outputFormatter = formatter;

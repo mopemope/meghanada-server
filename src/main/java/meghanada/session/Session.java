@@ -25,7 +25,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.message.EntryMessage;
 
-import javax.annotation.Nonnull;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -75,7 +74,6 @@ public class Session {
 
     }
 
-    @Nonnull
     public static Optional<Project> findProject(File base) throws IOException {
         while (true) {
 
@@ -287,9 +285,9 @@ public class Session {
         this.sessionEventBus.subscribeCache();
     }
 
-    public Session start() throws IOException {
+    public void start() throws IOException {
         if (this.started) {
-            return this;
+            return;
         }
 
         this.setupSubscribes();
@@ -309,7 +307,6 @@ public class Session {
 
         log.debug("session started");
         this.started = true;
-        return this;
     }
 
     public void shutdown(int timeout) {
@@ -366,7 +363,7 @@ public class Session {
                 } else {
                     // load source
                     final GlobalCache globalCache = GlobalCache.getInstance();
-                    globalCache.getSource(currentProject, file);
+                    final Source source = globalCache.getSource(currentProject, file);
                 }
                 return true;
             } catch (Exception e) {
@@ -423,7 +420,6 @@ public class Session {
                 .orElse(Collections.emptyMap());
     }
 
-    @Nonnull
     private Optional<Source> parseJavaSource(final File file) throws ExecutionException {
         if (!FileUtils.isJavaFile(file)) {
             return Optional.empty();
@@ -440,8 +436,8 @@ public class Session {
         }
         final GlobalCache globalCache = GlobalCache.getInstance();
         globalCache.invalidateSource(currentProject, file);
-        this.parseJavaSource(file);
-        this.sessionEventBus.requestCreateCache(true);
+        this.parseJavaSource(file).ifPresent(source ->
+                this.sessionEventBus.requestCreateCache(true));
         return true;
     }
 
@@ -484,7 +480,6 @@ public class Session {
         return currentProject.runJUnit(test);
     }
 
-    @Nonnull
     public Optional<String> switchTest(final String path) throws IOException {
         Project project = currentProject;
         String root = null;
@@ -561,10 +556,9 @@ public class Session {
         return currentProject.runTask(args);
     }
 
-    public String formatCode(final String path) throws IOException {
+    public void formatCode(final String path) throws IOException {
         final Project project = currentProject;
         FileUtils.formatJavaFile(project.getFormatProperties(), path);
-        return path;
     }
 
     public void reloadProject() throws IOException {

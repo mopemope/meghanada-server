@@ -11,7 +11,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.message.EntryMessage;
 
-import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.io.*;
 import java.nio.charset.Charset;
@@ -166,25 +165,25 @@ public class Source {
         log.traceExit(entryMessage);
     }
 
-    public AccessSymbol getExpressionReturn(final int line) {
+    public Optional<AccessSymbol> getExpressionReturn(final int line) {
         final Scope scope = Scope.getScope(line, this.classScopes);
         if (scope != null && (scope instanceof TypeScope)) {
             final TypeScope typeScope = (TypeScope) scope;
-            return typeScope.getExpressionReturn(line);
+            return Optional.ofNullable(typeScope.getExpressionReturn(line));
         }
-        return null;
+        return Optional.empty();
     }
 
     public List<ClassScope> getClassScopes() {
         return this.classScopes;
     }
 
-    public TypeScope getTypeScope(final int line) {
+    public Optional<TypeScope> getTypeScope(final int line) {
         final Scope scope = Scope.getScope(line, this.classScopes);
         if (scope != null) {
-            return (TypeScope) scope;
+            return Optional.of((TypeScope) scope);
         }
-        return null;
+        return Optional.empty();
     }
 
     public Optional<MethodCall> getMethodCall(final int line, final int column, final boolean onlyName) {
@@ -280,10 +279,9 @@ public class Source {
         return memberDescriptors;
     }
 
-    @Nonnull
     public Optional<FieldAccess> searchFieldAccess(final int line,
                                                    final int col,
-                                                   @Nullable final String name) {
+                                                   final String name) {
         final Scope scope = Scope.getScope(line, this.classScopes);
         if (scope != null && (scope instanceof TypeScope)) {
             final TypeScope ts = (TypeScope) scope;
@@ -347,9 +345,6 @@ public class Source {
     }
 
     private void invalidateCache(final List<ClassScope> classScopes) {
-        if (classScopes == null) {
-            return;
-        }
         final GlobalCache globalCache = GlobalCache.getInstance();
         for (final ClassScope classScope : classScopes) {
             globalCache.invalidateMemberDescriptors(classScope.getFQCN());
@@ -429,7 +424,7 @@ public class Source {
         return key != null && key.equals("true");
     }
 
-    public boolean addImportIfAbsent(@Nonnull final String fqcn) {
+    public boolean addImportIfAbsent(final String fqcn) {
         if (this.importClasses.contains(fqcn)) {
             return false;
         }
@@ -465,8 +460,8 @@ public class Source {
         this.lineRange = null;
     }
 
-    public String getImportedClassFQCN(@Nonnull final String shortName,
-                                       final String defaultValue) {
+    public String getImportedClassFQCN(final String shortName,
+                                       @Nullable final String defaultValue) {
         return this.importClasses.stream()
                 .filter(s -> {
                     if (s.indexOf('.') > 0) {

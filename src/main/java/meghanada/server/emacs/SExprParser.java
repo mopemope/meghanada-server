@@ -4,6 +4,7 @@ import com.google.common.base.MoreObjects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.annotation.Nullable;
 import java.util.*;
 
 @SuppressWarnings("unchecked")
@@ -39,7 +40,7 @@ class SExprParser {
         if (token.equals(L_PAREN)) {
             final SExprList sexprList = new SExprList();
             this.currentList.push(sexprList);
-            getList();
+            final SExpr list = getList();
             return this.currentList.pop();
         }
 
@@ -68,7 +69,7 @@ class SExprParser {
         if (token.equals(L_PAREN)) {
             final SExprList nextList = new SExprList();
             this.currentList.push(nextList);
-            getList();
+            final SExpr list = getList();
             final SExprList inner = this.currentList.pop();
             sexprList.add(inner);
         } else {
@@ -223,6 +224,7 @@ class SExprParser {
         AtomNil() {
         }
 
+        @Nullable
         @Override
         @SuppressWarnings("unchecked")
         public Object value() {

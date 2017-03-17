@@ -21,7 +21,6 @@ import org.jboss.windup.decompiler.api.DecompilationResult;
 import org.jboss.windup.decompiler.fernflower.FernflowerDecompiler;
 import org.jboss.windup.decompiler.util.Filter;
 
-import javax.annotation.Nonnull;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -51,7 +50,6 @@ public class LocationSearcher {
         this.project = project;
     }
 
-    @Nonnull
     private static Optional<Location> searchLocalVariable(final Source source,
                                                           final int line,
                                                           final int col,
@@ -68,18 +66,14 @@ public class LocationSearcher {
             return Optional.of(loc);
         }).orElseGet(() -> {
             // isField
-            final TypeScope ts = source.getTypeScope(line);
-            if (ts == null) {
+            final Optional<TypeScope> ts = source.getTypeScope(line);
+            if (!ts.isPresent()) {
                 return Optional.empty();
             }
-            final Variable fieldSymbol = ts.getField(symbol);
-            if (fieldSymbol == null) {
-                return Optional.empty();
-            }
-            final Location loc = new Location(source.getFile().getPath(),
-                    fieldSymbol.range.begin.line,
-                    fieldSymbol.range.begin.column);
-            return Optional.of(loc);
+            return ts.get().getField(symbol).map(fieldSymbol ->
+                    new Location(source.getFile().getPath(),
+                            fieldSymbol.range.begin.line,
+                            fieldSymbol.range.begin.column));
         });
         log.traceExit(entryMessage);
         return location;
@@ -189,7 +183,6 @@ public class LocationSearcher {
         this.project = project;
     }
 
-    @Nonnull
     public Optional<Location> searchDeclarationLocation(final File file, final int line, final int column, final String symbol) throws ExecutionException, IOException {
         final Source source = getSource(project, file);
         log.trace("search symbol {}", symbol);
@@ -210,7 +203,6 @@ public class LocationSearcher {
         return list;
     }
 
-    @Nonnull
     private Optional<Location> searchMethodCall(final Source source,
                                                 final int line,
                                                 final int col,
@@ -279,7 +271,6 @@ public class LocationSearcher {
         }
     }
 
-    @Nonnull
     private Optional<Location> searchClassOrInterface(final Source source,
                                                       final int line,
                                                       final int col,
@@ -506,7 +497,6 @@ public class LocationSearcher {
         }
     }
 
-    @Nonnull
     private Optional<Location> searchField(final Source src,
                                            final int line,
                                            final int col,
@@ -550,10 +540,13 @@ public class LocationSearcher {
                     .getClassScopes()
                     .stream()
                     .map(ts -> ts.getField(fieldName))
-                    .filter(Objects::nonNull)
-                    .map(ns -> new Location(path,
-                            ns.range.begin.line,
-                            ns.range.begin.column))
+                    .filter(Optional::isPresent)
+                    .map(optional -> {
+                        final Variable variable = optional.get();
+                        return new Location(path,
+                                variable.range.begin.line,
+                                variable.range.begin.column);
+                    })
                     .findFirst();
         } catch (Exception e) {
             throw new UncheckedExecutionException(e);

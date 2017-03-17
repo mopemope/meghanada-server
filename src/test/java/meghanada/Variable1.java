@@ -17,7 +17,7 @@ public class Variable1 {
                 for (int j = 0; j < i; j++) {
                     MemberDescriptor e = children[j];
                     while (!(e.getName() != null)) {
-                        e.getType();
+                        final String type = e.getType();
                     }
                 }
             }

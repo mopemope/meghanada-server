@@ -551,12 +551,12 @@ public class ASMReflector {
 
     public InheritanceInfo getReflectInfo(final Map<ClassIndex, File> index, final String fqcn) {
         final InheritanceInfo info = new InheritanceInfo(fqcn);
-        this.getReflectInfo(index, fqcn, info);
-        info.inherit = info.inherit.stream().distinct().collect(Collectors.toList());
-        return info;
+        final InheritanceInfo reflectInfo = this.getReflectInfo(index, fqcn, info);
+        reflectInfo.inherit = reflectInfo.inherit.stream().distinct().collect(Collectors.toList());
+        return reflectInfo;
     }
 
-    private InheritanceInfo getReflectInfo(final Map<ClassIndex, File> index, final String name, InheritanceInfo info) {
+    private InheritanceInfo getReflectInfo(final Map<ClassIndex, File> index, final String name, final InheritanceInfo info) {
         for (Map.Entry<ClassIndex, File> entry : index.entrySet()) {
             final ClassIndex classIndex = entry.getKey();
             final File file = entry.getValue();

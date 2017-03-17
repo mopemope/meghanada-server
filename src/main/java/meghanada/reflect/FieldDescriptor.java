@@ -3,6 +3,7 @@ package meghanada.reflect;
 import com.google.common.base.MoreObjects;
 import meghanada.utils.ClassNameUtils;
 
+import javax.annotation.Nullable;
 import java.io.Serializable;
 import java.util.Collections;
 import java.util.HashMap;
@@ -20,11 +21,7 @@ public class FieldDescriptor extends MemberDescriptor implements Serializable {
         this.declaringClass = declaringClass;
         this.name = name;
         this.memberType = MemberType.FIELD;
-        if (modifier == null) {
-            this.modifier = "";
-        } else {
-            this.modifier = modifier;
-        }
+        this.modifier = modifier;
         this.returnType = returnType;
         this.typeParameterMap = new HashMap<>(4);
     }
@@ -46,10 +43,15 @@ public class FieldDescriptor extends MemberDescriptor implements Serializable {
 
     @Override
     public String getDisplayDeclaration() {
-        final String rt = ClassNameUtils.getSimpleName(this.getReturnType()) + ' ' + this.name;
+        final String returnType = this.getReturnType();
+        if (returnType == null) {
+            return "";
+        }
+        final String rt = ClassNameUtils.getSimpleName(returnType) + ' ' + this.name;
         return ClassNameUtils.replaceInnerMark(rt);
     }
 
+    @Nullable
     @Override
     public String getReturnType() {
         if (this.returnType != null) {
@@ -77,6 +79,7 @@ public class FieldDescriptor extends MemberDescriptor implements Serializable {
         return Collections.emptyList();
     }
 
+    @Nullable
     @Override
     public String getRawReturnType() {
         if (this.returnType != null) {

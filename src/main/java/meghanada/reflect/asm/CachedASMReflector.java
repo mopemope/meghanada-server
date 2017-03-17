@@ -253,47 +253,6 @@ public class CachedASMReflector {
         return this.classFileMap.get(fqcn);
     }
 
-    private String matchFQCN(final ClassIndex classIndex, final String className) {
-        // TODO tuning
-        final String name = classIndex.getName();
-        final String declaration = classIndex.getDeclaration();
-        final String result = classIndex.getRawDeclaration();
-        if (name.equals(className) || declaration.equals(className)) {
-            return result;
-        }
-        return ClassNameUtils.toInnerClassName(className).map(innerName -> {
-            if (name.equals(innerName) || declaration.equals(innerName)) {
-                return result;
-            }
-            final String innerParent = innerName.substring(0, innerName.lastIndexOf('$'));
-            final String innerClass = innerName.substring(innerName.lastIndexOf('$') + 1);
-            if (name.equals(innerParent)) {
-                for (final String superClass : classIndex.supers) {
-                    final String searchName = superClass + '$' + ClassNameUtils.removeTypeParameter(innerClass);
-                    if (this.globalClassIndex.containsKey(searchName)) {
-                        return searchName;
-                    }
-                }
-            }
-            return null;
-        }).orElse(null);
-    }
-
-    public String classNameToFQCN(final String className) {
-        // log.debug("classNameToFQCN:{}", className);
-        // TODO tuning
-        if (this.globalClassIndex.containsKey(className)) {
-            final ClassIndex classIndex = this.globalClassIndex.get(className);
-            return classIndex.getRawDeclaration();
-        }
-
-        return this.globalClassIndex.values().parallelStream()
-                .map(classIndex -> matchFQCN(classIndex, className))
-                .filter(Objects::nonNull)
-                .findFirst()
-                .orElse(null);
-    }
-
     public Map<String, String> getPackageClasses(String packageName) {
         // log.debug("getPackageClasses packageName:{}", packageName);
         if (this.globalClassIndex.isEmpty()) {
@@ -413,62 +372,11 @@ public class CachedASMReflector {
         return this.reflect(className).stream();
     }
 
-    public Stream<MemberDescriptor> reflectStaticStream(final String className) {
-        return this.reflectStream(className)
-                .filter(md -> {
-                    final String declaration = md.getDeclaration();
-                    return declaration.contains("public") && declaration.contains("static");
-                });
-    }
-
-    public Stream<MemberDescriptor> reflectFieldStream(final String className) {
-        return this.reflectFieldStream(className, null);
-    }
-
-    private Stream<MemberDescriptor> reflectFieldStream(final String className, final String name) {
-        return this.reflect(className)
-                .stream()
-                .filter(m -> {
-                    if (name == null) {
-                        return m.matchType(CandidateUnit.MemberType.FIELD);
-                    }
-                    return m.getName().equals(name) && m.matchType(CandidateUnit.MemberType.FIELD);
-                });
-    }
-
     public Stream<MemberDescriptor> reflectMethodStream(final String className, final String name) {
         return this.reflect(className)
                 .stream()
-                .filter(m -> {
-                    if (name == null) {
-                        return m.matchType(CandidateUnit.MemberType.METHOD);
-                    }
-                    return m.getName().equals(name) && m.matchType(CandidateUnit.MemberType.METHOD);
-                });
-    }
-
-    public Stream<MemberDescriptor> reflectMethodStream(final String className, final String name, final int argLen) {
-        return this.reflect(className)
-                .stream()
-                .filter(m -> {
-                    final String mName = m.getName();
-                    final List<String> parameters = m.getParameters();
-                    return mName.equals(name)
-                            && m.matchType(CandidateUnit.MemberType.METHOD)
-                            && parameters.size() == argLen;
-                });
-    }
-
-    public Stream<MemberDescriptor> reflectConstructorStream(final String className, final int argLen, final String sig) {
-        return this.reflect(className)
-                .stream()
-                .filter(m -> {
-                    final String mName = m.getName();
-                    final List<String> parameters = m.getParameters();
-                    return m.matchType(CandidateUnit.MemberType.CONSTRUCTOR)
-                            && parameters.size() == argLen
-                            && sig.equals(mName + "::" + parameters.toString());
-                });
+                .filter(m -> m.getName().equals(name) &&
+                        m.matchType(CandidateUnit.MemberType.METHOD));
     }
 
     public Stream<MemberDescriptor> reflectConstructorStream(final String className) {

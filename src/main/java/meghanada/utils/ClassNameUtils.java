@@ -247,7 +247,7 @@ public class ClassNameUtils {
     }
 
     public static List<String> parseTypeParameter(final String str) {
-        if (str == null || str.isEmpty()) {
+        if (str.isEmpty()) {
             return Collections.emptyList();
         }
         final List<String> result = new ArrayList<>(4);

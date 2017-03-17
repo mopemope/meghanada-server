@@ -10,7 +10,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.message.EntryMessage;
 
-import javax.annotation.Nonnull;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
@@ -39,16 +38,15 @@ public class DeclarationSearcher {
             final Declaration declaration = new Declaration(symbol, var.fqcn, Declaration.Type.VAR, var.argumentIndex);
             return Optional.of(declaration);
         }).orElseGet(() -> {
-            final TypeScope ts = source.getTypeScope(line);
-            if (ts == null) {
+            final Optional<TypeScope> ts = source.getTypeScope(line);
+            if (!ts.isPresent()) {
                 return Optional.empty();
             }
-            final Variable fieldVar = ts.getField(symbol);
-            if (fieldVar == null) {
-                return Optional.empty();
-            }
-            final Declaration declaration = new Declaration(symbol, fieldVar.fqcn, Declaration.Type.VAR, fieldVar.argumentIndex);
-            return Optional.of(declaration);
+            return ts.get().getField(symbol).map(fieldVar ->
+                    new Declaration(symbol,
+                            fieldVar.fqcn,
+                            Declaration.Type.VAR,
+                            fieldVar.argumentIndex));
         });
         log.traceExit(entryMessage);
         return result;
@@ -64,7 +62,6 @@ public class DeclarationSearcher {
         return list;
     }
 
-    @Nonnull
     private static Optional<Declaration> searchReserved(@SuppressWarnings("unused") final Source source,
                                                         final Integer line,
                                                         final Integer col,
@@ -89,7 +86,6 @@ public class DeclarationSearcher {
         return result;
     }
 
-    @Nonnull
     private static Optional<Declaration> searchField(final Source source,
                                                      final Integer line,
                                                      final Integer col,
@@ -108,7 +104,6 @@ public class DeclarationSearcher {
         return result;
     }
 
-    @Nonnull
     private static Optional<Declaration> searchMethodCall(final Source source,
                                                           final Integer line,
                                                           final Integer col,
@@ -155,7 +150,6 @@ public class DeclarationSearcher {
         return result;
     }
 
-    @Nonnull
     private static Optional<Declaration> searchClassOrInterface(final Source source,
                                                                 final Integer line,
                                                                 final Integer col,
@@ -212,7 +206,6 @@ public class DeclarationSearcher {
         this.project = project;
     }
 
-    @Nonnull
     public Optional<Declaration> searchDeclaration(final File file,
                                                    final int line,
                                                    final int column,
@@ -230,8 +223,9 @@ public class DeclarationSearcher {
 
     @FunctionalInterface
     interface DeclarationSearchFunction {
-        @Nonnull
+
         Optional<Declaration> apply(Source javaSource, Integer line, Integer column, String symbol);
+
     }
 
 }

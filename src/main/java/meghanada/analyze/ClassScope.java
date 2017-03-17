@@ -5,6 +5,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.message.EntryMessage;
 
+import javax.annotation.Nullable;
 import java.util.*;
 
 public class ClassScope extends TypeScope {
@@ -17,7 +18,10 @@ public class ClassScope extends TypeScope {
 
     }
 
-    public ClassScope(final String fqcn, final Range nameRange, final int pos, final Range range) {
+    public ClassScope(final String fqcn,
+                      @Nullable final Range nameRange,
+                      final int pos,
+                      final Range range) {
         super(fqcn, nameRange, pos, range);
     }
 

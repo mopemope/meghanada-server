@@ -7,16 +7,12 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.message.EntryMessage;
 
-import java.io.Serializable;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import javax.annotation.Nullable;
+import java.util.*;
 import java.util.stream.Collectors;
 
-public class MethodDescriptor extends MemberDescriptor implements Serializable {
+public class MethodDescriptor extends MemberDescriptor {
 
-    private static final long serialVersionUID = -8041709346815449477L;
     private static final Logger log = LogManager.getLogger(MethodDescriptor.class);
 
     public List<MethodParameter> parameters;
@@ -76,13 +72,13 @@ public class MethodDescriptor extends MemberDescriptor implements Serializable {
         }
     }
 
-    private StringBuilder appendParameters(final StringBuilder sb, final boolean simple) {
+    private StringBuilder appendParameters(final StringBuilder sb) {
 
         if (this.parameters != null) {
             final Iterator<MethodParameter> iterator = this.parameters.iterator();
 
             while (iterator.hasNext()) {
-                sb.append(iterator.next().getParameter(simple));
+                sb.append(iterator.next().getParameter(true));
                 if (iterator.hasNext()) {
                     sb.append(", ");
                 }
@@ -111,8 +107,7 @@ public class MethodDescriptor extends MemberDescriptor implements Serializable {
 
         final StringBuilder sb = new StringBuilder(simpleName);
         sb.append('(');
-        appendParameters(sb, true);
-        return sb.append(')').toString();
+        return appendParameters(sb).append(')').toString();
     }
 
     private String getConstructorDeclaration() {
@@ -128,7 +123,7 @@ public class MethodDescriptor extends MemberDescriptor implements Serializable {
     private String getMethodDisplayDeclaration() {
         final StringBuilder sb = new StringBuilder(ClassNameUtils.getSimpleName(this.returnType));
         sb.append(' ').append(this.name).append('(');
-        return appendParameters(sb, true).append(')').toString();
+        return appendParameters(sb).append(')').toString();
     }
 
     private String getMethodDeclaration() {
@@ -160,6 +155,7 @@ public class MethodDescriptor extends MemberDescriptor implements Serializable {
         }
     }
 
+    @Nullable
     @Override
     public String getReturnType() {
         if (this.returnType != null) {
@@ -228,7 +224,7 @@ public class MethodDescriptor extends MemberDescriptor implements Serializable {
     @Override
     public List<String> getParameters() {
         if (this.parameters == null) {
-            return null;
+            return Collections.emptyList();
         }
         return this.parameters
                 .stream()

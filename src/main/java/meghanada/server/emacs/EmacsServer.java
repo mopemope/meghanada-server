@@ -79,7 +79,6 @@ public class EmacsServer implements Server {
                 log.catching(e);
             }
         }
-
     }
 
     private void accept() throws IOException {

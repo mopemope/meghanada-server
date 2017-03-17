@@ -252,10 +252,7 @@ public final class FileUtils {
         return Optional.empty();
     }
 
-    private static boolean hasClassFile(String path, Set<File> sourceRoots, File out) throws IOException {
-        if (sourceRoots == null) {
-            return false;
-        }
+    private static boolean hasClassFile(final String path, final Set<File> sourceRoots, final File out) throws IOException {
         for (final File rootFile : sourceRoots) {
             final String root = rootFile.getCanonicalPath();
             if (path.startsWith(root)) {
@@ -339,14 +336,13 @@ public final class FileUtils {
         return new String(encoded, StandardCharsets.UTF_8);
     }
 
-    public static String formatJavaFile(final Properties properties, final String path) throws IOException {
+    public static void formatJavaFile(final Properties properties, final String path) throws IOException {
         final String content = readFile(path);
         final String formatted = Roaster.format(properties, content);
         Files.write(Paths.get(path),
                 formatted.getBytes(StandardCharsets.UTF_8),
                 StandardOpenOption.WRITE,
                 StandardOpenOption.TRUNCATE_EXISTING);
-        return formatted;
     }
 
     public static Properties loadPropertiesFile(final File file) throws IOException {
@@ -375,7 +371,7 @@ public final class FileUtils {
 
     public static Optional<Source> getSource(final Project project, final File file) throws IOException, ExecutionException {
         final GlobalCache globalCache = GlobalCache.getInstance();
-        return Optional.ofNullable(globalCache.getSource(project, file.getCanonicalFile()));
+        return Optional.of(globalCache.getSource(project, file.getCanonicalFile()));
     }
 
 }

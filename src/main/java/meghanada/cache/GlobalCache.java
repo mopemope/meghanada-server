@@ -16,11 +16,8 @@ import meghanada.reflect.names.MethodParameterNames;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import javax.annotation.Nonnull;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.InputStream;
+import javax.annotation.Nullable;
+import java.io.*;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -174,47 +171,49 @@ public class GlobalCache {
         }
     }
 
-    @Nonnull
     public Source getSource(final Project project, final File file) throws ExecutionException {
         final LoadingCache<File, Source> sourceCache = this.getSourceCache(project);
         return sourceCache.get(file);
     }
 
-    public void replaceSource(@Nonnull final Project project,
-                              @Nonnull final Source source) {
+    public void replaceSource(final Project project,
+                              final Source source) {
         final LoadingCache<File, Source> sourceCache = this.getSourceCache(project);
         sourceCache.put(source.getFile(), source);
     }
 
-    public void invalidateSource(@Nonnull final Project project,
-                                 @Nonnull final File file) {
+    public void invalidateSource(final Project project,
+                                 final File file) {
         final LoadingCache<File, Source> sourceCache = this.getSourceCache(project);
         sourceCache.invalidate(file);
     }
 
-    public <T> T readCacheFromFile(@Nonnull final File file, final Class<T> type) {
+    @Nullable
+    public <T> T readCacheFromFile(final File file, final Class<T> type) {
         if (!file.exists()) {
             return null;
         }
-        return kryoPool.run(kryo -> {
-            try (final Input input = new UnsafeInput(new FileInputStream(file), BUFFER_SIZE)) {
-                return kryo.readObject(input, type);
-            } catch (Exception e) {
-                log.catching(e);
-                if (file.exists() && !file.delete()) {
-                    log.warn("{} delete fail", file);
+        try {
+            return kryoPool.run(kryo -> {
+                try (final Input input = new UnsafeInput(new FileInputStream(file), BUFFER_SIZE)) {
+                    return kryo.readObject(input, type);
+                } catch (FileNotFoundException e) {
+                    throw new UncheckedIOException(e);
                 }
-                return null;
+            });
+        } catch (Exception e) {
+            log.catching(e);
+            if (file.exists() && !file.delete()) {
+                log.warn("{} delete fail", file);
             }
-        });
+            return null;
+        }
     }
 
     public <T> T readCacheFromInputStream(final InputStream in, final Class<T> type) {
         return kryoPool.run(kryo -> {
             try (final Input input = new UnsafeInput(in)) {
                 return kryo.readObject(input, type);
-            } catch (Exception e) {
-                return null;
             }
         });
     }

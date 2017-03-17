@@ -19,6 +19,7 @@ import java.util.stream.Collectors;
 import static meghanada.config.Config.timeIt;
 import static org.junit.Assert.assertEquals;
 
+@SuppressWarnings("CheckReturnValue")
 public class SourceTest extends GradleTestBase {
 
     private static Project project;

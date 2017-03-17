@@ -20,7 +20,6 @@ import meghanada.utils.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import javax.annotation.Nonnull;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
@@ -133,7 +132,7 @@ class MemberCacheLoader extends CacheLoader<String, List<MemberDescriptor>> impl
     }
 
     @Override
-    public List<MemberDescriptor> load(@Nonnull final String className) throws IOException {
+    public List<MemberDescriptor> load(final String className) throws IOException {
 
         final ClassName cn = new ClassName(className);
         final String fqcn = cn.getName();
@@ -190,7 +189,7 @@ class MemberCacheLoader extends CacheLoader<String, List<MemberDescriptor>> impl
     }
 
     @Override
-    public void onRemoval(@Nonnull final RemovalNotification<String, List<MemberDescriptor>> notification) {
+    public void onRemoval(final RemovalNotification<String, List<MemberDescriptor>> notification) {
         final RemovalCause cause = notification.getCause();
         if (cause.equals(RemovalCause.EXPIRED) ||
                 cause.equals(RemovalCause.SIZE) ||

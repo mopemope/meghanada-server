@@ -5,14 +5,11 @@ import com.google.common.base.Objects;
 import meghanada.reflect.asm.CachedASMReflector;
 import meghanada.utils.ClassNameUtils;
 
-import java.io.Serializable;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
-public class ClassIndex implements CandidateUnit, Serializable, Cloneable {
-
-    private static final long serialVersionUID = 4643906658266028478L;
+public class ClassIndex implements CandidateUnit, Cloneable {
 
     // fqcn
     public String declaration;

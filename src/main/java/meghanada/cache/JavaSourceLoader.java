@@ -13,7 +13,6 @@ import meghanada.utils.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import javax.annotation.Nonnull;
 import java.io.File;
 import java.io.IOException;
 import java.util.Map;
@@ -74,8 +73,7 @@ class JavaSourceLoader extends CacheLoader<File, Source> implements RemovalListe
     }
 
     @Override
-    @Nonnull
-    public Source load(@Nonnull final File file) throws IOException {
+    public Source load(final File file) throws IOException {
         final Config config = Config.load();
         if (!file.exists()) {
             return new Source(file.getPath());
@@ -113,7 +111,7 @@ class JavaSourceLoader extends CacheLoader<File, Source> implements RemovalListe
     }
 
     @Override
-    public void onRemoval(@Nonnull final RemovalNotification<File, Source> notification) {
+    public void onRemoval(final RemovalNotification<File, Source> notification) {
         final RemovalCause cause = notification.getCause();
 
         final Config config = Config.load();

@@ -2,6 +2,7 @@ package meghanada.analyze;
 
 import meghanada.reflect.MemberDescriptor;
 
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -15,7 +16,10 @@ public class TypeScope extends MethodScope {
 
     }
 
-    public TypeScope(final String name, final Range nameRange, final int pos, final Range range) {
+    public TypeScope(final String name,
+                     @Nullable final Range nameRange,
+                     final int pos,
+                     final Range range) {
         super(name, nameRange, pos, range);
         this.returnType = name;
     }
@@ -82,20 +86,20 @@ public class TypeScope extends MethodScope {
                 .collect(Collectors.toList());
     }
 
-    public Variable getField(final String name) {
+    public Optional<Variable> getField(final String name) {
         for (final ExpressionScope es : expressions) {
             for (final Variable v : es.variables) {
                 if (v.name.equals(name)) {
-                    return v;
+                    return Optional.of(v);
                 }
             }
         }
         for (final Variable v : variables) {
             if (v.name.equals(name)) {
-                return v;
+                return Optional.of(v);
             }
         }
-        return null;
+        return Optional.empty();
     }
 
     public String getFQCN() {

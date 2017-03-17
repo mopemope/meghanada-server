@@ -9,7 +9,6 @@ import meghanada.session.Session;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import javax.annotation.Nonnull;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -30,11 +29,11 @@ public class ProjectDependency {
     private final Type type;
     private String dependencyFilePath;
 
-    public ProjectDependency(@Nonnull final String id,
-                             @Nonnull final String scope,
-                             @Nonnull final String version,
-                             @Nonnull final File file,
-                             @Nonnull final Type type) {
+    public ProjectDependency(final String id,
+                             final String scope,
+                             final String version,
+                             final File file,
+                             final Type type) {
         this.id = id;
         this.scope = scope.toUpperCase();
         this.version = version;
@@ -42,8 +41,7 @@ public class ProjectDependency {
         this.type = type;
     }
 
-    @Nonnull
-    public static Type getFileType(@Nonnull final File file) {
+    public static Type getFileType(final File file) {
         return file.isFile() ? Type.JAR : Type.DIRECTORY;
     }
 

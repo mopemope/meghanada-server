@@ -17,6 +17,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.message.EntryMessage;
 
+import javax.annotation.Nullable;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.Name;
 import java.io.File;
@@ -187,12 +188,12 @@ public class TreeAnalyzer {
             if (s.startsWith(ClassNameUtils.CAPTURE_OF)) {
                 final String cls = ClassNameUtils.removeCapture(s);
                 if (cls.equals(ClassNameUtils.CAPTURE_OF)) {
-                    markFQCN(src, ClassNameUtils.OBJECT_CLASS);
+                    final String ignore = markFQCN(src, ClassNameUtils.OBJECT_CLASS);
                 } else {
-                    markFQCN(src, cls);
+                    final String ignore = markFQCN(src, cls);
                 }
             } else {
-                markFQCN(src, s);
+                final String ignore = markFQCN(src, s);
             }
         });
         final CachedASMReflector cachedASMReflector = CachedASMReflector.getInstance();
@@ -225,7 +226,7 @@ public class TreeAnalyzer {
     }
 
     private static String getFieldScope(final FieldAccess fa, final String selectScope) {
-        if (selectScope != null && selectScope.length() <= AccessSymbol.SCOPE_LIMIT) {
+        if (selectScope.length() <= AccessSymbol.SCOPE_LIMIT) {
             return selectScope.trim();
         }
         return fa.name;
@@ -758,11 +759,10 @@ public class TreeAnalyzer {
         }
     }
 
-    private Optional<String> getTypeString(final Source src, final Type type) {
+    private Optional<String> getTypeString(final Source src, @Nullable final Type type) {
         if (type == null) {
             return Optional.empty();
         }
-
         if (type instanceof Type.CapturedType) {
             final Type.CapturedType capturedType = (Type.CapturedType) type;
             final Type.WildcardType wildcardType = capturedType.wildcard;
@@ -871,7 +871,7 @@ public class TreeAnalyzer {
                     }
                     src.getCurrentScope().ifPresent(scope -> {
                         methodCall.arguments = arguments;
-                        scope.addMethodCall(methodCall);
+                        final MethodCall methodCall1 = scope.addMethodCall(methodCall);
                     });
                 } else {
                     final MethodCall methodCall = new MethodCall(s, preferredPos + 1, nameRange, range);
@@ -884,7 +884,7 @@ public class TreeAnalyzer {
 
                     src.getCurrentScope().ifPresent(scope -> {
                         methodCall.arguments = arguments;
-                        scope.addMethodCall(methodCall);
+                        final MethodCall methodCall1 = scope.addMethodCall(methodCall);
                     });
                 }
             }
@@ -952,7 +952,7 @@ public class TreeAnalyzer {
             }
             src.getCurrentScope().ifPresent(scope -> {
                 methodCall.arguments = arguments;
-                scope.addMethodCall(methodCall);
+                final MethodCall methodCall1 = scope.addMethodCall(methodCall);
             });
 
         } else {
@@ -999,7 +999,7 @@ public class TreeAnalyzer {
         }
         src.getCurrentScope().ifPresent(scope -> {
             methodCall.arguments = arguments;
-            scope.addMethodCall(methodCall);
+            final MethodCall methodCall1 = scope.addMethodCall(methodCall);
         });
     }
 
@@ -1121,7 +1121,7 @@ public class TreeAnalyzer {
 
             }
 
-            blockScope.endExpression();
+            final Optional<ExpressionScope> expression1 = blockScope.endExpression();
 
         }));
     }
@@ -1243,11 +1243,12 @@ public class TreeAnalyzer {
             parent.startClass(classScope);
             classDecl.getMembers().forEach(wrapIOConsumer(tree1 ->
                     this.analyzeParsedTree(context, tree1)));
-            parent.endClass();
+            final Optional<ClassScope> classScope1 = parent.endClass();
         });
     }
 
-    private void parseModifiers(SourceContext context, JCTree.JCModifiers modifiers) {
+    private void parseModifiers(final SourceContext context,
+                                @Nullable final JCTree.JCModifiers modifiers) {
         if (modifiers != null) {
             final List<JCTree.JCAnnotation> annotations = modifiers.getAnnotations();
             if (annotations != null) {
@@ -1319,7 +1320,7 @@ public class TreeAnalyzer {
                 }
             });
             // mark unknown
-            TreeAnalyzer.markFQCN(src, nm);
+            final String unknown = TreeAnalyzer.markFQCN(src, nm);
         }
     }
 
@@ -1374,7 +1375,7 @@ public class TreeAnalyzer {
             // set exceptions
             md.getThrows().forEach(expr -> {
                 final String ex = resolveTypeFromImport(src, expr);
-                TreeAnalyzer.markFQCN(src, ex);
+                final String fqcn = TreeAnalyzer.markFQCN(src, ex);
             });
 
             final JCTree.JCBlock body = md.getBody();
@@ -1382,7 +1383,7 @@ public class TreeAnalyzer {
             if (body != null) {
                 this.analyzeParsedTree(context, body);
             }
-            classScope.endMethod();
+            final Optional<MethodScope> endMethod = classScope.endMethod();
 
         }));
 
@@ -1468,14 +1469,14 @@ public class TreeAnalyzer {
                                 methodScope.addMethodParameter(variable.fqcn);
                             }
                         }
-                        scope.addVariable(variable);
+                        final Variable addVariable = scope.addVariable(variable);
                     });
 
                     if (initializer != null) {
                         this.analyzeParsedTree(context, initializer);
                     }
                 } finally {
-                    blockScope.endExpression();
+                    final Optional<ExpressionScope> endExpression = blockScope.endExpression();
                 }
             }
         }));
@@ -1483,7 +1484,7 @@ public class TreeAnalyzer {
 
     public Map<File, Source> analyze(final Iterable<? extends CompilationUnitTree> parsed,
                                      final Set<File> errorFiles,
-                                     final JavaAnalyzer.SourceAnalyzedHandler handler) {
+                                     @Nullable final JavaAnalyzer.SourceAnalyzedHandler handler) {
 
         final Map<File, Source> analyzeMap = new ConcurrentHashMap<>(SOURCE_LIMIT);
 

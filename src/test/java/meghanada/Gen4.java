@@ -34,7 +34,7 @@ public class Gen4 extends Gen2<Long> {
     public void doReceive(Gen4 gen4) {
         boolean a = false;
         // return List
-        receive(gen4, a);
+        final List receive = receive(gen4, a);
     }
 
 

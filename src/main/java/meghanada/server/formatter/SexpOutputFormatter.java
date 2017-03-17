@@ -143,20 +143,15 @@ public class SexpOutputFormatter implements OutputFormatter {
 
         final String str = result.values()
                 .stream()
-                .map(strings -> {
-                    if (strings != null && strings.size() > 0) {
-                        return LPAREN
-                                + strings.stream()
-                                .map(SexpOutputFormatter::doubleQuote)
-                                .collect(Collectors.joining(LIST_SEP))
-                                + RPAREN;
-                    }
-                    return null;
-                })
+                .filter(strings -> strings != null && strings.size() > 0)
+                .map(strings -> LPAREN
+                        + strings.stream()
+                        .map(SexpOutputFormatter::doubleQuote)
+                        .collect(Collectors.joining(LIST_SEP))
+                        + RPAREN)
                 .filter(Objects::nonNull)
                 .collect(Collectors.joining(LIST_SEP));
         sb.append(str);
-
         sb.append(RPAREN);
         return sb.toString();
     }

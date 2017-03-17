@@ -22,7 +22,7 @@ public class Main {
 
     public static final String VERSION = "0.7.0";
 
-    private static Logger log = LogManager.getLogger(Main.class);
+    private static final Logger log = LogManager.getLogger(Main.class);
 
     public static String getVersion() throws IOException {
         final String version = FileUtils.getVersionInfo();
@@ -36,13 +36,11 @@ public class Main {
         final String version = getVersion();
         System.setProperty("meghanada-server.version", version);
 
-        Thread.setDefaultUncaughtExceptionHandler((t, e) -> {
-            log.catching(e);
-        });
+        Thread.setDefaultUncaughtExceptionHandler((t, e) ->
+                log.catching(e));
 
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            log.info("shutdown server");
-        }));
+        Runtime.getRuntime().addShutdownHook(new Thread(() ->
+                log.info("shutdown server")));
 
         final Options options = buildOptions();
 

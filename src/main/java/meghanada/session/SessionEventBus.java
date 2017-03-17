@@ -97,7 +97,11 @@ public class SessionEventBus {
     static abstract class IORequest {
 
         final Session session;
-        final File file;
+        File file;
+
+        IORequest(Session session) {
+            this.session = session;
+        }
 
         IORequest(Session session, File file) {
             this.session = session;
@@ -138,7 +142,7 @@ public class SessionEventBus {
         public final boolean onlyOutputDir;
 
         public ClassCacheRequest(final Session session, boolean onlyOutputDir) {
-            super(session, null);
+            super(session);
             this.onlyOutputDir = onlyOutputDir;
         }
 

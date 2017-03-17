@@ -11,7 +11,6 @@ import org.gradle.tooling.BuildLauncher;
 import org.gradle.tooling.GradleConnector;
 import org.gradle.tooling.ProjectConnection;
 
-import javax.annotation.Nonnull;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
@@ -161,7 +160,7 @@ class AndroidSupport {
         }
     }
 
-    void parseAndroidProject(@Nonnull final AndroidProject androidProject) throws IOException {
+    void parseAndroidProject(final AndroidProject androidProject) throws IOException {
 
         final JavaCompileOptions javaCompileOptions = androidProject.getJavaCompileOptions();
         this.project.setCompileSource(javaCompileOptions.getSourceCompatibility());

@@ -13,10 +13,11 @@ import static meghanada.config.Config.timeIt;
 import static meghanada.config.Config.traceIt;
 import static org.junit.Assert.assertTrue;
 
+@SuppressWarnings("CheckReturnValue")
 public class GradleProjectTest {
 
     private Project project;
-    
+
     @Before
     public void setUp() throws Exception {
         if (this.project == null) {

@@ -14,7 +14,6 @@ import meghanada.utils.ClassNameUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import javax.annotation.Nonnull;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
@@ -54,22 +53,23 @@ public class JavaCompletion {
     }
 
     private static Collection<? extends CandidateUnit> completionSuper(final Source source, final int line, final String prefix) {
-        final TypeScope typeScope = source.getTypeScope(line);
-        final String fqcn = typeScope.getFQCN();
-        return doReflect(fqcn).stream()
-                .filter(md ->
-                        !md.getDeclaringClass().equals(fqcn) &&
-                                !(prefix != null &&
-                                        !prefix.isEmpty() &&
-                                        !md.getName().toLowerCase().startsWith(prefix)))
-                .collect(Collectors.toList());
+        return source.getTypeScope(line).map(typeScope -> {
+            final String fqcn = typeScope.getFQCN();
+            return doReflect(fqcn).stream()
+                    .filter(md ->
+                            !md.getDeclaringClass().equals(fqcn) &&
+                                    !(!prefix.isEmpty() && !md.getName().toLowerCase().startsWith(prefix)))
+                    .collect(Collectors.toList());
+        }).orElse(Collections.emptyList());
     }
 
-    private static boolean publicFilter(final CandidateUnit cu, final boolean isStatic, final boolean withCONSTRUCTOR,
+    private static boolean publicFilter(final CandidateUnit cu,
+                                        final boolean isStatic,
+                                        final boolean withCONSTRUCTOR,
                                         final String target) {
 
         final String name = cu.getName().toLowerCase();
-        if (target != null && !target.isEmpty() && !name.contains(target)) {
+        if (!target.isEmpty() && !name.contains(target)) {
             return false;
         }
 
@@ -89,7 +89,7 @@ public class JavaCompletion {
     private static boolean publicFilter(final CandidateUnit cu, final String target) {
 
         final String name = cu.getName().toLowerCase();
-        if (target != null && !target.isEmpty() && !name.contains(target)) {
+        if (!target.isEmpty() && !name.contains(target)) {
             return false;
         }
         if (cu.getType().equals("CONSTRUCTOR")) {
@@ -104,7 +104,7 @@ public class JavaCompletion {
                                          final String target) {
         final String name = cu.getName().toLowerCase();
 
-        if (target != null && !target.isEmpty() && !name.contains(target)) {
+        if (!target.isEmpty() && !name.contains(target)) {
             return false;
         }
         final String declaration = cu.getDeclaration();
@@ -120,7 +120,9 @@ public class JavaCompletion {
         return declaration.contains("static");
     }
 
-    private static boolean privateFilter(final CandidateUnit cu, final boolean isStatic, final boolean withCONSTRUCTOR,
+    private static boolean privateFilter(final CandidateUnit cu,
+                                         final boolean isStatic,
+                                         final boolean withCONSTRUCTOR,
                                          final String target) {
 
         final String name = cu.getName().toLowerCase();
@@ -128,7 +130,7 @@ public class JavaCompletion {
             return false;
         }
 
-        if (target != null && !target.isEmpty() && !name.contains(target)) {
+        if (!target.isEmpty() && !name.contains(target)) {
             return false;
         }
 
@@ -142,10 +144,14 @@ public class JavaCompletion {
         return declaration.contains("static");
     }
 
-    private static boolean privateFilter(final CandidateUnit cu, final boolean withCONSTRUCTOR, final String target) {
+    private static boolean privateFilter(final CandidateUnit cu,
+                                         final boolean withCONSTRUCTOR,
+                                         final String target) {
 
         final String name = cu.getName().toLowerCase();
-        return !(cu.getType().equals("FIELD") && name.startsWith("this$")) && !(target != null && !target.isEmpty() && !name.contains(target)) && (withCONSTRUCTOR || !cu.getType().equals("CONSTRUCTOR"));
+        return !(cu.getType().equals("FIELD") && name.startsWith("this$")) &&
+                !(!target.isEmpty() && !name.contains(target)) &&
+                (withCONSTRUCTOR || !cu.getType().equals("CONSTRUCTOR"));
 
     }
 
@@ -170,8 +176,10 @@ public class JavaCompletion {
     }
 
     private static Collection<? extends CandidateUnit> completionThis(final Source source, final int line, final String prefix) {
-        final String fqcn = source.getTypeScope(line).getFQCN();
-        return JavaCompletion.reflectSelf(fqcn, false, prefix);
+        return source.getTypeScope(line).map(typeScope -> {
+            final String fqcn = typeScope.getFQCN();
+            return JavaCompletion.reflectSelf(fqcn, false, prefix);
+        }).orElse(Collections.emptyList());
     }
 
     private static Collection<? extends CandidateUnit> completionSymbols(final Source source, final int line, final String prefix) {
@@ -180,11 +188,11 @@ public class JavaCompletion {
         // prefix search
         log.debug("Search variables prefix:{} line:{}", prefix, line);
 
-        final TypeScope typeScope = source.getTypeScope(line);
-        if (typeScope == null) {
+        final Optional<TypeScope> typeScope = source.getTypeScope(line);
+        if (!typeScope.isPresent()) {
             return result;
         }
-        final String fqcn = typeScope.getFQCN();
+        final String fqcn = typeScope.get().getFQCN();
 
         // add this member
         JavaCompletion.reflectSelf(fqcn, true, prefix)
@@ -293,7 +301,7 @@ public class JavaCompletion {
 
         log.debug("search '{}' field or method", var);
 
-        final String ownPackage = source.packageName;
+        String ownPackage = source.packageName;
         final List<CandidateUnit> res = new ArrayList<>(32);
 
         {
@@ -302,6 +310,9 @@ public class JavaCompletion {
             if (fqcn != null) {
                 if (!fqcn.contains(".") && ownPackage != null) {
                     fqcn = ownPackage + '.' + fqcn;
+                }
+                if (ownPackage == null) {
+                    ownPackage = "";
                 }
 
                 final Collection<? extends CandidateUnit> result = JavaCompletion.reflect(ownPackage, fqcn, true, false, target);
@@ -355,7 +366,7 @@ public class JavaCompletion {
 
         {
             String fqcn = var;
-            if (ownPackage != null && !ownPackage.isEmpty()) {
+            if (!ownPackage.isEmpty()) {
                 fqcn = ownPackage + '.' + var;
             }
             final Collection<? extends CandidateUnit> reflectResults = JavaCompletion.reflect(ownPackage, fqcn, true, false, target);
@@ -377,7 +388,6 @@ public class JavaCompletion {
         return globalCache.getSource(project, file.getCanonicalFile());
     }
 
-    @Nonnull
     public Collection<? extends CandidateUnit> completionAt(final File file, int line, int column, String prefix) {
 
         log.debug("line={} column={} prefix={}", line, column, prefix);
