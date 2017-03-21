@@ -13,6 +13,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.util.Enumeration;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
@@ -69,20 +70,19 @@ public class ParameterNamesIndexer {
         }
     }
 
-    private void serializeParams(ZipFile zipFile, ZipEntry zipEntry, String javaName) throws IOException, ParseException {
+    private void serializeParams(final ZipFile zipFile, final ZipEntry zipEntry, final String javaName) throws IOException, ParseException {
         // log.debug("file {}", fileName);
         try (InputStream in = zipFile.getInputStream(zipEntry)) {
             String fqcn = javaName.substring(0, javaName.length() - 5);
-            CompilationUnit cu = JavaParser.parse(in, "UTF-8");
+            CompilationUnit cu = JavaParser.parse(in, StandardCharsets.UTF_8);
             ParameterNameVisitor visitor = new ParameterNameVisitor(fqcn);
             visitor.visit(cu, this);
 
             // log.debug("{} classes {}", javaName, visitor.parameterNamesList.size());
-            for (MethodParameterNames mpn : visitor.parameterNamesList) {
+            for (final MethodParameterNames mpn : visitor.parameterNamesList) {
                 if (mpn.names.size() > 0) {
                     // log.debug("{} {}", javaName, mpn.className);
                     String pkg = ClassNameUtils.getPackage(fqcn);
-                    String simpleName = ClassNameUtils.getSimpleName(fqcn);
                     String dirPath = pkg.replace(".", "/");
                     String fileName = mpn.className.substring(pkg.length() + 1).replace(".", "$") + ".param";
 

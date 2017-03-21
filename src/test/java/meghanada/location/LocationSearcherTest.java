@@ -163,7 +163,7 @@ public class LocationSearcherTest extends GradleTestBase {
         assertNotNull(result);
         assertTrue(result.getPath().contains(".java"));
         assertEquals(238, result.getLine());
-        assertEquals(13, result.getColumn());
+        assertEquals(31, result.getColumn());
     }
 
     @Test
@@ -173,13 +173,12 @@ public class LocationSearcherTest extends GradleTestBase {
 
         LocationSearcher searcher = getSearcher();
         Location result = timeIt(() ->
-                searcher.searchDeclarationLocation(f, 199, 24, "searchField"))
+                searcher.searchDeclarationLocation(f, 211, 24, "searchField"))
                 .orElse(null);
         assertNotNull(result);
         assertTrue(result.getPath().contains("LocationSearcher.java"));
-        assertEquals(500, result.getLine());
+        assertEquals(544, result.getLine());
         assertEquals(32, result.getColumn());
-
     }
 
     @Test
@@ -190,12 +189,12 @@ public class LocationSearcherTest extends GradleTestBase {
         LocationSearcher searcher = getSearcher();
         Location result = timeIt(() -> {
             System.setProperty("disable-source-jar", "true");
-            return searcher.searchDeclarationLocation(f, 409, 76, "decompileArchive");
+            return searcher.searchDeclarationLocation(f, 419, 76, "decompileArchive");
         }).orElse(null);
         assertNotNull(result);
         assertTrue(result.getPath().contains(".java"));
         assertEquals(103, result.getLine());
-        assertEquals(4, result.getColumn());
+        assertEquals(31, result.getColumn());
     }
 
     @Test
@@ -253,7 +252,7 @@ public class LocationSearcherTest extends GradleTestBase {
         assertNotNull(result);
         assertTrue(result.getPath().contains(".java"));
         assertEquals(111, result.getLine());
-        assertEquals(1, result.getColumn());
+        assertEquals(20, result.getColumn());
     }
 
     @Test
@@ -267,7 +266,7 @@ public class LocationSearcherTest extends GradleTestBase {
         assertNotNull(result);
         assertTrue(result.getPath().contains(".java"));
         assertEquals(21, result.getLine());
-        assertEquals(1, result.getColumn());
+        assertEquals(14, result.getColumn());
     }
 
 }
