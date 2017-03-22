@@ -276,6 +276,8 @@ public class TreeAnalyzer {
         cut.getTypeDecls().forEach(wrapIOConsumer(td -> {
             if (td instanceof JCTree.JCClassDecl) {
                 final JCTree.JCClassDecl classDecl = (JCTree.JCClassDecl) td;
+                final Tree.Kind classDeclKind = classDecl.getKind();
+                final boolean isInterface = classDeclKind.equals(Tree.Kind.INTERFACE);
                 final int startPos = classDecl.getPreferredPosition();
                 final int endPos = classDecl.getEndPosition(endPosTable);
                 final JCTree.JCModifiers modifiers = classDecl.getModifiers();
@@ -288,7 +290,7 @@ public class TreeAnalyzer {
                 final Name simpleName = classDecl.getSimpleName();
                 final Range range = Range.create(src, startPos + 1, endPos);
 
-                final int nameStart = startPos + 6;
+                final int nameStart = isInterface ? startPos + 10 : startPos + 6;
                 final Range nameRange = Range.create(src, nameStart, nameStart + simpleName.length());
 
                 String fqcn;
@@ -490,7 +492,9 @@ public class TreeAnalyzer {
                 dimensions.forEach(wrapIOConsumer(jcExpression ->
                         this.analyzeParsedTree(context, jcExpression)));
             }
-
+            if (newArray.type != null) {
+                this.getTypeString(context.getSource(), newArray.type).ifPresent(context::setArgumentFQCN);
+            }
         } else if (tree instanceof JCTree.JCPrimitiveTypeTree) {
             // skip
         } else if (tree instanceof JCTree.JCConditional) {
@@ -777,7 +781,7 @@ public class TreeAnalyzer {
             final Type.ArrayType arrayType = (Type.ArrayType) type;
             final Type componentType = arrayType.getComponentType();
             if (componentType != null && componentType.tsym != null) {
-                final String s = componentType.tsym.toString();
+                final String s = arrayType.toString();
                 return Optional.of(s);
             }
             return Optional.empty();
@@ -1004,20 +1008,20 @@ public class TreeAnalyzer {
     }
 
     private java.util.List<String> getArgumentsType(final SourceContext context, final List<JCTree.JCExpression> arguments) {
-        context.setArgumentIndex(0);
+        final SourceContext newContext = new SourceContext(context.getSource());
+        newContext.setArgumentIndex(0);
         try {
             return arguments.stream()
                     .map(expression -> {
-                        context.setArgument(true);
                         try {
-                            this.analyzeParsedTree(context, expression);
+                            newContext.setArgument(true);
+                            this.analyzeParsedTree(newContext, expression);
+                            newContext.incrArgumentIndex();
+                            newContext.setArgument(false);
+                            return newContext.getArgumentFQCN();
                         } catch (IOException e) {
                             throw new UncheckedIOException(e);
                         }
-                        log.trace("class={} returnFQCN={} expr={}", expression.getClass().getSimpleName(), context.getArgumentFQCN(), expression);
-                        context.incrArgumentIndex();
-                        context.setArgument(false);
-                        return context.getArgumentFQCN();
                     }).collect(Collectors.toList());
         } finally {
             // reset

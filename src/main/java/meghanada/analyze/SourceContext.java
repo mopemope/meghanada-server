@@ -19,13 +19,10 @@ public class SourceContext {
         return argumentFQCN;
     }
 
-    public void setArgumentFQCN(String argumentFQCN) {
+    public void setArgumentFQCN(final String argumentFQCN) {
         if (isArgument) {
             this.argumentFQCN = argumentFQCN;
-        } else {
-            this.argumentFQCN = "";
         }
-
     }
 
     public boolean isParameter() {

@@ -213,6 +213,22 @@ public class LocationSearcherTest extends GradleTestBase {
     }
 
     @Test
+    public void testJumpMethod08() throws Exception {
+        File f = new File("./src/test/java/meghanada/ArrayOverload.java").getCanonicalFile();
+        assert f.exists();
+        LocationSearcher searcher = getSearcher();
+        {
+            GlobalCache.getInstance().invalidateSource(project, f);
+            Location result = searcher.searchDeclarationLocation(f, 16, 23, "over")
+                    .orElse(null);
+            assertNotNull(result);
+            assertTrue(result.getPath().contains("ArrayOverload.java"));
+            assertEquals(7, result.getLine());
+            assertEquals(24, result.getColumn());
+        }
+    }
+
+    @Test
     public void testJumpClass01() throws Exception {
         File f = new File("./src/main/java/meghanada/session/Session.java").getCanonicalFile();
         assert f.exists();
