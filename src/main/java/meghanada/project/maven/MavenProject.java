@@ -33,7 +33,7 @@ public class MavenProject extends Project {
     private File pomFile;
     private String mavenCmd = "mvn";
 
-    public MavenProject(File projectRoot) throws IOException {
+    public MavenProject(final File projectRoot) throws IOException {
         super(projectRoot);
         this.pomFile = new File(projectRoot, Project.MVN_PROJECT_FILE);
     }
@@ -70,16 +70,10 @@ public class MavenProject extends Project {
             final File logFile = File.createTempFile("meghanada-maven-classpath", ".log");
             logFile.deleteOnExit();
             final String logPath = logFile.getCanonicalPath();
-            if (this.runMvn(RESOLVE_TASK) != 0) {
+            log.info("running maven. resolve dependencies ...");
+            if (this.runMvn(RESOLVE_TASK, SOURCES_TASK, BUILD_CLASSPATH_TASK, String.format("-Dmdep.outputFile=%s", logPath)) != 0) {
                 throw new ProjectParseException("Could not resolve dependencies. please try 'mvn dependency:resolve' or 'mvn install'");
             }
-            if (this.runMvn(SOURCES_TASK) != 0) {
-                throw new ProjectParseException("Could not resolve dependencies. please try 'mvn dependency:sources' or 'mvn install'");
-            }
-            if (this.runMvn(BUILD_CLASSPATH_TASK, String.format("-Dmdep.outputFile=%s", logPath)) != 0) {
-                throw new ProjectParseException("Could not resolve dependencies. please try 'mvn dependency:resolve' or 'mvn install'");
-            }
-
             final String cpTxt = Files.readFirstLine(logFile, Charset.forName("UTF-8"));
             if (cpTxt != null && !cpTxt.isEmpty()) {
                 final String[] depends = cpTxt.split(File.pathSeparator);
