@@ -286,8 +286,11 @@ public class LocationSearcher {
     private Optional<Location> searchClassOrInterface(final Source source,
                                                       final int line,
                                                       final int col,
-                                                      final String symbol) {
+                                                      String symbol) {
         final EntryMessage entryMessage = log.traceEntry("line={} col={} symbol={}", line, col, symbol);
+        if (symbol.startsWith("@")) {
+            symbol = symbol.substring(1);
+        }
         String fqcn = source.getImportedClassFQCN(symbol, null);
         if (fqcn == null) {
             final CachedASMReflector reflector = CachedASMReflector.getInstance();

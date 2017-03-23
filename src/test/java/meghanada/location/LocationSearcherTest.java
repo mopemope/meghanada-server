@@ -177,7 +177,7 @@ public class LocationSearcherTest extends GradleTestBase {
                 .orElse(null);
         assertNotNull(result);
         assertTrue(result.getPath().contains("LocationSearcher.java"));
-        assertEquals(544, result.getLine());
+        assertEquals(547, result.getLine());
         assertEquals(32, result.getColumn());
     }
 
@@ -189,7 +189,7 @@ public class LocationSearcherTest extends GradleTestBase {
         LocationSearcher searcher = getSearcher();
         Location result = timeIt(() -> {
             System.setProperty("disable-source-jar", "true");
-            return searcher.searchDeclarationLocation(f, 419, 76, "decompileArchive");
+            return searcher.searchDeclarationLocation(f, 422, 76, "decompileArchive");
         }).orElse(null);
         assertNotNull(result);
         assertTrue(result.getPath().contains(".java"));
@@ -283,6 +283,20 @@ public class LocationSearcherTest extends GradleTestBase {
         assertTrue(result.getPath().contains(".java"));
         assertEquals(21, result.getLine());
         assertEquals(14, result.getColumn());
+    }
+
+    @Test
+    public void testJumpAnnotation01() throws Exception {
+        File f = new File("./src/main/java/meghanada/analyze/FieldAccess.java").getCanonicalFile();
+        assert f.exists();
+
+        final LocationSearcher searcher = getSearcher();
+        final Location result = timeIt(() ->
+                searcher.searchDeclarationLocation(f, 15, 16, "@Override"))
+                .orElse(null);
+        assertNotNull(result);
+        assertEquals(51, result.getLine());
+        assertEquals(19, result.getColumn());
     }
 
 }
