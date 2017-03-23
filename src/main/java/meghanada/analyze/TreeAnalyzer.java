@@ -641,6 +641,13 @@ public class TreeAnalyzer {
             if (expression != null) {
                 this.analyzeParsedTree(context, expression);
             }
+        } else if (tree instanceof JCTree.JCAnnotation) {
+            final JCTree.JCAnnotation annotation = (JCTree.JCAnnotation) tree;
+            for (final JCTree.JCExpression expression : annotation.getArguments()) {
+                this.analyzeParsedTree(context, expression);
+            }
+            final JCTree annotationType = annotation.getAnnotationType();
+            this.analyzeParsedTree(context, annotationType);
         } else if (tree instanceof JCTree.JCSkip) {
             // skip
         } else {
