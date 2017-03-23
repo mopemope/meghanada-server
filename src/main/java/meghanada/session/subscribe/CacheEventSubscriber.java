@@ -31,11 +31,11 @@ public class CacheEventSubscriber extends AbstractSubscriber {
             final CachedASMReflector reflector = CachedASMReflector.getInstance();
             reflector.updateClassIndexFromDirectory();
         } else {
-            this.createFullIndex();
+            this.analyze();
         }
     }
 
-    private void createFullIndex() {
+    private void analyze() {
         final Stopwatch stopwatch = Stopwatch.createStarted();
         final Session session = super.sessionEventBus.getSession();
         final Project project = session.getCurrentProject();
@@ -48,6 +48,7 @@ public class CacheEventSubscriber extends AbstractSubscriber {
             reflector.createClassIndexes();
         });
 
+        log.info("start analyze sources ...");
         timeItF("analyzed and compiled. elapsed:{}", () -> {
             try {
                 final CompileResult compileResult = project.compileJava();
