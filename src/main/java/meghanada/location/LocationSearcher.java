@@ -225,7 +225,9 @@ public class LocationSearcher {
             final String methodName = mc.name;
             final List<String> arguments = mc.arguments;
             final String declaringClass = mc.declaringClass;
-
+            if (declaringClass == null) {
+                return Optional.empty();
+            }
             final List<String> searchTargets = new ArrayList<>(2);
             searchTargets.add(declaringClass);
             final CachedASMReflector reflector = CachedASMReflector.getInstance();
@@ -553,7 +555,9 @@ public class LocationSearcher {
         final Optional<Location> result = src.searchFieldAccess(line, col, symbol).flatMap(fa -> {
             final String fieldName = fa.name;
             final String declaringClass = fa.declaringClass;
-
+            if (declaringClass == null) {
+                return Optional.empty();
+            }
             final List<String> searchTargets = new ArrayList<>(2);
             searchTargets.add(declaringClass);
 
