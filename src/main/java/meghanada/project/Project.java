@@ -17,8 +17,8 @@ import meghanada.utils.ClassNameUtils;
 import meghanada.utils.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.jboss.forge.roaster._shade.org.eclipse.jdt.core.JavaCore;
-import org.jboss.forge.roaster._shade.org.eclipse.jdt.core.formatter.DefaultCodeFormatterConstants;
+import org.eclipse.jdt.core.JavaCore;
+import org.eclipse.jdt.core.formatter.DefaultCodeFormatterConstants;
 
 import java.io.File;
 import java.io.IOException;
@@ -640,8 +640,7 @@ public abstract class Project {
         if (!callerFile.exists()) {
             return;
         }
-        @SuppressWarnings("unchecked")
-        final Map<String, Set<String>> map =
+        @SuppressWarnings("unchecked") final Map<String, Set<String>> map =
                 GlobalCache.getInstance().readCacheFromFile(callerFile, ConcurrentHashMap.class);
         this.callerMap = map;
     }
@@ -679,6 +678,7 @@ public abstract class Project {
         properties.setProperty(DefaultCodeFormatterConstants.FORMATTER_TAB_CHAR, "space");
         properties.setProperty(DefaultCodeFormatterConstants.FORMATTER_TAB_SIZE, "4");
         properties.setProperty(DefaultCodeFormatterConstants.FORMATTER_JOIN_WRAPPED_LINES, "false");
+        properties.setProperty(DefaultCodeFormatterConstants.FORMATTER_ALIGNMENT_FOR_RESOURCES_IN_TRY, "18");
         return properties;
     }
 

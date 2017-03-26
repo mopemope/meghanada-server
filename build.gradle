@@ -95,13 +95,12 @@ dependencies {
     compile 'com.typesafe:config:1.3.1'
     compile 'org.atteo:evo-inflector:1.2.2'
     compile 'junit:junit:4.12'
-    compile 'org.jboss.forge.roaster:roaster-api:2.20.0.Final'
-    compile 'org.jboss.forge.roaster:roaster-jdt:2.20.0.Final'
     compile 'com.android.tools.build:builder-model:2.2.3'
     compile 'io.takari.junit:takari-cpsuite:1.2.7'
     compile 'org.jboss.windup.decompiler:decompiler-api:3.0.0.Final'
     compile 'org.jboss.windup.decompiler:decompiler-fernflower:3.0.0.Final'
     compile 'com.google.code.findbugs:jsr305:3.0.1'
+    compile 'org.eclipse.jdt:org.eclipse.jdt.core:3.12.2'
 }
 
 

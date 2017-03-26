@@ -4,11 +4,11 @@ import meghanada.Main;
 import meghanada.analyze.Source;
 import meghanada.cache.GlobalCache;
 import meghanada.config.Config;
+import meghanada.formatter.JavaFormatter;
 import meghanada.project.Project;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.message.EntryMessage;
-import org.jboss.forge.roaster.Roaster;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -338,7 +338,7 @@ public final class FileUtils {
 
     public static void formatJavaFile(final Properties properties, final String path) throws IOException {
         final String content = readFile(path);
-        final String formatted = Roaster.format(properties, content);
+        final String formatted = JavaFormatter.format(properties, content);
         Files.write(Paths.get(path),
                 formatted.getBytes(StandardCharsets.UTF_8),
                 StandardOpenOption.WRITE,
