@@ -20,7 +20,7 @@ import java.util.Objects;
 
 public class Main {
 
-    public static final String VERSION = "0.7.2";
+    public static final String VERSION = "0.7.3";
 
     private static final Logger log = LogManager.getLogger(Main.class);
 
