@@ -32,6 +32,7 @@ public class Source {
     public String filePath;
     public String packageName;
     public List<LineRange> lineRange;
+    public int classStartLine;
 
     // temp flag
     public boolean hasCompileError;

@@ -245,8 +245,7 @@ public class TreeAnalyzer {
         final EndPosTable endPosTable = ((JCTree.JCCompilationUnit) cut).endPositions;
         context.setEndPosTable(endPosTable);
         final CachedASMReflector cachedASMReflector = CachedASMReflector.getInstance();
-        cut.getImports().forEach(imp -> {
-
+        cut.getImports().forEach(wrapIOConsumer(imp -> {
             final String importClass = imp.getQualifiedIdentifier().toString();
             final String simpleName = ClassNameUtils.getSimpleName(importClass);
             if (simpleName.equals("*")) {
@@ -271,47 +270,55 @@ public class TreeAnalyzer {
                     src.addImport(importClass);
                 }
             }
-        });
-
-        cut.getTypeDecls().forEach(wrapIOConsumer(td -> {
-            if (td instanceof JCTree.JCClassDecl) {
-                final JCTree.JCClassDecl classDecl = (JCTree.JCClassDecl) td;
-                final Tree.Kind classDeclKind = classDecl.getKind();
-                final boolean isInterface = classDeclKind.equals(Tree.Kind.INTERFACE);
-                final int startPos = classDecl.getPreferredPosition();
-                final int endPos = classDecl.getEndPosition(endPosTable);
-                final JCTree.JCModifiers modifiers = classDecl.getModifiers();
-                parseModifiers(context, modifiers);
-
-                final JCTree.JCExpression extendsClause = classDecl.getExtendsClause();
-                if (extendsClause != null) {
-                    this.analyzeParsedTree(context, extendsClause);
-                }
-                final Name simpleName = classDecl.getSimpleName();
-                final Range range = Range.create(src, startPos + 1, endPos);
-
-                final int nameStart = isInterface ? startPos + 10 : startPos + 6;
-                final Range nameRange = Range.create(src, nameStart, nameStart + simpleName.length());
-
-                String fqcn;
-                if (src.packageName == null || src.packageName.isEmpty()) {
-                    fqcn = simpleName.toString();
-                } else {
-                    fqcn = src.packageName + '.' + simpleName.toString();
-                }
-                final ClassScope classScope = new ClassScope(fqcn, nameRange, startPos, range);
-                log.trace("class={}", classScope);
-
-                src.startClass(classScope);
-                classDecl.getMembers().forEach(wrapIOConsumer(tree -> analyzeParsedTree(context, tree)));
-                final Optional<ClassScope> endClass = src.endClass();
-                log.trace("class={}", endClass);
-            } else if (td instanceof JCTree.JCSkip) {
-                // skip
-            } else {
-                log.warn("unknown td={} {}", td, td.getClass());
-            }
         }));
+
+        int firstLine = -1;
+        try {
+            for (final Tree td : cut.getTypeDecls()) {
+                if (td instanceof JCTree.JCClassDecl) {
+                    final JCTree.JCClassDecl classDecl = (JCTree.JCClassDecl) td;
+                    final Tree.Kind classDeclKind = classDecl.getKind();
+                    final boolean isInterface = classDeclKind.equals(Tree.Kind.INTERFACE);
+                    final int startPos = classDecl.getPreferredPosition();
+                    final int endPos = classDecl.getEndPosition(endPosTable);
+                    final JCTree.JCModifiers modifiers = classDecl.getModifiers();
+                    parseModifiers(context, modifiers);
+
+                    final JCTree.JCExpression extendsClause = classDecl.getExtendsClause();
+                    if (extendsClause != null) {
+                        this.analyzeParsedTree(context, extendsClause);
+                    }
+                    final Name simpleName = classDecl.getSimpleName();
+                    final Range range = Range.create(src, startPos + 1, endPos);
+                    if (firstLine < 0) {
+                        firstLine = range.begin.line;
+                        src.classStartLine = firstLine;
+                    }
+                    final int nameStart = isInterface ? startPos + 10 : startPos + 6;
+                    final Range nameRange = Range.create(src, nameStart, nameStart + simpleName.length());
+
+                    final String fqcn;
+                    if (src.packageName == null || src.packageName.isEmpty()) {
+                        fqcn = simpleName.toString();
+                    } else {
+                        fqcn = src.packageName + '.' + simpleName.toString();
+                    }
+                    final ClassScope classScope = new ClassScope(fqcn, nameRange, startPos, range);
+                    log.trace("class={}", classScope);
+
+                    src.startClass(classScope);
+                    classDecl.getMembers().forEach(wrapIOConsumer(tree -> analyzeParsedTree(context, tree)));
+                    final Optional<ClassScope> endClass = src.endClass();
+                    log.trace("class={}", endClass);
+                } else if (td instanceof JCTree.JCSkip) {
+                    // skip
+                } else {
+                    log.warn("unknown td={} {}", td, td.getClass());
+                }
+            }
+        } catch (final IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 
     private void analyzeParsedTree(final SourceContext context, final JCTree tree) throws IOException {
