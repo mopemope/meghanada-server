@@ -1,7 +1,10 @@
 package meghanada.docs.declaration;
 
 import com.google.common.base.Joiner;
-import meghanada.analyze.*;
+import meghanada.analyze.ClassScope;
+import meghanada.analyze.MethodCall;
+import meghanada.analyze.Source;
+import meghanada.analyze.Variable;
 import meghanada.project.Project;
 import meghanada.reflect.MemberDescriptor;
 import meghanada.reflect.asm.CachedASMReflector;
@@ -38,15 +41,13 @@ public class DeclarationSearcher {
             final Declaration declaration = new Declaration(symbol, var.fqcn, Declaration.Type.VAR, var.argumentIndex);
             return Optional.of(declaration);
         }).orElseGet(() -> {
-            final Optional<TypeScope> ts = source.getTypeScope(line);
-            if (!ts.isPresent()) {
-                return Optional.empty();
-            }
-            return ts.get().getField(symbol).map(fieldVar ->
-                    new Declaration(symbol,
-                            fieldVar.fqcn,
-                            Declaration.Type.VAR,
-                            fieldVar.argumentIndex));
+            return source.getTypeScope(line)
+                    .flatMap(typeScope -> typeScope.getField(symbol)
+                            .map(fieldVar ->
+                                    new Declaration(symbol,
+                                            fieldVar.fqcn,
+                                            Declaration.Type.VAR,
+                                            fieldVar.argumentIndex)));
         });
         log.traceExit(entryMessage);
         return result;

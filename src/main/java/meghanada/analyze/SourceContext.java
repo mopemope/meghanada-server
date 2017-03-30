@@ -15,6 +15,11 @@ public class SourceContext {
         this.source = source;
     }
 
+    public SourceContext(final Source source, final EndPosTable endPosTable) {
+        this.source = source;
+        this.endPosTable = endPosTable;
+    }
+
     public String getArgumentFQCN() {
         return argumentFQCN;
     }

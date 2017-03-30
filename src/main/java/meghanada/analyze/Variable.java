@@ -28,7 +28,6 @@ public class Variable {
         this.name = name;
         this.pos = pos;
         this.range = range;
-        // TODO need having class ?
     }
 
     @Override

@@ -2,6 +2,8 @@ package meghanada.analyze;
 
 import meghanada.GradleTestBase;
 import meghanada.config.Config;
+import meghanada.docs.declaration.Declaration;
+import meghanada.docs.declaration.DeclarationSearcher;
 import meghanada.project.Project;
 import meghanada.project.gradle.GradleProject;
 import meghanada.reflect.asm.CachedASMReflector;
@@ -16,9 +18,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static meghanada.config.Config.timeIt;
+import static org.junit.Assert.assertNotNull;
 
 @SuppressWarnings("CheckReturnValue")
 public class JavaAnalyzerTest extends GradleTestBase {
@@ -145,6 +149,10 @@ public class JavaAnalyzerTest extends GradleTestBase {
         timeIt(() -> {
             return analyzer.analyzeAndCompile(files, cp, tmp);
         });
+
+        final DeclarationSearcher searcher = new DeclarationSearcher(getProject());
+        final Optional<Declaration> declaration = searcher.searchDeclaration(file, 9, 22, "value");
+        assertNotNull(declaration);
     }
 
     @Test

@@ -1015,7 +1015,7 @@ public class TreeAnalyzer {
     }
 
     private java.util.List<String> getArgumentsType(final SourceContext context, final List<JCTree.JCExpression> arguments) {
-        final SourceContext newContext = new SourceContext(context.getSource());
+        final SourceContext newContext = new SourceContext(context.getSource(), context.getEndPosTable());
         newContext.setArgumentIndex(0);
         try {
             return arguments.stream()
@@ -1285,9 +1285,9 @@ public class TreeAnalyzer {
         final Range range = Range.create(src, preferredPos, endPos);
         if (sym != null) {
             final Type type = sym.asType();
-            final Name name = ident.getName();
+            final String name = ident.getName().toString();
 
-            final Variable variable = new Variable(name.toString(), preferredPos, range);
+            final Variable variable = new Variable(name, preferredPos, range);
 
             this.getTypeString(src, type).ifPresent(fqcn -> {
                 variable.fqcn = TreeAnalyzer.markFQCN(src, fqcn);
