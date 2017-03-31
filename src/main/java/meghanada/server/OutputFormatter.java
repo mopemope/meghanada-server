@@ -26,7 +26,7 @@ public interface OutputFormatter {
 
     String addImport(boolean result, String fqcn);
 
-    String optimizeImport(List<String> result);
+    String optimizeImport(String path);
 
     String importAll(Map<String, List<String>> result);
 

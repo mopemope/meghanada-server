@@ -126,7 +126,7 @@ public class JavaCompletionTest extends GradleTestBase {
         File file = new File("./src/main/java/meghanada/analyze/JavaAnalyzer.java").getCanonicalFile();
         assert file.exists();
 
-        final Collection<? extends CandidateUnit> units = traceIt(() -> {
+        final Collection<? extends CandidateUnit> units = timeIt(() -> {
             return completion.completionAt(file, 79, 35, "*method:java.util.Iterator<capture of ? extends com.sun.source.tree.CompilationUnitTree>#");
         });
         // units.forEach(a -> System.out.println(a.getDisplayDeclaration()));
@@ -144,7 +144,7 @@ public class JavaCompletionTest extends GradleTestBase {
         JavaCompletion completion = getCompletion();
         File file = new File("./src/main/java/meghanada/analyze/JavaAnalyzer.java").getCanonicalFile();
         assert file.exists();
-        final Collection<? extends CandidateUnit> units = traceIt(() -> {
+        final Collection<? extends CandidateUnit> units = timeIt(() -> {
             return completion.completionAt(file, 79, 35, "*method:capture of ? extends com.sun.source.tree.CompilationUnitTree#");
         });
         units.forEach(a -> System.out.println(a.getDisplayDeclaration()));

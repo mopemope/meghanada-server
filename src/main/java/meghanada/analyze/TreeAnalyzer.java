@@ -1,10 +1,7 @@
 package meghanada.analyze;
 
 import com.google.common.base.Joiner;
-import com.sun.source.tree.CompilationUnitTree;
-import com.sun.source.tree.ExpressionTree;
-import com.sun.source.tree.Tree;
-import com.sun.source.tree.VariableTree;
+import com.sun.source.tree.*;
 import com.sun.tools.javac.code.Symbol;
 import com.sun.tools.javac.code.Type;
 import com.sun.tools.javac.tree.EndPosTable;
@@ -245,7 +242,19 @@ public class TreeAnalyzer {
         final EndPosTable endPosTable = ((JCTree.JCCompilationUnit) cut).endPositions;
         context.setEndPosTable(endPosTable);
         final CachedASMReflector cachedASMReflector = CachedASMReflector.getInstance();
-        cut.getImports().forEach(wrapIOConsumer(imp -> {
+
+        int firstLine = 0;
+        for (final ImportTree imp : cut.getImports()) {
+            final JCTree.JCImport jcImport = (JCTree.JCImport) imp;
+            final int startPos = jcImport.getPreferredPosition();
+            final int endPos = jcImport.getEndPosition(endPosTable);
+            try {
+                final Range range = Range.create(src, startPos + 1, endPos);
+                firstLine = range.begin.line;
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+
             final String importClass = imp.getQualifiedIdentifier().toString();
             final String simpleName = ClassNameUtils.getSimpleName(importClass);
             if (simpleName.equals("*")) {
@@ -270,9 +279,9 @@ public class TreeAnalyzer {
                     src.addImport(importClass);
                 }
             }
-        }));
+        }
+        src.classStartLine = firstLine;
 
-        int firstLine = -1;
         try {
             for (final Tree td : cut.getTypeDecls()) {
                 if (td instanceof JCTree.JCClassDecl) {
@@ -290,10 +299,6 @@ public class TreeAnalyzer {
                     }
                     final Name simpleName = classDecl.getSimpleName();
                     final Range range = Range.create(src, startPos + 1, endPos);
-                    if (firstLine < 0) {
-                        firstLine = range.begin.line;
-                        src.classStartLine = firstLine;
-                    }
                     final int nameStart = isInterface ? startPos + 10 : startPos + 6;
                     final Range nameRange = Range.create(src, nameStart, nameStart + simpleName.length());
 

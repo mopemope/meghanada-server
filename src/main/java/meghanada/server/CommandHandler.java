@@ -145,9 +145,9 @@ public class CommandHandler {
 
     public void optimizeImport(final String path) {
         try {
-            final List<String> result = session.optimizeImport(path);
-            final String out = outputFormatter.optimizeImport(result);
-            writer.write(out);
+            final String canonicalPath = new File(path).getCanonicalPath();
+            session.optimizeImport(canonicalPath);
+            writer.write(outputFormatter.optimizeImport(canonicalPath));
             writer.newLine();
         } catch (Throwable e) {
             log.catching(e);

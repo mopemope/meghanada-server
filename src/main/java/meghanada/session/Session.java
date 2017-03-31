@@ -28,8 +28,12 @@ import org.apache.logging.log4j.message.EntryMessage;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.regex.Matcher;
@@ -396,16 +400,51 @@ public class Session {
                 .orElse(false);
     }
 
-    public synchronized List<String> optimizeImport(String path) throws ExecutionException {
+    public synchronized void optimizeImport(final String path) throws ExecutionException {
         // java file only
-        File file = normalize(path);
+        final File file = normalize(path);
         if (!FileUtils.isJavaFile(file)) {
-            return Collections.emptyList();
+            return;
         }
 
-        return parseJavaSource(file)
-                .map(Source::optimizeImports)
-                .orElse(Collections.emptyList());
+        parseJavaSource(file).ifPresent(source -> {
+            final List<String> optimized = source.optimizeImports();
+            final StringBuilder sb = new StringBuilder(1024 * 4);
+            if (source.packageName != null && !source.packageName.isEmpty()) {
+                sb.append("package ").append(source.packageName).append(";\n\n");
+            }
+
+            boolean startStandardClass = false;
+            for (final String fqcn : optimized) {
+                if (!startStandardClass && (fqcn.startsWith("java.") || fqcn.startsWith("javax."))) {
+                    sb.append('\n');
+                    startStandardClass = true;
+                }
+                sb.append("import ").append(fqcn).append(";\n");
+            }
+            if (source.staticImportClass.size() > 0) {
+                sb.append('\n');
+                source.staticImportClass.forEach((metheod, fqcn) -> {
+                    sb.append("import static ")
+                            .append(fqcn)
+                            .append('.')
+                            .append(metheod)
+                            .append(";\n");
+
+                });
+            }
+
+            try (final Stream<String> stream = Files.lines(file.toPath(), StandardCharsets.UTF_8)) {
+                stream.skip(source.classStartLine)
+                        .forEach(s -> sb.append(s).append('\n'));
+                Files.write(Paths.get(path),
+                        sb.toString().getBytes(StandardCharsets.UTF_8),
+                        StandardOpenOption.WRITE,
+                        StandardOpenOption.TRUNCATE_EXISTING);
+            } catch (final IOException e) {
+                throw new UncheckedIOException(e);
+            }
+        });
     }
 
     public synchronized Map<String, List<String>> searchMissingImport(String path) throws ExecutionException {

@@ -2,6 +2,7 @@ package meghanada.formatter;
 
 import org.eclipse.jdt.core.ToolFactory;
 import org.eclipse.jdt.core.formatter.CodeFormatter;
+import org.eclipse.jdt.core.formatter.DefaultCodeFormatterConstants;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.Document;
 import org.eclipse.jface.text.IDocument;
@@ -15,6 +16,21 @@ public class JavaFormatter {
     private static final Pattern NEW_LINE = Pattern.compile("\n");
 
     private JavaFormatter() {
+    }
+
+    public static Properties getDefaultProperties() {
+        final Properties properties = new Properties();
+        properties.setProperty(DefaultCodeFormatterConstants.FORMATTER_BLANK_LINES_AFTER_IMPORTS, "1");
+        properties.setProperty(DefaultCodeFormatterConstants.FORMATTER_LINE_SPLIT, "200");
+        properties.setProperty(DefaultCodeFormatterConstants.FORMATTER_TAB_CHAR, "space");
+        properties.setProperty(DefaultCodeFormatterConstants.FORMATTER_TAB_SIZE, "4");
+        properties.setProperty(DefaultCodeFormatterConstants.FORMATTER_JOIN_WRAPPED_LINES, "false");
+        properties.setProperty(DefaultCodeFormatterConstants.FORMATTER_ALIGNMENT_FOR_RESOURCES_IN_TRY, "18");
+        return properties;
+    }
+
+    public static String format(final String content) {
+        return format(getDefaultProperties(), content);
     }
 
     public static String format(final Properties prop, final String content) {

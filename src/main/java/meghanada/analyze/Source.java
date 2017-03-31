@@ -355,7 +355,7 @@ public class Source {
 
     public List<String> optimizeImports() {
         // shallow copy
-        Map<String, String> importMap = new HashMap<>(this.getImportedClassMap());
+        final Map<String, String> importMap = new HashMap<>(this.getImportedClassMap());
 
         log.debug("unused:{}", this.unused);
         // remove unused
@@ -376,30 +376,30 @@ public class Source {
         final Map<String, List<String>> optimizeMap = new HashMap<>(4);
         importMap.values()
                 .forEach(fqcn -> {
-                    String pkg1 = ClassNameUtils.getPackage(fqcn);
-                    if (pkg1.startsWith("java.lang")) {
+                    final String packageName = ClassNameUtils.getPackage(fqcn);
+                    if (packageName.startsWith("java.lang")) {
                         return;
                     }
-                    if (optimizeMap.containsKey(pkg1)) {
-                        List<String> list = optimizeMap.get(pkg1);
+                    if (optimizeMap.containsKey(packageName)) {
+                        final List<String> list = optimizeMap.get(packageName);
                         list.add(fqcn);
                     } else {
-                        List<String> list = new ArrayList<>(1);
+                        final List<String> list = new ArrayList<>(1);
                         list.add(fqcn);
-                        optimizeMap.put(pkg1, list);
+                        optimizeMap.put(packageName, list);
                     }
                 });
 
-        final List<String> imports = optimizeMap.values().stream()
-                .map(strings -> {
-                    if (strings.size() >= 5) {
-                        final String sample = strings.get(0);
+        final List<String> optimized = optimizeMap.values().stream()
+                .map(imports -> {
+                    if (imports.size() >= 5) {
+                        final String sample = imports.get(0);
                         final String pkg = ClassNameUtils.getPackage(sample);
                         final List<String> result = new ArrayList<>(4);
                         result.add(pkg + ".*");
                         return result;
                     }
-                    return strings;
+                    return imports;
                 }).flatMap(Collection::stream)
                 .sorted((o1, o2) -> {
                     if (o1.startsWith("java.") && o2.startsWith("java.")) {
@@ -413,8 +413,9 @@ public class Source {
                     }
                 }).collect(Collectors.toList());
 
-        log.debug("optimize imports:{}", imports);
-        return imports;
+        log.debug("optimize imports:{}", optimized);
+
+        return optimized;
     }
 
     public boolean isReportUnknown() {

@@ -124,21 +124,13 @@ public class SexpOutputFormatter implements OutputFormatter {
     }
 
     @Override
-    public String optimizeImport(List<String> result) {
-        StringBuilder sb = new StringBuilder(LPAREN);
-
-        final String collect = result.stream()
-                .map(SexpOutputFormatter::doubleQuote)
-                .collect(Collectors.joining(LIST_SEP));
-        sb.append(collect);
-
-        sb.append(RPAREN);
-        return sb.toString();
+    public String optimizeImport(final String path) {
+        return doubleQuote(path);
     }
 
     @Override
-    public String importAll(Map<String, List<String>> result) {
-        StringBuilder sb = new StringBuilder();
+    public String importAll(final Map<String, List<String>> result) {
+        final StringBuilder sb = new StringBuilder();
         sb.append(LPAREN);
 
         final String str = result.values()
@@ -157,12 +149,12 @@ public class SexpOutputFormatter implements OutputFormatter {
     }
 
     @Override
-    public String switchTest(String openPath) {
+    public String switchTest(final String openPath) {
         return doubleQuote(openPath);
     }
 
     @Override
-    public String jumpDeclaration(Location loc) {
+    public String jumpDeclaration(final Location loc) {
         return LPAREN
                 + String.join(LIST_SEP,
                 doubleQuote(loc.getPath()),
@@ -172,13 +164,13 @@ public class SexpOutputFormatter implements OutputFormatter {
     }
 
     @Override
-    public String clearCache(boolean result) {
+    public String clearCache(final boolean result) {
         return Boolean.toString(result);
     }
 
     @Override
     public String localVariable(final LocalVariable lv) {
-        final StringBuilder sb = new StringBuilder();
+        final StringBuilder sb = new StringBuilder(1024);
         sb.append(LPAREN);
         sb.append(SexpOutputFormatter.doubleQuote(lv.getReturnType()));
         if (!lv.getCandidates().isEmpty()) {

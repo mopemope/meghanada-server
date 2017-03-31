@@ -13,12 +13,12 @@ import meghanada.analyze.JavaAnalyzer;
 import meghanada.analyze.Source;
 import meghanada.cache.GlobalCache;
 import meghanada.config.Config;
+import meghanada.formatter.JavaFormatter;
 import meghanada.utils.ClassNameUtils;
 import meghanada.utils.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.eclipse.jdt.core.JavaCore;
-import org.eclipse.jdt.core.formatter.DefaultCodeFormatterConstants;
 
 import java.io.File;
 import java.io.IOException;
@@ -671,15 +671,7 @@ public abstract class Project {
             return fileProperties;
         }
         // default
-        final Properties properties = new Properties();
-        // Default
-        properties.setProperty(DefaultCodeFormatterConstants.FORMATTER_BLANK_LINES_AFTER_IMPORTS, "1");
-        properties.setProperty(DefaultCodeFormatterConstants.FORMATTER_LINE_SPLIT, "200");
-        properties.setProperty(DefaultCodeFormatterConstants.FORMATTER_TAB_CHAR, "space");
-        properties.setProperty(DefaultCodeFormatterConstants.FORMATTER_TAB_SIZE, "4");
-        properties.setProperty(DefaultCodeFormatterConstants.FORMATTER_JOIN_WRAPPED_LINES, "false");
-        properties.setProperty(DefaultCodeFormatterConstants.FORMATTER_ALIGNMENT_FOR_RESOURCES_IN_TRY, "18");
-        return properties;
+        return JavaFormatter.getDefaultProperties();
     }
 
     private Properties readFormatPropertiesFromFile() {

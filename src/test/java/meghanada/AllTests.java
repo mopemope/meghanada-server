@@ -4,6 +4,7 @@ import meghanada.project.Project;
 import meghanada.project.ProjectDependency;
 import meghanada.project.gradle.GradleProject;
 import meghanada.reflect.asm.CachedASMReflector;
+import org.junit.Ignore;
 import org.junit.extensions.cpsuite.ClasspathSuite;
 import org.junit.extensions.cpsuite.ClasspathSuite.BeforeSuite;
 import org.junit.extensions.cpsuite.ClasspathSuite.ClassnameFilters;
@@ -14,6 +15,9 @@ import java.io.File;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static meghanada.config.Config.timeIt;
+
+@Ignore
 @SuppressWarnings("CheckReturnValue")
 @RunWith(ClasspathSuite.class)
 @ClassnameFilters({".*Test"})
@@ -22,8 +26,8 @@ public class AllTests {
 
     @BeforeSuite
     public static void init() throws Exception {
-        final Project project = new GradleProject(new File("./").getCanonicalFile());
-        project.parseProject();
+        Project project = new GradleProject(new File("./").getCanonicalFile());
+        project = project.parseProject();
         project.clearCache();
         final List<File> jars = project.getDependencies().stream()
                 .map(ProjectDependency::getFile)
@@ -33,6 +37,8 @@ public class AllTests {
         reflector.createClassIndexes();
         project.compileJava(false);
         project.compileTestJava(false);
-        reflector.updateClassIndexFromDirectory();
+        timeIt(() -> {
+            reflector.updateClassIndexFromDirectory();
+        });
     }
 }
