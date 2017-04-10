@@ -29,6 +29,7 @@ import java.nio.file.StandardOpenOption;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.logging.Level;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
@@ -43,6 +44,7 @@ public class LocationSearcher {
     private static final String TEMP_DECOMPILE_DIR = "meghanada_decompile";
 
     private static final Logger log = LogManager.getLogger(LocationSearcher.class);
+    private static final Pattern IMPORT_RE = Pattern.compile("import .*\\d;$");
     private final List<LocationSearchFunction> functions;
     private final Map<String, File> copiedSrcFile = new HashMap<>(16);
     private final Map<String, List<String>> decompileFiles = new HashMap<>(16);
@@ -189,6 +191,41 @@ public class LocationSearcher {
             }
         }
         return null;
+    }
+
+    private static void copyAndFilter(final File decompiled, final File temp) throws IOException {
+        try (final BufferedWriter bw = Files.newBufferedWriter(temp.toPath(),
+                StandardCharsets.UTF_8,
+                StandardOpenOption.WRITE,
+                StandardOpenOption.TRUNCATE_EXISTING);
+             final Stream<String> stream = Files.lines(decompiled.toPath(), StandardCharsets.UTF_8)) {
+            final Map<String, String> rename = new HashMap<>(8);
+
+            stream.forEach(wrapIOConsumer(s -> {
+                if (IMPORT_RE.matcher(s).matches()) {
+                    final String inner = s.substring(s.length() - 2, s.length() - 1);
+                    final String innerClass = "Inner" + inner;
+                    rename.put(" " + inner + " ", " " + innerClass + " ");
+                    rename.put(" " + inner + "(", " " + innerClass + "(");
+                    rename.put(" " + inner + ".", " " + innerClass + ".");
+                    rename.put("(" + inner + ".", "(" + innerClass + ".");
+                    final String replace = ClassNameUtils.replace(s, inner, innerClass);
+                    bw.write(replace);
+                    bw.newLine();
+                } else {
+                    final boolean match = rename.keySet()
+                            .stream()
+                            .anyMatch(s::contains);
+                    if (match) {
+                        final String replace = ClassNameUtils.replaceFromMap(s, rename);
+                        bw.write(replace);
+                    } else {
+                        bw.write(s);
+                    }
+                    bw.newLine();
+                }
+            }));
+        }
     }
 
     public void setProject(Project project) {
@@ -453,7 +490,7 @@ public class LocationSearcher {
                 for (final String decompileFile : decompiledFiles.values()) {
                     final File decompiled = new File(decompileFile);
                     final File temp = File.createTempFile(TEMP_FILE_PREFIX + "-decompile-", FileUtils.JAVA_EXT);
-                    this.copyAndFilter(decompiled, temp);
+                    LocationSearcher.copyAndFilter(decompiled, temp);
                     tempList.add(temp.getCanonicalPath());
                     decompiled.deleteOnExit();
                     if (!decompiled.delete()) {
@@ -475,41 +512,6 @@ public class LocationSearcher {
             return null;
         } finally {
             FileUtils.deleteFiles(output, false);
-        }
-    }
-
-    private void copyAndFilter(File decompiled, File temp) throws IOException {
-        try (final BufferedWriter bw = Files.newBufferedWriter(temp.toPath(),
-                StandardCharsets.UTF_8,
-                StandardOpenOption.WRITE,
-                StandardOpenOption.TRUNCATE_EXISTING);
-             final Stream<String> stream = Files.lines(decompiled.toPath(), StandardCharsets.UTF_8)) {
-            final Map<String, String> rename = new HashMap<>();
-
-            stream.forEach(wrapIOConsumer(s -> {
-                if (s.matches(".*\\d;$")) {
-                    final String inner = s.substring(s.length() - 2, s.length() - 1);
-                    final String innerClass = "Inner" + inner;
-                    rename.put(" " + inner + " ", " " + innerClass + " ");
-                    rename.put(" " + inner + "(", " " + innerClass + "(");
-                    rename.put(" " + inner + ".", " " + innerClass + ".");
-                    rename.put("(" + inner + ".", "(" + innerClass + ".");
-                    final String replace = ClassNameUtils.replace(s, inner, innerClass);
-                    bw.write(replace);
-                    bw.newLine();
-                } else {
-                    final boolean match = rename.keySet()
-                            .stream()
-                            .anyMatch(s::contains);
-                    if (match) {
-                        final String replace = ClassNameUtils.replaceFromMap(s, rename);
-                        bw.write(replace);
-                    } else {
-                        bw.write(s);
-                    }
-                    bw.newLine();
-                }
-            }));
         }
     }
 
