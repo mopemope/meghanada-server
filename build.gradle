@@ -7,7 +7,7 @@ plugins {
     id 'com.github.johnrengelman.shadow' version '1.2.4'
     id 'com.github.ben-manes.versions' version '0.14.0'
     id 'com.jfrog.bintray' version '1.7.3'
-    id 'org.ajoberstar.grgit' version '1.6.0'
+    id 'org.ajoberstar.grgit' version '1.7.1'
     id 'net.ltgt.errorprone' version '0.0.9'
 }
 
@@ -20,7 +20,7 @@ ext {
     sourceCompatibility = 1.8
 
     gradleVersion = '3.4.1'
-    log4jVersion = '2.8.1'
+    log4jVersion = '2.8.2'
 }
 
 mainClassName = "meghanada.Main"
@@ -83,7 +83,7 @@ dependencies {
     compile 'org.apache.maven:maven-model:3.3.9'
     compile 'com.leacox.motif:motif:0.1'
     compile 'com.leacox.motif:motif-hamcrest:0.1'
-    compile 'com.github.javaparser:javaparser-core:3.1.4'
+    compile 'com.github.javaparser:javaparser-core:3.2.0'
     compile "org.apache.logging.log4j:log4j-core:$log4jVersion"
     compile "org.apache.logging.log4j:log4j-api:$log4jVersion"
     compile "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
@@ -99,8 +99,8 @@ dependencies {
     compile 'io.takari.junit:takari-cpsuite:1.2.7'
     compile 'org.jboss.windup.decompiler:decompiler-api:3.0.0.Final'
     compile 'org.jboss.windup.decompiler:decompiler-fernflower:3.0.0.Final'
-    compile 'com.google.code.findbugs:jsr305:3.0.1'
-    compile 'org.eclipse.jdt:org.eclipse.jdt.core:3.12.2'
+    compile 'com.google.code.findbugs:jsr305:3.0.2'
+    compile 'org.eclipse.jdt:org.eclipse.jdt.core:3.12.3'
 }
 
 
