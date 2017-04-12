@@ -8,7 +8,6 @@ import meghanada.project.gradle.GradleProject;
 // import org.junit.extensions.cpsuite.ClasspathSuite.IncludeJars;
 // import org.junit.runner.RunWith;
 
-
 import java.io.File;
 
 @RunWith(ClasspathSuite.class)
@@ -22,5 +21,7 @@ public class AnnoTest2 {
         project.parseProject();
         project.compileJava(false);
         project.compileTestJava(false);
+        List<String> list = new ArrayList<>();
+        final JCDiagnostic.DiagnosticPosition pos = null;
     }
 }

@@ -74,7 +74,29 @@ public class SourceTest extends GradleTestBase {
         Map<String, List<String>> missingImport = timeIt(source::searchMissingImport);
         List<String> optimizeImports = timeIt(source::optimizeImports);
         assertEquals(0, missingImport.size());
-        assertEquals(14, optimizeImports.size());
+        assertEquals(13, optimizeImports.size());
+    }
+
+    @Test
+    public void testOptimizeImports2() throws Exception {
+        final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8");
+        final String cp = getClasspath();
+
+        List<File> files = new ArrayList<>();
+        final File file = new File("./src/test/java/meghanada/Opt.java").getCanonicalFile();
+        assert file.exists();
+        files.add(file);
+
+        final String tmp = System.getProperty("java.io.tmpdir");
+
+        final Source source = timeIt(() -> {
+            final CompileResult compileResult = analyzer.analyzeAndCompile(files, cp, tmp);
+            return compileResult.getSources().get(file);
+        });
+
+        List<String> optimizeImports = timeIt(source::optimizeImports);
+        System.out.println(optimizeImports);
+        assertEquals(3, optimizeImports.size());
     }
 
     @Test
@@ -118,8 +140,10 @@ public class SourceTest extends GradleTestBase {
         });
 
         Map<String, List<String>> missingImport = timeIt(source::searchMissingImport);
-        System.out.println(missingImport);
-        assertEquals(5, missingImport.size());
+        missingImport.forEach((k, v) -> {
+            System.out.println(k + ":" + v);
+        });
+        assertEquals(8, missingImport.size());
     }
 
     private String getClasspath() throws IOException {

@@ -9,6 +9,7 @@ import com.sun.tools.javac.tree.JCTree;
 import com.sun.tools.javac.util.JCDiagnostic;
 import com.sun.tools.javac.util.List;
 import meghanada.reflect.asm.CachedASMReflector;
+import meghanada.utils.ClassName;
 import meghanada.utils.ClassNameUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -164,6 +165,10 @@ public class TreeAnalyzer {
     }
 
     private static String markFQCN(final Source src, final String fqcn) {
+        return markFQCN(src, fqcn, true);
+    }
+
+    private static String markFQCN(final Source src, final String fqcn, final boolean markUnUse) {
         if (fqcn.equals("void")) {
             return fqcn;
         }
@@ -198,16 +203,25 @@ public class TreeAnalyzer {
                 !cachedASMReflector.getGlobalClassIndex().containsKey(simpleName)) {
             src.unknown.add(simpleName);
         } else {
-            // contains
-            final String name = ClassNameUtils.replaceInnerMark(simpleName);
-            if (src.unused.contains(name)) {
-                src.unused.remove(name);
+            if (markUnUse) {
+                // contains
+                final String name = ClassNameUtils.replaceInnerMark(simpleName);
+                if (src.unused.contains(name)) {
+                    src.unused.remove(name);
+                }
+                final int i = simpleName.indexOf('$');
+                if (i > 0) {
+                    final String parentClass = simpleName.substring(0, i);
+                    if (src.unused.contains(parentClass)) {
+                        src.unused.remove(parentClass);
+                    }
+                }
             }
-
             final File classFile = cachedASMReflector.getClassFile(simpleName);
             if (classFile == null || !classFile.getName().endsWith(".jar")) {
                 src.usingClasses.add(simpleName);
             }
+
         }
         return fqcn;
     }
@@ -900,8 +914,15 @@ public class TreeAnalyzer {
                     final MethodCall methodCall = new MethodCall(s, preferredPos + 1, nameRange, range);
 
                     if (owner != null && owner.type != null) {
-                        this.getTypeString(src, owner.type).ifPresent(fqcn ->
-                                methodCall.declaringClass = TreeAnalyzer.markFQCN(src, fqcn));
+                        this.getTypeString(src, owner.type).ifPresent(fqcn -> {
+                            final String className = src.staticImportClass.get(s);
+                            if (fqcn.equals(className)) {
+                                // static imported
+                                methodCall.declaringClass = TreeAnalyzer.markFQCN(src, fqcn, false);
+                            } else {
+                                methodCall.declaringClass = TreeAnalyzer.markFQCN(src, fqcn);
+                            }
+                        });
                         this.setReturnTypeAndArgType(context, src, returnType, methodCall);
                     }
 
@@ -1009,12 +1030,22 @@ public class TreeAnalyzer {
         final MethodCall methodCall = new MethodCall(name, preferredPos, nameRange, range);
 
         final Type type = identifier.type;
+
         this.getTypeString(src, type).ifPresent(fqcn -> {
             methodCall.declaringClass = TreeAnalyzer.markFQCN(src, fqcn);
             methodCall.returnType = fqcn;
             methodCall.argumentIndex = argumentIndex;
             context.setArgumentFQCN(fqcn);
         });
+        if (type == null) {
+            // add className to unknown
+            final ClassName className = new ClassName(name);
+            final String simpleName = className.getName();
+            if (!src.getImportedClassMap().containsKey(simpleName) &&
+                    !CachedASMReflector.getInstance().getGlobalClassIndex().containsKey(simpleName)) {
+                src.unknown.add(simpleName);
+            }
+        }
 
         final JCTree.JCClassDecl classBody = newClass.getClassBody();
         if (classBody != null) {

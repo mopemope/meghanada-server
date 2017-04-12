@@ -52,6 +52,7 @@ public class Source {
 
     public void addStaticImport(final String method, final String clazz) {
         this.importClasses.add(clazz);
+        this.unused.add(clazz);
         this.staticImportClass.putIfAbsent(method, clazz);
         log.trace("static unused class {} {}", clazz, method);
     }
@@ -313,7 +314,11 @@ public class Source {
 
         log.debug("unknown class size:{} classes:{}", this.unknown.size(), this.unknown);
         for (final String clazzName : this.unknown) {
-            final String searchWord = ClassNameUtils.removeTypeAndArray(clazzName);
+            String searchWord = ClassNameUtils.removeTypeAndArray(clazzName);
+            final int i = searchWord.indexOf('.');
+            if (i > 0) {
+                searchWord = searchWord.substring(0, i);
+            }
             log.debug("search unknown class : {} ...", searchWord);
             final Collection<? extends CandidateUnit> findUnits = reflector.searchClasses(searchWord, false, false);
             log.debug("find candidate units : {}", findUnits);
@@ -373,7 +378,7 @@ public class Source {
         // create optimize import
         // 1. count import pkg
         // 2. sort
-        final Map<String, List<String>> optimizeMap = new HashMap<>(4);
+        final Map<String, List<String>> optimizeMap = new HashMap<>(32);
         importMap.values()
                 .forEach(fqcn -> {
                     final String packageName = ClassNameUtils.getPackage(fqcn);
