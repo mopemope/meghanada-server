@@ -402,11 +402,12 @@ public class Source {
                     return imports;
                 }).flatMap(Collection::stream)
                 .sorted((o1, o2) -> {
-                    if (o1.startsWith("java.") && o2.startsWith("java.")) {
+                    if ((o1.startsWith("java.") && o2.startsWith("java.")) ||
+                            (o1.startsWith("javax.") && o2.startsWith("javax."))) {
                         return o1.compareTo(o2);
-                    } else if (o1.startsWith("java.")) {
+                    } else if (o1.startsWith("java.") || o1.startsWith("javax.")) {
                         return 1;
-                    } else if (o2.startsWith("java.")) {
+                    } else if (o2.startsWith("java.") || o2.startsWith("javax.")) {
                         return -1;
                     } else {
                         return o1.compareTo(o2);
