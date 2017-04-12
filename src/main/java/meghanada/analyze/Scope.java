@@ -166,19 +166,19 @@ public abstract class Scope {
         return result;
     }
 
-    public Map<String, Variable> getDeclaratorMap(final int line) {
-        if (this.contains(line)) {
-            final Map<String, Variable> result = new HashMap<>(32);
-            variables.stream()
-                    .filter(Variable::isDecl)
-                    .forEach(v -> result.putIfAbsent(v.name, v));
-            return result;
-        }
-        return Collections.emptyMap();
-    }
-
     public Set<Variable> getVariables() {
         return variables;
     }
 
+    public Map<String, Variable> getVariableMap() {
+        final Map<String, Variable> result = new HashMap<>(32);
+        variables.forEach(v -> {
+            if (v.isDecl()) {
+                result.put(v.name, v);
+            } else {
+                result.putIfAbsent(v.name, v);
+            }
+        });
+        return result;
+    }
 }

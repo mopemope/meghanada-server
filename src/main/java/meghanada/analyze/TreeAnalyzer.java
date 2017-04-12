@@ -302,6 +302,7 @@ public class TreeAnalyzer {
                     final JCTree.JCClassDecl classDecl = (JCTree.JCClassDecl) td;
                     final Tree.Kind classDeclKind = classDecl.getKind();
                     final boolean isInterface = classDeclKind.equals(Tree.Kind.INTERFACE);
+                    final boolean isEnum = classDeclKind.equals(Tree.Kind.ENUM);
                     final int startPos = classDecl.getPreferredPosition();
                     final int endPos = classDecl.getEndPosition(endPosTable);
                     final JCTree.JCModifiers modifiers = classDecl.getModifiers();
@@ -313,7 +314,13 @@ public class TreeAnalyzer {
                     }
                     final Name simpleName = classDecl.getSimpleName();
                     final Range range = Range.create(src, startPos + 1, endPos);
-                    final int nameStart = isInterface ? startPos + 10 : startPos + 6;
+
+                    int nameStart = startPos + 6;
+                    if (isInterface) {
+                        nameStart = startPos + 10;
+                    } else if (isEnum) {
+                        nameStart = startPos + 5;
+                    }
                     final Range nameRange = Range.create(src, nameStart, nameStart + simpleName.length());
 
                     final String fqcn;
@@ -323,6 +330,8 @@ public class TreeAnalyzer {
                         fqcn = src.packageName + '.' + simpleName.toString();
                     }
                     final ClassScope classScope = new ClassScope(fqcn, nameRange, startPos, range);
+                    classScope.isEnum = isEnum;
+                    classScope.isInterface = isInterface;
                     log.trace("class={}", classScope);
 
                     src.startClass(classScope);
@@ -1279,26 +1288,49 @@ public class TreeAnalyzer {
         });
     }
 
-    private void analyzeClassDecl(final SourceContext context, final JCTree.JCClassDecl classDecl, int startPos, int endPos) throws IOException {
+    private void analyzeClassDecl(final SourceContext context,
+                                  final JCTree.JCClassDecl classDecl,
+                                  final int startPos,
+                                  final int endPos) throws IOException {
         // innerClass
         final Source src = context.getSource();
         final Range range = Range.create(src, startPos, endPos);
         final Name simpleName = classDecl.getSimpleName();
 
         final JCTree.JCModifiers modifiers = classDecl.getModifiers();
+        final int modPos = modifiers.pos;
+        final int modEndPos = context.getEndPosTable().getEndPos(modifiers);
+        int modLen = 0;
+        if (modEndPos > 0) {
+            modLen = modEndPos - modPos + 1;
+        }
         parseModifiers(context, modifiers);
-        src.getCurrentClass().ifPresent(parent -> {
+
+        final Tree.Kind kind = classDecl.getKind();
+        final boolean isInterface = kind.equals(Tree.Kind.INTERFACE);
+        final boolean isEnum = kind.equals(Tree.Kind.ENUM);
+        int nameStartPos = startPos + modLen;
+        if (isInterface) {
+            nameStartPos += 10;
+        } else if (isEnum) {
+            nameStartPos += 5;
+        } else {
+            nameStartPos += 6;
+        }
+        final Range nameRange = Range.create(src, nameStartPos, nameStartPos + simpleName.length());
+
+        src.getCurrentClass().ifPresent(wrapIOConsumer(parent -> {
             final String parentName = parent.name;
             final String fqcn = parentName + ClassNameUtils.INNER_MARK + simpleName;
-
-            final ClassScope classScope = new ClassScope(fqcn, null, startPos, range);
-
+            final ClassScope classScope = new ClassScope(fqcn, nameRange, startPos, range);
+            classScope.isInterface = isInterface;
+            classScope.isEnum = isEnum;
             log.trace("maybe inner class={}", classScope);
             parent.startClass(classScope);
             classDecl.getMembers().forEach(wrapIOConsumer(tree1 ->
                     this.analyzeParsedTree(context, tree1)));
-            final Optional<ClassScope> classScope1 = parent.endClass();
-        });
+            final Optional<ClassScope> ignore = parent.endClass();
+        }));
     }
 
     private void parseModifiers(final SourceContext context,

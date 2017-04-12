@@ -46,12 +46,12 @@ public class LocationSearcherTest extends GradleTestBase {
 
     @Test
     public void testJumpParamVariable01() throws Exception {
-        File f = new File("./src/main/java/meghanada/session/Session.java").getCanonicalFile();
+        final File f = new File("./src/main/java/meghanada/session/Session.java").getCanonicalFile();
         assert f.exists();
 
-        LocationSearcher searcher = getSearcher();
+        final LocationSearcher searcher = getSearcher();
         // private static Project findProject(File base) throws IOException
-        Location result = timeIt(() ->
+        final Location result = timeIt(() ->
                 searcher.searchDeclarationLocation(f, 99, 36, "base"))
                 .orElse(null);
         assertNotNull(result);
@@ -114,7 +114,7 @@ public class LocationSearcherTest extends GradleTestBase {
                 .orElse(null);
         assertNotNull(result);
         assertTrue(result.getPath().contains("Source.java"));
-        assertEquals(305, result.getLine());
+        assertEquals(313, result.getLine());
         assertEquals(38, result.getColumn());
     }
 
@@ -173,11 +173,11 @@ public class LocationSearcherTest extends GradleTestBase {
 
         LocationSearcher searcher = getSearcher();
         Location result = timeIt(() ->
-                searcher.searchDeclarationLocation(f, 248, 24, "searchField"))
+                searcher.searchDeclarationLocation(f, 296, 24, "searchFieldAccess"))
                 .orElse(null);
         assertNotNull(result);
         assertTrue(result.getPath().contains("LocationSearcher.java"));
-        assertEquals(551, result.getLine());
+        assertEquals(622, result.getLine());
         assertEquals(32, result.getColumn());
     }
 
@@ -189,7 +189,7 @@ public class LocationSearcherTest extends GradleTestBase {
         LocationSearcher searcher = getSearcher();
         Location result = timeIt(() -> {
             System.setProperty("disable-source-jar", "true");
-            return searcher.searchDeclarationLocation(f, 461, 76, "decompileArchive");
+            return searcher.searchDeclarationLocation(f, 532, 76, "decompileArchive");
         }).orElse(null);
         assertNotNull(result);
         assertTrue(result.getPath().contains(".java"));
@@ -297,6 +297,56 @@ public class LocationSearcherTest extends GradleTestBase {
         assertNotNull(result);
         assertEquals(51, result.getLine());
         assertEquals(19, result.getColumn());
+    }
+
+    @Test
+    public void testJumpEnum01() throws Exception {
+        final File f = new File("./src/test/java/meghanada/Enum2.java").getCanonicalFile();
+        assert f.exists();
+
+        final LocationSearcher searcher = getSearcher();
+        final Location l1 = timeIt(() ->
+                searcher.searchDeclarationLocation(f, 5, 23, "Key"))
+                .orElse(null);
+        assertNotNull(l1);
+        assertEquals(8, l1.getLine());
+        assertEquals(17, l1.getColumn());
+    }
+
+    @Test
+    public void testJumpEnum02() throws Exception {
+        final File f = new File("./src/test/java/meghanada/Enum2.java").getCanonicalFile();
+        assert f.exists();
+
+        final LocationSearcher searcher = getSearcher();
+        final Location l1 = timeIt(() ->
+                searcher.searchDeclarationLocation(f, 5, 27, "ONE"))
+                .orElse(null);
+        assertNotNull(l1);
+        assertEquals(9, l1.getLine());
+        assertEquals(9, l1.getColumn());
+
+        final Location l2 = timeIt(() ->
+                searcher.searchDeclarationLocation(f, 6, 29, "TWO"))
+                .orElse(null);
+        assertNotNull(l2);
+        assertEquals(9, l2.getLine());
+        assertEquals(14, l2.getColumn());
+    }
+
+    @Test
+    public void testJumpEnum03() throws Exception {
+        final File f = new File("./src/test/java/meghanada/Enum3.java").getCanonicalFile();
+        assert f.exists();
+
+        final LocationSearcher searcher = getSearcher();
+        final Location l1 = timeIt(() ->
+                searcher.searchDeclarationLocation(f, 5, 5, "Key"))
+                .orElse(null);
+        assertNotNull(l1);
+        assertEquals(7, l1.getLine());
+        assertEquals(10, l1.getColumn());
+
     }
 
 }

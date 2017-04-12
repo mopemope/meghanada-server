@@ -167,7 +167,12 @@ public class BlockScope extends Scope {
                             .collect(Collectors.toList());
                 }
             }
-
+            for (final ExpressionScope expression : this.expressions) {
+                final List<FieldAccess> faList = expression.getFieldAccess(line);
+                if (!faList.isEmpty()) {
+                    return faList;
+                }
+            }
         }
         return super.getFieldAccess(line);
     }

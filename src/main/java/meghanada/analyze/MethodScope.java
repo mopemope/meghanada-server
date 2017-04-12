@@ -136,6 +136,21 @@ public class MethodScope extends BlockScope {
     }
 
     @Override
+    public Map<String, Variable> getVariableMap() {
+        final Map<String, Variable> variableMap = super.getVariableMap();
+        for (final ExpressionScope es : this.expressions) {
+            es.getVariableMap().forEach((k, v) -> {
+                if (v.isDecl()) {
+                    variableMap.put(k, v);
+                } else {
+                    variableMap.putIfAbsent(k, v);
+                }
+            });
+        }
+        return variableMap;
+    }
+
+    @Override
     public Set<Variable> getVariables() {
         final Set<Variable> variables = super.getVariables();
         for (final ExpressionScope es : this.expressions) {

@@ -11,6 +11,8 @@ import java.util.stream.Collectors;
 public class TypeScope extends MethodScope {
 
     public final List<MemberDescriptor> memberDescriptors = new ArrayList<>(32);
+    public boolean isInterface;
+    public boolean isEnum;
 
     public TypeScope() {
 

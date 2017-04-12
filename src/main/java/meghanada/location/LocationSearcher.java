@@ -55,35 +55,6 @@ public class LocationSearcher {
         this.project = project;
     }
 
-    private static Optional<Location> searchLocalVariable(final Source source,
-                                                          final int line,
-                                                          final int col,
-                                                          final String symbol) {
-        final EntryMessage entryMessage = log.traceEntry("line={} col={} symbol={}", line, col, symbol);
-
-        final Map<String, Variable> variableMap = source.getDeclaratorMap(line);
-        log.trace("variables={}", variableMap);
-        final Optional<Variable> variable = Optional.ofNullable(variableMap.get(symbol));
-        final Optional<Location> location = variable.map(var -> {
-            final Location loc = new Location(source.getFile().getPath(),
-                    var.range.begin.line,
-                    var.range.begin.column);
-            return Optional.of(loc);
-        }).orElseGet(() -> {
-            // isField
-            final Optional<TypeScope> ts = source.getTypeScope(line);
-            if (!ts.isPresent()) {
-                return Optional.empty();
-            }
-            return ts.get().getField(symbol).map(fieldSymbol ->
-                    new Location(source.getFile().getPath(),
-                            fieldSymbol.range.begin.line,
-                            fieldSymbol.range.begin.column));
-        });
-        log.traceExit(entryMessage);
-        return location;
-    }
-
     private static Source getSource(final Project project, final File file) throws IOException, ExecutionException {
         final GlobalCache globalCache = GlobalCache.getInstance();
         return globalCache.getSource(project, file.getCanonicalFile());
@@ -228,6 +199,83 @@ public class LocationSearcher {
         }
     }
 
+    private static boolean matchClassName(final ClassScope cs, final String fqcn) {
+        if (cs.getName().equals(fqcn)) {
+            return true;
+        }
+        final List<ClassScope> classScopes = cs.classScopes;
+        if (classScopes == null || classScopes.isEmpty()) {
+            return false;
+        }
+        for (final ClassScope classScope : classScopes) {
+            if (matchClassName(classScope, fqcn)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static ClassScope getMatchClassScope(final ClassScope cs, final String fqcn) {
+        if (cs.getName().equals(fqcn)) {
+            return cs;
+        }
+        final List<ClassScope> classScopes = cs.classScopes;
+        if (classScopes == null || classScopes.isEmpty()) {
+            return null;
+        }
+        for (final ClassScope classScope : classScopes) {
+            if (matchClassName(classScope, fqcn)) {
+                return classScope;
+            }
+        }
+        return null;
+    }
+
+    private static Optional<Variable> getMatchField(final ClassScope cs,
+                                                    final String fqcn,
+                                                    final String fieldName) {
+        final ClassScope matchClassScope = getMatchClassScope(cs, fqcn);
+        if (matchClassScope == null) {
+            return Optional.empty();
+        }
+        return matchClassScope.getField(fieldName);
+    }
+
+    private Optional<Location> searchLocalVariable(final Source source,
+                                                   final int line,
+                                                   final int col,
+                                                   final String symbol) {
+        final EntryMessage entryMessage = log.traceEntry("line={} col={} symbol={}", line, col, symbol);
+
+        final Map<String, Variable> variableMap = source.getVariableMap(line);
+        log.trace("variables={}", variableMap);
+        final Optional<Variable> variable = Optional.ofNullable(variableMap.get(symbol));
+        final Optional<Location> location = variable.map(var -> {
+            if (var.isDecl()) {
+                final Location loc = new Location(source.getFile().getPath(),
+                        var.range.begin.line,
+                        var.range.begin.column);
+                return Optional.of(loc);
+            } else {
+                final String fqcn = var.fqcn;
+                final Location loc = getFQCNLocation(fqcn);
+                return Optional.ofNullable(loc);
+            }
+        }).orElseGet(() -> {
+            // isField
+            final Optional<TypeScope> ts = source.getTypeScope(line);
+            if (!ts.isPresent()) {
+                return Optional.empty();
+            }
+            return ts.get().getField(symbol).map(fieldSymbol ->
+                    new Location(source.getFile().getPath(),
+                            fieldSymbol.range.begin.line,
+                            fieldSymbol.range.begin.column));
+        });
+        log.traceExit(entryMessage);
+        return location;
+    }
+
     public void setProject(Project project) {
         this.project = project;
     }
@@ -245,10 +293,10 @@ public class LocationSearcher {
 
     private List<LocationSearchFunction> getFunctions() {
         final List<LocationSearchFunction> list = new ArrayList<>(4);
-        list.add(this::searchField);
+        list.add(this::searchFieldAccess);
         list.add(this::searchMethodCall);
         list.add(this::searchClassOrInterface);
-        list.add(LocationSearcher::searchLocalVariable);
+        list.add(this::searchLocalVariable);
         return list;
     }
 
@@ -330,6 +378,8 @@ public class LocationSearcher {
         if (symbol.startsWith("@")) {
             symbol = symbol.substring(1);
         }
+
+        final List<String> searchTargets = new ArrayList<>(4);
         String fqcn = source.getImportedClassFQCN(symbol, null);
         if (fqcn == null) {
             final CachedASMReflector reflector = CachedASMReflector.getInstance();
@@ -341,34 +391,55 @@ public class LocationSearcher {
                 } else {
                     fqcn = symbol;
                 }
+                searchTargets.add(fqcn);
+                // Add inner class
+                final String finalSym = symbol;
+                source.getTypeScope(line).ifPresent(typeScope -> {
+                    final String firstFQCN = typeScope.getFQCN();
+                    searchTargets.add(firstFQCN + ClassNameUtils.INNER_MARK + finalSym);
+                });
             }
+        } else {
+            searchTargets.add(fqcn);
         }
-        final String searchFQCN = fqcn;
 
-        final Location location = existsFQCN(project.getAllSourcesWithDependencies(), fqcn).flatMap(f -> {
+        final Optional<Location> location = searchTargets.stream()
+                .map(this::getFQCNLocation)
+                .filter(Objects::nonNull)
+                .findFirst();
+
+        log.traceExit(entryMessage);
+        return location;
+    }
+
+    private Location getFQCNLocation(final String fqcn) {
+        return existsFQCN(project.getAllSourcesWithDependencies(), fqcn).flatMap(f -> {
             try {
                 final Source declaringClassSrc = getSource(project, f);
                 final String path = declaringClassSrc.getFile().getPath();
                 return declaringClassSrc
                         .getClassScopes()
                         .stream()
-                        .filter(cs -> cs.getName().equals(searchFQCN))
-                        .map(cs -> new Location(path,
-                                cs.getBeginLine(),
-                                cs.getNameRange().begin.column))
+                        .filter(cs -> matchClassName(cs, fqcn))
+                        .map(cs -> {
+                            final ClassScope match = getMatchClassScope(cs, fqcn);
+                            if (match == null) {
+                                return null;
+                            }
+                            return new Location(path,
+                                    match.getBeginLine(),
+                                    match.getNameRange().begin.column);
+                        })
                         .findFirst();
             } catch (Exception e) {
                 throw new UncheckedExecutionException(e);
             }
         }).orElseGet(wrapIO(() -> {
-            final SearchContext context = new SearchContext(searchFQCN, SearchKind.CLASS);
+            final SearchContext context = new SearchContext(fqcn, SearchKind.CLASS);
             return Optional.ofNullable(searchFromSrcZip(context))
                     .orElseGet(wrapIO(() ->
                             searchFromDependency(context)));
         }));
-
-        log.traceExit(entryMessage);
-        return Optional.ofNullable(location);
     }
 
     private Location searchFromSrcZip(final SearchContext context) throws IOException {
@@ -548,10 +619,10 @@ public class LocationSearcher {
         }
     }
 
-    private Optional<Location> searchField(final Source src,
-                                           final int line,
-                                           final int col,
-                                           final String symbol) {
+    private Optional<Location> searchFieldAccess(final Source src,
+                                                 final int line,
+                                                 final int col,
+                                                 final String symbol) {
         final EntryMessage entryMessage = log.traceEntry("line={} col={} symbol={}", line, col, symbol);
 
         final Optional<Location> result = src.searchFieldAccess(line, col, symbol).flatMap(fa -> {
@@ -569,15 +640,17 @@ public class LocationSearcher {
                 searchTargets.addAll(supers);
             });
 
-            return searchTargets.stream().map(fqcn -> existsFQCN(project.getAllSourcesWithDependencies(), fqcn)
-                    .flatMap(file ->
-                            getFieldLocationFromProject(fieldName, file))
-                    .orElseGet(wrapIO(() -> {
-                        final SearchContext context = new SearchContext(fqcn, SearchKind.FIELD);
-                        context.name = fieldName;
-                        return Optional.ofNullable(searchFromSrcZip(context))
-                                .orElseGet(wrapIO(() -> searchFromDependency(context)));
-                    })))
+            return searchTargets.stream()
+                    .map(fqcn ->
+                            existsFQCN(project.getAllSourcesWithDependencies(), fqcn)
+                                    .flatMap(file ->
+                                            getFieldLocationFromProject(fqcn, fieldName, file))
+                                    .orElseGet(wrapIO(() -> {
+                                        final SearchContext context = new SearchContext(fqcn, SearchKind.FIELD);
+                                        context.name = fieldName;
+                                        return Optional.ofNullable(searchFromSrcZip(context))
+                                                .orElseGet(wrapIO(() -> searchFromDependency(context)));
+                                    })))
                     .filter(Objects::nonNull)
                     .findFirst();
         });
@@ -585,14 +658,16 @@ public class LocationSearcher {
         return result;
     }
 
-    private Optional<Location> getFieldLocationFromProject(String fieldName, File file) {
+    private Optional<Location> getFieldLocationFromProject(final String fqcn,
+                                                           final String fieldName,
+                                                           final File file) {
         try {
             final Source declaringClassSrc = getSource(project, file);
             final String path = declaringClassSrc.getFile().getPath();
             return declaringClassSrc
                     .getClassScopes()
                     .stream()
-                    .map(ts -> ts.getField(fieldName))
+                    .map(cs -> getMatchField(cs, fqcn, fieldName))
                     .filter(Optional::isPresent)
                     .map(optional -> {
                         final Variable variable = optional.get();

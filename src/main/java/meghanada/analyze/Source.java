@@ -258,6 +258,14 @@ public class Source {
         return Collections.emptyMap();
     }
 
+    public Map<String, Variable> getVariableMap(final int line) {
+        final Scope scope = Scope.getInnerScope(line, this.classScopes);
+        if (scope != null) {
+            return scope.getVariableMap();
+        }
+        return Collections.emptyMap();
+    }
+
     public Optional<Variable> getVariable(final int line, final int col) {
         final Scope scope = Scope.getInnerScope(line, this.classScopes);
         if (scope != null) {
