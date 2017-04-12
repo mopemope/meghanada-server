@@ -8,7 +8,7 @@ plugins {
     id 'com.github.ben-manes.versions' version '0.14.0'
     id 'com.jfrog.bintray' version '1.7.3'
     id 'org.ajoberstar.grgit' version '1.7.1'
-    id 'net.ltgt.errorprone' version '0.0.9'
+    id 'net.ltgt.errorprone' version '0.0.10'
 }
 
 ext {
@@ -19,7 +19,7 @@ ext {
     date = new Date().format("yyyy-MM-dd'T'HH:mm:ssZ")
     sourceCompatibility = 1.8
 
-    gradleVersion = '3.4.1'
+    gradleVersion = '3.5'
     log4jVersion = '2.8.2'
 }
 
