@@ -5,28 +5,27 @@ import meghanada.project.ProjectParseException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.maven.model.*;
-import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
+import org.apache.maven.model.building.DefaultModelBuilderFactory;
+import org.apache.maven.model.building.DefaultModelBuildingRequest;
+import org.apache.maven.model.building.ModelBuildingException;
+import org.apache.maven.model.building.ModelBuildingRequest;
 import org.codehaus.plexus.util.xml.Xpp3Dom;
-import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
 
-import java.io.BufferedReader;
+import javax.annotation.Nullable;
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.util.Properties;
-
-import static java.nio.charset.StandardCharsets.UTF_8;
 
 class POMParser {
     private static final Logger log = LogManager.getLogger(POMParser.class);
 
     private final File projectRoot;
 
-    public POMParser(File projectRoot) {
+    POMParser(File projectRoot) {
         this.projectRoot = projectRoot;
     }
 
-    private static String getPOMProperties(POMInfo pomInfo, String value) {
+    private static String getPOMProperties(final POMInfo pomInfo, @Nullable String value) {
         if (value != null && value.contains("$")) {
             int startIdx = value.indexOf('$');
             int endIdx = value.indexOf('}');
@@ -40,77 +39,7 @@ class POMParser {
         return value;
     }
 
-    POMInfo parsePom(File pom) throws ProjectParseException {
-
-        try {
-            if (!pom.isAbsolute()) {
-                pom = pom.getCanonicalFile();
-            }
-            try (BufferedReader reader = Files.newBufferedReader(pom.toPath(), UTF_8)) {
-                final POMInfo pomInfo = new POMInfo(pom.getParent());
-
-                final MavenXpp3Reader xpp3Reader = new MavenXpp3Reader();
-                final Model mavenModel = xpp3Reader.read(reader);
-
-                final Parent parent = mavenModel.getParent();
-                if (parent != null) {
-                    String relativePath = parent.getRelativePath();
-                    File parentPom = new File(pom.getParent(), relativePath).getCanonicalFile();
-
-                    if (parentPom.exists()) {
-                        log.debug("start  parent {}", parentPom);
-                        POMInfo parentPOMInfo = parsePom(parentPom);
-                        log.debug("finish parent {}", parentPom);
-                        // add all
-                        pomInfo.putAll(parentPOMInfo);
-                    }
-                }
-
-                final String groupId = mavenModel.getGroupId();
-                if (groupId != null) {
-                    pomInfo.groupId = groupId;
-                }
-                final String artifactId = mavenModel.getArtifactId();
-                if (artifactId != null) {
-                    pomInfo.artifactId = artifactId;
-                }
-                final String version = mavenModel.getVersion();
-                if (version != null) {
-                    pomInfo.version = version;
-                }
-
-                final Properties modelProperties = mavenModel.getProperties();
-                if (modelProperties != null) {
-                    if (groupId != null) {
-                        modelProperties.put("project.groupId", groupId);
-                    }
-                    if (artifactId != null) {
-                        modelProperties.put("project.artifactId", artifactId);
-                    }
-                    if (version != null) {
-                        modelProperties.put("project.version", version);
-                    }
-
-                    for (final String key : modelProperties.stringPropertyNames()) {
-                        String value = modelProperties.getProperty(key);
-                        if (value != null) {
-                            pomInfo.properties.setProperty(key, value);
-                        }
-                    }
-                    this.replacePOMProperties(pomInfo);
-                }
-
-                final Build build = mavenModel.getBuild();
-                this.parseBuild(pomInfo, build);
-
-                return pomInfo;
-            }
-        } catch (IOException | XmlPullParserException e) {
-            throw new ProjectParseException(e);
-        }
-    }
-
-    private void replacePOMProperties(POMInfo pomInfo) {
+    private static void replacePOMProperties(final POMInfo pomInfo) {
         for (String key : pomInfo.properties.stringPropertyNames()) {
             String val = pomInfo.properties.getProperty(key);
             val = POMParser.getPOMProperties(pomInfo, val);
@@ -118,6 +47,77 @@ class POMParser {
             if (val != null) {
                 pomInfo.properties.setProperty(key, val);
             }
+        }
+    }
+
+    POMInfo parsePom(File pom) throws ProjectParseException {
+
+        try {
+            if (!pom.isAbsolute()) {
+                pom = pom.getCanonicalFile();
+            }
+
+            final ModelBuildingRequest req = new DefaultModelBuildingRequest();
+            req.setPomFile(pom);
+
+            final DefaultModelBuilderFactory factory = new DefaultModelBuilderFactory();
+            final Model mavenModel = factory.newInstance().build(req).getEffectiveModel();
+            final POMInfo pomInfo = new POMInfo(pom.getParent());
+
+            final Parent parent = mavenModel.getParent();
+            if (parent != null) {
+                final String relativePath = parent.getRelativePath();
+                final File parentDir = new File(pom.getParent(), relativePath).getCanonicalFile();
+                final File parentPom = new File(parentDir, MavenProject.MVN_PROJECT_FILE);
+                if (parentDir.exists() && parentPom.exists()) {
+                    log.debug("start  parent {}", parentPom);
+                    POMInfo parentPOMInfo = parsePom(parentPom);
+                    log.debug("finish parent {}", parentPom);
+                    // add all
+                    pomInfo.putAll(parentPOMInfo);
+                }
+            }
+
+            final String groupId = mavenModel.getGroupId();
+            if (groupId != null) {
+                pomInfo.groupId = groupId;
+            }
+            final String artifactId = mavenModel.getArtifactId();
+            if (artifactId != null) {
+                pomInfo.artifactId = artifactId;
+            }
+            final String version = mavenModel.getVersion();
+            if (version != null) {
+                pomInfo.version = version;
+            }
+
+            final Properties modelProperties = mavenModel.getProperties();
+            if (modelProperties != null) {
+                if (groupId != null) {
+                    modelProperties.put("project.groupId", groupId);
+                }
+                if (artifactId != null) {
+                    modelProperties.put("project.artifactId", artifactId);
+                }
+                if (version != null) {
+                    modelProperties.put("project.version", version);
+                }
+
+                for (final String key : modelProperties.stringPropertyNames()) {
+                    String value = modelProperties.getProperty(key);
+                    if (value != null) {
+                        pomInfo.properties.setProperty(key, value);
+                    }
+                }
+                POMParser.replacePOMProperties(pomInfo);
+            }
+
+            final Build build = mavenModel.getBuild();
+            this.parseBuild(pomInfo, build);
+
+            return pomInfo;
+        } catch (IOException | ModelBuildingException e) {
+            throw new ProjectParseException(e);
         }
     }
 
@@ -130,7 +130,7 @@ class POMParser {
         return file;
     }
 
-    private void parseBuild(POMInfo pomInfo, Build build) {
+    private void parseBuild(POMInfo pomInfo, @Nullable Build build) {
         if (build != null) {
             {
                 String src = build.getSourceDirectory();

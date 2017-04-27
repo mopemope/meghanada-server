@@ -106,7 +106,7 @@ public class JavaAnalyzer {
                     "-target", this.compileTarget,
                     "-encoding", "UTF-8"
             );
-            log.debug("use compile options {}", compileOptions);
+            //log.debug("use compile options {}", compileOptions);
             if (Main.isDevelop()) {
                 log.info("---------- development compile log. output={} ----------", out);
                 for (final String cp : StringUtils.split(classpath, File.pathSeparatorChar)) {

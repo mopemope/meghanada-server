@@ -49,7 +49,7 @@ public class MavenProject extends Project {
         String parent = parentFile.getParent();
         final int i = parent.indexOf(REPOSITORY);
         if (i > 0) {
-            parent = parent.substring(i + 10);
+            parent = parent.substring(i + 11);
         }
         final String groupID = ClassNameUtils.replace(parent, File.separator, ".");
         return groupID + ':' + artifactID;

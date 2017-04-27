@@ -588,6 +588,9 @@ public abstract class Project {
 
         log.debug("test output {}", this.testOutput);
 
+        for (final ProjectDependency dependency : this.dependencies) {
+            log.debug("dependency {}:{}", dependency.getId(), dependency.getVersion());
+        }
         return this;
     }
 
