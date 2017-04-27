@@ -83,7 +83,7 @@ dependencies {
     compile 'org.apache.maven:maven-model:3.3.9'
     compile 'com.leacox.motif:motif:0.1'
     compile 'com.leacox.motif:motif-hamcrest:0.1'
-    compile 'com.github.javaparser:javaparser-core:3.2.0'
+    compile 'com.github.javaparser:javaparser-core:3.2.2'
     compile "org.apache.logging.log4j:log4j-core:$log4jVersion"
     compile "org.apache.logging.log4j:log4j-api:$log4jVersion"
     compile "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
