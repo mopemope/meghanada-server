@@ -2,6 +2,7 @@ package meghanada.utils;
 
 import com.google.common.base.Joiner;
 import meghanada.reflect.asm.CachedASMReflector;
+import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -558,5 +559,17 @@ public class ClassNameUtils {
             }
         }
         return true;
+    }
+
+    public static boolean isAnonymousClass(final String name) {
+        if (!name.contains(INNER_MARK)) {
+            return false;
+        }
+        final int i = name.lastIndexOf(INNER_MARK);
+        if (i < name.length()) {
+            final String s = name.substring(i + 1);
+            return NumberUtils.isDigits(s);
+        }
+        return false;
     }
 }

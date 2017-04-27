@@ -61,12 +61,15 @@ public class CachedASMReflector {
     }
 
     private static boolean containsKeyword(final String keyword, final boolean partial, final ClassIndex index) {
+        final String name = index.getName();
+        if (ClassNameUtils.isAnonymousClass(name)) {
+            return false;
+        }
         if (partial) {
             final String lowerKeyword = keyword.toLowerCase();
-            final String className = index.getName().toLowerCase();
+            final String className = name.toLowerCase();
             return className.contains(lowerKeyword);
         } else {
-            final String name = index.getName();
             return name.equals(keyword) ||
                     name.endsWith('$' + keyword) ||
                     index.getDeclaration().equals(keyword);

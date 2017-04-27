@@ -38,7 +38,7 @@ public class CachedASMReflectorTest extends GradleTestBase {
     @Ignore
     @Test
     public void testSearchClasses() throws Exception {
-        CachedASMReflector cachedASMReflector = CachedASMReflector.getInstance();
+        final CachedASMReflector cachedASMReflector = CachedASMReflector.getInstance();
         boolean isOpenJDK = System.getProperty("java.home").contains("openjdk");
 
         Stopwatch stopwatch = Stopwatch.createStarted();
@@ -54,8 +54,8 @@ public class CachedASMReflectorTest extends GradleTestBase {
 
     @Test
     public void testSearchClasses1() throws Exception {
-        CachedASMReflector cachedASMReflector = CachedASMReflector.getInstance();
-        Collection<? extends CandidateUnit> candidateUnits = cachedASMReflector.searchClasses("Map", false, false);
+        final CachedASMReflector cachedASMReflector = CachedASMReflector.getInstance();
+        final Collection<? extends CandidateUnit> candidateUnits = cachedASMReflector.searchClasses("Map", false, false);
         candidateUnits.forEach(c -> System.out.println(c));
         assertEquals(1, candidateUnits.size());
     }
@@ -231,7 +231,7 @@ public class CachedASMReflectorTest extends GradleTestBase {
                 System.out.println(md.getDisplayDeclaration());
                 // System.out.println(md.getDeclaringClass() + " # " +
                 // md.getDisplayDeclaration());
-                });
+            });
             assertEquals(59, memberDescriptors.size());
         }
 

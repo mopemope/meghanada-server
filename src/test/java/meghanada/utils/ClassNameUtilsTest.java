@@ -203,4 +203,25 @@ public class ClassNameUtilsTest {
         assertEquals("java.utils.Map", s);
     }
 
+    @Test
+    public void isAnonymousClass1() throws Exception {
+        final String name = "java.utils.Map$1";
+        final boolean b = ClassNameUtils.isAnonymousClass(name);
+        assertEquals(true, b);
+    }
+
+    @Test
+    public void isAnonymousClass2() throws Exception {
+        final String name = "java.utils.Map$1$1";
+        final boolean b = ClassNameUtils.isAnonymousClass(name);
+        assertEquals(true, b);
+    }
+
+    @Test
+    public void isAnonymousClass3() throws Exception {
+        final String name = "java.utils.Map1";
+        final boolean b = ClassNameUtils.isAnonymousClass(name);
+        assertEquals(false, b);
+    }
+
 }
