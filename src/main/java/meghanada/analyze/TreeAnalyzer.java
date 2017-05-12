@@ -55,12 +55,15 @@ public class TreeAnalyzer {
             final Type type = wildcard.type;
             final Type.WildcardType wildcardType = (Type.WildcardType) type;
             if (wildcardType != null && wildcardType.type != null) {
-                if (wildcardType.kind.toString().equals("?")) {
+                if (wildcardType.kind.toString().equals("?") &&
+                        wildcardType.type.tsym != null) {
                     final String s = wildcardType.type.tsym.flatName().toString();
                     return Optional.of(s);
                 }
-                final String s = wildcardType.kind.toString() + wildcardType.type.tsym.flatName().toString();
-                return Optional.of(s);
+                if (wildcardType.type.tsym != null) {
+                    final String s = wildcardType.kind.toString() + wildcardType.type.tsym.flatName().toString();
+                    return Optional.of(s);
+                }
             }
             return Optional.empty();
         } else if (e instanceof JCTree.JCArrayTypeTree) {
@@ -68,14 +71,17 @@ public class TreeAnalyzer {
             final Type type = arrayTypeTree.type;
             if (type != null && type instanceof Type.ArrayType) {
                 final Type.ArrayType arrayType = (Type.ArrayType) type;
-                final String base = arrayType.getComponentType().tsym.flatName().toString();
-                return Optional.of(base + ClassNameUtils.ARRAY);
+                if (arrayType.getComponentType() != null &&
+                        arrayType.getComponentType().tsym != null) {
+                    final String base = arrayType.getComponentType().tsym.flatName().toString();
+                    return Optional.of(base + ClassNameUtils.ARRAY);
+                }
             }
             return Optional.empty();
         } else {
             final Type type = e.type;
             String typeArgType = e.toString();
-            if (type != null) {
+            if (type != null && type.tsym != null) {
                 typeArgType = type.tsym.flatName().toString();
             } else {
                 typeArgType = src.getImportedClassFQCN(typeArgType, typeArgType);
@@ -90,7 +96,7 @@ public class TreeAnalyzer {
             final JCTree.JCTypeApply typeApply = (JCTree.JCTypeApply) tree;
             final Type type = typeApply.type;
             String methodReturn;
-            if (type != null) {
+            if (type != null && type.tsym != null) {
                 methodReturn = type.tsym.flatName().toString();
             } else {
                 final String clazz = typeApply.getType().toString();
@@ -122,11 +128,13 @@ public class TreeAnalyzer {
                 final Type type = sym.asType();
                 if (type instanceof Type.CapturedType) {
                     final Type upperBound = type.getUpperBound();
-                    if (upperBound != null) {
+                    if (upperBound != null && upperBound.tsym != null) {
                         return upperBound.tsym.flatName().toString();
                     }
                 } else {
-                    return type.tsym.flatName().toString();
+                    if (type.tsym != null) {
+                        return type.tsym.flatName().toString();
+                    }
                 }
             }
             final String ident = tree.toString();
@@ -814,11 +822,16 @@ public class TreeAnalyzer {
             final Type.WildcardType wildcardType = capturedType.wildcard;
             if (wildcardType.kind.toString().equals("?")) {
                 final Type upperBound = type.getUpperBound();
-                final String s = upperBound.tsym.flatName().toString();
+                if (upperBound != null && upperBound.tsym != null) {
+                    final String s = upperBound.tsym.flatName().toString();
+                    return Optional.of(s);
+                }
+            }
+            if (wildcardType.type != null && wildcardType.type.tsym != null) {
+                final String s = wildcardType.kind.toString() + wildcardType.type.tsym.flatName().toString();
                 return Optional.of(s);
             }
-            final String s = wildcardType.kind.toString() + wildcardType.type.tsym.flatName().toString();
-            return Optional.of(s);
+            return Optional.empty();
         } else if (type instanceof Type.ArrayType) {
             final Type.ArrayType arrayType = (Type.ArrayType) type;
             final Type componentType = arrayType.getComponentType();
@@ -830,25 +843,33 @@ public class TreeAnalyzer {
         } else if (type instanceof Type.WildcardType) {
             final Type.WildcardType wildcardType = (Type.WildcardType) type;
             if (wildcardType.type != null) {
-                if (wildcardType.kind.toString().equals("?")) {
+                if (wildcardType.kind.toString().equals("?") &&
+                        wildcardType.type.tsym != null) {
                     final String s = wildcardType.type.tsym.flatName().toString();
                     return Optional.of(s);
                 }
-                final String s = wildcardType.kind.toString() + wildcardType.type.tsym.flatName().toString();
-                return Optional.of(s);
+                if (wildcardType.type.tsym != null) {
+                    final String s = wildcardType.kind.toString() + wildcardType.type.tsym.flatName().toString();
+                    return Optional.of(s);
+                }
             }
             return Optional.empty();
         } else if (type instanceof Type.MethodType) {
             final Type.MethodType methodType = (Type.MethodType) type;
             final Type returnType = methodType.getReturnType();
-
-            String baseType = returnType.tsym.flatName().toString();
-            final List<Type> typeArguments = returnType.getTypeArguments();
-            baseType = getFlatName(src, baseType, typeArguments);
-            return Optional.of(baseType);
+            if (returnType != null && returnType.tsym != null) {
+                String baseType = returnType.tsym.flatName().toString();
+                final List<Type> typeArguments = returnType.getTypeArguments();
+                baseType = getFlatName(src, baseType, typeArguments);
+                return Optional.of(baseType);
+            }
+            return Optional.empty();
         } else {
             if (type.toString().equals("?")) {
                 return Optional.of(ClassNameUtils.OBJECT_CLASS);
+            }
+            if (type.tsym == null) {
+                return Optional.empty();
             }
             String baseType = type.tsym.flatName().toString();
             if (baseType.equals("Array")) {
