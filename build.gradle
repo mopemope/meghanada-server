@@ -15,8 +15,13 @@ plugins {
 ext {
     group = 'meghanada'
     serverVersion = '0.7.6'
+    buildVersion = 'release'
 
-    longVersion = "$serverVersion-${grgit.head().abbreviatedId}"
+    def gitFile = new File('./.git')
+    if (gitFile.exists()) {
+       buildVersion = grgit.head().abbreviatedId
+    }
+    longVersion = "$serverVersion-${buildVersion}"
     date = new Date().format("yyyy-MM-dd'T'HH:mm:ssZ")
     sourceCompatibility = 1.8
 
