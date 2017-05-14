@@ -36,11 +36,7 @@ public class Main {
         final String version = getVersion();
         System.setProperty("meghanada-server.version", version);
 
-        Thread.setDefaultUncaughtExceptionHandler((t, e) ->
-                log.catching(e));
-
-        Runtime.getRuntime().addShutdownHook(new Thread(() ->
-                log.info("shutdown server")));
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> log.info("shutdown server")));
 
         final Options options = buildOptions();
 
@@ -49,7 +45,7 @@ public class Main {
 
         if (cmd.hasOption("h")) {
             HelpFormatter formatter = new HelpFormatter();
-            formatter.printHelp("meghanada server", options);
+            formatter.printHelp("meghanada server : " + version, options);
             return;
         }
         if (cmd.hasOption("version")) {
@@ -57,6 +53,7 @@ public class Main {
             return;
         }
 
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> log.info("shutdown server")));
         System.setProperty("home", Config.getInstalledPath().getParentFile().getCanonicalPath());
 
         if (isDevelop()) {
