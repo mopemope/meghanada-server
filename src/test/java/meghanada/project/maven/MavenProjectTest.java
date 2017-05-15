@@ -26,6 +26,12 @@ public class MavenProjectTest {
         // printEnv();
     }
 
+//    @Test
+//    public void testParse() throws Exception {
+//        Project p = traceIt(() -> {
+//            return project.parseProject().mergeFromProjectConfig();
+//        });
+//    }
 
 //    @Test
 //    public void testRunTask() throws Exception {

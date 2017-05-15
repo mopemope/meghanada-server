@@ -327,6 +327,10 @@ public class Config {
         return c.getString("javac-arg");
     }
 
+    public String getMavenLocalRepository() {
+        return c.getString("maven-local-repository");
+    }
+
     @FunctionalInterface
     public interface SimpleSupplier<R> {
 

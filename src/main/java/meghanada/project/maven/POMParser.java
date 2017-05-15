@@ -1,20 +1,25 @@
 package meghanada.project.maven;
 
+import com.google.common.base.Joiner;
 import com.google.common.base.Strings;
+import meghanada.config.Config;
 import meghanada.project.ProjectParseException;
+import meghanada.utils.ClassNameUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.maven.model.*;
-import org.apache.maven.model.building.DefaultModelBuilderFactory;
-import org.apache.maven.model.building.DefaultModelBuildingRequest;
-import org.apache.maven.model.building.ModelBuildingException;
-import org.apache.maven.model.building.ModelBuildingRequest;
+import org.apache.maven.model.building.*;
+import org.apache.maven.model.resolution.InvalidRepositoryException;
+import org.apache.maven.model.resolution.ModelResolver;
+import org.apache.maven.model.resolution.UnresolvableModelException;
 import org.codehaus.plexus.util.xml.Xpp3Dom;
 
 import javax.annotation.Nullable;
 import java.io.File;
 import java.io.IOException;
+import java.util.HashSet;
 import java.util.Properties;
+import java.util.Set;
 
 class POMParser {
     private static final Logger log = LogManager.getLogger(POMParser.class);
@@ -59,24 +64,13 @@ class POMParser {
 
             final ModelBuildingRequest req = new DefaultModelBuildingRequest();
             req.setPomFile(pom);
+            req.setSystemProperties(System.getProperties());
+            req.setModelResolver(new LocalModelResolver(this.projectRoot));
 
             final DefaultModelBuilderFactory factory = new DefaultModelBuilderFactory();
-            final Model mavenModel = factory.newInstance().build(req).getEffectiveModel();
+            final DefaultModelBuilder builder = factory.newInstance();
+            final Model mavenModel = builder.build(req).getEffectiveModel();
             final POMInfo pomInfo = new POMInfo(pom.getParent());
-
-            final Parent parent = mavenModel.getParent();
-            if (parent != null) {
-                final String relativePath = parent.getRelativePath();
-                final File parentDir = new File(pom.getParent(), relativePath).getCanonicalFile();
-                final File parentPom = new File(parentDir, MavenProject.MVN_PROJECT_FILE);
-                if (parentDir.exists() && parentPom.exists()) {
-                    log.debug("start  parent {}", parentPom);
-                    POMInfo parentPOMInfo = parsePom(parentPom);
-                    log.debug("finish parent {}", parentPom);
-                    // add all
-                    pomInfo.putAll(parentPOMInfo);
-                }
-            }
 
             final String groupId = mavenModel.getGroupId();
             if (groupId != null) {
@@ -201,6 +195,76 @@ class POMParser {
 
                 }
             }
+        }
+    }
+
+    static class LocalModelResolver implements ModelResolver {
+
+        private Set<File> loaded = new HashSet<>(8);
+        private File projectRoot;
+
+        public LocalModelResolver(final File projectRoot) {
+            this.projectRoot = projectRoot;
+        }
+
+        @Override
+        public ModelSource2 resolveModel(final String groupId, final String artifactId, final String version) throws UnresolvableModelException {
+            final Config config = Config.load();
+            final String localRepository = config.getMavenLocalRepository();
+            final String parent = ClassNameUtils.replace(groupId, ".", File.separator);
+            final String path = Joiner.on(File.separator).join(localRepository, parent, artifactId, version);
+            final String file = artifactId + '-' + version + ".pom";
+            final File pom = new File(path, file);
+            final boolean exists = pom.exists();
+            if (exists && !loaded.contains(pom)) {
+                loaded.add(pom);
+                return new FileModelSource(pom);
+            }
+            return null;
+        }
+
+        @Override
+        public ModelSource2 resolveModel(final Parent parent) throws UnresolvableModelException {
+            final String groupId = parent.getGroupId();
+            final String artifactId = parent.getArtifactId();
+            final String version = parent.getVersion();
+            final ModelSource2 model = resolveModel(groupId, artifactId, version);
+            if (model != null) {
+                return model;
+            }
+            String relativePath = parent.getRelativePath();
+
+            if (relativePath != null && !relativePath.isEmpty()) {
+                File pom = new File(this.projectRoot, relativePath);
+                if (!relativePath.endsWith("pom.xml")) {
+                    pom = new File(relativePath, "pom.xml");
+                }
+                if (pom.exists() && !loaded.contains(pom)) {
+                    loaded.add(pom);
+                    return new FileModelSource(pom);
+                }
+            }
+            return null;
+        }
+
+        @Override
+        public ModelSource2 resolveModel(Dependency dependency) throws UnresolvableModelException {
+            return null;
+        }
+
+        @Override
+        public void addRepository(Repository repository) throws InvalidRepositoryException {
+
+        }
+
+        @Override
+        public void addRepository(Repository repository, boolean replace) throws InvalidRepositoryException {
+
+        }
+
+        @Override
+        public ModelResolver newCopy() {
+            return this;
         }
     }
 

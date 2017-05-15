@@ -159,6 +159,4 @@ public class MavenProject extends Project {
         process.waitFor();
         return process.exitValue();
     }
-
-
 }
