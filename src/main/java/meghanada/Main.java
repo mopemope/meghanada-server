@@ -54,9 +54,7 @@ public class Main {
         Runtime.getRuntime().addShutdownHook(new Thread(() -> log.info("shutdown server")));
         System.setProperty("home", Config.getInstalledPath().getParentFile().getCanonicalPath());
 
-        if (isDevelop()) {
-            addFileAppender();
-        }
+        addFileAppender();
 
         if (cmd.hasOption("v")) {
             final LoggerContext context = (LoggerContext) LogManager.getContext(false);
@@ -125,7 +123,7 @@ public class Main {
                 .withFileName(logFile.getCanonicalPath())
                 .build();
         configuration.addAppender(fileAppender);
-        loggerConfig.addAppender(fileAppender, Level.INFO, null);
+        loggerConfig.addAppender(fileAppender, Level.ERROR, null);
         context.updateLoggers();
     }
 
