@@ -1,3 +1,15 @@
+# Version 0.7.6 (2017-05-XX)
+
+* Change sort order of the candidates to more better
+* Support maven parent pom
+* Add server error logger
+* Fix many bugs and improve stability.
+
+# Version 0.7.5 (2017-04-27)
+
+* Exclude anonymous class from candidates
+* Use maven ModelBuilder
+
 # Version 0.7.4 (2017-04-13)
 
 * Fix import all and optimize import bugs
