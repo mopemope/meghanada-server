@@ -83,8 +83,7 @@ public class GradleProject extends Project {
         final ProjectConnection connection = getProjectConnection();
         log.info("loading gradle project:{}", new File(this.projectRoot, Project.GRADLE_PROJECT_FILE));
         try {
-            final IdeaProject ideaProject = debugTimeItF("get idea project model elapsed={}", () ->
-                    connection.getModel(IdeaProject.class));
+            final IdeaProject ideaProject = debugTimeItF("get idea project model elapsed={}", () -> connection.getModel(IdeaProject.class));
             this.setCompileTarget(ideaProject);
 
             log.trace("load root project path:{}", this.rootProject);
@@ -99,6 +98,17 @@ public class GradleProject extends Project {
                 return moduleProjectRoot.equals(this.getProjectRoot());
             }).collect(Collectors.toList());
             mainModules.forEach(wrapIOConsumer(this::parseIdeaModule));
+
+            // set default output
+            if (super.output == null) {
+                final String build = Joiner.on(File.separator).join(this.projectRoot, "build", "classes", "main");
+                super.output = this.normalize(build);
+            }
+            if (super.testOutput == null) {
+                final String build = Joiner.on(File.separator).join(this.projectRoot, "build", "classes", "test");
+                super.testOutput = this.normalize(build);
+            }
+
             return this;
         } catch (Exception e) {
             throw new ProjectParseException(e);
@@ -135,7 +145,7 @@ public class GradleProject extends Project {
     }
 
     private void parseIdeaModule(final org.gradle.tooling.model.GradleProject gradleProject,
-                                 final IdeaModule ideaModule) throws IOException {
+            final IdeaModule ideaModule) throws IOException {
         if (this.output == null) {
             final String buildDir = gradleProject.getBuildDirectory().getCanonicalPath();
             String build = Joiner.on(File.separator).join(buildDir, "classes", "main");
