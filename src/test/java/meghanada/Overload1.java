@@ -13,7 +13,7 @@ public class Overload1 {
 
     }
 
-    public void over(List<? extends List> l) {
+    public void over(List<? extends List<String>> l) {
 
     }
 
@@ -22,7 +22,7 @@ public class Overload1 {
     }
 
     public void call() {
-        ArrayList<? extends List> l = new ArrayList<>();
+        ArrayList<? extends List<String>> l = new ArrayList<>();
         over(l);
 
         int i = 0;

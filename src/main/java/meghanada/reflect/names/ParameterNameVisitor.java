@@ -45,7 +45,7 @@ public class ParameterNameVisitor extends VoidVisitorAdapter<Object> {
             this.className = this.pkg + '.' + clazz;
             log.debug("class {}", this.className);
             int i = 0;
-            for (final BodyDeclaration body : members) {
+            for (final BodyDeclaration<?> body : members) {
                 if (body instanceof MethodDeclaration) {
                     MethodDeclaration methodDeclaration = (MethodDeclaration) body;
                     this.getParameterNames(methodDeclaration, n.isInterface());

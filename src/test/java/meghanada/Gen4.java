@@ -23,18 +23,18 @@ public class Gen4 extends Gen2<Long> {
         }
     }
 
-    public List receive(Gen4 gen4, boolean b) {
+    public List<String> receive(Gen4 gen4, boolean b) {
         return null;
     }
 
-    public ArrayList receive(Gen4 gen4, int b) {
+    public ArrayList<String> receive(Gen4 gen4, int b) {
         return null;
     }
 
     public void doReceive(Gen4 gen4) {
         boolean a = false;
         // return List
-        final List receive = receive(gen4, a);
+        final List<String> receive = receive(gen4, a);
     }
 
 
