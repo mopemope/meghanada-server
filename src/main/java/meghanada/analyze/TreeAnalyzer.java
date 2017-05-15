@@ -15,6 +15,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.message.EntryMessage;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.Name;
@@ -403,8 +404,7 @@ public class TreeAnalyzer {
             final int argumentIndex = context.getArgumentIndex();
 
             context.setArgumentIndex(-1);
-            block.getStatements().forEach(wrapIOConsumer(stmt ->
-                    this.analyzeParsedTree(context, stmt)));
+            block.getStatements().forEach(wrapIOConsumer(stmt -> this.analyzeParsedTree(context, stmt)));
 
             context.setArgumentIndex(argumentIndex);
         } else if (tree instanceof JCTree.JCFieldAccess) {
@@ -526,14 +526,12 @@ public class TreeAnalyzer {
             }
             final List<JCTree.JCExpression> initializes = newArray.getInitializers();
             if (initializes != null) {
-                initializes.forEach(wrapIOConsumer(jcExpression ->
-                        this.analyzeParsedTree(context, jcExpression)));
+                initializes.forEach(wrapIOConsumer(jcExpression -> this.analyzeParsedTree(context, jcExpression)));
             }
             final List<JCTree.JCExpression> dimensions = newArray.getDimensions();
 
             if (dimensions != null) {
-                dimensions.forEach(wrapIOConsumer(jcExpression ->
-                        this.analyzeParsedTree(context, jcExpression)));
+                dimensions.forEach(wrapIOConsumer(jcExpression -> this.analyzeParsedTree(context, jcExpression)));
             }
             if (newArray.type != null) {
                 this.getTypeString(context.getSource(), newArray.type).ifPresent(context::setArgumentFQCN);
@@ -596,14 +594,16 @@ public class TreeAnalyzer {
                     final MethodCall methodCall = new MethodCall(s, methodName, preferredPos + 1, range, range);
                     if (sym instanceof Symbol.MethodSymbol) {
                         final Symbol.MethodSymbol methodSymbol = (Symbol.MethodSymbol) sym;
-                        methodCall.arguments = methodSymbol.getParameters().stream()
+                        final java.util.List<String> arguments = methodSymbol.getParameters().stream()
                                 .map(varSymbol -> varSymbol.asType().toString())
                                 .collect(Collectors.toList());
+                        if (arguments != null) {
+                            methodCall.arguments = arguments;
+                        }
                     }
                     final Symbol owner = sym.owner;
                     if (owner.type != null) {
-                        this.getTypeString(src, owner.type).ifPresent(fqcn ->
-                                methodCall.declaringClass = TreeAnalyzer.markFQCN(src, fqcn));
+                        this.getTypeString(src, owner.type).ifPresent(fqcn -> methodCall.declaringClass = TreeAnalyzer.markFQCN(src, fqcn));
                     }
 
                     if (sym.type != null) {
@@ -612,8 +612,7 @@ public class TreeAnalyzer {
                             // TODO add args
                         });
                     }
-                    src.getCurrentScope().ifPresent(scope ->
-                            scope.addMethodCall(methodCall));
+                    src.getCurrentScope().ifPresent(scope -> scope.addMethodCall(methodCall));
                 }
             }
 
@@ -760,8 +759,7 @@ public class TreeAnalyzer {
                 }
                 final List<JCTree.JCStatement> statements = jcCase.getStatements();
                 if (statements != null) {
-                    statements.forEach(wrapIOConsumer(jcStatement ->
-                            this.analyzeParsedTree(context, jcStatement)));
+                    statements.forEach(wrapIOConsumer(jcStatement -> this.analyzeParsedTree(context, jcStatement)));
                 }
             }));
         }
@@ -798,15 +796,13 @@ public class TreeAnalyzer {
         final List<JCTree.JCExpressionStatement> updates = forLoop.getUpdate();
         final JCTree.JCStatement statement = forLoop.getStatement();
         if (initializer != null) {
-            initializer.forEach(wrapIOConsumer(s ->
-                    this.analyzeParsedTree(context, s)));
+            initializer.forEach(wrapIOConsumer(s -> this.analyzeParsedTree(context, s)));
         }
         if (condition != null) {
             this.analyzeParsedTree(context, condition);
         }
         if (updates != null) {
-            updates.forEach(wrapIOConsumer(s ->
-                    this.analyzeParsedTree(context, s)));
+            updates.forEach(wrapIOConsumer(s -> this.analyzeParsedTree(context, s)));
         }
         if (statement != null) {
             this.analyzeParsedTree(context, statement);
@@ -930,14 +926,15 @@ public class TreeAnalyzer {
                     final String constructor = owner.flatName().toString();
                     final MethodCall methodCall = new MethodCall(s, constructor, nameBegin, nameRange, range);
                     if (owner.type != null) {
-                        this.getTypeString(src, owner.type).ifPresent(fqcn ->
-                                methodCall.declaringClass = TreeAnalyzer.markFQCN(src, fqcn));
+                        this.getTypeString(src, owner.type).ifPresent(fqcn -> methodCall.declaringClass = TreeAnalyzer.markFQCN(src, fqcn));
                     }
                     if (owner.type != null) {
                         this.setReturnTypeAndArgType(context, src, owner.type, methodCall);
                     }
                     src.getCurrentScope().ifPresent(scope -> {
-                        methodCall.arguments = arguments;
+                        if (arguments != null) {
+                            methodCall.arguments = arguments;
+                        }
                         final MethodCall methodCall1 = scope.addMethodCall(methodCall);
                     });
                 } else {
@@ -957,7 +954,9 @@ public class TreeAnalyzer {
                     }
 
                     src.getCurrentScope().ifPresent(scope -> {
-                        methodCall.arguments = arguments;
+                        if (arguments != null) {
+                            methodCall.arguments = arguments;
+                        }
                         final MethodCall methodCall1 = scope.addMethodCall(methodCall);
                     });
                 }
@@ -994,8 +993,7 @@ public class TreeAnalyzer {
                     }
                 }
             } else {
-                this.getTypeString(src, owner).ifPresent(fqcn ->
-                        methodCall.declaringClass = TreeAnalyzer.markFQCN(src, fqcn));
+                this.getTypeString(src, owner).ifPresent(fqcn -> methodCall.declaringClass = TreeAnalyzer.markFQCN(src, fqcn));
             }
 
             if (returnType == null) {
@@ -1025,7 +1023,9 @@ public class TreeAnalyzer {
                 });
             }
             src.getCurrentScope().ifPresent(scope -> {
-                methodCall.arguments = arguments;
+                if (arguments != null) {
+                    methodCall.arguments = arguments;
+                }
                 final MethodCall methodCall1 = scope.addMethodCall(methodCall);
             });
 
@@ -1082,11 +1082,14 @@ public class TreeAnalyzer {
             this.analyzeParsedTree(context, classBody);
         }
         src.getCurrentScope().ifPresent(scope -> {
-            methodCall.arguments = arguments;
+            if (arguments != null) {
+                methodCall.arguments = arguments;
+            }
             final MethodCall methodCall1 = scope.addMethodCall(methodCall);
         });
     }
 
+    @Nonnull
     private java.util.List<String> getArgumentsType(final SourceContext context, final List<JCTree.JCExpression> arguments) {
         final SourceContext newContext = new SourceContext(context.getSource(), context.getEndPosTable());
         newContext.setArgumentIndex(0);
@@ -1196,8 +1199,7 @@ public class TreeAnalyzer {
                     final JCTree.JCErroneous erroneous = (JCTree.JCErroneous) expressionTree;
                     final List<? extends JCTree> errorTrees = erroneous.getErrorTrees();
                     if (errorTrees != null) {
-                        errorTrees.forEach(wrapIOConsumer(tree ->
-                                this.analyzeParsedTree(context, tree)));
+                        errorTrees.forEach(wrapIOConsumer(tree -> this.analyzeParsedTree(context, tree)));
                     }
                 }
             } else {
@@ -1236,32 +1238,27 @@ public class TreeAnalyzer {
             final Symbol owner = sym.owner;
 
             if (owner.type != null) {
-                this.getTypeString(src, owner.type).ifPresent(fqcn ->
-                        fa.declaringClass = TreeAnalyzer.markFQCN(src, fqcn));
+                this.getTypeString(src, owner.type).ifPresent(fqcn -> fa.declaringClass = TreeAnalyzer.markFQCN(src, fqcn));
             }
             if (sym.type != null) {
                 this.setReturnTypeAndArgType(context, src, sym.type, fa);
             }
-            src.getCurrentScope().ifPresent(scope ->
-                    scope.addFieldAccess(fa));
+            src.getCurrentScope().ifPresent(scope -> scope.addFieldAccess(fa));
 
         } else if (kind.equals(ElementKind.METHOD)) {
             final MethodCall methodCall = new MethodCall(selectScope, identifier.toString(), preferredPos + 1, range, range);
             final Symbol owner = sym.owner;
             if (owner != null && owner.type != null) {
-                this.getTypeString(src, owner.type).ifPresent(fqcn ->
-                        methodCall.declaringClass = TreeAnalyzer.markFQCN(src, fqcn));
+                this.getTypeString(src, owner.type).ifPresent(fqcn -> methodCall.declaringClass = TreeAnalyzer.markFQCN(src, fqcn));
             }
             if (sym.type != null) {
                 this.setReturnTypeAndArgType(context, src, sym.type, methodCall);
             }
-            src.getCurrentScope().ifPresent(scope ->
-                    scope.addMethodCall(methodCall));
+            src.getCurrentScope().ifPresent(scope -> scope.addMethodCall(methodCall));
 
         } else if (kind.equals(ElementKind.ENUM)) {
             if (sym.type != null) {
-                this.getTypeString(src, sym.type).ifPresent(fqcn ->
-                        TreeAnalyzer.markFQCN(src, fqcn));
+                this.getTypeString(src, sym.type).ifPresent(fqcn -> TreeAnalyzer.markFQCN(src, fqcn));
             }
         } else if (kind.equals(ElementKind.ENUM_CONSTANT)) {
             final FieldAccess fa = new FieldAccess(identifier.toString(), preferredPos + 1, range);
@@ -1270,31 +1267,26 @@ public class TreeAnalyzer {
             final Symbol owner = sym.owner;
 
             if (owner.type != null) {
-                this.getTypeString(src, owner.type).ifPresent(fqcn ->
-                        fa.declaringClass = TreeAnalyzer.markFQCN(src, fqcn));
+                this.getTypeString(src, owner.type).ifPresent(fqcn -> fa.declaringClass = TreeAnalyzer.markFQCN(src, fqcn));
             }
             if (sym.type != null) {
                 this.setReturnTypeAndArgType(context, src, sym.type, fa);
             }
-            src.getCurrentScope().ifPresent(scope ->
-                    scope.addFieldAccess(fa));
+            src.getCurrentScope().ifPresent(scope -> scope.addFieldAccess(fa));
 
         } else if (kind.equals(ElementKind.PACKAGE)) {
             // skip
         } else if (kind.equals(ElementKind.CLASS)) {
             if (sym.type != null) {
-                this.getTypeString(src, sym.type).ifPresent(fqcn ->
-                        TreeAnalyzer.markFQCN(src, fqcn));
+                this.getTypeString(src, sym.type).ifPresent(fqcn -> TreeAnalyzer.markFQCN(src, fqcn));
             }
         } else if (kind.equals(ElementKind.INTERFACE)) {
             if (sym.type != null) {
-                this.getTypeString(src, sym.type).ifPresent(fqcn ->
-                        TreeAnalyzer.markFQCN(src, fqcn));
+                this.getTypeString(src, sym.type).ifPresent(fqcn -> TreeAnalyzer.markFQCN(src, fqcn));
             }
         } else if (kind.equals(ElementKind.ANNOTATION_TYPE)) {
             if (sym.type != null) {
-                this.getTypeString(src, sym.type).ifPresent(fqcn ->
-                        TreeAnalyzer.markFQCN(src, fqcn));
+                this.getTypeString(src, sym.type).ifPresent(fqcn -> TreeAnalyzer.markFQCN(src, fqcn));
             }
         } else {
             log.warn("other kind:{}", kind);
@@ -1310,9 +1302,9 @@ public class TreeAnalyzer {
     }
 
     private void analyzeClassDecl(final SourceContext context,
-                                  final JCTree.JCClassDecl classDecl,
-                                  final int startPos,
-                                  final int endPos) throws IOException {
+            final JCTree.JCClassDecl classDecl,
+            final int startPos,
+            final int endPos) throws IOException {
         // innerClass
         final Source src = context.getSource();
         final Range range = Range.create(src, startPos, endPos);
@@ -1348,14 +1340,13 @@ public class TreeAnalyzer {
             classScope.isEnum = isEnum;
             log.trace("maybe inner class={}", classScope);
             parent.startClass(classScope);
-            classDecl.getMembers().forEach(wrapIOConsumer(tree1 ->
-                    this.analyzeParsedTree(context, tree1)));
+            classDecl.getMembers().forEach(wrapIOConsumer(tree1 -> this.analyzeParsedTree(context, tree1)));
             final Optional<ClassScope> ignore = parent.endClass();
         }));
     }
 
     private void parseModifiers(final SourceContext context,
-                                @Nullable final JCTree.JCModifiers modifiers) {
+            @Nullable final JCTree.JCModifiers modifiers) {
         if (modifiers != null) {
             final List<JCTree.JCAnnotation> annotations = modifiers.getAnnotations();
             if (annotations != null) {
@@ -1364,8 +1355,7 @@ public class TreeAnalyzer {
                     this.analyzeParsedTree(context, annotationType);
                     final List<JCTree.JCExpression> arguments = jcAnnotation.getArguments();
                     if (arguments != null) {
-                        arguments.forEach(wrapIOConsumer(jcExpression ->
-                                this.analyzeParsedTree(context, jcExpression)));
+                        arguments.forEach(wrapIOConsumer(jcExpression -> this.analyzeParsedTree(context, jcExpression)));
                     }
                 }));
             }
@@ -1475,8 +1465,7 @@ public class TreeAnalyzer {
 
             // check method parameter
             context.setParameter(true);
-            md.getParameters().forEach(wrapIOConsumer(vd ->
-                    this.analyzeParsedTree(context, vd)));
+            md.getParameters().forEach(wrapIOConsumer(vd -> this.analyzeParsedTree(context, vd)));
             context.setParameter(false);
 
             // set exceptions
@@ -1590,8 +1579,8 @@ public class TreeAnalyzer {
     }
 
     public Map<File, Source> analyze(final Iterable<? extends CompilationUnitTree> parsed,
-                                     final Set<File> errorFiles,
-                                     @Nullable final JavaAnalyzer.SourceAnalyzedHandler handler) {
+            final Set<File> errorFiles,
+            @Nullable final JavaAnalyzer.SourceAnalyzedHandler handler) {
 
         final Map<File, Source> analyzeMap = new ConcurrentHashMap<>(SOURCE_LIMIT);
 
@@ -1633,7 +1622,7 @@ public class TreeAnalyzer {
     }
 
     private Source analyzeUnit(final CompilationUnitTree cut,
-                               final Set<File> errorFiles) throws IOException {
+            final Set<File> errorFiles) throws IOException {
         final URI uri = cut.getSourceFile().toUri();
         final File file = new File(uri.normalize());
         final String path = file.getCanonicalPath();

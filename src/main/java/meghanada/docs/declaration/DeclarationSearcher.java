@@ -40,15 +40,13 @@ public class DeclarationSearcher {
         final Optional<Declaration> result = variable.map(var -> {
             final Declaration declaration = new Declaration(symbol, var.fqcn, Declaration.Type.VAR, var.argumentIndex);
             return Optional.of(declaration);
-        }).orElseGet(() -> {
-            return source.getTypeScope(line)
-                    .flatMap(typeScope -> typeScope.getField(symbol)
-                            .map(fieldVar ->
-                                    new Declaration(symbol,
-                                            fieldVar.fqcn,
-                                            Declaration.Type.VAR,
-                                            fieldVar.argumentIndex)));
-        });
+        }).orElseGet(() -> source.getTypeScope(line)
+                .flatMap(typeScope -> typeScope.getField(symbol)
+                        .map(fieldVar ->
+                                new Declaration(symbol,
+                                        fieldVar.fqcn,
+                                        Declaration.Type.VAR,
+                                        fieldVar.argumentIndex))));
         log.traceExit(entryMessage);
         return result;
     }
@@ -175,9 +173,7 @@ public class DeclarationSearcher {
                         final String className = classScope.getFQCN();
                         parents.add(className);
                     }
-                    for (final String className : source.importClasses) {
-                        parents.add(className);
-                    }
+                    parents.addAll(source.importClasses);
 
                     final Optional<Declaration> innerDeclaration = reflector.searchInnerClasses(parents)
                             .stream()
@@ -190,10 +186,7 @@ public class DeclarationSearcher {
                                     Declaration.Type.CLASS,
                                     0))
                             .findFirst();
-                    if (innerDeclaration.isPresent()) {
-                        return innerDeclaration;
-                    }
-                    return Optional.empty();
+                    return innerDeclaration;
                 });
             } else {
                 result = Optional.empty();
