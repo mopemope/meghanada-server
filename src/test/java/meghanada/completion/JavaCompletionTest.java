@@ -4,6 +4,7 @@ import meghanada.GradleTestBase;
 import meghanada.reflect.CandidateUnit;
 import meghanada.reflect.asm.CachedASMReflector;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.File;
@@ -149,6 +150,7 @@ public class JavaCompletionTest extends GradleTestBase {
         assertEquals(17, units.size());
     }
 
+    @Ignore
     @Test
     public void testCompletion10() throws Exception {
         JavaCompletion completion = getCompletion();
