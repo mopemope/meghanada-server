@@ -33,6 +33,14 @@ public class SexpOutputFormatter implements OutputFormatter {
         return QUOTE + s + QUOTE;
     }
 
+    private static String toSimpleName(final String name) {
+        final int i = name.lastIndexOf('$');
+        if (i > 0) {
+            return name.substring(i + 1);
+        }
+        return name;
+    }
+
     @Override
     public String changeProject(final boolean result) {
         if (result) {
@@ -44,7 +52,7 @@ public class SexpOutputFormatter implements OutputFormatter {
     @Override
     public String compile(CompileResult compileResult, String path) {
 
-        if (compileResult.isSuccess()) {
+        if (compileResult.isSuccess() && !compileResult.hasDiagnostics()) {
             return LPAREN + "success " + doubleQuote(path) + RPAREN;
         }
         return LPAREN + "error " + doubleQuote(compileResult.getDiagnosticsSummary()) + RPAREN;
@@ -52,23 +60,21 @@ public class SexpOutputFormatter implements OutputFormatter {
 
     @Override
     public String compileProject(CompileResult compileResult) {
-
-        if (compileResult.isSuccess()) {
+        if (compileResult.isSuccess() && !compileResult.hasDiagnostics()) {
             return LPAREN + "success true" + RPAREN;
         }
         return LPAREN + "error " + doubleQuote(compileResult.getDiagnosticsSummary()) + RPAREN;
     }
 
     @Override
-    public String diagnostics(CompileResult compileResult, String path) {
-        if (compileResult.isSuccess()) {
+    public String diagnostics(final CompileResult compileResult, final String path) {
+        if (compileResult.isSuccess() && !compileResult.hasDiagnostics()) {
             return LPAREN + "success" + RPAREN;
         }
         final List<Diagnostic<? extends JavaFileObject>> list = compileResult.getDiagnostics();
-        StringBuilder sb = new StringBuilder();
+        final StringBuilder sb = new StringBuilder(256);
         sb.append(LPAREN);
         sb.append("error ");
-
         final String s = list.stream()
                 .map(d -> LPAREN + String.join(LIST_SEP,
                         Long.toString(d.getLineNumber()),
@@ -77,7 +83,6 @@ public class SexpOutputFormatter implements OutputFormatter {
                         doubleQuote(d.getMessage(null))) + RPAREN)
                 .collect(Collectors.joining(LIST_SEP));
         sb.append(s);
-
         sb.append(RPAREN);
         return sb.toString();
     }
@@ -95,16 +100,8 @@ public class SexpOutputFormatter implements OutputFormatter {
                         doubleQuote(d.getReturnType())) + RPAREN)
                 .collect(Collectors.joining(LIST_SEP));
         sb.append(s);
-        sb.append(")");
+        sb.append(')');
         return sb.toString();
-    }
-
-    private String toSimpleName(final String name) {
-        final int i = name.lastIndexOf("$");
-        if (i > 0) {
-            return name.substring(i + 1);
-        }
-        return name;
     }
 
     @Override
@@ -130,7 +127,7 @@ public class SexpOutputFormatter implements OutputFormatter {
 
     @Override
     public String importAll(final Map<String, List<String>> result) {
-        final StringBuilder sb = new StringBuilder();
+        final StringBuilder sb = new StringBuilder(128);
         sb.append(LPAREN);
 
         final String str = result.values()

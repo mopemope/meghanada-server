@@ -28,6 +28,8 @@ public class Config {
     public static final String GRADLE_PREPARE_COMPILE_TASK = "gradle-prepare-compile-task";
     public static final String GRADLE_PREPARE_TEST_COMPILE_TASK = "gradle-prepare-test-compile-task";
     public static final String MEGHANADA_DIR = ".meghanada";
+    public static final String DEFAULT_JAVAC_ARG = "-Xlint:all";
+
     private static final Logger log = LogManager.getLogger(Config.class);
     private static Config config;
 
@@ -61,6 +63,7 @@ public class Config {
         log.debug("project-root-dir:{}", getProjectRootDir());
         log.debug("fast-boot:{}", useFastBoot());
         log.debug("class-fuzzy-search:{}", useClassFuzzySearch());
+        log.debug("javac-arg:{}", getJavacArg());
 
     }
 
@@ -320,6 +323,10 @@ public class Config {
         return c.getStringList("allow-class");
     }
 
+    public String getJavacArg() {
+        return c.getString("javac-arg");
+    }
+
     @FunctionalInterface
     public interface SimpleSupplier<R> {
 
@@ -331,6 +338,5 @@ public class Config {
 
         void accept() throws IOException;
     }
-
 
 }

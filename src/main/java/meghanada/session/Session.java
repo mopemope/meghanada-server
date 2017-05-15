@@ -25,6 +25,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.message.EntryMessage;
 
+import javax.tools.Diagnostic;
+import javax.tools.JavaFileObject;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -490,10 +492,16 @@ public class Session {
 
     public synchronized CompileResult compileProject() throws IOException {
         final Project project = currentProject;
-        CompileResult result = project.compileJava(false);
+        final CompileResult result = project.compileJava(false);
         if (result.isSuccess()) {
-            result = project.compileTestJava(false);
+            final CompileResult testResult = project.compileTestJava(false);
+            if (testResult.hasDiagnostics()) {
+                for (final Diagnostic<? extends JavaFileObject> diagnostic : testResult.getDiagnostics()) {
+                    result.getDiagnostics().add(diagnostic);
+                }
+            }
         }
+
         this.sessionEventBus.requestCreateCache(true);
 
         return result;

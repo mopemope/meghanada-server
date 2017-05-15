@@ -20,12 +20,16 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.eclipse.jdt.core.JavaCore;
 
+import javax.tools.Diagnostic;
+import javax.tools.JavaFileObject;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @DefaultSerializer(ProjectSerializer.class)
@@ -54,6 +58,7 @@ public abstract class Project {
     private static final String INCLUDE_FILE = "include-file";
     private static final String EXCLUDE_FILE = "exclude-file";
     private static final String FORMATTER_FILE = "meghanadaFormatter.properties";
+    private static final Pattern SEP_COMPILE = Pattern.compile("/", Pattern.LITERAL);
 
     protected final File projectRoot;
     protected final Set<ProjectDependency> dependencies = new HashSet<>(16);
@@ -98,6 +103,23 @@ public abstract class Project {
         return compileResult;
     }
 
+    private static String getCanonicalPath(File f) {
+        try {
+            return f.getCanonicalPath();
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    private static List<File> collectJavaFiles(Set<File> sourceDirs) {
+        return sourceDirs.parallelStream()
+                .filter(File::exists)
+                .map(root -> FileUtils.collectFiles(root, ".java"))
+                .flatMap(Collection::parallelStream)
+                // .filter(FileUtils::filterFile)
+                .collect(Collectors.toList());
+    }
+
     public abstract Project parseProject() throws ProjectParseException;
 
     public Set<File> getAllSources() {
@@ -111,8 +133,7 @@ public abstract class Project {
 
     public Set<File> getAllSourcesWithDependencies() {
         final Set<File> temp = getAllSources();
-        this.dependencies.forEach(projectDependency ->
-                temp.addAll(projectDependency.getProjectSources()));
+        this.dependencies.forEach(projectDependency -> temp.addAll(projectDependency.getProjectSources()));
         return temp;
     }
 
@@ -180,23 +201,6 @@ public abstract class Project {
         return this.cachedAllClasspath;
     }
 
-    private String getCanonicalPath(File f) {
-        try {
-            return f.getCanonicalPath();
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
-    }
-
-    private List<File> collectJavaFiles(Set<File> sourceDirs) {
-        return sourceDirs.parallelStream()
-                .filter(File::exists)
-                .map(root -> FileUtils.collectFiles(root, ".java"))
-                .flatMap(Collection::parallelStream)
-//                .filter(FileUtils::filterFile)
-                .collect(Collectors.toList());
-    }
-
     public CompileResult compileJava() throws IOException {
         return compileJava(false);
     }
@@ -207,7 +211,7 @@ public abstract class Project {
         try {
             System.setProperty(PROJECT_ROOT_KEY, projectRoot.getCanonicalPath());
 
-            List<File> files = this.collectJavaFiles(this.sources);
+            List<File> files = Project.collectJavaFiles(this.sources);
             if (files != null && !files.isEmpty()) {
 
                 if (callerMap.size() == 0) {
@@ -235,21 +239,29 @@ public abstract class Project {
                                 true,
                                 handler));
 
-                log.info("project {} compile and analyze (java) {} files. force:{} elapsed:{}",
+                log.info("project {} compile and analyze (java) {} files. force:{} problem:{} elapsed:{}",
                         this.name,
                         files.size(),
                         force,
+                        compileResult.getDiagnostics().size(),
                         stopwatch.stop());
 
                 System.setProperty(PROJECT_ROOT_KEY, projectRoot.getCanonicalPath());
                 return compileResult;
             }
             return new CompileResult(true);
+        } catch (Throwable t) {
+            log.catching(t);
+            final CompileResult result = new CompileResult(false);
+            final Diagnostic<? extends JavaFileObject> diagnostic = CompileResult.getDiagnosticFromThrowable(t);
+            if (diagnostic != null) {
+                result.getDiagnostics().add(diagnostic);
+            }
+            return result;
         } finally {
             System.setProperty(PROJECT_ROOT_KEY, origin);
         }
     }
-
 
     public CompileResult compileTestJava() throws IOException {
         return compileTestJava(false);
@@ -260,7 +272,7 @@ public abstract class Project {
         final String origin = System.getProperty(PROJECT_ROOT_KEY);
         try {
             System.setProperty(PROJECT_ROOT_KEY, projectRoot.getCanonicalPath());
-            List<File> files = this.collectJavaFiles(this.testSources);
+            List<File> files = Project.collectJavaFiles(this.testSources);
             if (files != null && !files.isEmpty()) {
                 if (callerMap.size() == 0) {
                     force = true;
@@ -285,16 +297,25 @@ public abstract class Project {
                         true,
                         handler));
 
-                log.info("project {} compile and analyze (test) {} files. force:{} elapsed:{}",
+                log.info("project {} compile and analyze (test) {} files. force:{} problem:{} elapsed:{}",
                         this.name,
                         files.size(),
                         force,
+                        compileResult.getDiagnostics().size(),
                         stopwatch.stop());
 
                 System.setProperty(PROJECT_ROOT_KEY, projectRoot.getCanonicalPath());
                 return compileResult;
             }
             return new CompileResult(true);
+        } catch (Throwable t) {
+            log.catching(t);
+            final CompileResult result = new CompileResult(false);
+            final Diagnostic<? extends JavaFileObject> diagnostic = CompileResult.getDiagnosticFromThrowable(t);
+            if (diagnostic != null) {
+                result.getDiagnostics().add(diagnostic);
+            }
+            return result;
         } finally {
             System.setProperty(PROJECT_ROOT_KEY, origin);
         }
@@ -449,7 +470,7 @@ public abstract class Project {
 
         final Config config = Config.load();
         final List<String> cmd = new ArrayList<>(16);
-        final String binJava = "/bin/java".replace("/", File.separator);
+        final String binJava = SEP_COMPILE.matcher("/bin/java").replaceAll(Matcher.quoteReplacement(File.separator));
         final String javaCmd = new File(config.getJavaHomeDir(), binJava).getCanonicalPath();
         cmd.add(javaCmd);
         String cp = this.allClasspath();
@@ -643,17 +664,18 @@ public abstract class Project {
         if (!callerFile.exists()) {
             return;
         }
-        @SuppressWarnings("unchecked") final Map<String, Set<String>> map =
-                GlobalCache.getInstance().readCacheFromFile(callerFile, ConcurrentHashMap.class);
+        @SuppressWarnings("unchecked") final Map<String, Set<String>> map = GlobalCache.getInstance().readCacheFromFile(callerFile, ConcurrentHashMap.class);
         this.callerMap = map;
     }
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
         Project project = (Project) o;
-        return com.google.common.base.Objects.equal(projectRoot, project.projectRoot);
+        return Objects.equal(projectRoot, project.projectRoot);
     }
 
     @Override

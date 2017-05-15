@@ -5,9 +5,7 @@ import com.sun.source.util.JavacTask;
 import com.sun.tools.javac.api.JavacTaskImpl;
 import com.sun.tools.javac.parser.FuzzyParserFactory;
 import com.sun.tools.javac.util.Context;
-import meghanada.Main;
 import meghanada.config.Config;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -94,25 +92,27 @@ public class JavaAnalyzer {
                                                @Nullable final SourceAnalyzedHandler handler) throws IOException {
 
         final JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
+        final Config config = Config.load();
         final TreeAnalyzer treeAnalyzer = new TreeAnalyzer();
         try (final StandardJavaFileManager fileManager = compiler.getStandardFileManager(null, null, Charset.forName("UTF-8"))) {
             final Iterable<? extends JavaFileObject> compilationUnits = fileManager.getJavaFileObjectsFromFiles(compileFiles);
             final DiagnosticCollector<JavaFileObject> diagnosticCollector = new DiagnosticCollector<>();
             final List<String> compileOptions = Arrays.asList(
                     "-cp", classpath,
-                    "-g", "-deprecation",
+                    "-g", config.getJavacArg(),
                     "-d", out,
                     "-source", this.compileSource,
                     "-target", this.compileTarget,
-                    "-encoding", "UTF-8"
-            );
-            //log.debug("use compile options {}", compileOptions);
-            if (Main.isDevelop()) {
-                log.info("---------- development compile log. output={} ----------", out);
-                for (final String cp : StringUtils.split(classpath, File.pathSeparatorChar)) {
-                    log.info("{}", cp);
-                }
-            }
+                    "-encoding", "UTF-8");
+
+            // if (Main.isDevelop()) {
+            // log.info("---------- development compile log. output={}
+            // ----------", out);
+            // for (final String cp : StringUtils.split(classpath,
+            // File.pathSeparatorChar)) {
+            // log.info("{}", cp);
+            // }
+            // }
 
             final JavaCompiler.CompilationTask compilerTask = compiler.getTask(null,
                     fileManager,

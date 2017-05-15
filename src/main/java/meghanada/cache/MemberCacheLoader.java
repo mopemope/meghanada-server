@@ -50,8 +50,7 @@ class MemberCacheLoader extends CacheLoader<String, List<MemberDescriptor>> impl
                 .orElseGet(() -> {
                     final String innerFQCN = ClassNameUtils.replaceInnerMark(fqcn);
                     reflector.containsClassIndex(innerFQCN)
-                            .ifPresent(wrapIOConsumer(classIndex ->
-                                    CachedASMReflector.writeCache(classIndex, list)));
+                            .ifPresent(wrapIOConsumer(classIndex -> CachedASMReflector.writeCache(classIndex, list)));
                     return true;
                 });
 
@@ -79,7 +78,9 @@ class MemberCacheLoader extends CacheLoader<String, List<MemberDescriptor>> impl
                 final String md5sum = FileUtils.getChecksum(file);
                 final String filePath = file.getCanonicalPath();
                 final List<MemberDescriptor> cachedResult = getCachedMemberDescriptors(cacheFilePath, md5sum, filePath);
-                if (cachedResult != null) return cachedResult;
+                if (cachedResult != null) {
+                    return cachedResult;
+                }
             } else if (file.isFile() && fileName.endsWith(".jar") && !fileName.contains("SNAPSHOT")) {
                 final List<MemberDescriptor> cachedResult = MemberCacheLoader.loadFromCache(cacheFilePath);
                 if (cachedResult != null) {
