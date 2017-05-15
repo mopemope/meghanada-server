@@ -41,11 +41,13 @@ public class JavaCompletion {
         } else {
             result = CachedASMReflector.getInstance().searchAnnotations(classPrefix.toLowerCase());
         }
-        result.forEach(classIndex -> {
-            final String name = ClassNameUtils.getSimpleName(ClassNameUtils.replaceInnerMark(classIndex.name));
-            classIndex.name = '@' + name;
-        });
-        return result;
+        return result.stream()
+                .sorted(comparing(prefix))
+                .map(classIndex -> {
+                    final String name = ClassNameUtils.getSimpleName(ClassNameUtils.replaceInnerMark(classIndex.name));
+                    classIndex.name = '@' + name;
+                    return classIndex;
+                }).collect(Collectors.toList());
     }
 
     private static List<MemberDescriptor> doReflect(String fqcn) {
@@ -56,9 +58,8 @@ public class JavaCompletion {
         return source.getTypeScope(line).map(typeScope -> {
             final String fqcn = typeScope.getFQCN();
             return doReflect(fqcn).stream()
-                    .filter(md ->
-                            !md.getDeclaringClass().equals(fqcn) &&
-                                    !(!prefix.isEmpty() && !md.getName().toLowerCase().startsWith(prefix)))
+                    .filter(md -> !md.getDeclaringClass().equals(fqcn) &&
+                            !(!prefix.isEmpty() && !md.getName().toLowerCase().startsWith(prefix)))
                     .collect(Collectors.toList());
         }).orElse(Collections.emptyList());
     }
@@ -183,7 +184,7 @@ public class JavaCompletion {
     }
 
     private static Collection<? extends CandidateUnit> completionSymbols(final Source source, final int line, final String prefix) {
-        final List<CandidateUnit> result = new ArrayList<>(32);
+        final Set<CandidateUnit> result = new HashSet<>(32);
 
         // prefix search
         log.debug("Search variables prefix:{} line:{}", prefix, line);
@@ -197,8 +198,7 @@ public class JavaCompletion {
         // add this member
         JavaCompletion.reflectSelf(fqcn, true, prefix)
                 .stream()
-                .filter(c ->
-                        c.getName().startsWith(prefix))
+                .filter(c -> c.getName().startsWith(prefix))
                 .forEach(result::add);
 
         if (fqcn.contains(ClassNameUtils.INNER_MARK)) {
@@ -212,8 +212,7 @@ public class JavaCompletion {
                 parentClass = parentClass.substring(0, i);
                 JavaCompletion.reflectSelf(parentClass, true, prefix)
                         .stream()
-                        .filter(c ->
-                                c.getName().startsWith(prefix))
+                        .filter(c -> c.getName().startsWith(prefix))
                         .forEach(result::add);
             }
         }
@@ -223,24 +222,20 @@ public class JavaCompletion {
         final Map<String, Variable> symbols = source.getDeclaratorMap(line);
         log.debug("search variables size:{} result:{}", symbols.size(), symbols);
 
-        symbols.entrySet().forEach(entry -> {
-            final String key = entry.getKey();
+        symbols.forEach((key, value) -> {
             log.debug("check variable name:{}", key);
             if (key.startsWith(prefix)) {
                 log.debug("match variable name:{}", key);
-                final Variable value = entry.getValue();
                 if (!value.isField) {
-                    result.add(entry.getValue().toCandidateUnit());
+                    result.add(value.toCandidateUnit());
                 }
             }
         });
 
         source.getImportedClassMap()
-                .entrySet()
-                .forEach(entry -> {
-                    final String key = entry.getKey();
+                .forEach((key, value) -> {
                     if (key.startsWith(prefix)) {
-                        result.add(ClassIndex.createClass(entry.getValue()));
+                        result.add(ClassIndex.createClass(value));
                     }
                 });
 
@@ -256,7 +251,9 @@ public class JavaCompletion {
             }
         }
 
-        return result;
+        return result.stream()
+                .sorted(comparing(prefix))
+                .collect(Collectors.toList());
     }
 
     private static Collection<? extends CandidateUnit> reflect(final String ownPackage,
@@ -379,6 +376,24 @@ public class JavaCompletion {
 
     }
 
+    private static Comparator<? super CandidateUnit> comparing(final String keyword) {
+        return (c1, c2) -> {
+            final String o1 = c1.getName();
+            final String o2 = c2.getName();
+
+            if (o1.startsWith(keyword) && o2.startsWith(keyword)) {
+                return o1.compareTo(o2);
+            }
+            if (o1.startsWith(keyword)) {
+                return -1;
+            }
+            if (o2.startsWith(keyword)) {
+                return 1;
+            }
+            return o1.compareTo(o2);
+        };
+    }
+
     public void setProject(Project project) {
         this.project = project;
     }
@@ -406,8 +421,8 @@ public class JavaCompletion {
             }
             // search symbol
             return JavaCompletion.completionSymbols(source, line, prefix);
-        } catch (Exception e) {
-            log.catching(e);
+        } catch (Throwable t) {
+            log.catching(t);
             return Collections.emptyList();
         }
     }
@@ -425,13 +440,20 @@ public class JavaCompletion {
             // list all classes
             int idx = searchWord.lastIndexOf(':');
             if (idx > 0) {
-                String classPrefix = searchWord.substring(idx + 1, searchWord.length());
+                final List<ClassIndex> result;
+                final String classPrefix = searchWord.substring(idx + 1, searchWord.length());
                 if (useFuzzySearch) {
-                    return CachedASMReflector.getInstance().fuzzySearchClasses(classPrefix.toLowerCase());
+                    result = CachedASMReflector.getInstance().fuzzySearchClasses(classPrefix.toLowerCase());
+                } else {
+                    result = CachedASMReflector.getInstance().searchClasses(classPrefix.toLowerCase());
                 }
-                return CachedASMReflector.getInstance().searchClasses(classPrefix.toLowerCase());
+                result.sort(comparing(classPrefix));
+                return result;
             }
-            return JavaCompletion.completionConstructors(source);
+            return JavaCompletion.completionConstructors(source)
+                    .stream()
+                    .sorted(Comparator.comparing(CandidateUnit::getName))
+                    .collect(Collectors.toList());
         } else if (searchWord.startsWith("*method")) {
             final int prefixIdx = searchWord.lastIndexOf('#');
             final int classIdx = searchWord.lastIndexOf(':');
@@ -442,16 +464,21 @@ public class JavaCompletion {
                 // return methods of prefix class
                 String fqcn = searchWord.substring(classIdx + 1, prefixIdx);
                 fqcn = ClassNameUtils.replace(fqcn, ClassNameUtils.CAPTURE_OF, "");
-                return reflectWithFQCN(pkg, fqcn, prefix);
+                return reflectWithFQCN(pkg, fqcn, prefix)
+                        .stream()
+                        .sorted(comparing(prefix))
+                        .collect(Collectors.toList());
             }
-            // chained method completion
 
+            // chained method completion
             if (classIdx > 0) {
                 // return methods of prefix class
                 String fqcn = searchWord.substring(classIdx + 1, searchWord.length());
                 fqcn = ClassNameUtils.replace(fqcn, ClassNameUtils.CAPTURE_OF, "");
-                return reflect(pkg, fqcn, "");
-
+                return reflect(pkg, fqcn, "")
+                        .stream()
+                        .sorted(Comparator.comparing(CandidateUnit::getName))
+                        .collect(Collectors.toList());
             } else {
                 String prefix = "";
                 if (prefixIdx > 0) {
@@ -471,7 +498,10 @@ public class JavaCompletion {
                     for (AccessSymbol accessSymbol : targets) {
                         if (accessSymbol.match(line, startColumn) && accessSymbol.returnType != null) {
                             final String fqcn = ClassNameUtils.replace(accessSymbol.returnType, ClassNameUtils.CAPTURE_OF, "");
-                            return reflect(pkg, fqcn, prefix);
+                            return reflect(pkg, fqcn, prefix)
+                                    .stream()
+                                    .sorted(comparing(prefix))
+                                    .collect(Collectors.toList());
                         }
                     }
                 }
@@ -480,17 +510,26 @@ public class JavaCompletion {
             }
         } else if (searchWord.startsWith("*package")) {
             // completion projects package
-            return this.completionPackage();
+            return this.completionPackage()
+                    .stream()
+                    .sorted(Comparator.comparing(CandidateUnit::getName))
+                    .collect(Collectors.toList());
         }
         // search fields or methods
         final int idx = searchWord.lastIndexOf('#');
         if (idx > 0) {
             final String var = searchWord.substring(1, idx);
             final String prefix = searchWord.substring(idx + 1);
-            return JavaCompletion.completionFieldsOrMethods(source, line, var, prefix.toLowerCase());
+            return JavaCompletion.completionFieldsOrMethods(source, line, var, prefix.toLowerCase())
+                    .stream()
+                    .sorted(comparing(prefix))
+                    .collect(Collectors.toList());
         }
 
-        return JavaCompletion.completionFieldsOrMethods(source, line, searchWord.substring(1), "");
+        return JavaCompletion.completionFieldsOrMethods(source, line, searchWord.substring(1), "")
+                .stream()
+                .sorted(Comparator.comparing(CandidateUnit::getName))
+                .collect(Collectors.toList());
     }
 
     private Collection<? extends CandidateUnit> completionPackage() {

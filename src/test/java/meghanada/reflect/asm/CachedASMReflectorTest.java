@@ -42,9 +42,9 @@ public class CachedASMReflectorTest extends GradleTestBase {
         boolean isOpenJDK = System.getProperty("java.home").contains("openjdk");
 
         Stopwatch stopwatch = Stopwatch.createStarted();
-        Collection<? extends CandidateUnit> candidateUnits = cachedASMReflector.searchClasses("map");
+        Collection<? extends CandidateUnit> candidateUnits = cachedASMReflector.searchClasses("Map");
         System.out.println(stopwatch.stop());
-        // candidateUnits.forEach(u -> System.out.println(u.getDeclaration()));
+        candidateUnits.forEach(u -> System.out.println(u.getDeclaration()));
         if (isOpenJDK) {
             assertEquals(245, candidateUnits.size());
         } else {

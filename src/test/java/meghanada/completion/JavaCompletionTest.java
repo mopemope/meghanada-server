@@ -10,7 +10,6 @@ import java.io.File;
 import java.util.Collection;
 
 import static meghanada.config.Config.timeIt;
-import static meghanada.config.Config.traceIt;
 import static org.junit.Assert.assertEquals;
 
 public class JavaCompletionTest extends GradleTestBase {
@@ -23,7 +22,6 @@ public class JavaCompletionTest extends GradleTestBase {
         cachedASMReflector.addClasspath(getTestOutputDir());
         cachedASMReflector.createClassIndexes();
     }
-
 
     @Test
     public void testCompletion01() throws Exception {
@@ -149,6 +147,18 @@ public class JavaCompletionTest extends GradleTestBase {
         });
         units.forEach(a -> System.out.println(a.getDisplayDeclaration()));
         assertEquals(17, units.size());
+    }
+
+    @Test
+    public void testCompletion10() throws Exception {
+        JavaCompletion completion = getCompletion();
+        File file = new File("./src/main/java/meghanada/analyze/JavaAnalyzer.java").getCanonicalFile();
+        assert file.exists();
+        final Collection<? extends CandidateUnit> units = timeIt(() -> {
+            return completion.completionAt(file, 79, 35, "St");
+        });
+        units.forEach(a -> System.out.println(a.getDisplayDeclaration()));
+        assertEquals(2329, units.size());
     }
 
     private JavaCompletion getCompletion() throws Exception {
