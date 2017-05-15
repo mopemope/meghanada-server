@@ -36,8 +36,6 @@ public class Main {
         final String version = getVersion();
         System.setProperty("meghanada-server.version", version);
 
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> log.info("shutdown server")));
-
         final Options options = buildOptions();
 
         final CommandLineParser parser = new DefaultParser();
