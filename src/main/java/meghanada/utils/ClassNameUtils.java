@@ -90,7 +90,7 @@ public class ClassNameUtils {
         return false;
     }
 
-    public static boolean isArray(String name) {
+    public static boolean isArray(final String name) {
         return name.endsWith(ARRAY);
     }
 
@@ -488,7 +488,9 @@ public class ClassNameUtils {
         final CachedASMReflector reflector = CachedASMReflector.getInstance();
         for (final String paramStr : parameters) {
             final String realArgStr = iteratorA.next();
-
+            if (realArgStr == null) {
+                return false;
+            }
             if (ClassNameUtils.isArray(paramStr) != ClassNameUtils.isArray(realArgStr)) {
                 return false;
             }
