@@ -213,6 +213,22 @@ public class LocationSearcherTest extends GradleTestBase {
     }
 
     @Test
+    public void testJumpMethod09() throws Exception {
+        File f = new File("./src/test/java/meghanada/JumpWithNull.java").getCanonicalFile();
+        assert f.exists();
+        LocationSearcher searcher = getSearcher();
+        {
+            GlobalCache.getInstance().invalidateSource(project, f);
+            Location result = searcher.searchDeclarationLocation(f, 12, 22, "main")
+                    .orElse(null);
+            assertNotNull(result);
+            assertTrue(result.getPath().contains("JumpWithNull.java"));
+            assertEquals(6, result.getLine());
+            assertEquals(24, result.getColumn());
+        }
+    }
+
+    @Test
     public void testJumpMethod08() throws Exception {
         File f = new File("./src/test/java/meghanada/ArrayOverload.java").getCanonicalFile();
         assert f.exists();

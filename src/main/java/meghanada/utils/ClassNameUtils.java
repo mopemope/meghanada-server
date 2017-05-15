@@ -491,6 +491,10 @@ public class ClassNameUtils {
             if (realArgStr == null) {
                 return false;
             }
+            if (realArgStr.equals("<null>")) {
+                // match all
+                continue;
+            }
             if (ClassNameUtils.isArray(paramStr) != ClassNameUtils.isArray(realArgStr)) {
                 return false;
             }
