@@ -3,6 +3,8 @@
 * Change sort order of the candidates to more better
 * Support maven parent pom
 * Add server error logger
+* Change default formatter to google-java-format
+* Support make import from eclipse code format settings (meghanadaFormatter.xml)
 * Fix many bugs and improve stability.
 
 # Version 0.7.5 (2017-04-27)
