@@ -4,7 +4,7 @@ import java.lang.reflect.Method;
 
 public class Gen6 {
 
-    public void objTest() {
-        final Method[] methods = Object.class.getMethods();
-    }
+  public void objTest() {
+    final Method[] methods = Object.class.getMethods();
+  }
 }

@@ -2,10 +2,10 @@ package meghanada;
 
 public class Gen10<T> {
 
-    private String[] strings;
-    private T[] queue;
+  private String[] strings;
+  private T[] queue;
 
-    private void test() {
-        int i = queue.length;
-    }
+  private void test() {
+    int i = queue.length;
+  }
 }

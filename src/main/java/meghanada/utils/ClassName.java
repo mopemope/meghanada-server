@@ -6,41 +6,39 @@ import org.apache.logging.log4j.Logger;
 
 public final class ClassName {
 
-    private static final Logger log = LogManager.getLogger(ClassName.class);
+  private static final Logger log = LogManager.getLogger(ClassName.class);
 
-    private final String rawName;
-    private final int typeIndex;
-    private final int typeLastIndex;
+  private final String rawName;
+  private final int typeIndex;
+  private final int typeLastIndex;
 
-    public ClassName(String name) {
-        this.rawName = ClassNameUtils.vaArgsToArray(name);
-        this.typeIndex = this.rawName.indexOf('<');
-        this.typeLastIndex = this.rawName.lastIndexOf('>');
+  public ClassName(String name) {
+    this.rawName = ClassNameUtils.vaArgsToArray(name);
+    this.typeIndex = this.rawName.indexOf('<');
+    this.typeLastIndex = this.rawName.lastIndexOf('>');
+  }
+
+  public boolean hasTypeParameter() {
+    return this.typeIndex > 0;
+  }
+
+  public String getName() {
+    String name = ClassNameUtils.removeCaptureAndWildCard(this.rawName);
+    if (typeIndex >= 0) {
+      String fst = name.substring(0, typeIndex);
+      String sec = name.substring(typeLastIndex + 1, name.length());
+      name = fst + sec;
     }
 
-    public boolean hasTypeParameter() {
-        return this.typeIndex > 0;
+    int arrayIndex = name.indexOf('[');
+    if (arrayIndex >= 0) {
+      name = name.substring(0, arrayIndex);
     }
+    return name;
+  }
 
-    public String getName() {
-        String name = ClassNameUtils.removeCaptureAndWildCard(this.rawName);
-        if (typeIndex >= 0) {
-            String fst = name.substring(0, typeIndex);
-            String sec = name.substring(typeLastIndex + 1, name.length());
-            name = fst + sec;
-        }
-
-        int arrayIndex = name.indexOf('[');
-        if (arrayIndex >= 0) {
-            name = name.substring(0, arrayIndex);
-        }
-        return name;
-    }
-
-    @Override
-    public String toString() {
-        return MoreObjects.toStringHelper(this)
-                .add("rawName", rawName)
-                .toString();
-    }
+  @Override
+  public String toString() {
+    return MoreObjects.toStringHelper(this).add("rawName", rawName).toString();
+  }
 }

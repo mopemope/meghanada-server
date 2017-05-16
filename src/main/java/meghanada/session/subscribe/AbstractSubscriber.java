@@ -4,10 +4,9 @@ import meghanada.session.SessionEventBus;
 
 abstract class AbstractSubscriber {
 
-    final SessionEventBus sessionEventBus;
+  final SessionEventBus sessionEventBus;
 
-    AbstractSubscriber(SessionEventBus sessionEventBus) {
-        this.sessionEventBus = sessionEventBus;
-    }
-
+  AbstractSubscriber(SessionEventBus sessionEventBus) {
+    this.sessionEventBus = sessionEventBus;
+  }
 }

@@ -4,14 +4,13 @@ import java.io.IOException;
 
 public class ProjectParseException extends IOException {
 
-    private static final long serialVersionUID = 1L;
+  private static final long serialVersionUID = 1L;
 
-    public ProjectParseException(String message) {
-        super(message);
-    }
+  public ProjectParseException(String message) {
+    super(message);
+  }
 
-    public ProjectParseException(Throwable cause) {
-        super(cause);
-    }
-
+  public ProjectParseException(Throwable cause) {
+    super(cause);
+  }
 }

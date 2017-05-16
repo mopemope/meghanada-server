@@ -1,7 +1,6 @@
 package meghanada.reflect.asm;
 
 import com.google.common.base.MoreObjects;
-
 import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -10,20 +9,20 @@ import java.util.Map;
 
 public class InheritanceInfo {
 
-    final String targetClass;
-    List<String> inherit = new ArrayList<>(8);
-    Map<File, List<String>> classFileMap = new HashMap<>(8);
+  final String targetClass;
+  List<String> inherit = new ArrayList<>(8);
+  Map<File, List<String>> classFileMap = new HashMap<>(8);
 
-    public InheritanceInfo(String targetClass) {
-        this.targetClass = targetClass;
-    }
+  public InheritanceInfo(String targetClass) {
+    this.targetClass = targetClass;
+  }
 
-    @Override
-    public String toString() {
-        return MoreObjects.toStringHelper(this)
-                .add("targetClass", targetClass)
-                .add("inherit", inherit)
-                .add("classFileMap", classFileMap)
-                .toString();
-    }
+  @Override
+  public String toString() {
+    return MoreObjects.toStringHelper(this)
+        .add("targetClass", targetClass)
+        .add("inherit", inherit)
+        .add("classFileMap", classFileMap)
+        .toString();
+  }
 }

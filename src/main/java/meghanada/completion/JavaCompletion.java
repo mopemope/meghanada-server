@@ -1,7 +1,24 @@
 package meghanada.completion;
 
 import com.google.common.cache.LoadingCache;
-import meghanada.analyze.*;
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.ExecutionException;
+import java.util.stream.Collectors;
+import meghanada.analyze.AccessSymbol;
+import meghanada.analyze.ClassScope;
+import meghanada.analyze.Source;
+import meghanada.analyze.TypeScope;
+import meghanada.analyze.Variable;
 import meghanada.cache.GlobalCache;
 import meghanada.config.Config;
 import meghanada.project.Project;
@@ -14,529 +31,575 @@ import meghanada.utils.ClassNameUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.*;
-import java.util.concurrent.ExecutionException;
-import java.util.stream.Collectors;
-
 public class JavaCompletion {
 
-    private static final Logger log = LogManager.getLogger(JavaCompletion.class);
+  private static final Logger log = LogManager.getLogger(JavaCompletion.class);
 
-    private Project project;
+  private Project project;
 
-    public JavaCompletion(final Project project) {
-        this.project = project;
+  public JavaCompletion(final Project project) {
+    this.project = project;
+  }
+
+  private static Collection<? extends CandidateUnit> annotationCompletion(
+      final Source source, final int line, final int column, final String prefix) {
+    final boolean useFuzzySearch = Config.load().useClassFuzzySearch();
+    String classPrefix = prefix.substring(1);
+    List<ClassIndex> result;
+    if (useFuzzySearch) {
+      result = CachedASMReflector.getInstance().fuzzySearchAnnotations(classPrefix.toLowerCase());
+
+    } else {
+      result = CachedASMReflector.getInstance().searchAnnotations(classPrefix.toLowerCase());
+    }
+    return result
+        .stream()
+        .sorted(comparing(prefix))
+        .map(
+            classIndex -> {
+              final String name =
+                  ClassNameUtils.getSimpleName(ClassNameUtils.replaceInnerMark(classIndex.name));
+              classIndex.name = '@' + name;
+              return classIndex;
+            })
+        .collect(Collectors.toList());
+  }
+
+  private static List<MemberDescriptor> doReflect(String fqcn) {
+    return CachedASMReflector.getInstance().reflect(fqcn);
+  }
+
+  private static Collection<? extends CandidateUnit> completionSuper(
+      final Source source, final int line, final String prefix) {
+    return source
+        .getTypeScope(line)
+        .map(
+            typeScope -> {
+              final String fqcn = typeScope.getFQCN();
+              return doReflect(fqcn)
+                  .stream()
+                  .filter(
+                      md ->
+                          !md.getDeclaringClass().equals(fqcn)
+                              && !(!prefix.isEmpty()
+                                  && !md.getName().toLowerCase().startsWith(prefix)))
+                  .collect(Collectors.toList());
+            })
+        .orElse(Collections.emptyList());
+  }
+
+  private static boolean publicFilter(
+      final CandidateUnit cu,
+      final boolean isStatic,
+      final boolean withCONSTRUCTOR,
+      final String target) {
+
+    final String name = cu.getName().toLowerCase();
+    if (!target.isEmpty() && !name.contains(target)) {
+      return false;
     }
 
-    private static Collection<? extends CandidateUnit> annotationCompletion(final Source source, final int line,
-                                                                            final int column, final String prefix) {
-        final boolean useFuzzySearch = Config.load().useClassFuzzySearch();
-        String classPrefix = prefix.substring(1);
-        List<ClassIndex> result;
-        if (useFuzzySearch) {
-            result = CachedASMReflector.getInstance().fuzzySearchAnnotations(classPrefix.toLowerCase());
+    final String declaration = cu.getDeclaration();
+    if (!declaration.contains("public")) {
+      return false;
+    }
+    if (!isStatic) {
+      if (withCONSTRUCTOR) {
+        return !declaration.contains("static");
+      }
+      return !declaration.contains("static") && !cu.getType().equals("CONSTRUCTOR");
+    }
+    return declaration.contains("static");
+  }
 
-        } else {
-            result = CachedASMReflector.getInstance().searchAnnotations(classPrefix.toLowerCase());
+  private static boolean publicFilter(final CandidateUnit cu, final String target) {
+
+    final String name = cu.getName().toLowerCase();
+    if (!target.isEmpty() && !name.contains(target)) {
+      return false;
+    }
+    if (cu.getType().equals("CONSTRUCTOR")) {
+      return false;
+    }
+
+    final String declaration = cu.getDeclaration();
+    return declaration.contains("public");
+  }
+
+  private static boolean packageFilter(
+      final CandidateUnit cu,
+      final boolean isStatic,
+      final boolean withCONSTRUCTOR,
+      final String target) {
+    final String name = cu.getName().toLowerCase();
+
+    if (!target.isEmpty() && !name.contains(target)) {
+      return false;
+    }
+    final String declaration = cu.getDeclaration();
+    if (declaration.contains("private")) {
+      return false;
+    }
+    if (!isStatic) {
+      if (withCONSTRUCTOR) {
+        return !declaration.contains("static");
+      }
+      return !declaration.contains("static") && !cu.getType().equals("CONSTRUCTOR");
+    }
+    return declaration.contains("static");
+  }
+
+  private static boolean privateFilter(
+      final CandidateUnit cu,
+      final boolean isStatic,
+      final boolean withCONSTRUCTOR,
+      final String target) {
+
+    final String name = cu.getName().toLowerCase();
+    if (cu.getType().equals("FIELD") && name.startsWith("this$")) {
+      return false;
+    }
+
+    if (!target.isEmpty() && !name.contains(target)) {
+      return false;
+    }
+
+    final String declaration = cu.getDeclaration();
+    if (!isStatic) {
+      if (withCONSTRUCTOR) {
+        return !declaration.contains("static");
+      }
+      return !declaration.contains("static") && !cu.getType().equals("CONSTRUCTOR");
+    }
+    return declaration.contains("static");
+  }
+
+  private static boolean privateFilter(
+      final CandidateUnit cu, final boolean withCONSTRUCTOR, final String target) {
+
+    final String name = cu.getName().toLowerCase();
+    return !(cu.getType().equals("FIELD") && name.startsWith("this$"))
+        && !(!target.isEmpty() && !name.contains(target))
+        && (withCONSTRUCTOR || !cu.getType().equals("CONSTRUCTOR"));
+  }
+
+  private static Collection<? extends CandidateUnit> publicReflect(
+      final String fqcn,
+      final boolean isStatic,
+      final boolean withCONSTRUCTOR,
+      final String target) {
+    return doReflect(fqcn)
+        .stream()
+        .filter(md -> JavaCompletion.publicFilter(md, isStatic, withCONSTRUCTOR, target))
+        .collect(Collectors.toSet());
+  }
+
+  private static Collection<? extends CandidateUnit> packageReflect(
+      final String fqcn,
+      final boolean noStatic,
+      final boolean withCONSTRUCTOR,
+      final String target) {
+    return doReflect(fqcn)
+        .stream()
+        .filter(md -> JavaCompletion.packageFilter(md, noStatic, withCONSTRUCTOR, target))
+        .collect(Collectors.toSet());
+  }
+
+  private static Collection<? extends CandidateUnit> completionConstructors(final Source source) {
+    return source
+        .importClasses
+        .parallelStream()
+        .map(JavaCompletion::doReflect)
+        .flatMap(Collection::parallelStream)
+        .filter(md -> md.getType().equals(CandidateUnit.MemberType.CONSTRUCTOR.name()))
+        .collect(Collectors.toSet());
+  }
+
+  private static Collection<? extends CandidateUnit> completionThis(
+      final Source source, final int line, final String prefix) {
+    return source
+        .getTypeScope(line)
+        .map(
+            typeScope -> {
+              final String fqcn = typeScope.getFQCN();
+              return JavaCompletion.reflectSelf(fqcn, false, prefix);
+            })
+        .orElse(Collections.emptyList());
+  }
+
+  private static Collection<? extends CandidateUnit> completionSymbols(
+      final Source source, final int line, final String prefix) {
+    final Set<CandidateUnit> result = new HashSet<>(32);
+
+    // prefix search
+    log.debug("Search variables prefix:{} line:{}", prefix, line);
+
+    final Optional<TypeScope> typeScope = source.getTypeScope(line);
+    if (!typeScope.isPresent()) {
+      return result;
+    }
+    final String fqcn = typeScope.get().getFQCN();
+
+    // add this member
+    JavaCompletion.reflectSelf(fqcn, true, prefix)
+        .stream()
+        .filter(c -> c.getName().startsWith(prefix))
+        .forEach(result::add);
+
+    if (fqcn.contains(ClassNameUtils.INNER_MARK)) {
+      // add parent
+      String parentClass = fqcn;
+      while (true) {
+        int i = parentClass.lastIndexOf('$');
+        if (i < 0) {
+          break;
         }
-        return result.stream()
-                .sorted(comparing(prefix))
-                .map(classIndex -> {
-                    final String name = ClassNameUtils.getSimpleName(ClassNameUtils.replaceInnerMark(classIndex.name));
-                    classIndex.name = '@' + name;
-                    return classIndex;
-                }).collect(Collectors.toList());
+        parentClass = parentClass.substring(0, i);
+        JavaCompletion.reflectSelf(parentClass, true, prefix)
+            .stream()
+            .filter(c -> c.getName().startsWith(prefix))
+            .forEach(result::add);
+      }
     }
 
-    private static List<MemberDescriptor> doReflect(String fqcn) {
-        return CachedASMReflector.getInstance().reflect(fqcn);
-    }
+    log.debug("self fqcn:{}", fqcn);
 
-    private static Collection<? extends CandidateUnit> completionSuper(final Source source, final int line, final String prefix) {
-        return source.getTypeScope(line).map(typeScope -> {
-            final String fqcn = typeScope.getFQCN();
-            return doReflect(fqcn).stream()
-                    .filter(md -> !md.getDeclaringClass().equals(fqcn) &&
-                            !(!prefix.isEmpty() && !md.getName().toLowerCase().startsWith(prefix)))
-                    .collect(Collectors.toList());
-        }).orElse(Collections.emptyList());
-    }
+    final Map<String, Variable> symbols = source.getDeclaratorMap(line);
+    log.debug("search variables size:{} result:{}", symbols.size(), symbols);
 
-    private static boolean publicFilter(final CandidateUnit cu,
-                                        final boolean isStatic,
-                                        final boolean withCONSTRUCTOR,
-                                        final String target) {
-
-        final String name = cu.getName().toLowerCase();
-        if (!target.isEmpty() && !name.contains(target)) {
-            return false;
-        }
-
-        final String declaration = cu.getDeclaration();
-        if (!declaration.contains("public")) {
-            return false;
-        }
-        if (!isStatic) {
-            if (withCONSTRUCTOR) {
-                return !declaration.contains("static");
+    symbols.forEach(
+        (key, value) -> {
+          log.debug("check variable name:{}", key);
+          if (key.startsWith(prefix)) {
+            log.debug("match variable name:{}", key);
+            if (!value.isField) {
+              result.add(value.toCandidateUnit());
             }
-            return !declaration.contains("static") && !cu.getType().equals("CONSTRUCTOR");
-        }
-        return declaration.contains("static");
-    }
-
-    private static boolean publicFilter(final CandidateUnit cu, final String target) {
-
-        final String name = cu.getName().toLowerCase();
-        if (!target.isEmpty() && !name.contains(target)) {
-            return false;
-        }
-        if (cu.getType().equals("CONSTRUCTOR")) {
-            return false;
-        }
-
-        final String declaration = cu.getDeclaration();
-        return declaration.contains("public");
-    }
-
-    private static boolean packageFilter(final CandidateUnit cu, final boolean isStatic, final boolean withCONSTRUCTOR,
-                                         final String target) {
-        final String name = cu.getName().toLowerCase();
-
-        if (!target.isEmpty() && !name.contains(target)) {
-            return false;
-        }
-        final String declaration = cu.getDeclaration();
-        if (declaration.contains("private")) {
-            return false;
-        }
-        if (!isStatic) {
-            if (withCONSTRUCTOR) {
-                return !declaration.contains("static");
-            }
-            return !declaration.contains("static") && !cu.getType().equals("CONSTRUCTOR");
-        }
-        return declaration.contains("static");
-    }
-
-    private static boolean privateFilter(final CandidateUnit cu,
-                                         final boolean isStatic,
-                                         final boolean withCONSTRUCTOR,
-                                         final String target) {
-
-        final String name = cu.getName().toLowerCase();
-        if (cu.getType().equals("FIELD") && name.startsWith("this$")) {
-            return false;
-        }
-
-        if (!target.isEmpty() && !name.contains(target)) {
-            return false;
-        }
-
-        final String declaration = cu.getDeclaration();
-        if (!isStatic) {
-            if (withCONSTRUCTOR) {
-                return !declaration.contains("static");
-            }
-            return !declaration.contains("static") && !cu.getType().equals("CONSTRUCTOR");
-        }
-        return declaration.contains("static");
-    }
-
-    private static boolean privateFilter(final CandidateUnit cu,
-                                         final boolean withCONSTRUCTOR,
-                                         final String target) {
-
-        final String name = cu.getName().toLowerCase();
-        return !(cu.getType().equals("FIELD") && name.startsWith("this$")) &&
-                !(!target.isEmpty() && !name.contains(target)) &&
-                (withCONSTRUCTOR || !cu.getType().equals("CONSTRUCTOR"));
-
-    }
-
-    private static Collection<? extends CandidateUnit> publicReflect(final String fqcn, final boolean isStatic,
-                                                                     final boolean withCONSTRUCTOR, final String target) {
-        return doReflect(fqcn).stream().filter(md -> JavaCompletion.publicFilter(md, isStatic, withCONSTRUCTOR, target))
-                .collect(Collectors.toSet());
-    }
-
-    private static Collection<? extends CandidateUnit> packageReflect(final String fqcn, final boolean noStatic,
-                                                                      final boolean withCONSTRUCTOR, final String target) {
-        return doReflect(fqcn).stream().filter(md -> JavaCompletion.packageFilter(md, noStatic, withCONSTRUCTOR, target))
-                .collect(Collectors.toSet());
-    }
-
-    private static Collection<? extends CandidateUnit> completionConstructors(final Source source) {
-        return source.importClasses.parallelStream()
-                .map(JavaCompletion::doReflect)
-                .flatMap(Collection::parallelStream)
-                .filter(md -> md.getType().equals(CandidateUnit.MemberType.CONSTRUCTOR.name()))
-                .collect(Collectors.toSet());
-    }
-
-    private static Collection<? extends CandidateUnit> completionThis(final Source source, final int line, final String prefix) {
-        return source.getTypeScope(line).map(typeScope -> {
-            final String fqcn = typeScope.getFQCN();
-            return JavaCompletion.reflectSelf(fqcn, false, prefix);
-        }).orElse(Collections.emptyList());
-    }
-
-    private static Collection<? extends CandidateUnit> completionSymbols(final Source source, final int line, final String prefix) {
-        final Set<CandidateUnit> result = new HashSet<>(32);
-
-        // prefix search
-        log.debug("Search variables prefix:{} line:{}", prefix, line);
-
-        final Optional<TypeScope> typeScope = source.getTypeScope(line);
-        if (!typeScope.isPresent()) {
-            return result;
-        }
-        final String fqcn = typeScope.get().getFQCN();
-
-        // add this member
-        JavaCompletion.reflectSelf(fqcn, true, prefix)
-                .stream()
-                .filter(c -> c.getName().startsWith(prefix))
-                .forEach(result::add);
-
-        if (fqcn.contains(ClassNameUtils.INNER_MARK)) {
-            // add parent
-            String parentClass = fqcn;
-            while (true) {
-                int i = parentClass.lastIndexOf('$');
-                if (i < 0) {
-                    break;
-                }
-                parentClass = parentClass.substring(0, i);
-                JavaCompletion.reflectSelf(parentClass, true, prefix)
-                        .stream()
-                        .filter(c -> c.getName().startsWith(prefix))
-                        .forEach(result::add);
-            }
-        }
-
-        log.debug("self fqcn:{}", fqcn);
-
-        final Map<String, Variable> symbols = source.getDeclaratorMap(line);
-        log.debug("search variables size:{} result:{}", symbols.size(), symbols);
-
-        symbols.forEach((key, value) -> {
-            log.debug("check variable name:{}", key);
-            if (key.startsWith(prefix)) {
-                log.debug("match variable name:{}", key);
-                if (!value.isField) {
-                    result.add(value.toCandidateUnit());
-                }
-            }
+          }
         });
 
-        source.getImportedClassMap()
-                .forEach((key, value) -> {
-                    if (key.startsWith(prefix)) {
-                        result.add(ClassIndex.createClass(value));
-                    }
-                });
+    source
+        .getImportedClassMap()
+        .forEach(
+            (key, value) -> {
+              if (key.startsWith(prefix)) {
+                result.add(ClassIndex.createClass(value));
+              }
+            });
 
-        // Add class
-        if (Character.isUpperCase(prefix.charAt(0))) {
-            // completion
-            final CachedASMReflector reflector = CachedASMReflector.getInstance();
-            final boolean fuzzySearch = Config.load().useClassFuzzySearch();
-            if (fuzzySearch) {
-                result.addAll(reflector.fuzzySearchClasses(prefix.toLowerCase()));
-            } else {
-                result.addAll(reflector.searchClasses(prefix.toLowerCase()));
-            }
-        }
-
-        return result.stream()
-                .sorted(comparing(prefix))
-                .collect(Collectors.toList());
+    // Add class
+    if (Character.isUpperCase(prefix.charAt(0))) {
+      // completion
+      final CachedASMReflector reflector = CachedASMReflector.getInstance();
+      final boolean fuzzySearch = Config.load().useClassFuzzySearch();
+      if (fuzzySearch) {
+        result.addAll(reflector.fuzzySearchClasses(prefix.toLowerCase()));
+      } else {
+        result.addAll(reflector.searchClasses(prefix.toLowerCase()));
+      }
     }
 
-    private static Collection<? extends CandidateUnit> reflect(final String ownPackage,
-                                                               final String fqcn,
-                                                               final boolean isStatic,
-                                                               final boolean withConstructor, final String prefix) {
-        if (fqcn.startsWith(ownPackage)) {
-            // package
-            return JavaCompletion.packageReflect(fqcn, isStatic, withConstructor, prefix);
-        }
-        return JavaCompletion.publicReflect(fqcn, isStatic, withConstructor, prefix);
+    return result.stream().sorted(comparing(prefix)).collect(Collectors.toList());
+  }
+
+  private static Collection<? extends CandidateUnit> reflect(
+      final String ownPackage,
+      final String fqcn,
+      final boolean isStatic,
+      final boolean withConstructor,
+      final String prefix) {
+    if (fqcn.startsWith(ownPackage)) {
+      // package
+      return JavaCompletion.packageReflect(fqcn, isStatic, withConstructor, prefix);
+    }
+    return JavaCompletion.publicReflect(fqcn, isStatic, withConstructor, prefix);
+  }
+
+  private static Collection<MemberDescriptor> reflectSelf(
+      final String fqcn, final boolean withConstructor, final String prefix) {
+    final String target = prefix.toLowerCase();
+    return doReflect(fqcn)
+        .stream()
+        .filter(md -> JavaCompletion.privateFilter(md, withConstructor, target))
+        .collect(Collectors.toSet());
+  }
+
+  private static Collection<MemberDescriptor> reflectWithFQCN(
+      final String ownPackage, final String fqcn, final String prefix) {
+    final String target = prefix.toLowerCase();
+    return doReflect(fqcn)
+        .stream()
+        .filter(md -> JavaCompletion.publicFilter(md, target))
+        .collect(Collectors.toSet());
+  }
+
+  private static Collection<? extends CandidateUnit> reflect(
+      final String ownPackage, final String fqcn, final String prefix) {
+    return JavaCompletion.reflect(ownPackage, fqcn, false, false, prefix);
+  }
+
+  private static Collection<? extends CandidateUnit> completionFieldsOrMethods(
+      final Source source, final int line, final String var, final String target) {
+
+    // completionAt methods or fields
+    if (var.equals("this")) {
+      return JavaCompletion.completionThis(source, line, target);
+    }
+    if (var.equals("super")) {
+      return JavaCompletion.completionSuper(source, line, target);
     }
 
-    private static Collection<MemberDescriptor> reflectSelf(final String fqcn, final boolean withConstructor,
-                                                            final String prefix) {
-        final String target = prefix.toLowerCase();
-        return doReflect(fqcn).stream().filter(md -> JavaCompletion.privateFilter(md, withConstructor, target))
-                .collect(Collectors.toSet());
+    log.debug("search '{}' field or method", var);
+
+    String ownPackage = source.packageName;
+    final Set<CandidateUnit> res = new HashSet<>(32);
+
+    {
+      // completion static method
+      String fqcn = source.getImportedClassFQCN(var, null);
+      if (fqcn != null) {
+        if (!fqcn.contains(".") && ownPackage != null) {
+          fqcn = ownPackage + '.' + fqcn;
+        }
+        if (ownPackage == null) {
+          ownPackage = "";
+        }
+
+        final Collection<? extends CandidateUnit> result =
+            JavaCompletion.reflect(ownPackage, fqcn, true, false, target);
+        res.addAll(result);
+
+        // add inner class
+        final Collection<? extends CandidateUnit> inners =
+            CachedASMReflector.getInstance().searchInnerClasses(fqcn);
+        res.addAll(inners);
+
+        if (!res.isEmpty()) {
+          return res;
+        }
+      }
     }
 
-    private static Collection<MemberDescriptor> reflectWithFQCN(final String ownPackage, final String fqcn, final String prefix) {
-        final String target = prefix.toLowerCase();
-        return doReflect(fqcn).stream().filter(md -> JavaCompletion.publicFilter(md, target)).collect(Collectors.toSet());
+    {
+      final Map<String, Variable> symbols = source.getDeclaratorMap(line);
+      final Variable variable = symbols.get(var);
+      if (variable != null) {
+        // get data from reflector
+        String fqcn = variable.fqcn;
+        if (!fqcn.contains(".")) {
+          fqcn = ownPackage + '.' + fqcn;
+        }
+        final Collection<? extends CandidateUnit> reflect =
+            JavaCompletion.reflect(ownPackage, fqcn, target);
+        res.addAll(reflect);
+      }
     }
 
-    private static Collection<? extends CandidateUnit> reflect(final String ownPackage, final String fqcn, final String prefix) {
-        return JavaCompletion.reflect(ownPackage, fqcn, false, false, prefix);
-    }
-
-    private static Collection<? extends CandidateUnit> completionFieldsOrMethods(final Source source,
-                                                                                 final int line,
-                                                                                 final String var,
-                                                                                 final String target) {
-
-        // completionAt methods or fields
-        if (var.equals("this")) {
-            return JavaCompletion.completionThis(source, line, target);
-        }
-        if (var.equals("super")) {
-            return JavaCompletion.completionSuper(source, line, target);
-        }
-
-        log.debug("search '{}' field or method", var);
-
-        String ownPackage = source.packageName;
-        final List<CandidateUnit> res = new ArrayList<>(32);
-
-        {
-            // completion static method
-            String fqcn = source.getImportedClassFQCN(var, null);
-            if (fqcn != null) {
-                if (!fqcn.contains(".") && ownPackage != null) {
-                    fqcn = ownPackage + '.' + fqcn;
-                }
-                if (ownPackage == null) {
-                    ownPackage = "";
-                }
-
-                final Collection<? extends CandidateUnit> result = JavaCompletion.reflect(ownPackage, fqcn, true, false, target);
-                res.addAll(result);
-
-                // add inner class
-                final Collection<? extends CandidateUnit> inners = CachedASMReflector.getInstance().searchInnerClasses(
-                        fqcn);
-                res.addAll(inners);
-
-                if (!res.isEmpty()) {
-                    return res;
-                }
-            }
-        }
-
-        {
-            final Map<String, Variable> symbols = source.getDeclaratorMap(line);
-            final Variable variable = symbols.get(var);
-            if (variable != null) {
-                // get data from reflector
-                String fqcn = variable.fqcn;
-                if (!fqcn.contains(".")) {
-                    fqcn = ownPackage + '.' + fqcn;
-                }
-                final Collection<? extends CandidateUnit> reflect = JavaCompletion.reflect(ownPackage, fqcn, target);
-                res.addAll(reflect);
-            }
-        }
-
-        {
-            for (final ClassScope cs : source.getClassScopes()) {
-                final String fqcn = cs.getFQCN();
-                final Optional<MemberDescriptor> fieldResult = JavaCompletion.reflectSelf(fqcn, true, target).stream()
-                        .filter(c -> c instanceof FieldDescriptor && c.getName().equals(var)).findFirst();
-                if (fieldResult.isPresent()) {
-                    final MemberDescriptor memberDescriptor = fieldResult.orElse(null);
-                    final String returnType = memberDescriptor.getRawReturnType();
-                    final Collection<? extends CandidateUnit> reflect = reflect(ownPackage, returnType, target);
-                    res.addAll(reflect);
-                }
-            }
-        }
-
-        {
-            // java.lang
-            final String fqcn = "java.lang." + var;
-            final Collection<? extends CandidateUnit> result = JavaCompletion.reflect(ownPackage, fqcn, true, false, target);
-            res.addAll(result);
-        }
-
-        {
-            String fqcn = var;
-            if (!ownPackage.isEmpty()) {
-                fqcn = ownPackage + '.' + var;
-            }
-            final Collection<? extends CandidateUnit> reflectResults = JavaCompletion.reflect(ownPackage, fqcn, true, false, target);
-            res.addAll(reflectResults);
-            final CachedASMReflector reflector = CachedASMReflector.getInstance();
-            final Collection<? extends CandidateUnit> inners = reflector.searchInnerClasses(fqcn);
-            res.addAll(inners);
-        }
-        return res;
-
-    }
-
-    private static Comparator<? super CandidateUnit> comparing(final String keyword) {
-        return (c1, c2) -> {
-            final String o1 = c1.getName();
-            final String o2 = c2.getName();
-
-            if (o1.startsWith(keyword) && o2.startsWith(keyword)) {
-                return o1.compareTo(o2);
-            }
-            if (o1.startsWith(keyword)) {
-                return -1;
-            }
-            if (o2.startsWith(keyword)) {
-                return 1;
-            }
-            return o1.compareTo(o2);
-        };
-    }
-
-    public void setProject(Project project) {
-        this.project = project;
-    }
-
-    private Source getSource(final File file) throws IOException, ExecutionException {
-        final GlobalCache globalCache = GlobalCache.getInstance();
-        return globalCache.getSource(project, file.getCanonicalFile());
-    }
-
-    public Collection<? extends CandidateUnit> completionAt(final File file, int line, int column, String prefix) {
-
-        log.debug("line={} column={} prefix={}", line, column, prefix);
-        try {
-            if (!file.exists()) {
-                return Collections.emptyList();
-            }
-            final Source source = this.getSource(file);
-            // check type
-            if (prefix.startsWith("*")) {
-                // special command
-                return this.specialCompletion(source, line, column, prefix);
-            }
-            if (prefix.startsWith("@")) {
-                return JavaCompletion.annotationCompletion(source, line, column, prefix);
-            }
-            // search symbol
-            return JavaCompletion.completionSymbols(source, line, prefix);
-        } catch (Throwable t) {
-            log.catching(t);
-            return Collections.emptyList();
-        }
-    }
-
-    private Collection<? extends CandidateUnit> specialCompletion(final Source source,
-                                                                  final int line,
-                                                                  final int column,
-                                                                  final String searchWord) {
-
-        // special command
-        final boolean useFuzzySearch = Config.load().useClassFuzzySearch();
-        if (searchWord.startsWith("*import")) {
-            return Collections.emptyList();
-        } else if (searchWord.startsWith("*new")) {
-            // list all classes
-            int idx = searchWord.lastIndexOf(':');
-            if (idx > 0) {
-                final List<ClassIndex> result;
-                final String classPrefix = searchWord.substring(idx + 1, searchWord.length());
-                if (useFuzzySearch) {
-                    result = CachedASMReflector.getInstance().fuzzySearchClasses(classPrefix.toLowerCase());
-                } else {
-                    result = CachedASMReflector.getInstance().searchClasses(classPrefix.toLowerCase());
-                }
-                result.sort(comparing(classPrefix));
-                return result;
-            }
-            return JavaCompletion.completionConstructors(source)
-                    .stream()
-                    .sorted(Comparator.comparing(CandidateUnit::getName))
-                    .collect(Collectors.toList());
-        } else if (searchWord.startsWith("*method")) {
-            final int prefixIdx = searchWord.lastIndexOf('#');
-            final int classIdx = searchWord.lastIndexOf(':');
-            final String pkg = source.packageName;
-
-            if (classIdx > 0 && prefixIdx > 0) {
-                final String prefix = searchWord.substring(prefixIdx + 1);
-                // return methods of prefix class
-                String fqcn = searchWord.substring(classIdx + 1, prefixIdx);
-                fqcn = ClassNameUtils.replace(fqcn, ClassNameUtils.CAPTURE_OF, "");
-                return reflectWithFQCN(pkg, fqcn, prefix)
-                        .stream()
-                        .sorted(comparing(prefix))
-                        .collect(Collectors.toList());
-            }
-
-            // chained method completion
-            if (classIdx > 0) {
-                // return methods of prefix class
-                String fqcn = searchWord.substring(classIdx + 1, searchWord.length());
-                fqcn = ClassNameUtils.replace(fqcn, ClassNameUtils.CAPTURE_OF, "");
-                return reflect(pkg, fqcn, "")
-                        .stream()
-                        .sorted(Comparator.comparing(CandidateUnit::getName))
-                        .collect(Collectors.toList());
-            } else {
-                String prefix = "";
-                if (prefixIdx > 0) {
-                    prefix = searchWord.substring(prefixIdx + 1);
-                }
-
-                // search near method call and return methods of prefix class
-                final List<AccessSymbol> targets = new ArrayList<>(8);
-                targets.addAll(source.getMethodCall(line));
-                targets.addAll(source.getFieldAccess(line));
-                log.debug("targets:{}", targets);
-
-                int size = targets.size();
-                int startColumn = column;
-
-                while (size > 0 && startColumn-- > 0) {
-                    for (AccessSymbol accessSymbol : targets) {
-                        if (accessSymbol.match(line, startColumn) && accessSymbol.returnType != null) {
-                            final String fqcn = ClassNameUtils.replace(accessSymbol.returnType, ClassNameUtils.CAPTURE_OF, "");
-                            return reflect(pkg, fqcn, prefix)
-                                    .stream()
-                                    .sorted(comparing(prefix))
-                                    .collect(Collectors.toList());
-                        }
-                    }
-                }
-
-                return Collections.emptyList();
-            }
-        } else if (searchWord.startsWith("*package")) {
-            // completion projects package
-            return this.completionPackage()
-                    .stream()
-                    .sorted(Comparator.comparing(CandidateUnit::getName))
-                    .collect(Collectors.toList());
-        }
-        // search fields or methods
-        final int idx = searchWord.lastIndexOf('#');
-        if (idx > 0) {
-            final String var = searchWord.substring(1, idx);
-            final String prefix = searchWord.substring(idx + 1);
-            return JavaCompletion.completionFieldsOrMethods(source, line, var, prefix.toLowerCase())
-                    .stream()
-                    .sorted(comparing(prefix))
-                    .collect(Collectors.toList());
-        }
-
-        return JavaCompletion.completionFieldsOrMethods(source, line, searchWord.substring(1), "")
+    {
+      for (final ClassScope cs : source.getClassScopes()) {
+        final String fqcn = cs.getFQCN();
+        final Optional<MemberDescriptor> fieldResult =
+            JavaCompletion.reflectSelf(fqcn, true, target)
                 .stream()
-                .sorted(Comparator.comparing(CandidateUnit::getName))
-                .collect(Collectors.toList());
+                .filter(c -> c instanceof FieldDescriptor && c.getName().equals(var))
+                .findFirst();
+        if (fieldResult.isPresent()) {
+          final MemberDescriptor memberDescriptor = fieldResult.orElse(null);
+          final String returnType = memberDescriptor.getRawReturnType();
+          final Collection<? extends CandidateUnit> reflect =
+              reflect(ownPackage, returnType, target);
+          res.addAll(reflect);
+        }
+      }
     }
 
-    private Collection<? extends CandidateUnit> completionPackage() {
-        final GlobalCache globalCache = GlobalCache.getInstance();
-        final LoadingCache<File, Source> sourceCache = globalCache.getSourceCache(project);
-        return sourceCache.asMap().values().stream().map(source -> ClassIndex.createPackage(source.packageName))
-                .collect(Collectors.toSet());
+    {
+      // java.lang
+      final String fqcn = "java.lang." + var;
+      final Collection<? extends CandidateUnit> result =
+          JavaCompletion.reflect(ownPackage, fqcn, true, false, target);
+      res.addAll(result);
     }
 
+    {
+      String fqcn = var;
+      if (!ownPackage.isEmpty()) {
+        fqcn = ownPackage + '.' + var;
+      }
+      final Collection<? extends CandidateUnit> reflectResults =
+          JavaCompletion.reflect(ownPackage, fqcn, true, false, target);
+      res.addAll(reflectResults);
+      final CachedASMReflector reflector = CachedASMReflector.getInstance();
+      final Collection<? extends CandidateUnit> inners = reflector.searchInnerClasses(fqcn);
+      res.addAll(inners);
+    }
+    return res;
+  }
+
+  private static Comparator<? super CandidateUnit> comparing(final String keyword) {
+    return (c1, c2) -> {
+      final String o1 = c1.getName();
+      final String o2 = c2.getName();
+
+      if (o1.startsWith(keyword) && o2.startsWith(keyword)) {
+        return o1.compareTo(o2);
+      }
+      if (o1.startsWith(keyword)) {
+        return -1;
+      }
+      if (o2.startsWith(keyword)) {
+        return 1;
+      }
+      return o1.compareTo(o2);
+    };
+  }
+
+  public void setProject(Project project) {
+    this.project = project;
+  }
+
+  private Source getSource(final File file) throws IOException, ExecutionException {
+    final GlobalCache globalCache = GlobalCache.getInstance();
+    return globalCache.getSource(project, file.getCanonicalFile());
+  }
+
+  public Collection<? extends CandidateUnit> completionAt(
+      final File file, int line, int column, String prefix) {
+
+    log.debug("line={} column={} prefix={}", line, column, prefix);
+    try {
+      if (!file.exists()) {
+        return Collections.emptyList();
+      }
+      final Source source = this.getSource(file);
+      // check type
+      if (prefix.startsWith("*")) {
+        // special command
+        return this.specialCompletion(source, line, column, prefix);
+      }
+      if (prefix.startsWith("@")) {
+        return JavaCompletion.annotationCompletion(source, line, column, prefix);
+      }
+      // search symbol
+      return JavaCompletion.completionSymbols(source, line, prefix);
+    } catch (Throwable t) {
+      log.catching(t);
+      return Collections.emptyList();
+    }
+  }
+
+  private Collection<? extends CandidateUnit> specialCompletion(
+      final Source source, final int line, final int column, final String searchWord) {
+
+    // special command
+    final boolean useFuzzySearch = Config.load().useClassFuzzySearch();
+    if (searchWord.startsWith("*import")) {
+      return Collections.emptyList();
+    } else if (searchWord.startsWith("*new")) {
+      // list all classes
+      int idx = searchWord.lastIndexOf(':');
+      if (idx > 0) {
+        final List<ClassIndex> result;
+        final String classPrefix = searchWord.substring(idx + 1, searchWord.length());
+        if (useFuzzySearch) {
+          result = CachedASMReflector.getInstance().fuzzySearchClasses(classPrefix.toLowerCase());
+        } else {
+          result = CachedASMReflector.getInstance().searchClasses(classPrefix.toLowerCase());
+        }
+        result.sort(comparing(classPrefix));
+        return result;
+      }
+      return JavaCompletion.completionConstructors(source)
+          .stream()
+          .sorted(Comparator.comparing(CandidateUnit::getName))
+          .collect(Collectors.toList());
+    } else if (searchWord.startsWith("*method")) {
+      final int prefixIdx = searchWord.lastIndexOf('#');
+      final int classIdx = searchWord.lastIndexOf(':');
+      final String pkg = source.packageName;
+
+      if (classIdx > 0 && prefixIdx > 0) {
+        final String prefix = searchWord.substring(prefixIdx + 1);
+        // return methods of prefix class
+        String fqcn = searchWord.substring(classIdx + 1, prefixIdx);
+        fqcn = ClassNameUtils.replace(fqcn, ClassNameUtils.CAPTURE_OF, "");
+        return reflectWithFQCN(pkg, fqcn, prefix)
+            .stream()
+            .sorted(comparing(prefix))
+            .collect(Collectors.toList());
+      }
+
+      // chained method completion
+      if (classIdx > 0) {
+        // return methods of prefix class
+        String fqcn = searchWord.substring(classIdx + 1, searchWord.length());
+        fqcn = ClassNameUtils.replace(fqcn, ClassNameUtils.CAPTURE_OF, "");
+        return reflect(pkg, fqcn, "")
+            .stream()
+            .sorted(Comparator.comparing(CandidateUnit::getName))
+            .collect(Collectors.toList());
+      } else {
+        String prefix = "";
+        if (prefixIdx > 0) {
+          prefix = searchWord.substring(prefixIdx + 1);
+        }
+
+        // search near method call and return methods of prefix class
+        final List<AccessSymbol> targets = new ArrayList<>(8);
+        targets.addAll(source.getMethodCall(line));
+        targets.addAll(source.getFieldAccess(line));
+        log.debug("targets:{}", targets);
+
+        int size = targets.size();
+        int startColumn = column;
+
+        while (size > 0 && startColumn-- > 0) {
+          for (AccessSymbol accessSymbol : targets) {
+            if (accessSymbol.match(line, startColumn) && accessSymbol.returnType != null) {
+              final String fqcn =
+                  ClassNameUtils.replace(accessSymbol.returnType, ClassNameUtils.CAPTURE_OF, "");
+              return reflect(pkg, fqcn, prefix)
+                  .stream()
+                  .sorted(comparing(prefix))
+                  .collect(Collectors.toList());
+            }
+          }
+        }
+
+        return Collections.emptyList();
+      }
+    } else if (searchWord.startsWith("*package")) {
+      // completion projects package
+      return this.completionPackage()
+          .stream()
+          .sorted(Comparator.comparing(CandidateUnit::getName))
+          .collect(Collectors.toList());
+    }
+    // search fields or methods
+    final int idx = searchWord.lastIndexOf('#');
+    if (idx > 0) {
+      final String var = searchWord.substring(1, idx);
+      final String prefix = searchWord.substring(idx + 1);
+      return JavaCompletion.completionFieldsOrMethods(source, line, var, prefix.toLowerCase())
+          .stream()
+          .sorted(comparing(prefix))
+          .collect(Collectors.toList());
+    }
+
+    return JavaCompletion.completionFieldsOrMethods(source, line, searchWord.substring(1), "")
+        .stream()
+        .sorted(Comparator.comparing(CandidateUnit::getName))
+        .collect(Collectors.toList());
+  }
+
+  private Collection<? extends CandidateUnit> completionPackage() {
+    final GlobalCache globalCache = GlobalCache.getInstance();
+    final LoadingCache<File, Source> sourceCache = globalCache.getSourceCache(project);
+    return sourceCache
+        .asMap()
+        .values()
+        .stream()
+        .map(source -> ClassIndex.createPackage(source.packageName))
+        .collect(Collectors.toSet());
+  }
 }

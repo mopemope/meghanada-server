@@ -4,19 +4,18 @@ import java.util.List;
 
 public class Gen5 {
 
-    public String name;
+  public String name;
 
-    @SuppressWarnings("unchecked")
-    <T> T getFormalClass(String s, Class<T> type) {
-        return (T) type;
-    }
+  @SuppressWarnings("unchecked")
+  <T> T getFormalClass(String s, Class<T> type) {
+    return (T) type;
+  }
 
-    public String getName() {
-        return this.name;
-    }
+  public String getName() {
+    return this.name;
+  }
 
-    public List<String> getList() {
-        return null;
-    }
-
+  public List<String> getList() {
+    return null;
+  }
 }

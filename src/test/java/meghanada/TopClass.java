@@ -2,25 +2,18 @@ package meghanada;
 
 public class TopClass {
 
-    private String foo;
-    private String abc;
-    private String def;
+  private String foo;
+  private String abc;
+  private String def;
 
-    public void topClassMethod() {
+  public void topClassMethod() {}
 
-    }
+  public static class NestedClass {
 
-    public static class NestedClass {
+    private String bar;
 
-        private String bar;
+    public void nestedClassMethod() {}
 
-        public void nestedClassMethod() {
-
-
-        }
-
-        public void hoge() {
-
-        }
-    }
+    public void hoge() {}
+  }
 }

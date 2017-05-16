@@ -1,24 +1,23 @@
 package meghanada.reflect;
 
-
 public interface CandidateUnit {
 
-    String getName();
+  String getName();
 
-    String getType();
+  String getType();
 
-    String getDeclaration();
+  String getDeclaration();
 
-    String getDisplayDeclaration();
+  String getDisplayDeclaration();
 
-    String getReturnType();
+  String getReturnType();
 
-    enum MemberType {
-        FIELD,
-        METHOD,
-        CONSTRUCTOR,
-        VAR,
-        CLASS,
-        PACKAGE
-    }
+  enum MemberType {
+    FIELD,
+    METHOD,
+    CONSTRUCTOR,
+    VAR,
+    CLASS,
+    PACKAGE
+  }
 }

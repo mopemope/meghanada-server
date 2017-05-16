@@ -2,9 +2,11 @@ package meghanada;
 
 public interface Enum3 {
 
-    Key getKey();
+  Key getKey();
 
-    enum Key {
-        ONE, TWO, THREE
-    }
+  enum Key {
+    ONE,
+    TWO,
+    THREE
+  }
 }

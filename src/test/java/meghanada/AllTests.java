@@ -1,5 +1,10 @@
 package meghanada;
 
+import static meghanada.config.Config.timeIt;
+
+import java.io.File;
+import java.util.List;
+import java.util.stream.Collectors;
 import meghanada.project.Project;
 import meghanada.project.ProjectDependency;
 import meghanada.project.gradle.GradleProject;
@@ -11,12 +16,6 @@ import org.junit.extensions.cpsuite.ClasspathSuite.ClassnameFilters;
 import org.junit.extensions.cpsuite.ClasspathSuite.IncludeJars;
 import org.junit.runner.RunWith;
 
-import java.io.File;
-import java.util.List;
-import java.util.stream.Collectors;
-
-import static meghanada.config.Config.timeIt;
-
 @Ignore
 @SuppressWarnings("CheckReturnValue")
 @RunWith(ClasspathSuite.class)
@@ -24,21 +23,25 @@ import static meghanada.config.Config.timeIt;
 @IncludeJars(true)
 public class AllTests {
 
-    @BeforeSuite
-    public static void init() throws Exception {
-        Project project = new GradleProject(new File("./").getCanonicalFile());
-        project = project.parseProject();
-        project.clearCache();
-        final List<File> jars = project.getDependencies().stream()
-                .map(ProjectDependency::getFile)
-                .collect(Collectors.toList());
-        final CachedASMReflector reflector = CachedASMReflector.getInstance();
-        reflector.addClasspath(jars);
-        reflector.createClassIndexes();
-        project.compileJava(false);
-        project.compileTestJava(false);
-        timeIt(() -> {
-            reflector.updateClassIndexFromDirectory();
+  @BeforeSuite
+  public static void init() throws Exception {
+    Project project = new GradleProject(new File("./").getCanonicalFile());
+    project = project.parseProject();
+    project.clearCache();
+    final List<File> jars =
+        project
+            .getDependencies()
+            .stream()
+            .map(ProjectDependency::getFile)
+            .collect(Collectors.toList());
+    final CachedASMReflector reflector = CachedASMReflector.getInstance();
+    reflector.addClasspath(jars);
+    reflector.createClassIndexes();
+    project.compileJava(false);
+    project.compileTestJava(false);
+    timeIt(
+        () -> {
+          reflector.updateClassIndexFromDirectory();
         });
-    }
+  }
 }
