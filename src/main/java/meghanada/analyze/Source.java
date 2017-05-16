@@ -64,8 +64,6 @@ public class Source {
   }
 
   public void addStaticImport(final String method, final String clazz) {
-    this.importClasses.add(clazz);
-    this.unused.add(clazz);
     this.staticImportClass.putIfAbsent(method, clazz);
     log.trace("static unused class {} {}", clazz, method);
   }

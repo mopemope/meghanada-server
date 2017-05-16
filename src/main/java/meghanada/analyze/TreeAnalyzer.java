@@ -325,6 +325,13 @@ public class TreeAnalyzer {
           if (extendsClause != null) {
             this.analyzeParsedTree(context, extendsClause);
           }
+          final List<JCTree.JCExpression> implementsClauses = classDecl.getImplementsClause();
+          if (implementsClauses != null) {
+            for (final JCTree.JCExpression implementsClause : implementsClauses) {
+              this.analyzeParsedTree(context, implementsClause);
+            }
+          }
+
           final Name simpleName = classDecl.getSimpleName();
           final Range range = Range.create(src, startPos + 1, endPos);
 
@@ -1425,6 +1432,16 @@ public class TreeAnalyzer {
       modLen = modEndPos - modPos + 1;
     }
     parseModifiers(context, modifiers);
+    final JCTree.JCExpression extendsClause = classDecl.getExtendsClause();
+    if (extendsClause != null) {
+      this.analyzeParsedTree(context, extendsClause);
+    }
+    final List<JCTree.JCExpression> implementsClauses = classDecl.getImplementsClause();
+    if (implementsClauses != null) {
+      for (final JCTree.JCExpression implementsClause : implementsClauses) {
+        this.analyzeParsedTree(context, implementsClause);
+      }
+    }
 
     final Tree.Kind kind = classDecl.getKind();
     final boolean isInterface = kind.equals(Tree.Kind.INTERFACE);

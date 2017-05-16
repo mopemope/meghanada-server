@@ -15,6 +15,7 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -430,28 +431,27 @@ public class Session {
               final List<String> optimized = source.optimizeImports();
               final StringBuilder sb = new StringBuilder(1024 * 4);
               if (source.packageName != null && !source.packageName.isEmpty()) {
-                sb.append("package ").append(source.packageName).append(";\n\n");
+                sb.append("package ").append(source.packageName).append(";\n");
               }
 
-              boolean startStandardClass = false;
-              for (final String fqcn : optimized) {
-                if (!startStandardClass
-                    && (fqcn.startsWith("java.") || fqcn.startsWith("javax."))) {
-                  sb.append('\n');
-                  startStandardClass = true;
-                }
-                sb.append("import ").append(fqcn).append(";\n");
-              }
               if (source.staticImportClass.size() > 0) {
                 sb.append('\n');
-                source.staticImportClass.forEach(
-                    (metheod, fqcn) -> {
-                      sb.append("import static ")
-                          .append(fqcn)
-                          .append('.')
-                          .append(metheod)
-                          .append(";\n");
-                    });
+                source
+                    .staticImportClass
+                    .entrySet()
+                    .stream()
+                    .map(
+                        e -> {
+                          final String method = e.getKey();
+                          final String fqcn = e.getValue();
+                          return fqcn + '.' + method;
+                        })
+                    .sorted(Comparator.naturalOrder())
+                    .forEach(s -> sb.append("import static ").append(s).append(";\n"));
+                sb.append('\n');
+              }
+              for (final String fqcn : optimized) {
+                sb.append("import ").append(fqcn).append(";\n");
               }
 
               try (final Stream<String> stream =

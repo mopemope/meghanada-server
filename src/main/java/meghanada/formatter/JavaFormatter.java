@@ -22,6 +22,8 @@ import org.eclipse.text.edits.TextEdit;
 public class JavaFormatter {
 
   private static final Pattern NEW_LINE = Pattern.compile("\n");
+  private static final Formatter googleFormatter =
+      new Formatter(JavaFormatterOptions.defaultOptions());
 
   private JavaFormatter() {}
 
@@ -47,9 +49,8 @@ public class JavaFormatter {
   }
 
   public static String formatGoogleStyle(final String content) {
-    final Formatter formatter = new Formatter(JavaFormatterOptions.defaultOptions());
     try {
-      return formatter.formatSource(content);
+      return googleFormatter.formatSource(content);
     } catch (FormatterException e) {
       throw new RuntimeException(e);
     }
