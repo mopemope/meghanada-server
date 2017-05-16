@@ -1707,7 +1707,9 @@ public class TreeAnalyzer {
                           }
                         } else {
                           final String fqcn = resolveTypeFromImport(src, expression);
-                          variable.fqcn = TreeAnalyzer.markFQCN(src, fqcn);
+                          if (fqcn != null) {
+                            variable.fqcn = TreeAnalyzer.markFQCN(src, fqcn);
+                          }
                         }
                       } else {
                         if (src.isReportUnknown()) {
@@ -1718,21 +1720,22 @@ public class TreeAnalyzer {
                       src.getCurrentScope()
                           .ifPresent(
                               scope -> {
-                                if (variable.parameter) {
-                                  Scope parent = scope;
-                                  if (scope instanceof ExpressionScope) {
-                                    final ExpressionScope expressionScope1 =
-                                        (ExpressionScope) scope;
-                                    parent = expressionScope1.parent;
+                                if (variable.fqcn != null) {
+                                  if (variable.parameter) {
+                                    Scope parent = scope;
+                                    if (scope instanceof ExpressionScope) {
+                                      final ExpressionScope expressionScope1 =
+                                          (ExpressionScope) scope;
+                                      parent = expressionScope1.parent;
+                                    }
+                                    if (parent instanceof MethodScope) {
+                                      final MethodScope methodScope = (MethodScope) parent;
+                                      methodScope.addMethodParameter(variable.fqcn);
+                                    }
                                   }
-                                  if (parent instanceof MethodScope) {
-                                    final MethodScope methodScope = (MethodScope) parent;
-                                    methodScope.addMethodParameter(variable.fqcn);
-                                  }
+                                  scope.addVariable(variable);
                                 }
-                                scope.addVariable(variable);
                               });
-
                       if (initializer != null) {
                         this.analyzeParsedTree(context, initializer);
                       }

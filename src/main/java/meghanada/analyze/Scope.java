@@ -67,6 +67,7 @@ public abstract class Scope {
   }
 
   public void addVariable(final Variable variable) {
+    assert variable.fqcn != null;
     this.variables.add(variable);
     log.trace("add variable={} to range={} {}", variable, this.range, this.getClassName());
   }
