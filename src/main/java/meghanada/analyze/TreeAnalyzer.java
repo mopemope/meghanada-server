@@ -621,7 +621,7 @@ public class TreeAnalyzer {
             }
           }
           final Symbol owner = sym.owner;
-          if (owner.type != null) {
+          if (owner != null && owner.type != null) {
             this.getTypeString(src, owner.type)
                 .ifPresent(fqcn -> methodCall.declaringClass = TreeAnalyzer.markFQCN(src, fqcn));
           }
@@ -965,26 +965,23 @@ public class TreeAnalyzer {
 
         if (s.equals("super")) {
           // call super constructor
-          final String constructor = owner.flatName().toString();
-          final MethodCall methodCall = new MethodCall(s, constructor, nameBegin, nameRange, range);
-          if (owner.type != null) {
+          if (owner != null && owner.type != null) {
+            final String constructor = owner.flatName().toString();
+            final MethodCall mc = new MethodCall(s, constructor, nameBegin, nameRange, range);
             this.getTypeString(src, owner.type)
-                .ifPresent(fqcn -> methodCall.declaringClass = TreeAnalyzer.markFQCN(src, fqcn));
+                .ifPresent(fqcn -> mc.declaringClass = TreeAnalyzer.markFQCN(src, fqcn));
+            this.setReturnTypeAndArgType(context, src, owner.type, mc);
+            src.getCurrentScope()
+                .ifPresent(
+                    scope -> {
+                      if (arguments != null) {
+                        mc.arguments = arguments;
+                      }
+                      final MethodCall methodCall1 = scope.addMethodCall(mc);
+                    });
           }
-          if (owner.type != null) {
-            this.setReturnTypeAndArgType(context, src, owner.type, methodCall);
-          }
-          src.getCurrentScope()
-              .ifPresent(
-                  scope -> {
-                    if (arguments != null) {
-                      methodCall.arguments = arguments;
-                    }
-                    final MethodCall methodCall1 = scope.addMethodCall(methodCall);
-                  });
         } else {
-          final MethodCall methodCall = new MethodCall(s, preferredPos + 1, nameRange, range);
-
+          final MethodCall mc = new MethodCall(s, preferredPos + 1, nameRange, range);
           if (owner != null && owner.type != null) {
             this.getTypeString(src, owner.type)
                 .ifPresent(
@@ -992,21 +989,20 @@ public class TreeAnalyzer {
                       final String className = src.staticImportClass.get(s);
                       if (fqcn.equals(className)) {
                         // static imported
-                        methodCall.declaringClass = TreeAnalyzer.markFQCN(src, fqcn, false);
+                        mc.declaringClass = TreeAnalyzer.markFQCN(src, fqcn, false);
                       } else {
-                        methodCall.declaringClass = TreeAnalyzer.markFQCN(src, fqcn);
+                        mc.declaringClass = TreeAnalyzer.markFQCN(src, fqcn);
                       }
                     });
-            this.setReturnTypeAndArgType(context, src, returnType, methodCall);
+            this.setReturnTypeAndArgType(context, src, returnType, mc);
           }
-
           src.getCurrentScope()
               .ifPresent(
                   scope -> {
                     if (arguments != null) {
-                      methodCall.arguments = arguments;
+                      mc.arguments = arguments;
                     }
-                    final MethodCall methodCall1 = scope.addMethodCall(methodCall);
+                    final MethodCall methodCall1 = scope.addMethodCall(mc);
                   });
         }
       }
@@ -1342,7 +1338,7 @@ public class TreeAnalyzer {
       fa.scope = getFieldScope(fa, selectScope);
       final Symbol owner = sym.owner;
 
-      if (owner.type != null) {
+      if (owner != null && owner.type != null) {
         this.getTypeString(src, owner.type)
             .ifPresent(fqcn -> fa.declaringClass = TreeAnalyzer.markFQCN(src, fqcn));
       }
@@ -1373,8 +1369,7 @@ public class TreeAnalyzer {
       fa.scope = getFieldScope(fa, selectScope);
       fa.isEnum = true;
       final Symbol owner = sym.owner;
-
-      if (owner.type != null) {
+      if (owner != null && owner.type != null) {
         this.getTypeString(src, owner.type)
             .ifPresent(fqcn -> fa.declaringClass = TreeAnalyzer.markFQCN(src, fqcn));
       }
@@ -1598,7 +1593,7 @@ public class TreeAnalyzer {
                   } else {
                     isConstructor = true;
                     Symbol.MethodSymbol sym = md.sym;
-                    if (sym != null && sym.owner != null) {
+                    if (sym != null && sym.owner != null && sym.owner.type != null) {
                       final Type type = sym.owner.type;
                       methodName = getTypeString(src, type).orElse(name);
                       returnFQCN = methodName;
