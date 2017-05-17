@@ -439,7 +439,7 @@ public class GradleProject extends Project {
   }
 
   @Override
-  public Project mergeFromProjectConfig() {
+  public Project mergeFromProjectConfig() throws ProjectParseException {
     final Config config1 = Config.load();
     this.prepareCompileTask.addAll(config1.gradlePrepareCompileTask());
     this.prepareTestCompileTask.addAll(config1.gradlePrepareTestCompileTask());

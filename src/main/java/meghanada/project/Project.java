@@ -534,7 +534,7 @@ public abstract class Project {
     return this.runProcess(cmd);
   }
 
-  public Project mergeFromProjectConfig() {
+  public Project mergeFromProjectConfig() throws ProjectParseException {
     final File configFile = new File(this.projectRoot, Config.MEGHANADA_CONF_FILE);
     if (configFile.exists()) {
       final com.typesafe.config.Config config = ConfigFactory.parseFile(configFile);
@@ -644,7 +644,15 @@ public abstract class Project {
         mainConfig.setExcludeList(list);
       }
     }
-    // log.debug("Merged Project:{}", this);
+
+    // guard
+    if (this.output == null) {
+      throw new ProjectParseException("require output path");
+    }
+
+    if (this.testOutput == null) {
+      throw new ProjectParseException("require test output path");
+    }
 
     // freeze
     this.sources = new ImmutableSet.Builder<File>().addAll(this.sources).build();
