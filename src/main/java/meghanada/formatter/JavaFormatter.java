@@ -52,7 +52,7 @@ public class JavaFormatter {
     try {
       return googleFormatter.formatSource(content);
     } catch (FormatterException e) {
-      throw new RuntimeException(e);
+      return content;
     }
   }
 
@@ -74,7 +74,7 @@ public class JavaFormatter {
         return content;
       }
     } catch (final BadLocationException e) {
-      throw new RuntimeException(e);
+      return content;
     }
 
     return ensureCorrectNewLines(document.get());
