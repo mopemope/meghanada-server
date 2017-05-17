@@ -12,6 +12,7 @@ import com.sun.tools.javac.code.Symbol;
 import com.sun.tools.javac.code.Type;
 import com.sun.tools.javac.tree.EndPosTable;
 import com.sun.tools.javac.tree.JCTree;
+import com.sun.tools.javac.tree.JCTree.JCErroneous;
 import com.sun.tools.javac.util.JCDiagnostic;
 import com.sun.tools.javac.util.List;
 import java.io.File;
@@ -150,6 +151,8 @@ public class TreeAnalyzer {
         final String k = type.toString();
         return src.getImportedClassFQCN(k, k) + "[]";
       }
+    } else if (tree instanceof JCTree.JCErroneous) {
+      return tree.toString();
     } else {
       log.warn("tree={} {}", tree, tree.getClass());
     }
