@@ -99,9 +99,13 @@ public class SexpOutputFormatter implements OutputFormatter {
             .map(
                 wrapIO(
                     d -> {
-                      final URI uri = d.getSource().toUri();
-                      final File file = new File(uri);
-                      final String buffer = file.getCanonicalPath();
+                      final JavaFileObject fileObject = d.getSource();
+                      String buffer = "";
+                      if (fileObject != null) {
+                        final URI uri = fileObject.toUri();
+                        final File file = new File(uri);
+                        buffer = file.getCanonicalPath();
+                      }
                       return LPAREN
                           + String.join(
                               LIST_SEP,

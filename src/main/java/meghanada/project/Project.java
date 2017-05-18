@@ -706,8 +706,12 @@ public abstract class Project {
                               final String importClass =
                                   ClassNameUtils.replace(p, File.separator, ".");
                               if (callerMap.containsKey(importClass)) {
-                                FileUtils.getSourceFile(importClass, sourceRoots)
-                                    .ifPresent(temp::add);
+                                final Set<String> imports = callerMap.get(importClass);
+                                imports.forEach(
+                                    dep -> {
+                                      FileUtils.getSourceFile(dep, sourceRoots)
+                                          .ifPresent(temp::add);
+                                    });
                               }
                             }
                           } catch (IOException e) {
