@@ -510,12 +510,17 @@ public class Session {
   public synchronized CompileResult compileProject() throws IOException {
     final Project project = currentProject;
     final CompileResult result = project.compileJava(false);
+    if (result.hasDiagnostics()) {
+      log.warn("compileProject report:{}", result.getDiagnosticsSummary());
+    }
     if (result.isSuccess()) {
+
       final CompileResult testResult = project.compileTestJava(false);
       if (testResult.hasDiagnostics()) {
         for (final Diagnostic<? extends JavaFileObject> diagnostic : testResult.getDiagnostics()) {
           result.getDiagnostics().add(diagnostic);
         }
+        log.warn("compileProject test report:{}", testResult.getDiagnosticsSummary());
       }
     }
 

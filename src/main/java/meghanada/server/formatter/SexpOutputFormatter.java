@@ -1,13 +1,16 @@
 package meghanada.server.formatter;
 
-import static meghanada.utils.FunctionUtils.wrapIO;
+import static meghanada.utils.FunctionUtils.wrapIOConsumer;
 
 import java.io.File;
 import java.net.URI;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 import javax.tools.Diagnostic;
 import javax.tools.JavaFileObject;
@@ -93,31 +96,57 @@ public class SexpOutputFormatter implements OutputFormatter {
     final List<Diagnostic<? extends JavaFileObject>> list = compileResult.getDiagnostics();
     final StringBuilder sb = new StringBuilder(256);
     sb.append(LPAREN);
-    sb.append("error ");
-    final String s =
-        list.stream()
-            .map(
-                wrapIO(
-                    d -> {
-                      final JavaFileObject fileObject = d.getSource();
-                      String buffer = "";
-                      if (fileObject != null) {
-                        final URI uri = fileObject.toUri();
-                        final File file = new File(uri);
-                        buffer = file.getCanonicalPath();
-                      }
-                      return LPAREN
-                          + String.join(
-                              LIST_SEP,
-                              Long.toString(d.getLineNumber()),
-                              Long.toString(d.getColumnNumber()),
-                              doubleQuote(d.getKind().toString()),
-                              doubleQuote(d.getMessage(null)),
-                              doubleQuote(buffer))
-                          + RPAREN;
-                    }))
-            .collect(Collectors.joining(LIST_SEP));
-    sb.append(s);
+    sb.append("error");
+    sb.append(LIST_SEP);
+
+    final Map<String, Set<Diagnostic<? extends JavaFileObject>>> res = new HashMap<>();
+
+    list.forEach(
+        wrapIOConsumer(
+            d -> {
+              final JavaFileObject fileObject = d.getSource();
+              String key = path;
+              if (fileObject != null) {
+                final URI uri = fileObject.toUri();
+                final File file = new File(uri);
+                key = file.getCanonicalPath();
+              }
+              if (res.containsKey(key)) {
+                final Set<Diagnostic<? extends JavaFileObject>> set = res.get(key);
+                set.add(d);
+                res.put(key, set);
+              } else {
+                final Set<Diagnostic<? extends JavaFileObject>> set = new HashSet<>();
+                set.add(d);
+                res.put(key, set);
+              }
+            }));
+
+    sb.append(LPAREN);
+    res.forEach(
+        (k, v) -> {
+          sb.append(LPAREN);
+          sb.append(doubleQuote(k));
+          sb.append(LIST_SEP);
+          sb.append(LPAREN);
+          v.stream()
+              .forEach(
+                  d -> {
+                    sb.append(LPAREN);
+                    sb.append(
+                        String.join(
+                            LIST_SEP,
+                            Long.toString(d.getLineNumber()),
+                            Long.toString(d.getColumnNumber()),
+                            doubleQuote(d.getKind().toString()),
+                            doubleQuote(d.getMessage(null))));
+                    sb.append(RPAREN);
+                    sb.append(LIST_SEP);
+                  });
+          sb.append(RPAREN);
+          sb.append(RPAREN);
+        });
+    sb.append(RPAREN);
     sb.append(RPAREN);
     return success(sb.toString());
   }
