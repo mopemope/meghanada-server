@@ -402,7 +402,7 @@ public class Session {
     // java file only
     final File file = normalize(path);
     if (!FileUtils.isJavaFile(file)) {
-      return Optional.of(new LocalVariable("", Collections.emptyList()));
+      return Optional.of(new LocalVariable("void", Collections.emptyList()));
     }
     return getVariableCompletion().localVariable(file, line);
   }

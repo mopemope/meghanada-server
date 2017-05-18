@@ -1,13 +1,12 @@
 package meghanada.server;
 
-import static meghanada.utils.FunctionUtils.wrapIOConsumer;
-
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -252,12 +251,14 @@ public class CommandHandler {
     final int lineInt = Integer.parseInt(line);
     try {
       final Optional<LocalVariable> localVariable = session.localVariable(path, lineInt);
-      localVariable.ifPresent(
-          wrapIOConsumer(
-              lv -> {
-                final String out = outputFormatter.localVariable(id, lv);
-                writer.write(out);
-              }));
+      if (localVariable.isPresent()) {
+        final String out = outputFormatter.localVariable(id, localVariable.get());
+        writer.write(out);
+      } else {
+        final LocalVariable lv = new LocalVariable("void", Collections.emptyList());
+        final String out = outputFormatter.localVariable(id, lv);
+        writer.write(out);
+      }
       writer.newLine();
     } catch (Throwable t) {
       writeError(id, t);
