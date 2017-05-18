@@ -1,5 +1,9 @@
 package meghanada.server.formatter;
 
+import static meghanada.utils.FunctionUtils.wrapIO;
+
+import java.io.File;
+import java.net.URI;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -24,12 +28,28 @@ public class SexpOutputFormatter implements OutputFormatter {
   private static final String RPAREN = ")";
   private static final String LIST_SEP = " ";
   private static final String QUOTE = "\"";
+  private static final String SUCCESS = "success";
+  private static final String ERROR = "error";
 
   private static String doubleQuote(final String s) {
     if (s == null) {
       return QUOTE + QUOTE;
     }
     return QUOTE + s + QUOTE;
+  }
+
+  private static String success(final String s) {
+    if (s == null) {
+      return LPAREN + SUCCESS + RPAREN;
+    }
+    return LPAREN + SUCCESS + LIST_SEP + s + RPAREN;
+  }
+
+  private static String error(final String s) {
+    if (s == null) {
+      return LPAREN + ERROR + RPAREN;
+    }
+    return LPAREN + ERROR + LIST_SEP + s + RPAREN;
   }
 
   private static String toSimpleName(final String name) {
@@ -41,34 +61,34 @@ public class SexpOutputFormatter implements OutputFormatter {
   }
 
   @Override
-  public String changeProject(final boolean result) {
+  public String changeProject(final long id, final boolean result) {
     if (result) {
-      return LPAREN + "success" + RPAREN;
+      return success(LPAREN + "success" + RPAREN);
     }
-    return LPAREN + "error" + RPAREN;
+    return success(LPAREN + "error" + RPAREN);
   }
 
   @Override
-  public String compile(CompileResult compileResult, String path) {
+  public String compile(final long id, CompileResult compileResult, String path) {
 
     if (compileResult.isSuccess() && !compileResult.hasDiagnostics()) {
-      return LPAREN + "success " + doubleQuote(path) + RPAREN;
+      return success(LPAREN + "success " + doubleQuote(path) + RPAREN);
     }
-    return LPAREN + "error " + doubleQuote(compileResult.getDiagnosticsSummary()) + RPAREN;
+    return success(LPAREN + "error " + doubleQuote(compileResult.getDiagnosticsSummary()) + RPAREN);
   }
 
   @Override
-  public String compileProject(CompileResult compileResult) {
+  public String compileProject(final long id, CompileResult compileResult) {
     if (compileResult.isSuccess() && !compileResult.hasDiagnostics()) {
-      return LPAREN + "success true" + RPAREN;
+      return success(LPAREN + "success true" + RPAREN);
     }
-    return LPAREN + "error " + doubleQuote(compileResult.getDiagnosticsSummary()) + RPAREN;
+    return success(LPAREN + "error " + doubleQuote(compileResult.getDiagnosticsSummary()) + RPAREN);
   }
 
   @Override
-  public String diagnostics(final CompileResult compileResult, final String path) {
+  public String diagnostics(final long id, final CompileResult compileResult, final String path) {
     if (compileResult.isSuccess() && !compileResult.hasDiagnostics()) {
-      return LPAREN + "success" + RPAREN;
+      return success(LPAREN + "success" + RPAREN);
     }
     final List<Diagnostic<? extends JavaFileObject>> list = compileResult.getDiagnostics();
     final StringBuilder sb = new StringBuilder(256);
@@ -77,24 +97,30 @@ public class SexpOutputFormatter implements OutputFormatter {
     final String s =
         list.stream()
             .map(
-                d ->
-                    LPAREN
-                        + String.join(
-                            LIST_SEP,
-                            Long.toString(d.getLineNumber()),
-                            Long.toString(d.getColumnNumber()),
-                            doubleQuote(d.getKind().toString()),
-                            doubleQuote(d.getMessage(null)))
-                        + RPAREN)
+                wrapIO(
+                    d -> {
+                      final URI uri = d.getSource().toUri();
+                      final File file = new File(uri);
+                      final String buffer = file.getCanonicalPath();
+                      return LPAREN
+                          + String.join(
+                              LIST_SEP,
+                              Long.toString(d.getLineNumber()),
+                              Long.toString(d.getColumnNumber()),
+                              doubleQuote(d.getKind().toString()),
+                              doubleQuote(d.getMessage(null)),
+                              doubleQuote(buffer))
+                          + RPAREN;
+                    }))
             .collect(Collectors.joining(LIST_SEP));
     sb.append(s);
     sb.append(RPAREN);
-    return sb.toString();
+    return success(sb.toString());
   }
 
   @Override
-  public String autocomplete(Collection<? extends CandidateUnit> units) {
-    StringBuilder sb = new StringBuilder(LPAREN);
+  public String autocomplete(final long id, Collection<? extends CandidateUnit> units) {
+    final StringBuilder sb = new StringBuilder(LPAREN);
 
     final String s =
         units
@@ -113,32 +139,32 @@ public class SexpOutputFormatter implements OutputFormatter {
             .collect(Collectors.joining(LIST_SEP));
     sb.append(s);
     sb.append(')');
-    return sb.toString();
+    return success(sb.toString());
   }
 
   @Override
-  public String parse(boolean result) {
+  public String parse(final long id, boolean result) {
     if (result) {
-      return LPAREN + "success" + RPAREN;
+      return success(LPAREN + "success" + RPAREN);
     }
-    return LPAREN + "error" + RPAREN;
+    return success(LPAREN + "error" + RPAREN);
   }
 
   @Override
-  public String addImport(boolean result, final String fqcn) {
+  public String addImport(final long id, boolean result, final String fqcn) {
     if (result) {
-      return LPAREN + "success " + doubleQuote(fqcn) + RPAREN;
+      return success(LPAREN + "success " + doubleQuote(fqcn) + RPAREN);
     }
-    return LPAREN + "error" + RPAREN;
+    return success(LPAREN + "error" + RPAREN);
   }
 
   @Override
-  public String optimizeImport(final String path) {
-    return doubleQuote(path);
+  public String optimizeImport(final long id, final String path) {
+    return success(doubleQuote(path));
   }
 
   @Override
-  public String importAll(final Map<String, List<String>> result) {
+  public String importAll(final long id, final Map<String, List<String>> result) {
     final StringBuilder sb = new StringBuilder(128);
     sb.append(LPAREN);
 
@@ -159,32 +185,34 @@ public class SexpOutputFormatter implements OutputFormatter {
             .collect(Collectors.joining(LIST_SEP));
     sb.append(str);
     sb.append(RPAREN);
-    return sb.toString();
+    return success(sb.toString());
   }
 
   @Override
-  public String switchTest(final String openPath) {
-    return doubleQuote(openPath);
+  public String switchTest(final long id, final String openPath) {
+    return success(doubleQuote(openPath));
   }
 
   @Override
-  public String jumpDeclaration(final Location loc) {
-    return LPAREN
-        + String.join(
-            LIST_SEP,
-            doubleQuote(loc.getPath()),
-            Integer.toString(loc.getLine()),
-            Integer.toString(loc.getColumn()))
-        + RPAREN;
+  public String jumpDeclaration(final long id, final Location loc) {
+    final String result =
+        LPAREN
+            + String.join(
+                LIST_SEP,
+                doubleQuote(loc.getPath()),
+                Integer.toString(loc.getLine()),
+                Integer.toString(loc.getColumn()))
+            + RPAREN;
+    return success(result);
   }
 
   @Override
-  public String clearCache(final boolean result) {
+  public String clearCache(final long id, final boolean result) {
     return Boolean.toString(result);
   }
 
   @Override
-  public String localVariable(final LocalVariable lv) {
+  public String localVariable(final long id, final LocalVariable lv) {
     final StringBuilder sb = new StringBuilder(1024);
     sb.append(LPAREN);
     sb.append(SexpOutputFormatter.doubleQuote(lv.getReturnType()));
@@ -205,23 +233,30 @@ public class SexpOutputFormatter implements OutputFormatter {
     }
     sb.append(RPAREN);
 
-    return sb.toString();
+    return success(sb.toString());
   }
 
   @Override
-  public String formatCode(final String path) {
-    return doubleQuote(path);
+  public String formatCode(final long id, final String path) {
+    return success(doubleQuote(path));
   }
 
   @Override
-  public String showDeclaration(final Declaration declaration) {
-    return LPAREN
-        + String.join(
-            LIST_SEP,
-            declaration.type.name().toLowerCase(),
-            doubleQuote(declaration.scopeInfo),
-            doubleQuote(declaration.signature),
-            Integer.toString(declaration.argumentIndex))
-        + RPAREN;
+  public String showDeclaration(final long id, final Declaration declaration) {
+    final String result =
+        LPAREN
+            + String.join(
+                LIST_SEP,
+                declaration.type.name().toLowerCase(),
+                doubleQuote(declaration.scopeInfo),
+                doubleQuote(declaration.signature),
+                Integer.toString(declaration.argumentIndex))
+            + RPAREN;
+    return success(result);
+  }
+
+  @Override
+  public String error(final long id, final Throwable t) {
+    return error(t.getMessage());
   }
 }

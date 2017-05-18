@@ -11,33 +11,35 @@ import meghanada.reflect.CandidateUnit;
 
 public interface OutputFormatter {
 
-  String changeProject(boolean result);
+  String changeProject(long id, boolean result);
 
-  String compile(CompileResult compileResult, String path);
+  String compile(long id, CompileResult compileResult, String path);
 
-  String compileProject(CompileResult compileResult);
+  String compileProject(long id, CompileResult compileResult);
 
-  String diagnostics(CompileResult compileResult, String path);
+  String diagnostics(long id, CompileResult compileResult, String path);
 
-  String autocomplete(Collection<? extends CandidateUnit> units);
+  String autocomplete(long id, Collection<? extends CandidateUnit> units);
 
-  String parse(boolean result);
+  String parse(long id, boolean result);
 
-  String addImport(boolean result, String fqcn);
+  String addImport(long id, boolean result, String fqcn);
 
-  String optimizeImport(String path);
+  String optimizeImport(long id, String path);
 
-  String importAll(Map<String, List<String>> result);
+  String importAll(long id, Map<String, List<String>> result);
 
-  String switchTest(String openPath);
+  String switchTest(long id, String openPath);
 
-  String jumpDeclaration(Location location);
+  String jumpDeclaration(long id, Location location);
 
-  String clearCache(boolean result);
+  String clearCache(long id, boolean result);
 
-  String localVariable(LocalVariable lv);
+  String localVariable(long id, LocalVariable lv);
 
-  String formatCode(String path);
+  String formatCode(long id, String path);
 
-  String showDeclaration(Declaration declaration);
+  String showDeclaration(long id, Declaration declaration);
+
+  String error(long id, Throwable t);
 }

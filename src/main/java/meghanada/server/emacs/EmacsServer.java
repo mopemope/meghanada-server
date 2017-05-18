@@ -44,6 +44,7 @@ public class EmacsServer implements Server {
   private final boolean outputEOT;
 
   private Session session;
+  private long id;
 
   public EmacsServer(final String host, final int port, final String projectRoot)
       throws IOException {
@@ -56,8 +57,9 @@ public class EmacsServer implements Server {
     this.outputEOT = true;
   }
 
-  private static boolean dispatch(final List<String> argList, final CommandHandler handler) {
+  private boolean dispatch(final List<String> argList, final CommandHandler handler) {
     final Stopwatch stopwatch = Stopwatch.createStarted();
+    id++;
     final boolean result =
         match(argList)
             .when(headTail(eq("pc"), any()))
@@ -65,7 +67,7 @@ public class EmacsServer implements Server {
                 args -> {
                   // pc : Project Change
                   // usage: pc <filepath>
-                  handler.changeProject(args.get(0));
+                  handler.changeProject(id, args.get(0));
                   return true;
                 })
             .when(headTail(eq("p"), any()))
@@ -73,7 +75,7 @@ public class EmacsServer implements Server {
                 args -> {
                   // p : Parse
                   // usage: p <filepath>
-                  handler.parse(args.get(0));
+                  handler.parse(id, args.get(0));
                   return true;
                 })
             .when(headTail(eq("ap"), any()))
@@ -81,7 +83,7 @@ public class EmacsServer implements Server {
                 args -> {
                   // ap : Autocomplete Prefix
                   // usage: ap <filepath> <line> <column> <prefix> <fmt>
-                  handler.autocomplete(args.get(0), args.get(1), args.get(2), args.get(3));
+                  handler.autocomplete(id, args.get(0), args.get(1), args.get(2), args.get(3));
                   return true;
                 })
             .when(headTail(eq("c"), any()))
@@ -89,7 +91,7 @@ public class EmacsServer implements Server {
                 args -> {
                   // c : Compile
                   // usage: c <filepath>
-                  handler.compile(args.get(0));
+                  handler.compile(id, args.get(0));
                   return true;
                 })
             .when(headTail(eq("cp"), any()))
@@ -97,7 +99,7 @@ public class EmacsServer implements Server {
                 args -> {
                   // cp : Compile Project
                   // usage: cp
-                  handler.compileProject();
+                  handler.compileProject(id);
                   return true;
                 })
             .when(headTail(eq("fc"), any()))
@@ -105,7 +107,7 @@ public class EmacsServer implements Server {
                 args -> {
                   // fc : Format code
                   // usage: fc <filepath>
-                  handler.formatCode(args.get(0));
+                  handler.formatCode(id, args.get(0));
                   return true;
                 })
             .when(headTail(eq("di"), any()))
@@ -113,7 +115,7 @@ public class EmacsServer implements Server {
                 args -> {
                   // di : Diagnostic
                   // usage: di <filepath>
-                  handler.diagnostics(args.get(0));
+                  handler.diagnostics(id, args.get(0));
                   return true;
                 })
             .when(headTail(eq("rj"), any()))
@@ -122,9 +124,9 @@ public class EmacsServer implements Server {
                   // rj : Run JUnit Test
                   // usage: rj <testName>
                   if (args.isEmpty()) {
-                    handler.runJUnit("");
+                    handler.runJUnit(id, "");
                   } else {
-                    handler.runJUnit(args.get(0));
+                    handler.runJUnit(id, args.get(0));
                   }
                   return true;
                 })
@@ -133,7 +135,7 @@ public class EmacsServer implements Server {
                 args -> {
                   // rj : Run Task
                   // usage: rt <args>
-                  handler.runTask(args);
+                  handler.runTask(id, args);
                   return true;
                 })
             .when(headTail(eq("ai"), any()))
@@ -141,7 +143,7 @@ public class EmacsServer implements Server {
                 args -> {
                   // ai : Add Import
                   // usage: ai <filepath> <import>
-                  handler.addImport(args.get(0), args.get(1));
+                  handler.addImport(id, args.get(0), args.get(1));
                   return true;
                 })
             .when(headTail(eq("oi"), any()))
@@ -149,7 +151,7 @@ public class EmacsServer implements Server {
                 args -> {
                   // oi : Optimize Import
                   // usage: oi <filepath>
-                  handler.optimizeImport(args.get(0));
+                  handler.optimizeImport(id, args.get(0));
                   return true;
                 })
             .when(headTail(eq("ia"), any()))
@@ -157,7 +159,7 @@ public class EmacsServer implements Server {
                 args -> {
                   // ia : Import All
                   // usage: ia <filepath>
-                  handler.importAll(args.get(0));
+                  handler.importAll(id, args.get(0));
                   return true;
                 })
             .when(headTail(eq("st"), any()))
@@ -165,7 +167,7 @@ public class EmacsServer implements Server {
                 args -> {
                   // st : Switch test to src or src to test
                   // usage: st <filepath>
-                  handler.switchTest(args.get(0));
+                  handler.switchTest(id, args.get(0));
                   return true;
                 })
             .when(headTail(eq("jd"), any()))
@@ -173,7 +175,7 @@ public class EmacsServer implements Server {
                 args -> {
                   // jd : Jump Declaration
                   // usage: jd <filepath> <line> <column> <symbol>
-                  handler.jumpDeclaration(args.get(0), args.get(1), args.get(2), args.get(3));
+                  handler.jumpDeclaration(id, args.get(0), args.get(1), args.get(2), args.get(3));
                   return true;
                 })
             .when(headTail(eq("sd"), any()))
@@ -181,7 +183,7 @@ public class EmacsServer implements Server {
                 args -> {
                   // sd : Show declaration (short)
                   // usage: sd <filepath> <line> <column> <symbol>
-                  handler.showDeclaration(args.get(0), args.get(1), args.get(2), args.get(3));
+                  handler.showDeclaration(id, args.get(0), args.get(1), args.get(2), args.get(3));
                   return true;
                 })
             .when(headTail(eq("bj"), any()))
@@ -189,7 +191,7 @@ public class EmacsServer implements Server {
                 args -> {
                   // bj : Back Jump
                   // usage: bj
-                  handler.backJump();
+                  handler.backJump(id);
                   return true;
                 })
             .when(headTail(eq("cc"), any()))
@@ -197,7 +199,7 @@ public class EmacsServer implements Server {
                 args -> {
                   // cc : Clear cache
                   // usage: cc
-                  handler.clearCache();
+                  handler.clearCache(id);
                   return true;
                 })
             .when(headTail(eq("lv"), any()))
@@ -205,7 +207,7 @@ public class EmacsServer implements Server {
                 args -> {
                   // lv : Local variable
                   // usage: lv file line
-                  handler.localVariable(args.get(0), args.get(1));
+                  handler.localVariable(id, args.get(0), args.get(1));
                   return true;
                 })
             .when(headTail(eq("ping"), any()))
@@ -213,7 +215,7 @@ public class EmacsServer implements Server {
                 args -> {
                   // st : Switch test to src or src to test
                   // usage: st <filepath>
-                  handler.ping();
+                  handler.ping(id);
                   return true;
                 })
             .when(headNil(eq("q")))
@@ -303,7 +305,7 @@ public class EmacsServer implements Server {
                   lst.stream().map(sExpr -> sExpr.value().toString()).collect(Collectors.toList());
 
               log.debug("receive command line:{} expr:{} args:{}", line, expr, args);
-              start = EmacsServer.dispatch(args, handler);
+              start = dispatch(args, handler);
               if (!start) {
                 log.info("stop client ... args:{}", args);
               }
