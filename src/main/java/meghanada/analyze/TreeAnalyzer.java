@@ -101,6 +101,15 @@ public class TreeAnalyzer {
       String methodReturn;
       if (type instanceof Type.ErrorType) {
         final String clazzName = classExpression.toString();
+
+        final List<JCTree.JCExpression> typeArguments = typeApply.getTypeArguments();
+        if (typeArguments != null) {
+          final java.util.List<String> temp = new ArrayList<>(typeArguments.length());
+          for (final JCTree.JCExpression e : typeArguments) {
+            getExpressionType(src, e).ifPresent(fqcn -> markFQCN(src, fqcn));
+          }
+        }
+
         return markFQCN(src, clazzName);
       }
       if (type != null && type.tsym != null) {
@@ -858,6 +867,14 @@ public class TreeAnalyzer {
       return Optional.empty();
     }
     if (type instanceof Type.ErrorType) {
+      final Type originalType = type.getOriginalType();
+      String s;
+      if (originalType != null && originalType.toString().equals("<any>")) {
+        s = type.toString();
+      } else {
+        s = originalType.toString();
+      }
+      src.unknown.add(s);
       return Optional.empty();
     }
     if (type instanceof Type.CapturedType) {
