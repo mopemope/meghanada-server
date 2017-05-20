@@ -12,7 +12,6 @@ import com.sun.tools.javac.code.Symbol;
 import com.sun.tools.javac.code.Type;
 import com.sun.tools.javac.tree.EndPosTable;
 import com.sun.tools.javac.tree.JCTree;
-import com.sun.tools.javac.tree.JCTree.JCErroneous;
 import com.sun.tools.javac.util.JCDiagnostic;
 import com.sun.tools.javac.util.List;
 import java.io.File;
@@ -97,8 +96,13 @@ public class TreeAnalyzer {
 
     if (tree instanceof JCTree.JCTypeApply) {
       final JCTree.JCTypeApply typeApply = (JCTree.JCTypeApply) tree;
+      final JCTree.JCExpression classExpression = typeApply.clazz;
       final Type type = typeApply.type;
       String methodReturn;
+      if (type instanceof Type.ErrorType) {
+        final String clazzName = classExpression.toString();
+        return markFQCN(src, clazzName);
+      }
       if (type != null && type.tsym != null) {
         methodReturn = type.tsym.flatName().toString();
       } else {
@@ -116,8 +120,9 @@ public class TreeAnalyzer {
         if (!join.isEmpty()) {
           methodReturn = methodReturn + '<' + join + '>';
         }
+
+        return methodReturn;
       }
-      return methodReturn;
     } else if (tree instanceof JCTree.JCFieldAccess) {
       final JCTree.JCFieldAccess fieldAccess = (JCTree.JCFieldAccess) tree;
       final Symbol sym = fieldAccess.sym;
@@ -852,6 +857,9 @@ public class TreeAnalyzer {
     if (type == null) {
       return Optional.empty();
     }
+    if (type instanceof Type.ErrorType) {
+      return Optional.empty();
+    }
     if (type instanceof Type.CapturedType) {
       final Type.CapturedType capturedType = (Type.CapturedType) type;
       final Type.WildcardType wildcardType = capturedType.wildcard;
@@ -1131,7 +1139,6 @@ public class TreeAnalyzer {
     final MethodCall methodCall = new MethodCall(name, preferredPos, nameRange, range);
 
     final Type type = identifier.type;
-
     this.getTypeString(src, type)
         .ifPresent(
             fqcn -> {
@@ -1140,7 +1147,7 @@ public class TreeAnalyzer {
               methodCall.argumentIndex = argumentIndex;
               context.setArgumentFQCN(fqcn);
             });
-    if (type == null) {
+    if (type == null || type instanceof Type.ErrorType) {
       // add className to unknown
       final ClassName className = new ClassName(name);
       final String simpleName = className.getName();
@@ -1517,9 +1524,8 @@ public class TreeAnalyzer {
                 variable.fqcn = TreeAnalyzer.markFQCN(src, fqcn);
                 variable.argumentIndex = context.getArgumentIndex();
                 context.setArgumentFQCN(variable.fqcn);
+                src.getCurrentScope().ifPresent(scope -> scope.addVariable(variable));
               });
-
-      src.getCurrentScope().ifPresent(scope -> scope.addVariable(variable));
     } else {
       String nm = ident.toString();
       final Variable variable = new Variable(nm, preferredPos, range);

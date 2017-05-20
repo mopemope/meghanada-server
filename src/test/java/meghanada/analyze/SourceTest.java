@@ -1,6 +1,7 @@
 package meghanada.analyze;
 
 import static meghanada.config.Config.timeIt;
+import static meghanada.config.Config.traceIt;
 import static org.junit.Assert.assertEquals;
 
 import java.io.File;
@@ -128,7 +129,7 @@ public class SourceTest extends GradleTestBase {
   }
 
   @Test
-  public void tesMissingImports1() throws Exception {
+  public void testMissingImports1() throws Exception {
     final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8");
     final String cp = getClasspath();
 
@@ -152,7 +153,7 @@ public class SourceTest extends GradleTestBase {
   }
 
   @Test
-  public void tesMissingImports2() throws Exception {
+  public void testMissingImports2() throws Exception {
     final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8");
     final String cp = getClasspath();
 
@@ -177,6 +178,34 @@ public class SourceTest extends GradleTestBase {
           System.out.println(k + ":" + v);
         });
     assertEquals(8, missingImport.size());
+  }
+
+  @Test
+  public void testMissingImports3() throws Exception {
+    final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8");
+    final String cp = getClasspath();
+
+    List<File> files = new ArrayList<>();
+    final File file = new File("./src/test/resources/MissingImport3.java").getCanonicalFile();
+    assert file.exists();
+    files.add(file);
+
+    final String tmp = System.getProperty("java.io.tmpdir");
+
+    final Source source =
+        traceIt(
+            () -> {
+              final CompileResult compileResult = analyzer.analyzeAndCompile(files, cp, tmp);
+              compileResult.getSources().values().forEach(Source::dump);
+              return compileResult.getSources().get(file);
+            });
+
+    Map<String, List<String>> missingImport = timeIt(source::searchMissingImport);
+    missingImport.forEach(
+        (k, v) -> {
+          System.out.println(k + ":" + v);
+        });
+    assertEquals(2, missingImport.size());
   }
 
   private String getClasspath() throws IOException {
