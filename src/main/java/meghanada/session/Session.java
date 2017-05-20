@@ -431,11 +431,10 @@ public class Session {
               final List<String> optimized = source.optimizeImports();
               final StringBuilder sb = new StringBuilder(1024 * 4);
               if (source.packageName != null && !source.packageName.isEmpty()) {
-                sb.append("package ").append(source.packageName).append(";\n");
+                sb.append("package ").append(source.packageName).append(";\n\n");
               }
 
               if (source.staticImportClass.size() > 0) {
-                sb.append('\n');
                 source
                     .staticImportClass
                     .entrySet()
