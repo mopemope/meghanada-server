@@ -14,6 +14,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import meghanada.analyze.AccessSymbol;
 import meghanada.analyze.ClassScope;
 import meghanada.analyze.Source;
@@ -488,16 +489,49 @@ public class JavaCompletion {
     }
   }
 
+  private List<ClassIndex> completionImport(final String searchWord) {
+
+    final Config config = Config.load();
+    final boolean useFuzzySearch = config.useClassFuzzySearch();
+    final int idx = searchWord.lastIndexOf(':');
+    final Stream<ClassIndex> stream;
+    final CachedASMReflector reflector = CachedASMReflector.getInstance();
+
+    if (idx > 0) {
+      final String classPrefix = searchWord.substring(idx + 1, searchWord.length());
+      if (useFuzzySearch) {
+        stream = reflector.fuzzySearchClassesStream(classPrefix.toLowerCase(), false);
+      } else {
+        stream = reflector.searchClassesStream(classPrefix.toLowerCase(), true, false);
+      }
+      return stream
+          .map(
+              cl -> {
+                cl.setMemberType(CandidateUnit.MemberType.IMPORT);
+                return cl;
+              })
+          .sorted(comparing(classPrefix))
+          .collect(Collectors.toList());
+    }
+
+    return Collections.emptyList();
+  }
+
   private Collection<? extends CandidateUnit> specialCompletion(
       final Source source, final int line, final int column, final String searchWord) {
 
     // special command
-    final boolean useFuzzySearch = Config.load().useClassFuzzySearch();
+    final Config config = Config.load();
+    final boolean useFuzzySearch = config.useClassFuzzySearch();
+
     if (searchWord.startsWith("*import")) {
-      return Collections.emptyList();
+
+      return this.completionImport(searchWord);
+
     } else if (searchWord.startsWith("*new")) {
+
       // list all classes
-      int idx = searchWord.lastIndexOf(':');
+      final int idx = searchWord.lastIndexOf(':');
       if (idx > 0) {
         final List<ClassIndex> result;
         final String classPrefix = searchWord.substring(idx + 1, searchWord.length());
@@ -509,6 +543,7 @@ public class JavaCompletion {
         result.sort(comparing(classPrefix));
         return result;
       }
+
       return JavaCompletion.completionConstructors(source)
           .stream()
           .sorted(Comparator.comparing(CandidateUnit::getName))

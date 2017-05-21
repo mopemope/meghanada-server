@@ -380,7 +380,7 @@ public abstract class Project {
     return new CompileResult(false);
   }
 
-  public CompileResult compileFileNoCache(final File file, final boolean force) throws IOException {
+  public CompileResult compileFile(final File file, final boolean force) throws IOException {
     boolean isTest = false;
     String filepath = file.getCanonicalPath();
     for (File source : this.testSources) {
@@ -397,6 +397,7 @@ public abstract class Project {
       output = this.output.getCanonicalPath();
     }
     if (FileUtils.filterFile(file)) {
+      final Stopwatch stopwatch = Stopwatch.createStarted();
       List<File> files = new ArrayList<>(8);
       files.add(file);
 
@@ -406,14 +407,27 @@ public abstract class Project {
               : FileUtils.getModifiedSources(
                   projectRoot, files, this.getAllSources(), new File(output));
       files = addDepends(this.getAllSources(), files);
-      return clearMemberCache(
-          getJavaAnalyzer().analyzeAndCompile(files, this.allClasspath(), output));
+
+      final CompiledSourceHandler handler = new CompiledSourceHandler(this, this.callerMap);
+
+      final CompileResult compileResult =
+          clearMemberCache(
+              getJavaAnalyzer()
+                  .analyzeAndCompile(files, this.allClasspath(), output, true, handler));
+      log.info(
+          "project {} compile and analyze {} files. force:{} problem:{} elapsed:{}",
+          this.name,
+          files.size(),
+          force,
+          compileResult.getDiagnostics().size(),
+          stopwatch.stop());
+
+      return compileResult;
     }
     return new CompileResult(false);
   }
 
-  public CompileResult compileFileNoCache(final List<File> files, final boolean force)
-      throws IOException {
+  public CompileResult compileFile(final List<File> files, final boolean force) throws IOException {
     boolean isTest = false;
     // sampling
     String filepath = files.get(0).getCanonicalPath();
@@ -431,6 +445,7 @@ public abstract class Project {
       output = this.output.getCanonicalPath();
     }
 
+    final Stopwatch stopwatch = Stopwatch.createStarted();
     List<File> filesList =
         files.stream().filter(FileUtils::filterFile).collect(Collectors.toList());
 
@@ -440,8 +455,20 @@ public abstract class Project {
             : FileUtils.getModifiedSources(
                 projectRoot, files, this.getAllSources(), new File(output));
     filesList = addDepends(this.getAllSources(), filesList);
-    return clearMemberCache(
-        getJavaAnalyzer().analyzeAndCompile(filesList, this.allClasspath(), output));
+    final CompiledSourceHandler handler = new CompiledSourceHandler(this, this.callerMap);
+    final CompileResult compileResult =
+        clearMemberCache(
+            getJavaAnalyzer()
+                .analyzeAndCompile(filesList, this.allClasspath(), output, true, handler));
+    log.info(
+        "project {} compile and analyze {} files. force:{} problem:{} elapsed:{}",
+        this.name,
+        files.size(),
+        force,
+        compileResult.getDiagnostics().size(),
+        stopwatch.stop());
+
+    return compileResult;
   }
 
   public File getProjectRoot() {

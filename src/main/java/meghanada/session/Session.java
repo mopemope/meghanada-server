@@ -501,7 +501,7 @@ public class Session {
   public synchronized CompileResult compileFile(final String path) throws IOException {
     // java file only
     final File file = normalize(path);
-    final CompileResult compileResult = currentProject.compileFileNoCache(file, true);
+    final CompileResult compileResult = currentProject.compileFile(file, true);
     this.sessionEventBus.requestCreateCache(true);
     return compileResult;
   }

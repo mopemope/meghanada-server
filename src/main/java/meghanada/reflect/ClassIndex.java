@@ -5,6 +5,7 @@ import com.google.common.base.Objects;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import meghanada.reflect.CandidateUnit.MemberType;
 import meghanada.reflect.asm.CachedASMReflector;
 import meghanada.utils.ClassNameUtils;
 
@@ -18,6 +19,8 @@ public class ClassIndex implements CandidateUnit, Cloneable {
   public boolean isAnnotation;
   public boolean functional;
   public String name;
+
+  private MemberType memberType = MemberType.CLASS;
 
   public ClassIndex() {}
 
@@ -44,7 +47,11 @@ public class ClassIndex implements CandidateUnit, Cloneable {
 
   @Override
   public String getType() {
-    return MemberType.CLASS.toString();
+    return this.memberType.toString();
+  }
+
+  public void setMemberType(final MemberType memberType) {
+    this.memberType = memberType;
   }
 
   @Override

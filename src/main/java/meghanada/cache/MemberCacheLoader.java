@@ -76,7 +76,12 @@ class MemberCacheLoader extends CacheLoader<String, List<MemberDescriptor>>
 
   @SuppressWarnings("unchecked")
   private static Map<String, String> readCacheChecksum(final File inFile) {
-    return GlobalCache.getInstance().readCacheFromFile(inFile, HashMap.class);
+    final Map<String, String> map =
+        GlobalCache.getInstance().readCacheFromFile(inFile, HashMap.class);
+    if (map == null) {
+      return new HashMap<>(64);
+    }
+    return map;
   }
 
   private static List<MemberDescriptor> getCachedMemberDescriptors(

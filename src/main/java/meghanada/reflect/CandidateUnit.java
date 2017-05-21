@@ -18,6 +18,7 @@ public interface CandidateUnit {
     CONSTRUCTOR,
     VAR,
     CLASS,
+    IMPORT,
     PACKAGE
   }
 }

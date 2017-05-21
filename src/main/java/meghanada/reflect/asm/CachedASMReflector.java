@@ -306,7 +306,7 @@ public class CachedASMReflector {
     final int length = keyword.length() + 1;
     return this.globalClassIndex
         .values()
-        .stream()
+        .parallelStream()
         .filter(
             classIndex -> {
               if (anno && !classIndex.isAnnotation) {
@@ -318,6 +318,23 @@ public class CachedASMReflector {
             })
         .map(ClassIndex::clone)
         .collect(Collectors.toList());
+  }
+
+  public Stream<ClassIndex> fuzzySearchClassesStream(final String keyword, final boolean anno) {
+    final int length = keyword.length() + 1;
+    return this.globalClassIndex
+        .values()
+        .parallelStream()
+        .filter(
+            classIndex -> {
+              if (anno && !classIndex.isAnnotation) {
+                return false;
+              }
+              final String name = classIndex.getName();
+              final int score = StringUtils.getFuzzyDistance(name, keyword, Locale.ENGLISH);
+              return score >= length;
+            })
+        .map(ClassIndex::clone);
   }
 
   public List<ClassIndex> searchInnerClasses(final String parent) {
@@ -359,13 +376,52 @@ public class CachedASMReflector {
       final String keyword, final boolean partial, final boolean anno) {
     return this.globalClassIndex
         .values()
-        .stream()
+        .parallelStream()
         .filter(
-            classIndex ->
-                !(anno && !classIndex.isAnnotation)
-                    && CachedASMReflector.containsKeyword(keyword, partial, classIndex))
+            classIndex -> {
+              if (keyword.isEmpty()) {
+                // match all
+                return true;
+              }
+              return !(anno && !classIndex.isAnnotation)
+                  && CachedASMReflector.containsKeyword(keyword, partial, classIndex);
+            })
         .map(ClassIndex::clone)
         .collect(Collectors.toList());
+  }
+
+  public Stream<ClassIndex> searchClassesStream(
+      final String keyword, final boolean partial, final boolean anno) {
+    return this.globalClassIndex
+        .values()
+        .parallelStream()
+        .filter(
+            classIndex -> {
+              if (keyword.isEmpty()) {
+                // match all
+                return true;
+              }
+              return !(anno && !classIndex.isAnnotation)
+                  && CachedASMReflector.containsKeyword(keyword, partial, classIndex);
+            })
+        .map(ClassIndex::clone);
+  }
+
+  public Stream<ClassIndex> allClassStream() {
+    return this.globalClassIndex.values().parallelStream();
+  }
+
+  public Stream<MemberDescriptor> allMethodStream() {
+    return this.globalClassIndex
+        .values()
+        .parallelStream()
+        .flatMap(
+            cl -> {
+              final String declaration = cl.getDeclaration();
+              return reflect(declaration)
+                  .parallelStream()
+                  .filter(m -> m.matchType(CandidateUnit.MemberType.METHOD));
+            });
   }
 
   public List<MemberDescriptor> reflect(final String className) {
