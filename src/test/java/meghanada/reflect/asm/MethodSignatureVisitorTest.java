@@ -1,6 +1,6 @@
 package meghanada.reflect.asm;
 
-import static meghanada.config.Config.traceIt;
+import static meghanada.config.Config.timeIt;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -31,7 +31,7 @@ public class MethodSignatureVisitorTest extends GradleTestBase {
   public void testMethod1() throws Exception {
     final File f = new File(getTestOutputDir(), "meghanada/Gen3.class");
     final String fqcn = "meghanada.Gen3";
-    TestVisitor visitor = traceIt(() -> doAnalyze(f, fqcn));
+    TestVisitor visitor = timeIt(() -> doAnalyze(f, fqcn));
   }
 
   private TestVisitor doAnalyze(File file, String fqcn) throws IOException {

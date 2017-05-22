@@ -1,7 +1,6 @@
 package meghanada.reflect.asm;
 
 import static meghanada.config.Config.timeIt;
-import static meghanada.config.Config.traceIt;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -320,7 +319,7 @@ public class CachedASMReflectorTest extends GradleTestBase {
     {
       String fqcn = "meghanada.SelfRef1";
       List<MemberDescriptor> memberDescriptors =
-          traceIt(
+          timeIt(
               () -> {
                 return cachedASMReflector.reflect(fqcn);
               });

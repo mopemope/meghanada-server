@@ -1005,7 +1005,7 @@ public class TreeAnalyzer {
                       if (arguments != null) {
                         mc.arguments = arguments;
                       }
-                      final MethodCall methodCall1 = scope.addMethodCall(mc);
+                      scope.addMethodCall(mc);
                     });
           }
         } else {
@@ -1030,7 +1030,7 @@ public class TreeAnalyzer {
                     if (arguments != null) {
                       mc.arguments = arguments;
                     }
-                    final MethodCall methodCall1 = scope.addMethodCall(mc);
+                    scope.addMethodCall(mc);
                   });
         }
       }
@@ -1120,7 +1120,7 @@ public class TreeAnalyzer {
                 if (arguments != null) {
                   methodCall.arguments = arguments;
                 }
-                final MethodCall methodCall1 = scope.addMethodCall(methodCall);
+                scope.addMethodCall(methodCall);
               });
 
     } else {
@@ -1184,7 +1184,7 @@ public class TreeAnalyzer {
               if (arguments != null) {
                 methodCall.arguments = arguments;
               }
-              final MethodCall methodCall1 = scope.addMethodCall(methodCall);
+              scope.addMethodCall(methodCall);
             });
   }
 
@@ -1526,23 +1526,40 @@ public class TreeAnalyzer {
     if (endPos == -1) {
       return;
     }
+
     final Symbol sym = ident.sym;
     final Source src = context.getSource();
     final Range range = Range.create(src, preferredPos, endPos);
     if (sym != null) {
+      final Symbol owner = sym.owner;
       final Type type = sym.asType();
       final String name = ident.getName().toString();
 
-      final Variable variable = new Variable(name, preferredPos, range);
+      if (owner != null && owner.type != null) {
 
-      this.getTypeString(src, type)
-          .ifPresent(
-              fqcn -> {
-                variable.fqcn = TreeAnalyzer.markFQCN(src, fqcn);
-                variable.argumentIndex = context.getArgumentIndex();
-                context.setArgumentFQCN(variable.fqcn);
-                src.getCurrentScope().ifPresent(scope -> scope.addVariable(variable));
-              });
+        final FieldAccess fa = new FieldAccess(name, preferredPos, range);
+        // this
+        fa.scope = "";
+        this.getTypeString(src, owner.type)
+            .ifPresent(
+                fqcn -> {
+                  this.setReturnTypeAndArgType(context, src, sym.type, fa);
+                  fa.declaringClass = TreeAnalyzer.markFQCN(src, fqcn);
+                  src.getCurrentScope().ifPresent(scope -> scope.addFieldAccess(fa));
+                });
+
+      } else {
+        final Variable variable = new Variable(name, preferredPos, range);
+
+        this.getTypeString(src, type)
+            .ifPresent(
+                fqcn -> {
+                  variable.fqcn = TreeAnalyzer.markFQCN(src, fqcn);
+                  variable.argumentIndex = context.getArgumentIndex();
+                  context.setArgumentFQCN(variable.fqcn);
+                  src.getCurrentScope().ifPresent(scope -> scope.addVariable(variable));
+                });
+      }
     } else {
       String nm = ident.toString();
       final Variable variable = new Variable(nm, preferredPos, range);

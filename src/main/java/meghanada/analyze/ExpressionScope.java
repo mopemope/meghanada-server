@@ -20,7 +20,7 @@ public class ExpressionScope extends Scope {
   }
 
   @Override
-  public MethodCall addMethodCall(final MethodCall mcs) {
+  public void addMethodCall(final MethodCall mcs) {
     assert mcs.arguments != null;
     final Integer endCol = super.range.end.column;
     final Integer endLine = super.range.end.line;
@@ -28,7 +28,7 @@ public class ExpressionScope extends Scope {
     if (mcsEnd.column + 1 == endCol && mcsEnd.line == endLine) {
       this.expressionReturn = mcs;
     }
-    return super.addMethodCall(mcs);
+    super.addMethodCall(mcs);
   }
 
   @Override

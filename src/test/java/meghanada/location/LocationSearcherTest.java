@@ -73,7 +73,7 @@ public class LocationSearcherTest extends GradleTestBase {
   }
 
   @Test
-  public void testJumpField3() throws Exception {
+  public void testJumpField02() throws Exception {
     File f = new File("./src/test/java/meghanada/Jump1.java").getCanonicalFile();
     assert f.exists();
     LocationSearcher searcher = getSearcher();
@@ -84,6 +84,18 @@ public class LocationSearcherTest extends GradleTestBase {
     assertNotNull(result);
     assertEquals(1184, result.getLine());
     assertEquals(44, result.getColumn());
+  }
+
+  @Test
+  public void testJumpField03() throws Exception {
+    File f = new File("./src/test/java/meghanada/Jump2.java").getCanonicalFile();
+    assert f.exists();
+    LocationSearcher searcher = getSearcher();
+    Location result =
+        timeIt(() -> searcher.searchDeclarationLocation(f, 10, 12, "jumpTarget")).orElse(null);
+    assertNotNull(result);
+    assertEquals(5, result.getLine());
+    assertEquals(18, result.getColumn());
   }
 
   @Test

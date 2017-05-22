@@ -1,7 +1,6 @@
 package meghanada.project.gradle;
 
 import static meghanada.config.Config.timeIt;
-import static meghanada.config.Config.traceIt;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
@@ -39,7 +38,7 @@ public class GradleProjectTest {
   @Test
   public void testParse1() throws Exception {
     final Project project =
-        traceIt(
+        timeIt(
             () -> {
               return this.project.parseProject();
             });

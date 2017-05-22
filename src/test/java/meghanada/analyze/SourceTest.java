@@ -1,7 +1,6 @@
 package meghanada.analyze;
 
 import static meghanada.config.Config.timeIt;
-import static meghanada.config.Config.traceIt;
 import static org.junit.Assert.assertEquals;
 
 import java.io.File;
@@ -221,7 +220,7 @@ public class SourceTest extends GradleTestBase {
     final String tmp = System.getProperty("java.io.tmpdir");
 
     final Source source =
-        traceIt(
+        timeIt(
             () -> {
               final CompileResult compileResult = analyzer.analyzeAndCompile(files, cp, tmp);
               compileResult.getSources().values().forEach(Source::dump);

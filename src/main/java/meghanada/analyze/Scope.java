@@ -52,18 +52,16 @@ public abstract class Scope {
     return null;
   }
 
-  public FieldAccess addFieldAccess(final FieldAccess fieldAccess) {
+  public void addFieldAccess(final FieldAccess fieldAccess) {
     this.fieldAccesses.add(fieldAccess);
     log.trace("add fieldAccess={} to range={} {}", fieldAccess, this.range, this.getClassName());
-    return fieldAccess;
   }
 
-  public MethodCall addMethodCall(final MethodCall methodCall) {
+  public void addMethodCall(final MethodCall methodCall) {
     // guard
     assert methodCall.arguments != null;
     this.methodCalls.add(methodCall);
     log.trace("add methodCall={} to range={} {}", methodCall, this.range, this.getClassName());
-    return methodCall;
   }
 
   public void addVariable(final Variable variable) {
