@@ -22,6 +22,10 @@ Some planned and implemented features:
 
 Meghanada-Server support only emacs client (meghanada-mode)
 
+The Meghanada architecture is almost the same as `ensime`. It is client server model.
+
+Meghanada updates any information when saving and compile the java file.
+
 ## Building
 
 ### Requirement
@@ -82,7 +86,7 @@ TODO
 
 TODO
 
-### Customize Project Manually
+### Customize project manually
 
 * Write `.meghanada.conf` on project root.
 
