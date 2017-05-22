@@ -1725,6 +1725,7 @@ public class TreeAnalyzer {
                       }
 
                       if (typeTree instanceof JCTree.JCExpression) {
+
                         final JCTree.JCExpression expression = (JCTree.JCExpression) typeTree;
                         final Type type = expression.type;
 
@@ -1735,6 +1736,7 @@ public class TreeAnalyzer {
                           if (identClazz != null) {
                             variable.fqcn = TreeAnalyzer.markFQCN(src, identClazz);
                           } else {
+                            src.unknown.add(nm);
                             if (src.isReportUnknown()) {
                               log.warn(
                                   "unknown ident class expression={} {} {}",

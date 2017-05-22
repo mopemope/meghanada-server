@@ -1,5 +1,5 @@
 
-public class MissingImport3 {
+public class MissingImport4 {
 
   private static final Logger log = LogManager.getLogger(Session.class);
 
