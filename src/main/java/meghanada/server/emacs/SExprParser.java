@@ -27,9 +27,13 @@ class SExprParser {
   SExprParser() {}
 
   public SExpr parse(final String s) {
-    this.tokenizer = new StringTokenizer(s.trim(), " ()\"\\", true);
-    this.sb = null;
-    return this.get();
+    try {
+      this.tokenizer = new StringTokenizer(s.trim(), " ()\"\\", true);
+      this.sb = null;
+      return this.get();
+    } catch (Throwable t) {
+      throw new IllegalArgumentException("parse fail. sexp='" + s + "'", t);
+    }
   }
 
   private SExprList getCurrentList() {
