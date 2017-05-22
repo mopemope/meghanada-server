@@ -1,40 +1,40 @@
 plugins {
-    id 'com.gradle.build-scan' version '1.7'
-    id 'java'
-    id 'maven'
-    id 'jacoco'
-    id 'pmd'
-    id 'application'
-    id 'com.github.johnrengelman.shadow' version '2.0.0'
-    id 'com.github.ben-manes.versions' version '0.14.0'
-    id 'com.jfrog.bintray' version '1.7.3'
-    id 'org.ajoberstar.grgit' version '1.7.1'
-    id 'net.ltgt.errorprone' version '0.0.10'
-    id 'com.github.sherter.google-java-format' version '0.6'
+  id 'com.gradle.build-scan' version '1.7'
+  id 'java'
+  id 'maven'
+  id 'jacoco'
+  id 'pmd'
+  id 'application'
+  id 'com.github.johnrengelman.shadow' version '2.0.0'
+  id 'com.github.ben-manes.versions' version '0.14.0'
+  id 'com.jfrog.bintray' version '1.7.3'
+  id 'org.ajoberstar.grgit' version '1.7.1'
+  id 'net.ltgt.errorprone' version '0.0.10'
+  id 'com.github.sherter.google-java-format' version '0.6'
 }
 
 ext {
-    group = 'meghanada'
-    serverVersion = '0.7.8'
-    buildVersion = 'release'
+  group = 'meghanada'
+  serverVersion = '0.7.9'
+  buildVersion = 'release'
 
-    def gitFile = new File('./.git')
-    if (gitFile.exists()) {
-       buildVersion = grgit.head().abbreviatedId
-    }
-    longVersion = "$serverVersion-${buildVersion}"
-    date = new Date().format("yyyy-MM-dd'T'HH:mm:ssZ")
-    sourceCompatibility = 1.8
+  def gitFile = new File('./.git')
+  if (gitFile.exists()) {
+    buildVersion = grgit.head().abbreviatedId
+  }
+  longVersion = "$serverVersion-${buildVersion}"
+  date = new Date().format("yyyy-MM-dd'T'HH:mm:ssZ")
+  sourceCompatibility = 1.8
 
-    gradleVersion = '3.5'
-    log4jVersion = '2.8.2'
+  gradleVersion = '3.5'
+  log4jVersion = '2.8.2'
 }
 
 mainClassName = "meghanada.Main"
 applicationName = 'meghanada'
 
 tasks.withType(JavaCompile) {
-    options.incremental = true
+  options.incremental = true
 }
 
 buildScan {
@@ -43,121 +43,121 @@ buildScan {
 }
 
 shadowJar {
-    baseName = 'meghanada'
-    classifier = null
-    version = serverVersion
+  baseName = 'meghanada'
+  classifier = null
+  version = serverVersion
 }
 
 repositories {
-    mavenCentral()
-    maven {
-        url 'http://repo.gradle.org/gradle/libs-releases-local'
-    }
-    jcenter()
+  mavenCentral()
+  maven {
+    url 'http://repo.gradle.org/gradle/libs-releases-local'
+  }
+  jcenter()
 }
 
 configurations.errorprone {
-    resolutionStrategy.force 'com.google.errorprone:error_prone_core:2.0.19'
+  resolutionStrategy.force 'com.google.errorprone:error_prone_core:2.0.19'
 }
 
 bintray {
-    user = System.getenv('BINTRAY_USER')
-    key = System.getenv('BINTRAY_KEY')
+  user = System.getenv('BINTRAY_USER')
+  key = System.getenv('BINTRAY_KEY')
 
-    publish = true
-    // override = true
+  publish = true
+  // override = true
 
-    filesSpec {
-        from 'build/libs'
-        into '.'
+  filesSpec {
+    from 'build/libs'
+    into '.'
+  }
+
+  pkg {
+    repo = 'meghanada'
+    name = 'meghanada'
+    vcsUrl = 'https://github.com/mopemope/meghanada-server.git'
+    licenses = ['GPL-3.0']
+    githubRepo = 'mopemope/meghanada-server'
+    githubReleaseNotesFile = 'README.md'
+    labels = ['java', 'emacs']
+
+    version {
+      name = "$serverVersion"
+      desc = "Meghanada Server $longVersion"
+      released  = new Date()
     }
-
-    pkg {
-        repo = 'meghanada'
-        name = 'meghanada'
-        vcsUrl = 'https://github.com/mopemope/meghanada-server.git'
-        licenses = ['GPL-3.0']
-        githubRepo = 'mopemope/meghanada-server'
-        githubReleaseNotesFile = 'README.md'
-        labels = ['java', 'emacs']
-
-        version {
-            name = "$serverVersion"
-            desc = "Meghanada Server $longVersion"
-            released  = new Date()
-        }
-    }
+  }
 }
 
 dependencies {
 
-    compile files("${System.properties['java.home']}/../lib/tools.jar")
-    compile 'com.google.googlejavaformat:google-java-format:1.3'
-    compile 'org.apache.maven:maven-model-builder:3.5.0'
-    compile 'com.leacox.motif:motif:0.1'
-    compile 'com.leacox.motif:motif-hamcrest:0.1'
-    compile 'com.github.javaparser:javaparser-core:3.2.4'
-    compile "org.apache.logging.log4j:log4j-core:$log4jVersion"
-    compile "org.apache.logging.log4j:log4j-api:$log4jVersion"
-    compile "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
-    compile 'commons-cli:commons-cli:1.4'
-    compile "org.gradle:gradle-tooling-api:$gradleVersion"
-    compile 'com.google.guava:guava:21.0'
-    compile 'org.ow2.asm:asm:5.2'
-    compile 'com.esotericsoftware:kryo:4.0.0'
-    compile 'com.typesafe:config:1.3.1'
-    compile 'org.atteo:evo-inflector:1.2.2'
-    compile 'junit:junit:4.12'
-    compile 'com.android.tools.build:builder-model:2.2.3'
-    compile 'io.takari.junit:takari-cpsuite:1.2.7'
-    compile 'org.jboss.windup.decompiler:decompiler-api:3.0.0.Final'
-    compile 'org.jboss.windup.decompiler:decompiler-fernflower:3.0.0.Final'
-    compile 'com.google.code.findbugs:jsr305:3.0.2'
-    compile 'org.eclipse.jdt:org.eclipse.jdt.core:3.12.3'
+  compile files("${System.properties['java.home']}/../lib/tools.jar")
+  compile 'com.google.googlejavaformat:google-java-format:1.3'
+  compile 'org.apache.maven:maven-model-builder:3.5.0'
+  compile 'com.leacox.motif:motif:0.1'
+  compile 'com.leacox.motif:motif-hamcrest:0.1'
+  compile 'com.github.javaparser:javaparser-core:3.2.4'
+  compile "org.apache.logging.log4j:log4j-core:$log4jVersion"
+  compile "org.apache.logging.log4j:log4j-api:$log4jVersion"
+  compile "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
+  compile 'commons-cli:commons-cli:1.4'
+  compile "org.gradle:gradle-tooling-api:$gradleVersion"
+  compile 'com.google.guava:guava:21.0'
+  compile 'org.ow2.asm:asm:5.2'
+  compile 'com.esotericsoftware:kryo:4.0.0'
+  compile 'com.typesafe:config:1.3.1'
+  compile 'org.atteo:evo-inflector:1.2.2'
+  compile 'junit:junit:4.12'
+  compile 'com.android.tools.build:builder-model:2.2.3'
+  compile 'io.takari.junit:takari-cpsuite:1.2.7'
+  compile 'org.jboss.windup.decompiler:decompiler-api:3.0.0.Final'
+  compile 'org.jboss.windup.decompiler:decompiler-fernflower:3.0.0.Final'
+  compile 'com.google.code.findbugs:jsr305:3.0.2'
+  compile 'org.eclipse.jdt:org.eclipse.jdt.core:3.12.3'
 }
 
 
 test {
-    jvmArgs = ["-XX:SoftRefLRUPolicyMSPerMB=50", "-XX:+UseConcMarkSweepGC", "-Xverify:none",  "-Xms256m", "-Xmx2G"]
+  jvmArgs = ["-XX:SoftRefLRUPolicyMSPerMB=50", "-XX:+UseConcMarkSweepGC", "-Xverify:none",  "-Xms256m", "-Xmx2G"]
 
-    testLogging {
-        events "PASSED", "FAILED", "SKIPPED"
-        exceptionFormat "full"
-    }
+  testLogging {
+    events "PASSED", "FAILED", "SKIPPED"
+    exceptionFormat "full"
+  }
 }
 
 task wrapper(type: Wrapper) {
-    gradleVersion = "$gradleVersion"
+  gradleVersion = "$gradleVersion"
 }
 
 task installEmacsHome(type: Copy) {
-    def home = System.properties['user.home']
-    from "build/libs/meghanada-${serverVersion}.jar"
-    into "$home/.emacs.d/meghanada/"
+  def home = System.properties['user.home']
+  from "build/libs/meghanada-${serverVersion}.jar"
+  into "$home/.emacs.d/meghanada/"
 }
 
 installEmacsHome.dependsOn(shadowJar)
 
 task embedVersion(type: Copy) {
-    from 'src/main/resources/VERSION'
-    into 'build/resources/main'
+  from 'src/main/resources/VERSION'
+  into 'build/resources/main'
 
-    expand(buildDate: new Date(), version: longVersion, appName: applicationName)
+  expand(buildDate: new Date(), version: longVersion, appName: applicationName)
 }
 
 classes.dependsOn embedVersion
 embedVersion.mustRunAfter processResources
 
 task('createPom') {
-    doLast {
-        pom {
-            project {
-                groupId 'meghanada'
-                artifactId 'meghanada'
-                version "$serverVersion"
-            }
-        }.writeTo("pom.xml")
-    }
+  doLast {
+    pom {
+      project {
+        groupId 'meghanada'
+        artifactId 'meghanada'
+        version "$serverVersion"
+      }
+    }.writeTo("pom.xml")
+  }
 }
 
 googleJavaFormat {
