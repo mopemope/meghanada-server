@@ -341,6 +341,11 @@ public class Source {
       if (i > 0) {
         searchWord = searchWord.substring(0, i);
       }
+
+      if (searchWord.isEmpty()) {
+        continue;
+      }
+
       log.debug("search unknown class : {} ...", searchWord);
       final Collection<? extends CandidateUnit> findUnits =
           reflector.searchClasses(searchWord, false, false);
@@ -518,5 +523,15 @@ public class Source {
         CachedASMReflector.getInstance().getStandardClasses();
     map.putAll(standardClasses);
     return map;
+  }
+
+  public void addUnknown(@Nullable final String unknown) {
+    if (unknown == null) {
+      return;
+    }
+    final String trimed = unknown.trim();
+    if (!trimed.isEmpty()) {
+      this.unknown.add(trimed);
+    }
   }
 }

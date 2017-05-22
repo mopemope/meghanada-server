@@ -233,7 +233,7 @@ public class TreeAnalyzer {
     final CachedASMReflector cachedASMReflector = CachedASMReflector.getInstance();
     if (!src.importClasses.contains(simpleName)
         && !cachedASMReflector.getGlobalClassIndex().containsKey(simpleName)) {
-      src.unknown.add(simpleName);
+      src.addUnknown(simpleName);
     } else {
       if (markUnUse) {
         // contains
@@ -874,7 +874,7 @@ public class TreeAnalyzer {
       } else {
         s = originalType.toString();
       }
-      src.unknown.add(s);
+      src.addUnknown(s);
       return Optional.empty();
     }
     if (type instanceof Type.CapturedType) {
@@ -1170,7 +1170,7 @@ public class TreeAnalyzer {
       final String simpleName = className.getName();
       if (!src.getImportedClassMap().containsKey(simpleName)
           && !CachedASMReflector.getInstance().getGlobalClassIndex().containsKey(simpleName)) {
-        src.unknown.add(simpleName);
+        src.addUnknown(simpleName);
       }
     }
 
@@ -1736,7 +1736,7 @@ public class TreeAnalyzer {
                           if (identClazz != null) {
                             variable.fqcn = TreeAnalyzer.markFQCN(src, identClazz);
                           } else {
-                            src.unknown.add(nm);
+                            src.addUnknown(nm);
                             if (src.isReportUnknown()) {
                               log.warn(
                                   "unknown ident class expression={} {} {}",
