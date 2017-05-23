@@ -333,7 +333,7 @@ public class LocationSearcher {
         methodCall.flatMap(
             mc -> {
               final String methodName = mc.name;
-              final List<String> arguments = mc.arguments;
+              final List<String> arguments = mc.getArguments();
               final String declaringClass = mc.declaringClass;
               if (declaringClass == null) {
                 return Optional.empty();

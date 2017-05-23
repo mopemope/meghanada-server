@@ -21,7 +21,6 @@ public class ExpressionScope extends Scope {
 
   @Override
   public void addMethodCall(final MethodCall mcs) {
-    assert mcs.arguments != null;
     final Integer endCol = super.range.end.column;
     final Integer endLine = super.range.end.line;
     final Position mcsEnd = mcs.range.end;

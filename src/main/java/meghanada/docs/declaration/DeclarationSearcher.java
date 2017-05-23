@@ -131,7 +131,7 @@ public class DeclarationSearcher {
         methodCall.map(
             mc -> {
               final String methodName = mc.name;
-              final List<String> arguments = mc.arguments;
+              final List<String> arguments = mc.getArguments();
               final String declaringClass = mc.declaringClass;
               if (declaringClass == null) {
                 return null;

@@ -58,8 +58,6 @@ public abstract class Scope {
   }
 
   public void addMethodCall(final MethodCall methodCall) {
-    // guard
-    assert methodCall.arguments != null;
     this.methodCalls.add(methodCall);
     log.trace("add methodCall={} to range={} {}", methodCall, this.range, this.getClassName());
   }

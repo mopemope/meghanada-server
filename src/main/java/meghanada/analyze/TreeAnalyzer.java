@@ -634,7 +634,7 @@ public class TreeAnalyzer {
                     .map(varSymbol -> varSymbol.asType().toString())
                     .collect(Collectors.toList());
             if (arguments != null) {
-              methodCall.arguments = arguments;
+              methodCall.setArguments(arguments);
             }
           }
           final Symbol owner = sym.owner;
@@ -1002,9 +1002,7 @@ public class TreeAnalyzer {
             src.getCurrentScope()
                 .ifPresent(
                     scope -> {
-                      if (arguments != null) {
-                        mc.arguments = arguments;
-                      }
+                      mc.setArguments(arguments);
                       scope.addMethodCall(mc);
                     });
           }
@@ -1028,7 +1026,7 @@ public class TreeAnalyzer {
               .ifPresent(
                   scope -> {
                     if (arguments != null) {
-                      mc.arguments = arguments;
+                      mc.setArguments(arguments);
                     }
                     scope.addMethodCall(mc);
                   });
@@ -1118,7 +1116,7 @@ public class TreeAnalyzer {
           .ifPresent(
               scope -> {
                 if (arguments != null) {
-                  methodCall.arguments = arguments;
+                  methodCall.setArguments(arguments);
                 }
                 scope.addMethodCall(methodCall);
               });
@@ -1182,7 +1180,7 @@ public class TreeAnalyzer {
         .ifPresent(
             scope -> {
               if (arguments != null) {
-                methodCall.arguments = arguments;
+                methodCall.setArguments(arguments);
               }
               scope.addMethodCall(methodCall);
             });
