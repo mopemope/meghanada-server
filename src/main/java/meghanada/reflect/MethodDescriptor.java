@@ -27,17 +27,17 @@ public class MethodDescriptor extends MemberDescriptor {
   public MethodDescriptor(
       final String declaringClass,
       final String name,
-      final String modifier,
+      @Nullable final String modifier,
       final List<MethodParameter> parameters,
       final String[] exceptions,
       final String returnType,
       final boolean hashDefault) {
     this.declaringClass = declaringClass;
-    this.name = name;
+    this.name = name.trim();
     if (modifier == null) {
       this.modifier = "";
     } else {
-      this.modifier = modifier;
+      this.modifier = modifier.trim();
     }
     this.memberType = MemberType.METHOD;
     this.parameters = parameters;
@@ -135,7 +135,7 @@ public class MethodDescriptor extends MemberDescriptor {
 
   private String getMethodDeclaration() {
     final StringBuilder sb = new StringBuilder(64);
-    if (this.modifier != null && modifier.length() > 0) {
+    if (this.modifier != null && !this.modifier.isEmpty()) {
       sb.append(this.modifier).append(' ');
     }
     if (this.formalType != null) {
@@ -176,7 +176,7 @@ public class MethodDescriptor extends MemberDescriptor {
   }
 
   @Override
-  protected String renderTypeParameters(final String template, boolean formalType) {
+  protected String renderTypeParameters(final String template, final boolean formalType) {
     final EntryMessage entryMessage =
         log.traceEntry(
             "template={}, formalType={} typeParameterMap={} typeParameters={}",
@@ -211,7 +211,7 @@ public class MethodDescriptor extends MemberDescriptor {
         }
       }
 
-      if (!this.modifier.contains("static ")) {
+      if (!this.modifier.contains("static")) {
         temp = TRIM_RE.matcher(temp).replaceAll("");
       }
     }

@@ -149,7 +149,7 @@ public abstract class MemberDescriptor implements CandidateUnit, Cloneable {
                 temp, ClassNameUtils.CLASS_TYPE_VARIABLE_MARK + entry, ClassNameUtils.OBJECT_CLASS);
       }
 
-      if (!this.modifier.contains("static ")) {
+      if (!this.modifier.contains("static")) {
         temp = TRIM_RE.matcher(temp).replaceAll("");
       }
     }

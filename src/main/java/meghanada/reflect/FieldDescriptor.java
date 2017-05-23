@@ -14,11 +14,19 @@ public class FieldDescriptor extends MemberDescriptor implements Serializable {
 
   public FieldDescriptor() {}
 
-  public FieldDescriptor(String declaringClass, String name, String modifier, String returnType) {
+  public FieldDescriptor(
+      final String declaringClass,
+      final String name,
+      @Nullable final String modifier,
+      final String returnType) {
     this.declaringClass = declaringClass;
-    this.name = name;
+    this.name = name.trim();
     this.memberType = MemberType.FIELD;
-    this.modifier = modifier;
+    if (modifier == null) {
+      this.modifier = "";
+    } else {
+      this.modifier = modifier.trim();
+    }
     this.returnType = returnType;
     this.typeParameterMap = new HashMap<>(4);
   }
