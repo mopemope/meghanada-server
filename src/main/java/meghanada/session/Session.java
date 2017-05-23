@@ -429,12 +429,15 @@ public class Session {
         .ifPresent(
             source -> {
               final List<String> optimized = source.optimizeImports();
+              boolean addLine = false;
               final StringBuilder sb = new StringBuilder(1024 * 4);
               if (source.packageName != null && !source.packageName.isEmpty()) {
-                sb.append("package ").append(source.packageName).append(";\n\n");
+                sb.append("package ").append(source.packageName).append(";\n");
               }
 
               if (source.staticImportClass.size() > 0) {
+                sb.append('\n');
+                addLine = true;
                 source
                     .staticImportClass
                     .entrySet()
@@ -449,13 +452,25 @@ public class Session {
                     .forEach(s -> sb.append("import static ").append(s).append(";\n"));
                 sb.append('\n');
               }
-              for (final String fqcn : optimized) {
-                sb.append("import ").append(fqcn).append(";\n");
+              if (optimized.size() > 0) {
+                if (!addLine) {
+                  sb.append('\n');
+                }
+                for (final String fqcn : optimized) {
+                  sb.append("import ").append(fqcn).append(";\n");
+                }
               }
 
               try (final Stream<String> stream =
                   Files.lines(file.toPath(), StandardCharsets.UTF_8)) {
-                stream.skip(source.classStartLine).forEach(s -> sb.append(s).append('\n'));
+                stream
+                    .skip(source.classStartLine)
+                    .forEach(
+                        s -> {
+                          if (!s.contains("package ")) {
+                            sb.append(s).append('\n');
+                          }
+                        });
                 Files.write(
                     Paths.get(path),
                     sb.toString().getBytes(StandardCharsets.UTF_8),
