@@ -335,6 +335,7 @@ public class Source {
     final Map<String, List<String>> ask = new HashMap<>(4);
 
     log.debug("unknown class size:{} classes:{}", this.unknown.size(), this.unknown);
+    final Map<String, String> importedClassMap = this.getImportedClassMap();
     for (final String clazzName : this.unknown) {
       String searchWord = ClassNameUtils.removeTypeAndArray(clazzName);
       final int i = searchWord.indexOf('.');
@@ -346,7 +347,11 @@ public class Source {
         continue;
       }
 
-      log.debug("search unknown class : {} ...", searchWord);
+      if (importedClassMap.containsKey(searchWord)) {
+        continue;
+      }
+
+      log.debug("search unknown class : '{}' ...", searchWord);
       final Collection<? extends CandidateUnit> findUnits =
           reflector.searchClasses(searchWord, false, false);
       log.debug("find candidate units : {}", findUnits);
@@ -361,13 +366,21 @@ public class Source {
         if (declaration.startsWith("java.lang")) {
           continue;
         }
+        final String pa = ClassNameUtils.getPackage(declaration);
+        if (this.packageName != null && pa.equals(this.packageName)) {
+          // remove same package
+          continue;
+        }
+
         if (addAll) {
           ask.put(clazzName, Collections.singletonList(candidateUnits[0].getDeclaration()));
         }
       } else {
         final List<String> imports =
             findUnits.stream().map(CandidateUnit::getDeclaration).collect(Collectors.toList());
-        ask.put(clazzName, imports);
+        if (!imports.isEmpty()) {
+          ask.put(clazzName, imports);
+        }
       }
     }
     return ask;
@@ -456,16 +469,39 @@ public class Source {
     return key != null && key.equals("true");
   }
 
+  private boolean includeInnerClass(final ClassScope cs, final String fqcn) {
+    final String classScopeFQCN = cs.getFQCN();
+    if (fqcn.equals(classScopeFQCN)) {
+      return true;
+    }
+
+    final String replaced = ClassNameUtils.replaceInnerMark(classScopeFQCN);
+    if (fqcn.equals(replaced)) {
+      return true;
+    }
+
+    final List<ClassScope> children = cs.classScopes;
+    for (final ClassScope child : children) {
+      if (includeInnerClass(child, fqcn)) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
   public boolean addImportIfAbsent(final String fqcn) {
+
     if (this.importClasses.contains(fqcn)) {
       return false;
     }
+
     for (final ClassScope classScope : this.classScopes) {
-      final String classScopeFQCN = classScope.getFQCN();
-      if (fqcn.equals(classScopeFQCN)) {
+      if (this.includeInnerClass(classScope, fqcn)) {
         return false;
       }
     }
+
     final CachedASMReflector reflector = CachedASMReflector.getInstance();
     if (fqcn.startsWith(this.packageName)) {
       final Map<String, String> packageClasses = reflector.getPackageClasses(this.packageName);

@@ -482,7 +482,7 @@ public class Session {
             });
   }
 
-  public synchronized Map<String, List<String>> searchMissingImport(String path)
+  public synchronized Map<String, List<String>> searchMissingImport(final String path)
       throws ExecutionException {
     // java file only
     final File file = normalize(path);
