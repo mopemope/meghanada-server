@@ -205,7 +205,7 @@ public class Source {
       final int line, final int column, final boolean onlyName) {
     final EntryMessage entryMessage = log.traceEntry("line={} column={}", line, column);
     int col = column;
-    Scope scope = Scope.getInnerScope(line, this.classScopes);
+    final Scope scope = Scope.getInnerScope(line, this.classScopes);
     if (scope != null) {
       final Collection<MethodCall> symbols = scope.getMethodCall(line);
       final int size = symbols.size();
@@ -309,17 +309,14 @@ public class Source {
     if (scope != null && (scope instanceof TypeScope)) {
       final TypeScope ts = (TypeScope) scope;
       final Collection<FieldAccess> fieldAccesses = ts.getFieldAccess(line);
-      return fieldAccesses
-          .stream()
-          .filter(
-              fa -> {
-                final Range range = fa.range;
-                final Position begin = fa.range.begin;
-                return range.begin.line == line
-                    && range.containsColumn(col)
-                    && fa.name.equals(name);
-              })
-          .findFirst();
+
+      for (final FieldAccess fa : fieldAccesses) {
+        final Range range = fa.range;
+        final Position begin = fa.range.begin;
+        if (range.begin.line == line && range.containsColumn(col) && fa.name.equals(name)) {
+          return Optional.of(fa);
+        }
+      }
     }
     return Optional.empty();
   }

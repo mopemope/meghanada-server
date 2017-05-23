@@ -16,6 +16,7 @@ import meghanada.analyze.MethodCall;
 import meghanada.analyze.Source;
 import meghanada.analyze.Variable;
 import meghanada.project.Project;
+import meghanada.reflect.ClassIndex;
 import meghanada.reflect.MemberDescriptor;
 import meghanada.reflect.asm.CachedASMReflector;
 import meghanada.utils.ClassNameUtils;
@@ -33,6 +34,19 @@ public class DeclarationSearcher {
     this.project = project;
   }
 
+  private static Optional<Declaration> searchFieldVar(
+      final Source source, final Integer line, final String symbol) {
+    return source
+        .getTypeScope(line)
+        .flatMap(
+            ts ->
+                ts.getField(symbol)
+                    .map(
+                        fv ->
+                            new Declaration(
+                                symbol, fv.fqcn, Declaration.Type.VAR, fv.argumentIndex)));
+  }
+
   private static Optional<Declaration> searchLocalVariable(
       final Source source, final Integer line, final Integer col, final String symbol) {
     final EntryMessage entryMessage = log.traceEntry("line={} col={} symbol={}", line, col, symbol);
@@ -46,21 +60,7 @@ public class DeclarationSearcher {
                       new Declaration(symbol, var.fqcn, Declaration.Type.VAR, var.argumentIndex);
                   return Optional.of(declaration);
                 })
-            .orElseGet(
-                () ->
-                    source
-                        .getTypeScope(line)
-                        .flatMap(
-                            typeScope ->
-                                typeScope
-                                    .getField(symbol)
-                                    .map(
-                                        fieldVar ->
-                                            new Declaration(
-                                                symbol,
-                                                fieldVar.fqcn,
-                                                Declaration.Type.VAR,
-                                                fieldVar.argumentIndex))));
+            .orElseGet(() -> searchFieldVar(source, line, symbol));
     log.traceExit(entryMessage);
     return result;
   }
@@ -80,6 +80,7 @@ public class DeclarationSearcher {
       final Integer line,
       final Integer col,
       final String symbol) {
+
     final EntryMessage entryMessage = log.traceEntry("line={} col={} symbol={}", line, col, symbol);
     Optional<Declaration> result = Optional.empty();
     if (symbol.equals("package")
@@ -96,6 +97,7 @@ public class DeclarationSearcher {
         || symbol.equals("final")) {
       result = Optional.of(new Declaration(symbol, "", Declaration.Type.OTHER, 0));
     }
+
     log.traceExit(entryMessage);
     return result;
   }
@@ -121,6 +123,30 @@ public class DeclarationSearcher {
     return result;
   }
 
+  private static Optional<MemberDescriptor> searchMethod(
+      final String declaringClass, final String methodName, final List<String> arguments) {
+    final CachedASMReflector reflector = CachedASMReflector.getInstance();
+
+    for (final MemberDescriptor md : reflector.reflectMethods(declaringClass, methodName)) {
+      if (ClassNameUtils.compareArgumentType(arguments, md.getParameters())) {
+        return Optional.of(md);
+      }
+    }
+    return Optional.empty();
+  }
+
+  private static Optional<MemberDescriptor> searchConstructor(
+      final String declaringClass, final List<String> arguments) {
+    final CachedASMReflector reflector = CachedASMReflector.getInstance();
+
+    for (final MemberDescriptor md : reflector.reflectConstructors(declaringClass)) {
+      if (ClassNameUtils.compareArgumentType(arguments, md.getParameters())) {
+        return Optional.of(md);
+      }
+    }
+    return Optional.empty();
+  }
+
   private static Optional<Declaration> searchMethodCall(
       final Source source, final Integer line, final Integer col, final String symbol) {
 
@@ -137,28 +163,10 @@ public class DeclarationSearcher {
                 return null;
               }
               final CachedASMReflector reflector = CachedASMReflector.getInstance();
+
               final MemberDescriptor method =
-                  reflector
-                      .reflectMethodStream(declaringClass, methodName)
-                      .filter(
-                          memberDescriptor -> {
-                            final List<String> parameters = memberDescriptor.getParameters();
-                            return ClassNameUtils.compareArgumentType(arguments, parameters);
-                          })
-                      .findFirst()
-                      .orElseGet(
-                          () ->
-                              reflector
-                                  .reflectConstructorStream(declaringClass)
-                                  .filter(
-                                      memberDescriptor -> {
-                                        final List<String> parameters =
-                                            memberDescriptor.getParameters();
-                                        return ClassNameUtils.compareArgumentType(
-                                            arguments, parameters);
-                                      })
-                                  .findFirst()
-                                  .orElse(null));
+                  searchMethod(declaringClass, methodName, arguments)
+                      .orElseGet(() -> searchConstructor(declaringClass, arguments).orElse(null));
               String declaration;
               if (method != null) {
                 declaration = method.getDeclaration();
@@ -209,24 +217,15 @@ public class DeclarationSearcher {
                       }
                       parents.addAll(source.importClasses);
 
-                      final Optional<Declaration> innerDeclaration =
-                          reflector
-                              .searchInnerClasses(parents)
-                              .stream()
-                              .filter(
-                                  classIndex -> {
-                                    final String returnType = classIndex.getReturnType();
-                                    return returnType.endsWith(symbol);
-                                  })
-                              .map(
-                                  classIndex ->
-                                      new Declaration(
-                                          symbol,
-                                          classIndex.getReturnType(),
-                                          Declaration.Type.CLASS,
-                                          0))
-                              .findFirst();
-                      return innerDeclaration;
+                      for (final ClassIndex ci : reflector.searchInnerClasses(parents)) {
+                        final String returnType = ci.getReturnType();
+                        if (returnType.endsWith(symbol)) {
+                          final Declaration d =
+                              new Declaration(symbol, returnType, Declaration.Type.CLASS, 0);
+                          return Optional.of(d);
+                        }
+                      }
+                      return Optional.empty();
                     });
       } else {
         result = Optional.empty();
@@ -243,6 +242,19 @@ public class DeclarationSearcher {
     this.project = project;
   }
 
+  private Optional<Declaration> execFunctions(
+      final Source src, final Integer line, final Integer column, final String symbol) {
+
+    for (final DeclarationSearchFunction f : this.functions) {
+      final Optional<Declaration> result = f.apply(src, line, column, symbol);
+      if (result.isPresent()) {
+        return result;
+      }
+    }
+
+    return Optional.empty();
+  }
+
   public Optional<Declaration> searchDeclaration(
       final File file, final int line, final int column, final String symbol)
       throws ExecutionException, IOException {
@@ -250,15 +262,7 @@ public class DeclarationSearcher {
       return Optional.empty();
     }
     log.trace("search symbol={}", symbol);
-    return getSource(project, file)
-        .flatMap(
-            source ->
-                this.functions
-                    .stream()
-                    .map(f -> f.apply(source, line, column, symbol))
-                    .filter(Optional::isPresent)
-                    .findFirst()
-                    .orElse(Optional.empty()));
+    return getSource(project, file).flatMap(src -> execFunctions(src, line, column, symbol));
   }
 
   @FunctionalInterface

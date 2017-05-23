@@ -346,21 +346,16 @@ public class CachedASMReflector {
   }
 
   public List<ClassIndex> searchInnerClasses(final Set<String> parents) {
-    return this.globalClassIndex
-        .values()
-        .parallelStream()
-        .filter(
-            classIndex -> {
-              final String returnType = classIndex.getReturnType();
-              for (final String parent : parents) {
-                if (returnType.startsWith(parent + '$')) {
-                  return true;
-                }
-              }
-              return false;
-            })
-        .map(ClassIndex::clone)
-        .collect(Collectors.toList());
+    final List<ClassIndex> result = new ArrayList<>(16);
+    for (final ClassIndex ci : this.globalClassIndex.values()) {
+      final String returnType = ci.getReturnType();
+      for (final String parent : parents) {
+        if (returnType.startsWith(parent + '$')) {
+          result.add(ci.clone());
+        }
+      }
+    }
+    return result;
   }
 
   public List<ClassIndex> searchClasses(final String keyword) {
@@ -427,13 +422,10 @@ public class CachedASMReflector {
     final String classWithoutTP = cn.getName();
     final GlobalCache globalCache = GlobalCache.getInstance();
     try {
-      final List<MemberDescriptor> members =
-          globalCache
-              .getMemberDescriptors(classWithoutTP)
-              .stream()
-              .map(MemberDescriptor::clone)
-              .collect(Collectors.toList());
-
+      final List<MemberDescriptor> members = new ArrayList<>(16);
+      for (final MemberDescriptor md : globalCache.getMemberDescriptors(classWithoutTP)) {
+        members.add(md.clone());
+      }
       if (cn.hasTypeParameter()) {
         return this.replaceMembers(classWithoutTP, className, members);
       }
@@ -463,10 +455,30 @@ public class CachedASMReflector {
         .filter(m -> m.getName().equals(name) && m.matchType(CandidateUnit.MemberType.METHOD));
   }
 
+  public Collection<MemberDescriptor> reflectMethods(final String className, final String name) {
+    final List<MemberDescriptor> result = new ArrayList<>(16);
+    for (final MemberDescriptor m : this.reflect(className)) {
+      if (m.getName().equals(name) && m.matchType(CandidateUnit.MemberType.METHOD)) {
+        result.add(m);
+      }
+    }
+    return result;
+  }
+
   public Stream<MemberDescriptor> reflectConstructorStream(final String className) {
     return this.reflect(className)
         .stream()
         .filter(m -> m.matchType(CandidateUnit.MemberType.CONSTRUCTOR));
+  }
+
+  public Collection<MemberDescriptor> reflectConstructors(final String className) {
+    final List<MemberDescriptor> result = new ArrayList<>(16);
+    for (final MemberDescriptor m : this.reflect(className)) {
+      if (m.matchType(CandidateUnit.MemberType.CONSTRUCTOR)) {
+        result.add(m);
+      }
+    }
+    return result;
   }
 
   public Stream<String> getSuperClassStream(final String className) {
