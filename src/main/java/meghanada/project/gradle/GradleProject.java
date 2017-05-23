@@ -53,6 +53,8 @@ import org.gradle.tooling.model.idea.IdeaSourceDirectory;
 public class GradleProject extends Project {
 
   private static final Logger log = LogManager.getLogger(GradleProject.class);
+  private static boolean setTemp;
+
   private final File rootProject;
   private final Map<String, File> allModules = new ConcurrentHashMap<>(4);
   private final List<String> prepareCompileTask = new ArrayList<>(2);
@@ -61,10 +63,18 @@ public class GradleProject extends Project {
   public GradleProject(final File projectRoot) throws IOException {
     super(projectRoot);
     this.rootProject = GradleProject.searchRootProject(projectRoot);
+    overrideTmpDir();
+  }
+
+  private static void overrideTmpDir() throws IOException {
+    if (setTemp) {
+      return;
+    }
     final File tempDir = Files.createTempDir();
     tempDir.deleteOnExit();
     final String tempPath = tempDir.getCanonicalPath();
     System.setProperty("java.io.tmpdir", tempPath);
+    setTemp = true;
   }
 
   private static File searchRootProject(File dir) throws IOException {
