@@ -28,13 +28,19 @@ public class Main {
   public static final String VERSION = "0.7.9";
 
   private static final Logger log = LogManager.getLogger(Main.class);
+  private static String version;
 
   public static String getVersion() throws IOException {
-    final String version = FileUtils.getVersionInfo();
     if (version != null) {
       return version;
     }
-    return Main.VERSION;
+    final String v = FileUtils.getVersionInfo();
+    if (v != null) {
+      version = v;
+      return version;
+    }
+    version = Main.VERSION;
+    return version;
   }
 
   public static void main(String args[]) throws ParseException, IOException {
