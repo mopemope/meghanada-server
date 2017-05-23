@@ -17,6 +17,7 @@ import meghanada.location.Location;
 import meghanada.reflect.CandidateUnit;
 import meghanada.session.Session;
 import meghanada.utils.ClassNameUtils;
+import meghanada.utils.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -62,6 +63,10 @@ public class CommandHandler {
   public void diagnostics(final long id, final String path) {
     try {
       final String canonicalPath = new File(path).getCanonicalPath();
+
+      // check force
+      FileUtils.invalidateChecksum(session.getCurrentProject().getProjectRoot(), canonicalPath);
+
       final CompileResult compileResult = session.compileProject();
       final String out = outputFormatter.diagnostics(id, compileResult, canonicalPath);
       writer.write(out);
