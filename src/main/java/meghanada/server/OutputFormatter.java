@@ -35,6 +35,8 @@ public interface OutputFormatter {
 
   String clearCache(long id, boolean result);
 
+  String ping(long id, String ping);
+
   String localVariable(long id, LocalVariable lv);
 
   String formatCode(long id, String path);

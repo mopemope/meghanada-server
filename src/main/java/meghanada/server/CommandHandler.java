@@ -190,7 +190,8 @@ public class CommandHandler {
 
   public void ping(final long id) {
     try {
-      writer.write("pong");
+      final String out = outputFormatter.ping(id, "pong");
+      writer.write(out);
       writer.newLine();
     } catch (Throwable t) {
       writeError(id, t);

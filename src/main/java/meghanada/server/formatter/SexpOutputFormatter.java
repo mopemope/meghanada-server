@@ -241,7 +241,12 @@ public class SexpOutputFormatter implements OutputFormatter {
 
   @Override
   public String clearCache(final long id, final boolean result) {
-    return Boolean.toString(result);
+    return success(doubleQuote(Boolean.toString(result)));
+  }
+
+  @Override
+  public String ping(final long id, final String ping) {
+    return success(doubleQuote(ping));
   }
 
   @Override
