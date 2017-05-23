@@ -304,20 +304,19 @@ public class CachedASMReflector {
 
   private List<ClassIndex> fuzzySearchClasses(final String keyword, final boolean anno) {
     final int length = keyword.length() + 1;
-    return this.globalClassIndex
-        .values()
-        .parallelStream()
-        .filter(
-            classIndex -> {
-              if (anno && !classIndex.isAnnotation) {
-                return false;
-              }
-              final String name = classIndex.getName();
-              final int score = StringUtils.getFuzzyDistance(name, keyword, Locale.ENGLISH);
-              return score >= length;
-            })
-        .map(ClassIndex::clone)
-        .collect(Collectors.toList());
+
+    final List<ClassIndex> result = new ArrayList<>(64);
+    for (final ClassIndex c : this.globalClassIndex.values()) {
+      if (anno && !c.isAnnotation) {
+        continue;
+      }
+      final String name = c.getName();
+      final int score = StringUtils.getFuzzyDistance(name, keyword, Locale.ENGLISH);
+      if (score >= length) {
+        result.add(c.clone());
+      }
+    }
+    return result;
   }
 
   public Stream<ClassIndex> fuzzySearchClassesStream(final String keyword, final boolean anno) {
@@ -374,20 +373,18 @@ public class CachedASMReflector {
 
   public List<ClassIndex> searchClasses(
       final String keyword, final boolean partial, final boolean anno) {
-    return this.globalClassIndex
-        .values()
-        .parallelStream()
-        .filter(
-            classIndex -> {
-              if (keyword.isEmpty()) {
-                // match all
-                return true;
-              }
-              return !(anno && !classIndex.isAnnotation)
-                  && CachedASMReflector.containsKeyword(keyword, partial, classIndex);
-            })
-        .map(ClassIndex::clone)
-        .collect(Collectors.toList());
+
+    final List<ClassIndex> result = new ArrayList<>(64);
+    for (final ClassIndex c : this.globalClassIndex.values()) {
+      if (keyword.isEmpty()) {
+        result.add(c.clone());
+      } else {
+        if (!(anno && !c.isAnnotation) && CachedASMReflector.containsKeyword(keyword, partial, c)) {
+          result.add(c.clone());
+        }
+      }
+    }
+    return result;
   }
 
   public Stream<ClassIndex> searchClassesStream(

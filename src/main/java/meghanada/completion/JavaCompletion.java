@@ -242,10 +242,11 @@ public class JavaCompletion {
     final String fqcn = typeScope.get().getFQCN();
 
     // add this member
-    JavaCompletion.reflectSelf(fqcn, true, prefix)
-        .stream()
-        .filter(c -> c.getName().startsWith(prefix))
-        .forEach(result::add);
+    for (final MemberDescriptor c : JavaCompletion.reflectSelf(fqcn, true, prefix)) {
+      if (c.getName().startsWith(prefix)) {
+        result.add(c);
+      }
+    }
 
     if (fqcn.contains(ClassNameUtils.INNER_MARK)) {
       // add parent
@@ -256,10 +257,11 @@ public class JavaCompletion {
           break;
         }
         parentClass = parentClass.substring(0, i);
-        JavaCompletion.reflectSelf(parentClass, true, prefix)
-            .stream()
-            .filter(c -> c.getName().startsWith(prefix))
-            .forEach(result::add);
+        for (final MemberDescriptor c : JavaCompletion.reflectSelf(parentClass, true, prefix)) {
+          if (c.getName().startsWith(prefix)) {
+            result.add(c);
+          }
+        }
       }
     }
 
@@ -268,25 +270,25 @@ public class JavaCompletion {
     final Map<String, Variable> symbols = source.getDeclaratorMap(line);
     log.debug("search variables size:{} result:{}", symbols.size(), symbols);
 
-    symbols.forEach(
-        (key, value) -> {
-          log.debug("check variable name:{}", key);
-          if (key.startsWith(prefix)) {
-            log.debug("match variable name:{}", key);
-            if (!value.isField) {
-              result.add(value.toCandidateUnit());
-            }
-          }
-        });
+    for (final Map.Entry<String, Variable> e : symbols.entrySet()) {
+      final String k = e.getKey();
+      final Variable v = e.getValue();
+      log.debug("check variable name:{}", k);
+      if (k.startsWith(prefix)) {
+        log.debug("match variable name:{}", k);
+        if (!v.isField) {
+          result.add(v.toCandidateUnit());
+        }
+      }
+    }
 
-    source
-        .getImportedClassMap()
-        .forEach(
-            (key, value) -> {
-              if (key.startsWith(prefix)) {
-                result.add(ClassIndex.createClass(value));
-              }
-            });
+    for (final Map.Entry<String, String> e : source.getImportedClassMap().entrySet()) {
+      final String k = e.getKey();
+      final String v = e.getValue();
+      if (k.startsWith(prefix)) {
+        result.add(ClassIndex.createClass(v));
+      }
+    }
 
     // Add class
     if (Character.isUpperCase(prefix.charAt(0))) {
@@ -300,7 +302,9 @@ public class JavaCompletion {
       }
     }
 
-    return result.stream().sorted(comparing(prefix)).collect(Collectors.toList());
+    final List<CandidateUnit> list = new ArrayList<>(result);
+    list.sort(comparing(source, prefix));
+    return list;
   }
 
   private static Collection<? extends CandidateUnit> reflect(
@@ -435,6 +439,40 @@ public class JavaCompletion {
       res.addAll(inners);
     }
     return res;
+  }
+
+  private static Comparator<? super CandidateUnit> comparing(
+      final Source src, final String keyword) {
+    final Set<String> imps = new HashSet<>(src.getImportedClassMap().values());
+    return (c1, c2) -> {
+      final String n1 = c1.getName();
+      final String n2 = c2.getName();
+      final String d1 = c1.getDeclaration();
+      final String d2 = c2.getDeclaration();
+
+      if (n1.startsWith(keyword) && n2.startsWith(keyword)) {
+        if (imps.contains(d1) && imps.contains(d2)) {
+          return d1.compareTo(d2);
+        }
+
+        if (imps.contains(d1)) {
+          return -1;
+        }
+        if (imps.contains(d2)) {
+          return 1;
+        }
+
+        return n1.compareTo(n2);
+      }
+
+      if (n1.startsWith(keyword)) {
+        return -1;
+      }
+      if (n2.startsWith(keyword)) {
+        return 1;
+      }
+      return n1.compareTo(n2);
+    };
   }
 
   private static Comparator<? super CandidateUnit> comparing(final String keyword) {
