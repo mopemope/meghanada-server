@@ -6,6 +6,7 @@ import static meghanada.utils.FunctionUtils.wrapIOConsumer;
 import com.android.builder.model.AndroidProject;
 import com.esotericsoftware.kryo.DefaultSerializer;
 import com.google.common.base.Joiner;
+import com.google.common.io.Files;
 import com.typesafe.config.ConfigFactory;
 import java.io.File;
 import java.io.IOException;
@@ -60,6 +61,10 @@ public class GradleProject extends Project {
   public GradleProject(final File projectRoot) throws IOException {
     super(projectRoot);
     this.rootProject = GradleProject.searchRootProject(projectRoot);
+    final File tempDir = Files.createTempDir();
+    tempDir.deleteOnExit();
+    final String tempPath = tempDir.getCanonicalPath();
+    System.setProperty("java.io.tmpdir", tempPath);
   }
 
   private static File searchRootProject(File dir) throws IOException {
@@ -266,6 +271,7 @@ public class GradleProject extends Project {
 
       final ProjectConnection projectConnection = getProjectConnection();
       final BuildLauncher build = projectConnection.newBuild();
+      this.setBuildJVMArgs(build);
       build.forTasks(tasks.toArray(new String[tasks.size()]));
       if (taskArgs.size() > 0) {
         build.withArguments(taskArgs.toArray(new String[taskArgs.size()]));
@@ -283,6 +289,10 @@ public class GradleProject extends Project {
     } finally {
       System.setProperty(PROJECT_ROOT_KEY, this.projectRoot.getCanonicalPath());
     }
+  }
+
+  private void setBuildJVMArgs(final BuildLauncher build) throws IOException {
+    // TODO separate daemon
   }
 
   private Map<String, Set<File>> searchProjectSources(final IdeaModule ideaModule)
@@ -393,13 +403,14 @@ public class GradleProject extends Project {
     }
   }
 
-  private void runPrepareCompileTask() {
+  private void runPrepareCompileTask() throws IOException {
     if (!this.prepareCompileTask.isEmpty()) {
       final ProjectConnection connection = this.getProjectConnection();
       try {
         final String[] tasks = prepareCompileTask.toArray(new String[prepareCompileTask.size()]);
         final BuildLauncher buildLauncher = connection.newBuild();
         log.info("project {} run tasks:{}", this.name, (Object) tasks);
+        this.setBuildJVMArgs(buildLauncher);
         buildLauncher.forTasks(tasks).run();
       } finally {
         connection.close();
@@ -423,7 +434,7 @@ public class GradleProject extends Project {
     }
   }
 
-  private void runPrepareTestCompileTask() {
+  private void runPrepareTestCompileTask() throws IOException {
     if (!this.prepareTestCompileTask.isEmpty()) {
       final ProjectConnection connection = this.getProjectConnection();
       try {
@@ -431,6 +442,7 @@ public class GradleProject extends Project {
             prepareTestCompileTask.toArray(new String[prepareTestCompileTask.size()]);
         final BuildLauncher buildLauncher = connection.newBuild();
         log.info("project {} run tasks:{}", this.name, (Object) tasks);
+        this.setBuildJVMArgs(buildLauncher);
         buildLauncher.forTasks(tasks).run();
       } finally {
         connection.close();
