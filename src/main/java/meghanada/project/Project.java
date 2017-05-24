@@ -246,10 +246,12 @@ public abstract class Project {
       List<File> files = Project.collectJavaFiles(sources);
       if (files != null && !files.isEmpty()) {
 
-        if (callerMap.size() == 0) {
+        if (this.callerMap.size() == 0) {
           force = true;
         }
-
+        if (force) {
+          this.callerMap.clear();
+        }
         final Stopwatch stopwatch = Stopwatch.createStarted();
         final File callerFile =
             FileUtils.getProjectDataFile(this.projectRoot, GlobalCache.CALLER_DATA);
@@ -314,8 +316,11 @@ public abstract class Project {
 
       List<File> files = Project.collectJavaFiles(testSources);
       if (files != null && !files.isEmpty()) {
-        if (callerMap.size() == 0) {
+        if (this.callerMap.size() == 0) {
           force = true;
+        }
+        if (force) {
+          this.callerMap.clear();
         }
 
         final Stopwatch stopwatch = Stopwatch.createStarted();
@@ -754,8 +759,8 @@ public abstract class Project {
                   if (path.startsWith(rootPath)) {
                     final String p = path.substring(rootPath.length() + 1, path.length() - 5);
                     final String importClass = ClassNameUtils.replace(p, File.separator, ".");
-                    if (callerMap.containsKey(importClass)) {
-                      final Set<String> imports = callerMap.get(importClass);
+                    if (this.callerMap.containsKey(importClass)) {
+                      final Set<String> imports = this.callerMap.get(importClass);
                       for (final String dep : imports) {
                         FileUtils.getSourceFile(dep, sourceRoots).ifPresent(temp::add);
                       }
@@ -772,7 +777,7 @@ public abstract class Project {
 
   private synchronized void writeCaller() throws IOException {
     final File callerFile = FileUtils.getProjectDataFile(this.projectRoot, GlobalCache.CALLER_DATA);
-    GlobalCache.getInstance().asyncWriteCache(callerFile, callerMap);
+    GlobalCache.getInstance().asyncWriteCache(callerFile, this.callerMap);
   }
 
   synchronized void loadCaller() throws IOException {
