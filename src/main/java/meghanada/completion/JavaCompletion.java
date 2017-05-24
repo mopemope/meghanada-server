@@ -527,7 +527,7 @@ public class JavaCompletion {
     }
   }
 
-  private List<ClassIndex> completionImport(final String searchWord) {
+  private static List<ClassIndex> completionImport(final String searchWord) {
 
     final Config config = Config.load();
     final boolean useFuzzySearch = config.useClassFuzzySearch();
@@ -564,7 +564,7 @@ public class JavaCompletion {
 
     if (searchWord.startsWith("*import")) {
 
-      return this.completionImport(searchWord);
+      return JavaCompletion.completionImport(searchWord);
 
     } else if (searchWord.startsWith("*new")) {
 

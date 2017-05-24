@@ -466,7 +466,7 @@ public class Source {
     return key != null && key.equals("true");
   }
 
-  private boolean includeInnerClass(final ClassScope cs, final String fqcn) {
+  private static boolean includeInnerClass(final ClassScope cs, final String fqcn) {
     final String classScopeFQCN = cs.getFQCN();
     if (fqcn.equals(classScopeFQCN)) {
       return true;
@@ -494,7 +494,7 @@ public class Source {
     }
 
     for (final ClassScope classScope : this.classScopes) {
-      if (this.includeInnerClass(classScope, fqcn)) {
+      if (Source.includeInnerClass(classScope, fqcn)) {
         return false;
       }
     }

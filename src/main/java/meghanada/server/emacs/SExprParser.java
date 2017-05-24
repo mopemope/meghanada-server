@@ -7,6 +7,7 @@ import java.util.Deque;
 import java.util.Iterator;
 import java.util.List;
 import java.util.StringTokenizer;
+import java.util.regex.Pattern;
 import javax.annotation.Nullable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -32,7 +33,7 @@ class SExprParser {
       this.sb = null;
       return this.get();
     } catch (Throwable t) {
-      throw new IllegalArgumentException("parse fail. sexp='" + s + "'", t);
+      throw new IllegalArgumentException("parse fail. sexp='" + s + '\'', t);
     }
   }
 
@@ -51,7 +52,7 @@ class SExprParser {
     }
 
     if (token.equals(DOUBLE_QUOTE)) {
-      this.sb = new StringBuilder();
+      this.sb = new StringBuilder(256);
       final SExpr string = getString();
       this.sb = null;
       return string;
@@ -80,7 +81,7 @@ class SExprParser {
       sexprList.add(inner);
     } else {
       if (token.equals(DOUBLE_QUOTE)) {
-        this.sb = new StringBuilder();
+        this.sb = new StringBuilder(256);
         final SExpr string = getString();
         this.sb = null;
         sexprList.add(string);
@@ -173,17 +174,20 @@ class SExprParser {
 
   abstract static class Atom implements SExpr {
 
+    private static final Pattern INTGER = Pattern.compile("^(\\+|-)?\\d+$");
+    private static final Pattern NUMBER = Pattern.compile("^(\\+|-)?\\d+.\\d*$");
+
     static Atom makeAtom(String value) {
       log.trace("value {}", value);
       value = value.trim();
       if (value.isEmpty()) {
         return null;
       }
-      if (value.matches("^(\\+|-)?\\d+$")) {
+      if (INTGER.matcher(value).matches()) {
         // is integer
         return new AtomInteger(value);
       }
-      if (value.matches("^(\\+|-)?\\d+.\\d*$")) {
+      if (NUMBER.matcher(value).matches()) {
         // is num
         return new AtomNumber(value);
       }

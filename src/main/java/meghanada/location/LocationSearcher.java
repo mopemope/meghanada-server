@@ -192,10 +192,10 @@ public class LocationSearcher {
                 if (IMPORT_RE.matcher(s).matches()) {
                   final String inner = s.substring(s.length() - 2, s.length() - 1);
                   final String innerClass = "Inner" + inner;
-                  rename.put(" " + inner + " ", " " + innerClass + " ");
-                  rename.put(" " + inner + "(", " " + innerClass + "(");
-                  rename.put(" " + inner + ".", " " + innerClass + ".");
-                  rename.put("(" + inner + ".", "(" + innerClass + ".");
+                  rename.put(' ' + inner + ' ', ' ' + innerClass + ' ');
+                  rename.put(' ' + inner + '(', ' ' + innerClass + '(');
+                  rename.put(' ' + inner + '.', ' ' + innerClass + '.');
+                  rename.put('(' + inner + '.', '(' + innerClass + '.');
                   final String replace = ClassNameUtils.replace(s, inner, innerClass);
                   bw.write(replace);
                   bw.newLine();
