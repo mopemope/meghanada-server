@@ -138,9 +138,23 @@ public abstract class Project {
   public abstract Project parseProject() throws ProjectParseException;
 
   public Set<File> getAllSources() {
-    final Set<File> temp = new HashSet<>(8);
+    final Set<File> temp = new HashSet<>(4);
     temp.addAll(this.sources);
     temp.addAll(this.resources);
+    temp.addAll(this.testSources);
+    temp.addAll(this.testResources);
+    return temp;
+  }
+
+  private Set<File> getSourcesAndResources() {
+    final Set<File> temp = new HashSet<>(2);
+    temp.addAll(this.sources);
+    temp.addAll(this.resources);
+    return temp;
+  }
+
+  private Set<File> getTestSourcesAndResources() {
+    final Set<File> temp = new HashSet<>(2);
     temp.addAll(this.testSources);
     temp.addAll(this.testResources);
     return temp;
@@ -229,7 +243,7 @@ public abstract class Project {
     try {
       System.setProperty(PROJECT_ROOT_KEY, projectRoot.getCanonicalPath());
 
-      List<File> files = Project.collectJavaFiles(this.getSources());
+      List<File> files = Project.collectJavaFiles(sources);
       if (files != null && !files.isEmpty()) {
 
         if (callerMap.size() == 0) {
@@ -247,9 +261,10 @@ public abstract class Project {
         files =
             force
                 ? files
-                : FileUtils.getModifiedSources(this.projectRoot, f, this.getSources(), this.output);
+                : FileUtils.getModifiedSources(
+                    this.projectRoot, f, this.getSourcesAndResources(), this.output);
         if (!force) {
-          files = addDepends(this.getSources(), files);
+          files = addDepends(this.getSourcesAndResources(), files);
         }
         final String classpath = this.classpath();
         this.prepareCompile(files);
@@ -295,7 +310,7 @@ public abstract class Project {
     try {
       System.setProperty(PROJECT_ROOT_KEY, projectRoot.getCanonicalPath());
 
-      List<File> files = Project.collectJavaFiles(this.getTestSources());
+      List<File> files = Project.collectJavaFiles(testSources);
       if (files != null && !files.isEmpty()) {
         if (callerMap.size() == 0) {
           force = true;
@@ -312,9 +327,9 @@ public abstract class Project {
             force
                 ? files
                 : FileUtils.getModifiedSources(
-                    projectRoot, files, this.getTestSources(), this.testOutput);
+                    projectRoot, files, this.getTestSourcesAndResources(), this.testOutput);
         if (!force) {
-          files = addDepends(this.getTestSources(), files);
+          files = addDepends(this.getTestSourcesAndResources(), files);
         }
         final String classpath = this.allClasspath();
         this.prepareTestCompile(files);
@@ -401,7 +416,7 @@ public abstract class Project {
     List<File> files = new ArrayList<>(8);
     files.add(file);
 
-    final Set<File> sources = isTest ? this.getAllSources() : this.getSources();
+    final Set<File> sources = isTest ? this.getAllSources() : this.getSourcesAndResources();
     files =
         force ? files : FileUtils.getModifiedSources(projectRoot, files, sources, new File(output));
 
@@ -441,7 +456,7 @@ public abstract class Project {
       output = this.output.getCanonicalPath();
     }
 
-    final Set<File> sources = isTest ? this.getAllSources() : this.getSources();
+    final Set<File> sources = isTest ? this.getAllSources() : this.getSourcesAndResources();
     final Stopwatch stopwatch = Stopwatch.createStarted();
     List<File> filesList =
         force ? files : FileUtils.getModifiedSources(projectRoot, files, sources, new File(output));
