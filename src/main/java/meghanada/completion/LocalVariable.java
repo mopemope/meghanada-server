@@ -20,7 +20,7 @@ public class LocalVariable {
   }
 
   public String getReturnType() {
-    return ClassNameUtils.getAllSimpleName(returnType);
+    return ClassNameUtils.replaceInnerMark(ClassNameUtils.getAllSimpleName(returnType));
   }
 
   public List<String> getCandidates() {
