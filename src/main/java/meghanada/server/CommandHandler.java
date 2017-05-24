@@ -17,7 +17,6 @@ import meghanada.location.Location;
 import meghanada.reflect.CandidateUnit;
 import meghanada.session.Session;
 import meghanada.utils.ClassNameUtils;
-import meghanada.utils.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -86,7 +85,7 @@ public class CommandHandler {
 
   public void compileProject(final long id) {
     try {
-      final CompileResult compileResult = session.compileProject();
+      final CompileResult compileResult = session.compileProject(true);
       final String out = outputFormatter.compileProject(id, compileResult);
       writer.write(out);
       writer.newLine();

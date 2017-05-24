@@ -521,15 +521,17 @@ public class Session {
     return compileResult;
   }
 
-  public synchronized CompileResult compileProject() throws IOException {
+  public synchronized CompileResult compileProject(final boolean force) throws IOException {
+
     final Project project = currentProject;
-    final CompileResult result = project.compileJava(false);
+    final CompileResult result = project.compileJava(force);
     if (result.hasDiagnostics()) {
       log.warn("compileProject report:{}", result.getDiagnosticsSummary());
     }
+
     if (result.isSuccess()) {
 
-      final CompileResult testResult = project.compileTestJava(false);
+      final CompileResult testResult = project.compileTestJava(force);
       if (testResult.hasDiagnostics()) {
         for (final Diagnostic<? extends JavaFileObject> diagnostic : testResult.getDiagnostics()) {
           result.getDiagnostics().add(diagnostic);
