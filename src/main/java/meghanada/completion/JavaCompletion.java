@@ -443,7 +443,9 @@ public class JavaCompletion {
 
   private static Comparator<? super CandidateUnit> comparing(
       final Source src, final String keyword) {
+
     final Set<String> imps = new HashSet<>(src.getImportedClassMap().values());
+
     return (c1, c2) -> {
       final String n1 = c1.getName();
       final String n2 = c2.getName();
@@ -452,7 +454,7 @@ public class JavaCompletion {
 
       if (n1.startsWith(keyword) && n2.startsWith(keyword)) {
         if (imps.contains(d1) && imps.contains(d2)) {
-          return d1.compareTo(d2);
+          return Integer.compare(n1.length(), n2.length());
         }
 
         if (imps.contains(d1)) {
@@ -462,7 +464,7 @@ public class JavaCompletion {
           return 1;
         }
 
-        return n1.compareTo(n2);
+        return Integer.compare(n1.length(), n2.length());
       }
 
       if (n1.startsWith(keyword)) {
@@ -481,7 +483,7 @@ public class JavaCompletion {
       final String o2 = c2.getName();
 
       if (o1.startsWith(keyword) && o2.startsWith(keyword)) {
-        return o1.compareTo(o2);
+        return Integer.compare(o1.length(), o2.length());
       }
       if (o1.startsWith(keyword)) {
         return -1;
@@ -578,15 +580,17 @@ public class JavaCompletion {
         } else {
           result = CachedASMReflector.getInstance().searchClasses(classPrefix.toLowerCase());
         }
-        result.sort(comparing(classPrefix));
+        result.sort(comparing(source, classPrefix));
         return result;
       }
 
       return JavaCompletion.completionConstructors(source)
           .stream()
-          .sorted(Comparator.comparing(CandidateUnit::getName))
+          .sorted(comparing(source, ""))
           .collect(Collectors.toList());
+
     } else if (searchWord.startsWith("*method")) {
+
       final int prefixIdx = searchWord.lastIndexOf('#');
       final int classIdx = searchWord.lastIndexOf(':');
       final String pkg = source.packageName;
