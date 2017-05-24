@@ -10,6 +10,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
@@ -284,13 +285,14 @@ public class CachedASMReflector {
       packageName = PACKAGE_RE.matcher(packageName).replaceAll("");
     }
 
-    final String pkg = packageName;
-    final Map<String, String> result = new ConcurrentHashMap<>(64);
-    this.globalClassIndex
-        .values()
-        .parallelStream()
-        .filter(ci -> ci.getPackage().equals(pkg))
-        .forEach(ci -> result.putIfAbsent(ci.getName(), ci.getRawDeclaration()));
+    final Map<String, String> result = new HashMap<>(64);
+
+    for (final ClassIndex ci : this.globalClassIndex.values()) {
+      if (ci.getPackage().equals(packageName)) {
+        result.putIfAbsent(ci.getName(), ci.getRawDeclaration());
+      }
+    }
+
     return result;
   }
 

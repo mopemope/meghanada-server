@@ -5,7 +5,6 @@ import com.google.common.base.Objects;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import meghanada.reflect.CandidateUnit.MemberType;
 import meghanada.reflect.asm.CachedASMReflector;
 import meghanada.utils.ClassNameUtils;
 

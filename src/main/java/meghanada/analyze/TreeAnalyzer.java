@@ -9,6 +9,7 @@ import com.sun.source.tree.ImportTree;
 import com.sun.source.tree.Tree;
 import com.sun.source.tree.VariableTree;
 import com.sun.tools.javac.code.Symbol;
+import com.sun.tools.javac.code.Symbol.VarSymbol;
 import com.sun.tools.javac.code.Type;
 import com.sun.tools.javac.tree.EndPosTable;
 import com.sun.tools.javac.tree.JCTree;
@@ -23,7 +24,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import javax.annotation.Nonnull;
@@ -216,20 +216,19 @@ public class TreeAnalyzer {
       return fqcn;
     }
     // checkLoadable(src, fqcn, simpleName);
-    ClassNameUtils.parseTypeParameter(fqcn)
-        .forEach(
-            s -> {
-              if (s.startsWith(ClassNameUtils.CAPTURE_OF)) {
-                final String cls = ClassNameUtils.removeCapture(s);
-                if (cls.equals(ClassNameUtils.CAPTURE_OF)) {
-                  final String ignore = markFQCN(src, ClassNameUtils.OBJECT_CLASS);
-                } else {
-                  final String ignore = markFQCN(src, cls);
-                }
-              } else {
-                final String ignore = markFQCN(src, s);
-              }
-            });
+    for (final String s : ClassNameUtils.parseTypeParameter(fqcn)) {
+      if (s.startsWith(ClassNameUtils.CAPTURE_OF)) {
+        final String cls = ClassNameUtils.removeCapture(s);
+        if (cls.equals(ClassNameUtils.CAPTURE_OF)) {
+          final String ignore = markFQCN(src, ClassNameUtils.OBJECT_CLASS);
+        } else {
+          final String ignore = markFQCN(src, cls);
+        }
+      } else {
+        final String ignore = markFQCN(src, s);
+      }
+    }
+
     final CachedASMReflector cachedASMReflector = CachedASMReflector.getInstance();
     if (!src.importClasses.contains(simpleName)
         && !cachedASMReflector.getGlobalClassIndex().containsKey(simpleName)) {
@@ -305,7 +304,9 @@ public class TreeAnalyzer {
       final String simpleName = ClassNameUtils.getSimpleName(importClass);
       if (simpleName.equals("*")) {
         // wild
-        cachedASMReflector.getPackageClasses(importClass).values().forEach(src::addImport);
+        for (final String s : cachedASMReflector.getPackageClasses(importClass).values()) {
+          src.addImport(s);
+        }
       } else {
         if (imp.isStatic()) {
           final Tree tree = imp.getQualifiedIdentifier();
@@ -372,7 +373,11 @@ public class TreeAnalyzer {
           log.trace("class={}", classScope);
 
           src.startClass(classScope);
-          classDecl.getMembers().forEach(wrapIOConsumer(tree -> analyzeParsedTree(context, tree)));
+
+          for (final JCTree tree : classDecl.getMembers()) {
+            analyzeParsedTree(context, tree);
+          }
+
           final Optional<ClassScope> endClass = src.endClass();
           log.trace("class={}", endClass);
         } else if (td instanceof JCTree.JCSkip) {
@@ -433,7 +438,10 @@ public class TreeAnalyzer {
       final int argumentIndex = context.getArgumentIndex();
 
       context.setArgumentIndex(-1);
-      block.getStatements().forEach(wrapIOConsumer(stmt -> this.analyzeParsedTree(context, stmt)));
+
+      for (final JCTree stmt : block.getStatements()) {
+        this.analyzeParsedTree(context, stmt);
+      }
 
       context.setArgumentIndex(argumentIndex);
     } else if (tree instanceof JCTree.JCFieldAccess) {
@@ -554,17 +562,21 @@ public class TreeAnalyzer {
       if (type != null) {
         this.analyzeParsedTree(context, type);
       }
+
       final List<JCTree.JCExpression> initializes = newArray.getInitializers();
       if (initializes != null) {
-        initializes.forEach(
-            wrapIOConsumer(jcExpression -> this.analyzeParsedTree(context, jcExpression)));
+        for (final JCTree.JCExpression expression : initializes) {
+          this.analyzeParsedTree(context, expression);
+        }
       }
-      final List<JCTree.JCExpression> dimensions = newArray.getDimensions();
 
+      final List<JCTree.JCExpression> dimensions = newArray.getDimensions();
       if (dimensions != null) {
-        dimensions.forEach(
-            wrapIOConsumer(jcExpression -> this.analyzeParsedTree(context, jcExpression)));
+        for (final JCTree.JCExpression expression : dimensions) {
+          this.analyzeParsedTree(context, expression);
+        }
       }
+
       if (newArray.type != null) {
         this.getTypeString(context.getSource(), newArray.type).ifPresent(context::setArgumentFQCN);
       }
@@ -627,12 +639,13 @@ public class TreeAnalyzer {
               new MethodCall(s, methodName, preferredPos + 1, range, range);
           if (sym instanceof Symbol.MethodSymbol) {
             final Symbol.MethodSymbol methodSymbol = (Symbol.MethodSymbol) sym;
+
             final java.util.List<String> arguments =
-                methodSymbol
-                    .getParameters()
-                    .stream()
-                    .map(varSymbol -> varSymbol.asType().toString())
-                    .collect(Collectors.toList());
+                new ArrayList<>(methodSymbol.getParameters().size());
+
+            for (final VarSymbol varSymbol : methodSymbol.getParameters()) {
+              arguments.add(varSymbol.asType().toString());
+            }
             if (arguments != null) {
               methodCall.setArguments(arguments);
             }
@@ -747,13 +760,11 @@ public class TreeAnalyzer {
 
     final java.util.List<? extends VariableTree> parameters = lambda.getParameters();
     if (parameters != null) {
-      parameters.forEach(
-          wrapIOConsumer(
-              v -> {
-                if (v instanceof JCTree.JCVariableDecl) {
-                  this.analyzeParsedTree(context, (JCTree.JCVariableDecl) v);
-                }
-              }));
+      for (final VariableTree v : parameters) {
+        if (v instanceof JCTree.JCVariableDecl) {
+          this.analyzeParsedTree(context, (JCTree.JCVariableDecl) v);
+        }
+      }
     }
     final JCTree body = lambda.getBody();
     if (body != null) {
@@ -798,19 +809,21 @@ public class TreeAnalyzer {
     this.analyzeParsedTree(context, expression);
     final List<JCTree.JCCase> cases = jcSwitch.getCases();
     if (cases != null) {
-      cases.forEach(
-          wrapIOConsumer(
-              jcCase -> {
-                final JCTree.JCExpression expression1 = jcCase.getExpression();
-                if (expression1 != null) {
-                  this.analyzeParsedTree(context, expression1);
-                }
-                final List<JCTree.JCStatement> statements = jcCase.getStatements();
-                if (statements != null) {
-                  statements.forEach(
-                      wrapIOConsumer(jcStatement -> this.analyzeParsedTree(context, jcStatement)));
-                }
-              }));
+
+      for (final JCTree.JCCase jcCase : cases) {
+
+        final JCTree.JCExpression expression1 = jcCase.getExpression();
+        if (expression1 != null) {
+          this.analyzeParsedTree(context, expression1);
+        }
+
+        final List<JCTree.JCStatement> statements = jcCase.getStatements();
+        if (statements != null) {
+          for (final JCTree.JCStatement stmt : statements) {
+            this.analyzeParsedTree(context, stmt);
+          }
+        }
+      }
     }
   }
 
@@ -828,13 +841,19 @@ public class TreeAnalyzer {
     this.analyzeParsedTree(context, block);
 
     if (catches != null) {
-      catches.forEach(
-          wrapIOConsumer(
-              jcCatch -> {
-                final JCTree.JCVariableDecl parameter = jcCatch.getParameter();
-                this.analyzeParsedTree(context, parameter);
-                this.analyzeParsedTree(context, jcCatch.getBlock());
-              }));
+
+      for (final JCTree.JCCatch jcCatch : catches) {
+
+        final JCTree.JCVariableDecl parameter = jcCatch.getParameter();
+        if (parameter != null) {
+          this.analyzeParsedTree(context, parameter);
+        }
+
+        final JCTree.JCBlock catchBlock = jcCatch.getBlock();
+        if (catchBlock != null) {
+          this.analyzeParsedTree(context, catchBlock);
+        }
+      }
     }
 
     if (finallyBlock != null) {
@@ -848,15 +867,23 @@ public class TreeAnalyzer {
     final JCTree.JCExpression condition = forLoop.getCondition();
     final List<JCTree.JCExpressionStatement> updates = forLoop.getUpdate();
     final JCTree.JCStatement statement = forLoop.getStatement();
+
     if (initializer != null) {
-      initializer.forEach(wrapIOConsumer(s -> this.analyzeParsedTree(context, s)));
+      for (final JCTree.JCStatement s : initializer) {
+        this.analyzeParsedTree(context, s);
+      }
     }
+
     if (condition != null) {
       this.analyzeParsedTree(context, condition);
     }
+
     if (updates != null) {
-      updates.forEach(wrapIOConsumer(s -> this.analyzeParsedTree(context, s)));
+      for (final JCTree.JCExpressionStatement s : updates) {
+        this.analyzeParsedTree(context, s);
+      }
     }
+
     if (statement != null) {
       this.analyzeParsedTree(context, statement);
     }
@@ -1188,26 +1215,21 @@ public class TreeAnalyzer {
 
   @Nonnull
   private java.util.List<String> getArgumentsType(
-      final SourceContext context, final List<JCTree.JCExpression> arguments) {
+      final SourceContext context, final List<JCTree.JCExpression> arguments) throws IOException {
+
     final SourceContext newContext =
         new SourceContext(context.getSource(), context.getEndPosTable());
     newContext.setArgumentIndex(0);
     try {
-      return arguments
-          .stream()
-          .map(
-              expression -> {
-                try {
-                  newContext.setArgument(true);
-                  this.analyzeParsedTree(newContext, expression);
-                  newContext.incrArgumentIndex();
-                  newContext.setArgument(false);
-                  return newContext.getArgumentFQCN();
-                } catch (IOException e) {
-                  throw new UncheckedIOException(e);
-                }
-              })
-          .collect(Collectors.toList());
+      final java.util.List<String> result = new ArrayList<>(arguments.size());
+      for (final JCTree.JCExpression expression : arguments) {
+        newContext.setArgument(true);
+        this.analyzeParsedTree(newContext, expression);
+        newContext.incrArgumentIndex();
+        newContext.setArgument(false);
+        result.add(newContext.getArgumentFQCN());
+      }
+      return result;
     } finally {
       // reset
       context.setArgumentIndex(-1);
@@ -1320,8 +1342,10 @@ public class TreeAnalyzer {
                       final JCTree.JCErroneous erroneous = (JCTree.JCErroneous) expressionTree;
                       final List<? extends JCTree> errorTrees = erroneous.getErrorTrees();
                       if (errorTrees != null) {
-                        errorTrees.forEach(
-                            wrapIOConsumer(tree -> this.analyzeParsedTree(context, tree)));
+
+                        for (final JCTree tree : errorTrees) {
+                          this.analyzeParsedTree(context, tree);
+                        }
                       }
                     }
                   } else {
@@ -1487,30 +1511,36 @@ public class TreeAnalyzer {
                   classScope.isEnum = isEnum;
                   log.trace("maybe inner class={}", classScope);
                   parent.startClass(classScope);
-                  classDecl
-                      .getMembers()
-                      .forEach(wrapIOConsumer(tree1 -> this.analyzeParsedTree(context, tree1)));
+
+                  for (final JCTree tree1 : classDecl.getMembers()) {
+                    this.analyzeParsedTree(context, tree1);
+                  }
+
                   final Optional<ClassScope> ignore = parent.endClass();
                 }));
   }
 
   private void parseModifiers(
-      final SourceContext context, @Nullable final JCTree.JCModifiers modifiers) {
+      final SourceContext context, @Nullable final JCTree.JCModifiers modifiers)
+      throws IOException {
+
     if (modifiers != null) {
       final List<JCTree.JCAnnotation> annotations = modifiers.getAnnotations();
       if (annotations != null) {
-        annotations.forEach(
-            wrapIOConsumer(
-                jcAnnotation -> {
-                  final JCTree annotationType = jcAnnotation.getAnnotationType();
-                  this.analyzeParsedTree(context, annotationType);
-                  final List<JCTree.JCExpression> arguments = jcAnnotation.getArguments();
-                  if (arguments != null) {
-                    arguments.forEach(
-                        wrapIOConsumer(
-                            jcExpression -> this.analyzeParsedTree(context, jcExpression)));
-                  }
-                }));
+
+        for (final JCTree.JCAnnotation jcAnnotation : annotations) {
+          final JCTree annotationType = jcAnnotation.getAnnotationType();
+          if (annotationType != null) {
+            this.analyzeParsedTree(context, annotationType);
+          }
+
+          final List<JCTree.JCExpression> arguments = jcAnnotation.getArguments();
+          if (arguments != null) {
+            for (final JCTree.JCExpression jcExpression : arguments) {
+              this.analyzeParsedTree(context, jcExpression);
+            }
+          }
+        }
       }
     }
   }
@@ -1583,16 +1613,16 @@ public class TreeAnalyzer {
         return;
       }
 
-      src.classScopes.forEach(
-          classScope -> {
-            final String className = currentClass.get().name;
-            if (ClassNameUtils.getSimpleName(className).equals(nm)) {
-              variable.fqcn = TreeAnalyzer.markFQCN(src, className);
-              variable.argumentIndex = context.getArgumentIndex();
-              context.setArgumentFQCN(variable.fqcn);
-              src.getCurrentScope().ifPresent(scope -> scope.addVariable(variable));
-            }
-          });
+      for (final ClassScope classScope : src.classScopes) {
+        final String className = currentClass.get().name;
+        if (ClassNameUtils.getSimpleName(className).equals(nm)) {
+          variable.fqcn = TreeAnalyzer.markFQCN(src, className);
+          variable.argumentIndex = context.getArgumentIndex();
+          context.setArgumentFQCN(variable.fqcn);
+          src.getCurrentScope().ifPresent(scope -> scope.addVariable(variable));
+        }
+      }
+
       // mark unknown
       final String unknown = TreeAnalyzer.markFQCN(src, nm);
     }
@@ -1648,17 +1678,21 @@ public class TreeAnalyzer {
 
                   // check method parameter
                   context.setParameter(true);
-                  md.getParameters()
-                      .forEach(wrapIOConsumer(vd -> this.analyzeParsedTree(context, vd)));
+
+                  for (final JCTree.JCVariableDecl vd : md.getParameters()) {
+                    this.analyzeParsedTree(context, vd);
+                  }
+
                   context.setParameter(false);
 
                   // set exceptions
-                  md.getThrows()
-                      .forEach(
-                          expr -> {
-                            final String ex = resolveTypeFromImport(src, expr);
-                            final String fqcn = TreeAnalyzer.markFQCN(src, ex);
-                          });
+                  final List<JCTree.JCExpression> throwsList = md.getThrows();
+                  if (throwsList != null) {
+                    for (final JCTree.JCExpression expr : throwsList) {
+                      final String ex = resolveTypeFromImport(src, expr);
+                      final String fqcn = TreeAnalyzer.markFQCN(src, ex);
+                    }
+                  }
 
                   final JCTree.JCBlock body = md.getBody();
                   // parse body
@@ -1673,7 +1707,8 @@ public class TreeAnalyzer {
       final SourceContext context,
       final JCTree.JCVariableDecl vd,
       final int preferredPos,
-      final int endPos) {
+      final int endPos)
+      throws IOException {
     final Source src = context.getSource();
     final Name name = vd.getName();
     final JCTree.JCExpression initializer = vd.getInitializer();
