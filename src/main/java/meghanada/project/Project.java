@@ -257,17 +257,19 @@ public abstract class Project {
           log.warn("{} delete fail", callerFile);
         }
 
-        final List<File> f = files;
         files =
             force
                 ? files
                 : FileUtils.getModifiedSources(
-                    this.projectRoot, f, this.getSourcesAndResources(), this.output);
+                    this.projectRoot, files, this.getSourcesAndResources(), this.output);
         if (!force) {
-          files = addDepends(this.getSourcesAndResources(), files);
+          files = this.getRelatedSources(this.getSourcesAndResources(), files);
         }
+
         final String classpath = this.classpath();
+
         this.prepareCompile(files);
+
         final CompiledSourceHandler handler = new CompiledSourceHandler(this, this.callerMap);
         final CompileResult compileResult =
             clearMemberCache(
@@ -329,10 +331,12 @@ public abstract class Project {
                 : FileUtils.getModifiedSources(
                     projectRoot, files, this.getTestSourcesAndResources(), this.testOutput);
         if (!force) {
-          files = addDepends(this.getTestSourcesAndResources(), files);
+          files = this.getRelatedSources(this.getTestSourcesAndResources(), files);
         }
+
         final String classpath = this.allClasspath();
         this.prepareTestCompile(files);
+
         final CompiledSourceHandler handler = new CompiledSourceHandler(this, this.callerMap);
         final CompileResult compileResult =
             clearMemberCache(
@@ -419,14 +423,19 @@ public abstract class Project {
     final Set<File> sources = isTest ? this.getAllSources() : this.getSourcesAndResources();
     files =
         force ? files : FileUtils.getModifiedSources(projectRoot, files, sources, new File(output));
+    files = this.getRelatedSources(sources, files);
 
-    files = addDepends(sources, files);
+    if (isTest) {
+      this.prepareTestCompile(files);
+    } else {
+      this.prepareCompile(files);
+    }
 
     final CompiledSourceHandler handler = new CompiledSourceHandler(this, this.callerMap);
-
     final CompileResult compileResult =
         clearMemberCache(
             getJavaAnalyzer().analyzeAndCompile(files, this.allClasspath(), output, true, handler));
+
     log.info(
         "project {} compile and analyze {} files. force:{} problem:{} elapsed:{}",
         this.name,
@@ -438,7 +447,8 @@ public abstract class Project {
     return compileResult;
   }
 
-  public CompileResult compileFile(final List<File> files, final boolean force) throws IOException {
+  public CompileResult compileFile(List<File> files, final boolean force) throws IOException {
+
     boolean isTest = false;
     // sampling
     String filepath = files.get(0).getCanonicalPath();
@@ -449,6 +459,7 @@ public abstract class Project {
         break;
       }
     }
+
     String output;
     if (isTest) {
       output = this.testOutput.getCanonicalPath();
@@ -458,14 +469,22 @@ public abstract class Project {
 
     final Set<File> sources = isTest ? this.getAllSources() : this.getSourcesAndResources();
     final Stopwatch stopwatch = Stopwatch.createStarted();
-    List<File> filesList =
+
+    files =
         force ? files : FileUtils.getModifiedSources(projectRoot, files, sources, new File(output));
-    filesList = addDepends(sources, filesList);
+    files = this.getRelatedSources(sources, files);
+
+    if (isTest) {
+      this.prepareTestCompile(files);
+    } else {
+      this.prepareCompile(files);
+    }
+
     final CompiledSourceHandler handler = new CompiledSourceHandler(this, this.callerMap);
     final CompileResult compileResult =
         clearMemberCache(
-            getJavaAnalyzer()
-                .analyzeAndCompile(filesList, this.allClasspath(), output, true, handler));
+            getJavaAnalyzer().analyzeAndCompile(files, this.allClasspath(), output, true, handler));
+
     log.info(
         "project {} compile and analyze {} files. force:{} problem:{} elapsed:{}",
         this.name,
@@ -717,14 +736,17 @@ public abstract class Project {
     Project.loadedProject.put(id, this);
   }
 
-  private List<File> addDepends(final Set<File> sourceRoots, final List<File> files) {
+  private List<File> getRelatedSources(final Set<File> sourceRoots, final List<File> files) {
+
     final Set<File> temp = Collections.newSetFromMap(new ConcurrentHashMap<File, Boolean>(16));
     temp.addAll(files);
+    temp.addAll(FileUtils.getPackagePrivateSource(files));
 
     sourceRoots
         .parallelStream()
         .forEach(
             root -> {
+              // TODO add same package
               try {
                 final String rootPath = root.getCanonicalPath();
                 for (final File file : files) {

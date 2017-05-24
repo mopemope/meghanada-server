@@ -2,6 +2,7 @@ package meghanada.analyze;
 
 import static meghanada.config.Config.timeIt;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 import java.io.File;
 import java.io.IOException;
@@ -233,6 +234,30 @@ public class SourceTest extends GradleTestBase {
           System.out.println(k + ':' + v);
         });
     assertEquals(9, missingImport.size());
+  }
+
+  @Test
+  public void testSource01() throws Exception {
+    final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8");
+    final String cp = getClasspath();
+
+    List<File> files = new ArrayList<>();
+    final File file =
+        new File("./src/main/java/meghanada/analyze/ClassScope.java").getCanonicalFile();
+    assert file.exists();
+    files.add(file);
+
+    final String tmp = System.getProperty("java.io.tmpdir");
+
+    final Source source =
+        timeIt(
+            () -> {
+              final CompileResult compileResult = analyzer.analyzeAndCompile(files, cp, tmp);
+              return compileResult.getSources().get(file);
+            });
+
+    assertNotNull(source);
+    source.importClasses.forEach(s -> System.out.println(s));
   }
 
   private String getClasspath() throws IOException {

@@ -18,6 +18,7 @@ import java.security.DigestInputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -74,7 +75,7 @@ public final class FileUtils {
     }
   }
 
-  private static List<File> listJavaFiles(File parent) {
+  public static List<File> listJavaFiles(File parent) {
     if (parent.isFile()) {
       parent = parent.getParentFile();
     }
@@ -296,22 +297,16 @@ public final class FileUtils {
     return false;
   }
 
-  public static List<File> getPackagePrivateSource(final List<File> compileFiles) {
+  public static Collection<File> getPackagePrivateSource(final List<File> compileFiles) {
     final Set<File> temp = Collections.newSetFromMap(new ConcurrentHashMap<File, Boolean>(8));
 
     compileFiles
         .parallelStream()
         .forEach(
             file -> {
-              if (file.isFile()) {
-                final List<File> list = FileUtils.listJavaFiles(file.getParentFile());
-                temp.addAll(list);
-              } else {
-                final List<File> list = FileUtils.listJavaFiles(file);
-                temp.addAll(list);
-              }
+              temp.addAll(FileUtils.listJavaFiles(file));
             });
-    return new ArrayList<>(temp);
+    return temp;
   }
 
   public static List<File> getModifiedSources(
