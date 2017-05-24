@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import meghanada.analyze.CompileResult;
 import meghanada.config.Config;
@@ -37,6 +38,7 @@ import org.gradle.tooling.GradleConnectionException;
 import org.gradle.tooling.GradleConnector;
 import org.gradle.tooling.ProjectConnection;
 import org.gradle.tooling.ResultHandler;
+import org.gradle.tooling.internal.consumer.DefaultGradleConnector;
 import org.gradle.tooling.model.DomainObjectSet;
 import org.gradle.tooling.model.GradleModuleVersion;
 import org.gradle.tooling.model.UnsupportedMethodException;
@@ -260,6 +262,12 @@ public class GradleProject extends Project {
               .useGradleVersion(gradleVersion)
               .forProjectDirectory(this.rootProject);
     }
+
+    if (connector instanceof DefaultGradleConnector) {
+      final DefaultGradleConnector defaultGradleConnector = (DefaultGradleConnector) connector;
+      defaultGradleConnector.daemonMaxIdleTime(1, TimeUnit.HOURS);
+    }
+
     return connector.connect();
   }
 
