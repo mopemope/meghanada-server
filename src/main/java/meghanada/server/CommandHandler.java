@@ -63,11 +63,7 @@ public class CommandHandler {
   public void diagnostics(final long id, final String path) {
     try {
       final String canonicalPath = new File(path).getCanonicalPath();
-
-      // check force
-      FileUtils.invalidateChecksum(session.getCurrentProject().getProjectRoot(), canonicalPath);
-
-      final CompileResult compileResult = session.compileProject();
+      final CompileResult compileResult = session.compileFile(canonicalPath);
       final String out = outputFormatter.diagnostics(id, compileResult, canonicalPath);
       writer.write(out);
       writer.newLine();
