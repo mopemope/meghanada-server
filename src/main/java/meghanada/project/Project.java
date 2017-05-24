@@ -126,13 +126,12 @@ public abstract class Project {
     }
   }
 
-  private static List<File> collectJavaFiles(Set<File> sourceDirs) {
+  private static List<File> collectJavaFiles(final Set<File> sourceDirs) {
     return sourceDirs
         .parallelStream()
         .filter(File::exists)
         .map(root -> FileUtils.collectFiles(root, ".java"))
-        .flatMap(Collection::parallelStream)
-        // .filter(FileUtils::filterFile)
+        .flatMap(Collection::stream)
         .collect(Collectors.toList());
   }
 
@@ -230,7 +229,7 @@ public abstract class Project {
     try {
       System.setProperty(PROJECT_ROOT_KEY, projectRoot.getCanonicalPath());
 
-      List<File> files = Project.collectJavaFiles(this.sources);
+      List<File> files = Project.collectJavaFiles(this.getSources());
       if (files != null && !files.isEmpty()) {
 
         if (callerMap.size() == 0) {
@@ -248,10 +247,9 @@ public abstract class Project {
         files =
             force
                 ? files
-                : FileUtils.getModifiedSources(
-                    this.projectRoot, f, this.getAllSources(), this.output);
+                : FileUtils.getModifiedSources(this.projectRoot, f, this.getSources(), this.output);
         if (!force) {
-          files = addDepends(this.getAllSources(), files);
+          files = addDepends(this.getSources(), files);
         }
         final String classpath = this.classpath();
         this.prepareCompile(files);
@@ -296,7 +294,8 @@ public abstract class Project {
     final String origin = System.getProperty(PROJECT_ROOT_KEY);
     try {
       System.setProperty(PROJECT_ROOT_KEY, projectRoot.getCanonicalPath());
-      List<File> files = Project.collectJavaFiles(this.testSources);
+
+      List<File> files = Project.collectJavaFiles(this.getTestSources());
       if (files != null && !files.isEmpty()) {
         if (callerMap.size() == 0) {
           force = true;
@@ -313,9 +312,9 @@ public abstract class Project {
             force
                 ? files
                 : FileUtils.getModifiedSources(
-                    projectRoot, files, this.getAllSources(), this.testOutput);
+                    projectRoot, files, this.getTestSources(), this.testOutput);
         if (!force) {
-          files = addDepends(this.getAllSources(), files);
+          files = addDepends(this.getTestSources(), files);
         }
         final String classpath = this.allClasspath();
         this.prepareTestCompile(files);
@@ -358,7 +357,8 @@ public abstract class Project {
 
   public CompileResult parseFile(final File file) throws IOException {
     boolean isTest = false;
-    String filepath = file.getCanonicalPath();
+
+    final String filepath = file.getCanonicalPath();
     for (File source : this.testSources) {
       String testPath = source.getCanonicalPath();
       if (filepath.startsWith(testPath)) {
@@ -366,65 +366,61 @@ public abstract class Project {
         break;
       }
     }
+
     String output;
     if (isTest) {
       output = this.testOutput.getCanonicalPath();
     } else {
       output = this.output.getCanonicalPath();
     }
-    if (FileUtils.filterFile(file)) {
-      List<File> files = new ArrayList<>(2);
-      files.add(file);
-      return getJavaAnalyzer().analyzeAndCompile(files, this.allClasspath(), output, false);
-    }
-    return new CompileResult(false);
+    List<File> files = new ArrayList<>(2);
+    files.add(file);
+    return getJavaAnalyzer().analyzeAndCompile(files, this.allClasspath(), output, false);
   }
 
   public CompileResult compileFile(final File file, final boolean force) throws IOException {
     boolean isTest = false;
-    String filepath = file.getCanonicalPath();
-    for (File source : this.testSources) {
+    final String filepath = file.getCanonicalPath();
+
+    for (final File source : this.testSources) {
       String testPath = source.getCanonicalPath();
       if (filepath.startsWith(testPath)) {
         isTest = true;
         break;
       }
     }
+
     String output;
     if (isTest) {
       output = this.testOutput.getCanonicalPath();
     } else {
       output = this.output.getCanonicalPath();
     }
-    if (FileUtils.filterFile(file)) {
-      final Stopwatch stopwatch = Stopwatch.createStarted();
-      List<File> files = new ArrayList<>(8);
-      files.add(file);
 
-      files =
-          force
-              ? files
-              : FileUtils.getModifiedSources(
-                  projectRoot, files, this.getAllSources(), new File(output));
-      files = addDepends(this.getAllSources(), files);
+    final Stopwatch stopwatch = Stopwatch.createStarted();
+    List<File> files = new ArrayList<>(8);
+    files.add(file);
 
-      final CompiledSourceHandler handler = new CompiledSourceHandler(this, this.callerMap);
+    final Set<File> sources = isTest ? this.getAllSources() : this.getSources();
+    files =
+        force ? files : FileUtils.getModifiedSources(projectRoot, files, sources, new File(output));
 
-      final CompileResult compileResult =
-          clearMemberCache(
-              getJavaAnalyzer()
-                  .analyzeAndCompile(files, this.allClasspath(), output, true, handler));
-      log.info(
-          "project {} compile and analyze {} files. force:{} problem:{} elapsed:{}",
-          this.name,
-          files.size(),
-          force,
-          compileResult.getDiagnostics().size(),
-          stopwatch.stop());
+    files = addDepends(sources, files);
 
-      return compileResult;
-    }
-    return new CompileResult(false);
+    final CompiledSourceHandler handler = new CompiledSourceHandler(this, this.callerMap);
+
+    final CompileResult compileResult =
+        clearMemberCache(
+            getJavaAnalyzer().analyzeAndCompile(files, this.allClasspath(), output, true, handler));
+    log.info(
+        "project {} compile and analyze {} files. force:{} problem:{} elapsed:{}",
+        this.name,
+        files.size(),
+        force,
+        compileResult.getDiagnostics().size(),
+        stopwatch.stop());
+
+    return compileResult;
   }
 
   public CompileResult compileFile(final List<File> files, final boolean force) throws IOException {
@@ -445,16 +441,11 @@ public abstract class Project {
       output = this.output.getCanonicalPath();
     }
 
+    final Set<File> sources = isTest ? this.getAllSources() : this.getSources();
     final Stopwatch stopwatch = Stopwatch.createStarted();
     List<File> filesList =
-        files.stream().filter(FileUtils::filterFile).collect(Collectors.toList());
-
-    filesList =
-        force
-            ? filesList
-            : FileUtils.getModifiedSources(
-                projectRoot, files, this.getAllSources(), new File(output));
-    filesList = addDepends(this.getAllSources(), filesList);
+        force ? files : FileUtils.getModifiedSources(projectRoot, files, sources, new File(output));
+    filesList = addDepends(sources, filesList);
     final CompiledSourceHandler handler = new CompiledSourceHandler(this, this.callerMap);
     final CompileResult compileResult =
         clearMemberCache(
@@ -721,30 +712,19 @@ public abstract class Project {
             root -> {
               try {
                 final String rootPath = root.getCanonicalPath();
-                files
-                    .parallelStream()
-                    .forEach(
-                        file -> {
-                          try {
-                            final String path = file.getCanonicalPath();
-                            if (path.startsWith(rootPath)) {
-                              final String p =
-                                  path.substring(rootPath.length() + 1, path.length() - 5);
-                              final String importClass =
-                                  ClassNameUtils.replace(p, File.separator, ".");
-                              if (callerMap.containsKey(importClass)) {
-                                final Set<String> imports = callerMap.get(importClass);
-                                imports.forEach(
-                                    dep -> {
-                                      FileUtils.getSourceFile(dep, sourceRoots)
-                                          .ifPresent(temp::add);
-                                    });
-                              }
-                            }
-                          } catch (IOException e) {
-                            throw new UncheckedIOException(e);
-                          }
-                        });
+                for (final File file : files) {
+                  final String path = file.getCanonicalPath();
+                  if (path.startsWith(rootPath)) {
+                    final String p = path.substring(rootPath.length() + 1, path.length() - 5);
+                    final String importClass = ClassNameUtils.replace(p, File.separator, ".");
+                    if (callerMap.containsKey(importClass)) {
+                      final Set<String> imports = callerMap.get(importClass);
+                      for (final String dep : imports) {
+                        FileUtils.getSourceFile(dep, sourceRoots).ifPresent(temp::add);
+                      }
+                    }
+                  }
+                }
               } catch (IOException e) {
                 throw new UncheckedIOException(e);
               }

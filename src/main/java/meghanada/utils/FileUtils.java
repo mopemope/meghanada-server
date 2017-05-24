@@ -8,6 +8,7 @@ import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
@@ -266,14 +267,14 @@ public final class FileUtils {
     }
   }
 
-  public static Optional<File> getSourceFile(
-      final String importClass, final Set<File> sourceRoots) {
-    final String p = ClassNameUtils.replaceDot2FileSep(importClass) + JAVA_EXT;
+  public static Optional<File> getSourceFile(final String importClass, final Set<File> sourceRoots)
+      throws IOException {
+
+    final String path = ClassNameUtils.replaceDot2FileSep(importClass) + JAVA_EXT;
     for (final File root : sourceRoots) {
-      // TODO slow
-      final File file = new File(root, p);
-      if (file.exists()) {
-        return Optional.of(file);
+      final Path p = Paths.get(root.getCanonicalPath(), path);
+      if (Files.exists(p, LinkOption.NOFOLLOW_LINKS)) {
+        return Optional.of(p.toFile());
       }
     }
     return Optional.empty();
@@ -281,14 +282,15 @@ public final class FileUtils {
 
   private static boolean hasClassFile(
       final String path, final Set<File> sourceRoots, final File out) throws IOException {
+
+    final String outPath = out.getCanonicalPath();
     for (final File rootFile : sourceRoots) {
       final String root = rootFile.getCanonicalPath();
       if (path.startsWith(root)) {
-        // find
         final String src = path.substring(root.length());
         final String classFile = ClassNameUtils.replace(src, JAVA_EXT, CLASS_EXT);
-        final File file = new File(out, classFile);
-        return file.exists();
+        final Path p = Paths.get(outPath, classFile);
+        return Files.exists(p, LinkOption.NOFOLLOW_LINKS);
       }
     }
     return false;
