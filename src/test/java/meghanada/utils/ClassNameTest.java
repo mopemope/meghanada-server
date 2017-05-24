@@ -46,4 +46,18 @@ public class ClassNameTest extends GradleTestBase {
     String name = className.getName();
     assertEquals("Map", name);
   }
+
+  @Test
+  public void getName6() throws Exception {
+    ClassName className = new ClassName("Map<>");
+    String name = className.getName();
+    assertEquals("Map", name);
+  }
+
+  @Test
+  public void getName7() throws Exception {
+    ClassName className = new ClassName("Map<K, V>.");
+    String name = className.getName();
+    assertEquals("Map.", name);
+  }
 }

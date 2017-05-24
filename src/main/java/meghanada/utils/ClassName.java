@@ -25,12 +25,16 @@ public final class ClassName {
   public String getName() {
     String name = ClassNameUtils.removeCaptureAndWildCard(this.rawName);
     if (typeIndex >= 0) {
-      String fst = name.substring(0, typeIndex);
-      String sec = name.substring(typeLastIndex + 1, name.length());
-      name = fst + sec;
+      final String fst = name.substring(0, typeIndex);
+      if (typeLastIndex > typeIndex) {
+        final String sec = name.substring(typeLastIndex + 1, name.length());
+        name = fst + sec;
+      } else {
+        name = fst;
+      }
     }
 
-    int arrayIndex = name.indexOf('[');
+    final int arrayIndex = name.indexOf('[');
     if (arrayIndex >= 0) {
       name = name.substring(0, arrayIndex);
     }
