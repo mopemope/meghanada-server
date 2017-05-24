@@ -45,9 +45,9 @@ public class GlobalCache {
   public static final String CACHE_EXT = ".dat";
 
   private static final int SOURCE_CACHE_MAX = 64;
-  private static final int MEMBER_CACHE_MAX = SOURCE_CACHE_MAX * 16;
+  private static final int MEMBER_CACHE_MAX = SOURCE_CACHE_MAX;
   private static final int BURST_LIMIT = 32;
-  private static final int BUFFER_SIZE = 1024 * 64;
+  private static final int BUFFER_SIZE = 1024 * 32;
 
   private static final Logger log = LogManager.getLogger(GlobalCache.class);
 
