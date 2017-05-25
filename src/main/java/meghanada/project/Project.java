@@ -537,14 +537,14 @@ public abstract class Project {
   }
 
   protected InputStream runProcess(List<String> cmd) throws IOException {
-    ProcessBuilder processBuilder = new ProcessBuilder(cmd);
+    final ProcessBuilder processBuilder = new ProcessBuilder(cmd);
     processBuilder.directory(this.projectRoot);
-    String cmdString = String.join(" ", cmd);
+    final String cmdString = String.join(" ", cmd);
 
     log.debug("RUN cmd: {}", cmdString);
 
     processBuilder.redirectErrorStream(true);
-    Process process = processBuilder.start();
+    final Process process = processBuilder.start();
     return process.getInputStream();
   }
 
@@ -568,10 +568,14 @@ public abstract class Project {
     final List<String> cmd = new ArrayList<>(16);
     final String binJava =
         SEP_COMPILE.matcher("/bin/java").replaceAll(Matcher.quoteReplacement(File.separator));
+
     final String javaCmd = new File(config.getJavaHomeDir(), binJava).getCanonicalPath();
     cmd.add(javaCmd);
+
     String cp = this.allClasspath();
+
     final String jarPath = Config.getInstalledPath().getCanonicalPath();
+
     cp += File.pathSeparator + jarPath;
     cmd.add("-ea");
     cmd.add("-XX:+TieredCompilation");
@@ -579,7 +583,7 @@ public abstract class Project {
     cmd.add("-XX:SoftRefLRUPolicyMSPerMB=50");
     cmd.add("-Xverify:none");
     cmd.add("-Xms256m");
-    cmd.add("-Xmx2G");
+    cmd.add("-Xmx4G");
     cmd.add("-cp");
     cmd.add(cp);
     cmd.add(String.format("-Dproject.root=%s", this.projectRoot.getCanonicalPath()));

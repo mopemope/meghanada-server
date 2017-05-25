@@ -1,9 +1,11 @@
 package meghanada.server;
 
+import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.Collections;
@@ -114,13 +116,20 @@ public class CommandHandler {
   }
 
   public void runJUnit(final long id, final String test) {
-    try (final InputStream in = this.session.runJUnit(test)) {
-      final byte[] buf = new byte[1024];
-      int read;
-      while ((read = in.read(buf)) > 0) {
-        writer.write(new String(buf, 0, read, StandardCharsets.UTF_8));
-        writer.flush();
+
+    try (final BufferedReader reader =
+        new BufferedReader(
+            new InputStreamReader(this.session.runJUnit(test), StandardCharsets.UTF_8))) {
+
+      String s;
+      while ((s = reader.readLine()) != null) {
+        if (!s.startsWith("SLF4J: ")) {
+          writer.write(s);
+          writer.newLine();
+          writer.flush();
+        }
       }
+
       writer.newLine();
     } catch (Throwable t) {
       writeError(id, t);
@@ -128,6 +137,7 @@ public class CommandHandler {
   }
 
   public void parse(final long id, final String path) {
+
     try {
       final boolean result = session.parseFile(path);
       final String out = outputFormatter.parse(id, result);

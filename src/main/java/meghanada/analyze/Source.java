@@ -107,7 +107,7 @@ public class Source {
     }
     int last = 1;
     final List<LineRange> list = new ArrayList<>(32);
-    try (BufferedReader br =
+    try (final BufferedReader br =
         new BufferedReader(
             new InputStreamReader(new FileInputStream(file), Charset.forName("UTF-8")))) {
       String s;
