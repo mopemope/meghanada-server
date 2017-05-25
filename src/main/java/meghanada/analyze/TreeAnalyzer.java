@@ -232,8 +232,11 @@ public class TreeAnalyzer {
     final CachedASMReflector cachedASMReflector = CachedASMReflector.getInstance();
     if (!src.importClasses.contains(simpleName)
         && !cachedASMReflector.getGlobalClassIndex().containsKey(simpleName)) {
+
       src.addUnknown(simpleName);
+
     } else {
+
       if (markUnUse) {
         // contains
         final String name = ClassNameUtils.replaceInnerMark(simpleName);
@@ -248,6 +251,7 @@ public class TreeAnalyzer {
           }
         }
       }
+
       final File classFile = cachedASMReflector.getClassFile(simpleName);
       if (classFile == null || !classFile.getName().endsWith(".jar")) {
         src.usingClasses.add(simpleName);
@@ -271,6 +275,88 @@ public class TreeAnalyzer {
       return selectScope.trim();
     }
     return fa.name;
+  }
+
+  private static boolean requireImport(
+      final Source src, final String typeSym, @Nullable final String type) {
+
+    if (type == null) {
+      return false;
+    }
+
+    final Map<String, String> importMap = src.getImportedClassMap();
+    final int idx = typeSym.indexOf('.');
+    final int innerIdx = type.indexOf('$');
+    final String replaced = ClassNameUtils.replaceInnerMark(type);
+    if (idx > 0) {
+      if (typeSym.equals(replaced)) {
+        return false;
+      }
+      final String parent = typeSym.substring(0, idx);
+      if (importMap.containsKey(parent)) {
+        final String parentClass = importMap.get(parent);
+        return src.unused.contains(parentClass);
+      }
+    } else {
+      if (innerIdx > 0) {
+        final boolean imported = importMap.containsKey(typeSym);
+        if (imported) {
+          return true;
+        }
+      }
+    }
+    return true;
+  }
+
+  private static void addNormalVariable(Source src, Variable variable) {
+    final Optional<? extends Scope> currentScope = src.getCurrentScope();
+    currentScope.ifPresent(
+        sc -> {
+          if (variable.fqcn != null) {
+            if (variable.parameter) {
+              Scope parent = sc;
+              if (sc instanceof ExpressionScope) {
+                final ExpressionScope expressionScope1 = (ExpressionScope) sc;
+                parent = expressionScope1.parent;
+              }
+              if (parent instanceof MethodScope) {
+                final MethodScope methodScope = (MethodScope) parent;
+                methodScope.addMethodParameter(variable.fqcn);
+              }
+            }
+            sc.addVariable(variable);
+          }
+        });
+  }
+
+  private static void parseUnionVariable(
+      final JCTree.JCVariableDecl vd,
+      final int preferredPos,
+      final Source src,
+      final JCTree typeTree,
+      final String vName,
+      final Range nameRange,
+      final JCTree.JCTypeUnion union) {
+
+    for (final JCTree.JCExpression expression : union.getTypeAlternatives()) {
+
+      String type = expression.toString();
+      final Variable variable = new Variable(vName, preferredPos, nameRange);
+      type = src.getImportedClassFQCN(type, type);
+
+      if (vd.getTag().equals(JCTree.Tag.VARDEF)) {
+        variable.def = true;
+      }
+
+      final String typeSym = typeTree.toString();
+      final boolean markUnUse = requireImport(src, typeSym, type);
+      log.trace("typeSym:{} type:{} markUnuse:{}", typeSym, type, markUnUse);
+
+      if (type != null) {
+        variable.fqcn = TreeAnalyzer.markFQCN(src, type, markUnUse);
+        src.getCurrentScope().ifPresent(scope -> scope.addVariable(variable));
+      }
+    }
   }
 
   private void analyzeCompilationUnitTree(
@@ -651,9 +737,7 @@ public class TreeAnalyzer {
             for (final VarSymbol varSymbol : methodSymbol.getParameters()) {
               arguments.add(varSymbol.asType().toString());
             }
-            if (arguments != null) {
-              methodCall.setArguments(arguments);
-            }
+            methodCall.setArguments(arguments);
           }
           final Symbol owner = sym.owner;
           if (owner != null && owner.type != null) {
@@ -900,6 +984,9 @@ public class TreeAnalyzer {
     }
     if (type instanceof Type.ErrorType) {
       final Type originalType = type.getOriginalType();
+      if (originalType == null) {
+        return Optional.empty();
+      }
       String s;
       if (originalType != null && originalType.toString().equals("<any>")) {
         s = type.toString();
@@ -978,7 +1065,8 @@ public class TreeAnalyzer {
     }
   }
 
-  private String getFlatName(final Source src, String baseType, final List<Type> typeArguments) {
+  private String getFlatName(
+      final Source src, String baseType, @Nullable final List<Type> typeArguments) {
     if (typeArguments != null && !typeArguments.isEmpty()) {
       final java.util.List<String> temp = new ArrayList<>(typeArguments.length());
       for (final Type typeArgument : typeArguments) {
@@ -1054,6 +1142,7 @@ public class TreeAnalyzer {
                     });
             this.setReturnTypeAndArgType(context, src, returnType, mc);
           }
+
           src.getCurrentScope()
               .ifPresent(
                   scope -> {
@@ -1452,7 +1541,7 @@ public class TreeAnalyzer {
   }
 
   private void setReturnTypeAndArgType(
-      SourceContext context, Source src, Type type, AccessSymbol as) {
+      final SourceContext context, final Source src, final Type type, final AccessSymbol as) {
     this.getTypeString(src, type)
         .ifPresent(
             fqcn -> {
@@ -1714,6 +1803,7 @@ public class TreeAnalyzer {
       final int preferredPos,
       final int endPos)
       throws IOException {
+
     final Source src = context.getSource();
     final Name name = vd.getName();
     final JCTree.JCExpression initializer = vd.getInitializer();
@@ -1727,101 +1817,101 @@ public class TreeAnalyzer {
       log.trace("init={} name={} tree={}", initializer, nameExpression, typeTree);
     }
 
-    src.getCurrentBlock()
-        .ifPresent(
-            wrapIOConsumer(
-                blockScope -> {
-                  final String vName = name.toString();
-                  final Range range = Range.create(src, preferredPos, endPos);
-                  final Range nameRange =
-                      Range.create(src, preferredPos, preferredPos + vName.length());
+    final Optional<BlockScope> cb = src.getCurrentBlock();
 
-                  final ExpressionScope expressionScope = new ExpressionScope(preferredPos, range);
-                  if (blockScope instanceof ClassScope) {
-                    expressionScope.isField = true;
+    cb.ifPresent(
+        wrapIOConsumer(
+            bs -> {
+              final String vName = name.toString();
+              final Range range = Range.create(src, preferredPos, endPos);
+              final Range nameRange =
+                  Range.create(src, preferredPos, preferredPos + vName.length());
+
+              final ExpressionScope expressionScope = new ExpressionScope(preferredPos, range);
+              if (bs instanceof ClassScope) {
+                expressionScope.isField = true;
+              }
+              bs.startExpression(expressionScope);
+
+              if (typeTree instanceof JCTree.JCTypeUnion) {
+
+                final JCTree.JCTypeUnion union = (JCTree.JCTypeUnion) typeTree;
+
+                TreeAnalyzer.parseUnionVariable(
+                    vd, preferredPos, src, typeTree, vName, nameRange, union);
+
+              } else {
+
+                try {
+
+                  final Variable variable = new Variable(vName, preferredPos, nameRange);
+
+                  if (vd.getTag().equals(JCTree.Tag.VARDEF)) {
+                    variable.def = true;
                   }
-                  blockScope.startExpression(expressionScope);
+                  if (context.isParameter()) {
+                    variable.parameter = true;
+                  }
 
-                  if (typeTree instanceof JCTree.JCTypeUnion) {
-                    final JCTree.JCTypeUnion union = (JCTree.JCTypeUnion) typeTree;
-                    for (final JCTree.JCExpression expression : union.getTypeAlternatives()) {
-                      String type = expression.toString();
-                      final Variable variable = new Variable(vName, preferredPos, nameRange);
-                      type = src.getImportedClassFQCN(type, type);
-                      variable.fqcn = TreeAnalyzer.markFQCN(src, type);
-                      src.getCurrentScope().ifPresent(scope -> scope.addVariable(variable));
-                    }
-                  } else {
-                    try {
-                      final Variable variable = new Variable(vName, preferredPos, nameRange);
+                  if (typeTree instanceof JCTree.JCExpression) {
 
-                      if (vd.getTag().equals(JCTree.Tag.VARDEF)) {
-                        variable.def = true;
-                      }
-                      if (context.isParameter()) {
-                        variable.parameter = true;
-                      }
+                    final JCTree.JCExpression expression = (JCTree.JCExpression) typeTree;
+                    final Type type = expression.type;
 
-                      if (typeTree instanceof JCTree.JCExpression) {
+                    if (type == null && expression instanceof JCTree.JCIdent) {
 
-                        final JCTree.JCExpression expression = (JCTree.JCExpression) typeTree;
-                        final Type type = expression.type;
+                      final JCTree.JCIdent ident = (JCTree.JCIdent) expression;
+                      final String nm = ident.getName().toString();
+                      final String identClazz = src.getImportedClassFQCN(nm, null);
 
-                        if (type == null && expression instanceof JCTree.JCIdent) {
-                          final JCTree.JCIdent ident = (JCTree.JCIdent) expression;
-                          final String nm = ident.getName().toString();
-                          final String identClazz = src.getImportedClassFQCN(nm, null);
-                          if (identClazz != null) {
-                            variable.fqcn = TreeAnalyzer.markFQCN(src, identClazz);
-                          } else {
-                            src.addUnknown(nm);
-                            if (src.isReportUnknown()) {
-                              log.warn(
-                                  "unknown ident class expression={} {} {}",
-                                  expression,
-                                  expression.getClass(),
-                                  src.filePath);
-                            }
-                          }
-                        } else {
-                          final String fqcn = resolveTypeFromImport(src, expression);
-                          if (fqcn != null) {
-                            variable.fqcn = TreeAnalyzer.markFQCN(src, fqcn);
-                          }
-                        }
+                      if (identClazz != null) {
+                        final String typeSym = typeTree.toString();
+                        final boolean markUnUse = requireImport(src, typeSym, identClazz);
+                        log.trace(
+                            "typeSym:{} type:{} markUnuse:{}", typeSym, identClazz, markUnUse);
+
+                        variable.fqcn = TreeAnalyzer.markFQCN(src, identClazz, markUnUse);
+
                       } else {
+
+                        src.addUnknown(nm);
                         if (src.isReportUnknown()) {
                           log.warn(
-                              "unknown typeTree class expression={} {}", typeTree, src.filePath);
+                              "unknown ident class expression={} {} {}",
+                              expression,
+                              expression.getClass(),
+                              src.filePath);
                         }
                       }
-                      src.getCurrentScope()
-                          .ifPresent(
-                              scope -> {
-                                if (variable.fqcn != null) {
-                                  if (variable.parameter) {
-                                    Scope parent = scope;
-                                    if (scope instanceof ExpressionScope) {
-                                      final ExpressionScope expressionScope1 =
-                                          (ExpressionScope) scope;
-                                      parent = expressionScope1.parent;
-                                    }
-                                    if (parent instanceof MethodScope) {
-                                      final MethodScope methodScope = (MethodScope) parent;
-                                      methodScope.addMethodParameter(variable.fqcn);
-                                    }
-                                  }
-                                  scope.addVariable(variable);
-                                }
-                              });
-                      if (initializer != null) {
-                        this.analyzeParsedTree(context, initializer);
+
+                    } else {
+
+                      final String fqcn = resolveTypeFromImport(src, expression);
+                      final String typeSym = typeTree.toString();
+                      final boolean markUnUse = requireImport(src, typeSym, fqcn);
+                      log.trace("typeSym:{} type:{} markUnuse:{}", typeSym, fqcn, markUnUse);
+
+                      if (fqcn != null) {
+                        variable.fqcn = TreeAnalyzer.markFQCN(src, fqcn, markUnUse);
                       }
-                    } finally {
-                      blockScope.endExpression();
+                    }
+                  } else {
+                    if (src.isReportUnknown()) {
+                      log.warn("unknown typeTree class expression={} {}", typeTree, src.filePath);
                     }
                   }
-                }));
+
+                  TreeAnalyzer.addNormalVariable(src, variable);
+
+                  if (initializer != null) {
+                    this.analyzeParsedTree(context, initializer);
+                  }
+
+                } finally {
+                  bs.endExpression();
+                }
+              }
+            }));
   }
 
   public Map<File, Source> analyze(

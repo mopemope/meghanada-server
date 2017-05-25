@@ -33,7 +33,7 @@ import org.apache.logging.log4j.message.EntryMessage;
 
 public class Source {
 
-  private static final String REPORT_UNKNOWN_TREE = "report-unknown-tree";
+  public static final String REPORT_UNKNOWN_TREE = "report-unknown-tree";
   private static final Logger log = LogManager.getLogger(Source.class);
 
   public final Set<String> importClasses = new HashSet<>(16);
@@ -47,6 +47,7 @@ public class Source {
   public String packageName;
   public List<LineRange> lineRange;
   public int classStartLine;
+  public Map<String, String> importMap;
 
   // temp flag
   public boolean hasCompileError;
@@ -546,14 +547,22 @@ public class Source {
   }
 
   public Map<String, String> getImportedClassMap() {
+
+    if (this.importMap != null) {
+      return this.importMap;
+    }
+
     final Map<String, String> map = new HashMap<>(32);
     for (final String s : this.importClasses) {
       final String key = ClassNameUtils.getSimpleName(s);
       map.putIfAbsent(key, s);
     }
+
     final Map<String, String> standardClasses =
         CachedASMReflector.getInstance().getStandardClasses();
     map.putAll(standardClasses);
+
+    this.importMap = map;
     return map;
   }
 

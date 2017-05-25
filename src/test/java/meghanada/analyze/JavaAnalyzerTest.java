@@ -581,6 +581,8 @@ public class JavaAnalyzerTest extends GradleTestBase {
 
   @Test
   public void analyzeAll() throws Exception {
+    System.setProperty(Source.REPORT_UNKNOWN_TREE, "true");
+    project.clearCache();
     final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8");
     final String cp = getClasspath();
 
