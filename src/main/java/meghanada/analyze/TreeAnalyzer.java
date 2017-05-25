@@ -328,8 +328,11 @@ public class TreeAnalyzer {
     src.classStartLine = firstLine;
 
     try {
+
       for (final Tree td : cut.getTypeDecls()) {
+
         if (td instanceof JCTree.JCClassDecl) {
+
           final JCTree.JCClassDecl classDecl = (JCTree.JCClassDecl) td;
           final Tree.Kind classDeclKind = classDecl.getKind();
           final boolean isInterface = classDeclKind.equals(Tree.Kind.INTERFACE);
@@ -382,6 +385,8 @@ public class TreeAnalyzer {
           log.trace("class={}", endClass);
         } else if (td instanceof JCTree.JCSkip) {
           // skip
+        } else if (td instanceof JCTree.JCErroneous) {
+          // skip erroneous
         } else {
           log.warn("unknown td={} {}", td, td.getClass());
         }
