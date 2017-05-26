@@ -510,6 +510,9 @@ public class JavaCompletion {
   }
 
   private static Comparator<? super CandidateUnit> methodComparing(final String keyword) {
+    if (keyword.isEmpty()) {
+      return defaultComparing();
+    }
     return (c1, c2) -> {
       final String o1 = c1.getName();
       final String o2 = c2.getName();
