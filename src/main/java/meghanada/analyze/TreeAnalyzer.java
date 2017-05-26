@@ -515,6 +515,9 @@ public class TreeAnalyzer {
       final JCTree.JCTypeCast cast = (JCTree.JCTypeCast) tree;
       final JCTree.JCExpression expression = cast.getExpression();
       this.analyzeParsedTree(context, expression);
+      if (context.isArgument()) {
+        getExpressionType(context.getSource(), cast).ifPresent(context::setArgumentFQCN);
+      }
 
     } else if (tree instanceof JCTree.JCMethodDecl) {
 

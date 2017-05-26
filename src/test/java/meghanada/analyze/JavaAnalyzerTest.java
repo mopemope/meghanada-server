@@ -616,6 +616,7 @@ public class JavaAnalyzerTest extends GradleTestBase {
 
   @Test
   public void analyzeFail() throws Exception {
+    System.setProperty(Source.REPORT_UNKNOWN_TREE, "false");
     final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8");
     final String cp = getSystemClasspath();
 

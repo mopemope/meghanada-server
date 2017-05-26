@@ -237,6 +237,26 @@ public class LocationSearcherTest extends GradleTestBase {
   }
 
   @Test
+  public void testJumpMethod10() throws Exception {
+    File f = new File("./src/main/java/meghanada/analyze/TreeAnalyzer.java").getCanonicalFile();
+    assert f.exists();
+    LocationSearcher searcher = getSearcher();
+    {
+      GlobalCache.getInstance().invalidateSource(project, f);
+      Location result =
+          timeIt(
+              () ->
+                  searcher
+                      .searchDeclarationLocation(f, 511, 12, "analyzeVariableDecl")
+                      .orElse(null));
+      assertNotNull(result);
+      assertTrue(result.getPath().contains("TreeAnalyzer.java"));
+      assertEquals(1803, result.getLine());
+      assertEquals(16, result.getColumn());
+    }
+  }
+
+  @Test
   public void testJumpMethod08() throws Exception {
     File f = new File("./src/test/java/meghanada/ArrayOverload.java").getCanonicalFile();
     assert f.exists();

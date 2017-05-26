@@ -144,14 +144,10 @@ public abstract class Scope {
   }
 
   public List<MethodCall> getMethodCall(final int line) {
-    log.traceEntry("line={}", line);
-
-    final List<MethodCall> result =
-        this.methodCalls
-            .stream()
-            .filter(mc -> mc.range.begin.line == line)
-            .collect(Collectors.toList());
-    return log.traceExit(result);
+    return this.methodCalls
+        .stream()
+        .filter(mc -> mc.range.begin.line == line)
+        .collect(Collectors.toList());
   }
 
   public List<FieldAccess> getFieldAccess(final int line) {
