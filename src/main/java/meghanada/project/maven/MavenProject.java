@@ -6,7 +6,7 @@ import com.google.common.io.Files;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -79,7 +79,7 @@ public class MavenProject extends Project {
         throw new ProjectParseException(
             "Could not resolve dependencies. please try 'mvn dependency:resolve' or 'mvn install'");
       }
-      final String cpTxt = Files.readFirstLine(logFile, Charset.forName("UTF-8"));
+      final String cpTxt = Files.asCharSource(logFile, StandardCharsets.UTF_8).readFirstLine();
       if (cpTxt != null && !cpTxt.isEmpty()) {
         final String[] depends = cpTxt.split(File.pathSeparator);
 
