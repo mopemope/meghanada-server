@@ -495,6 +495,41 @@ public class JavaCompletion {
     };
   }
 
+  private static Comparator<? super CandidateUnit> defaultComparing() {
+    return (c1, c2) -> {
+      final String o1 = c1.getName();
+      final String o2 = c2.getName();
+      final int i = o1.compareTo(o2);
+      if (i == 0) {
+        final String d1 = c1.getDisplayDeclaration();
+        final String d2 = c2.getDisplayDeclaration();
+        return Integer.compare(d1.length(), d2.length());
+      }
+      return i;
+    };
+  }
+
+  private static Comparator<? super CandidateUnit> methodComparing(final String keyword) {
+    return (c1, c2) -> {
+      final String o1 = c1.getName();
+      final String o2 = c2.getName();
+
+      if (o1.startsWith(keyword) && o2.startsWith(keyword)) {
+        final String d1 = c1.getDisplayDeclaration();
+        final String d2 = c2.getDisplayDeclaration();
+        return Integer.compare(d1.length(), d2.length());
+      }
+
+      if (o1.startsWith(keyword)) {
+        return -1;
+      }
+      if (o2.startsWith(keyword)) {
+        return 1;
+      }
+      return o1.compareTo(o2);
+    };
+  }
+
   public void setProject(Project project) {
     this.project = project;
   }
@@ -602,7 +637,7 @@ public class JavaCompletion {
         fqcn = ClassNameUtils.replace(fqcn, ClassNameUtils.CAPTURE_OF, "");
         return reflectWithFQCN(pkg, fqcn, prefix)
             .stream()
-            .sorted(comparing(prefix))
+            .sorted(methodComparing(prefix))
             .collect(Collectors.toList());
       }
 
@@ -613,8 +648,9 @@ public class JavaCompletion {
         fqcn = ClassNameUtils.replace(fqcn, ClassNameUtils.CAPTURE_OF, "");
         return reflect(pkg, fqcn, "")
             .stream()
-            .sorted(Comparator.comparing(CandidateUnit::getName))
+            .sorted(defaultComparing())
             .collect(Collectors.toList());
+
       } else {
         String prefix = "";
         if (prefixIdx > 0) {
@@ -637,7 +673,7 @@ public class JavaCompletion {
                   ClassNameUtils.replace(accessSymbol.returnType, ClassNameUtils.CAPTURE_OF, "");
               return reflect(pkg, fqcn, prefix)
                   .stream()
-                  .sorted(comparing(prefix))
+                  .sorted(methodComparing(prefix))
                   .collect(Collectors.toList());
             }
           }
@@ -659,13 +695,13 @@ public class JavaCompletion {
       final String prefix = searchWord.substring(idx + 1);
       return JavaCompletion.completionFieldsOrMethods(source, line, var, prefix.toLowerCase())
           .stream()
-          .sorted(comparing(prefix))
+          .sorted(methodComparing(prefix))
           .collect(Collectors.toList());
     }
 
     return JavaCompletion.completionFieldsOrMethods(source, line, searchWord.substring(1), "")
         .stream()
-        .sorted(Comparator.comparing(CandidateUnit::getName))
+        .sorted(defaultComparing())
         .collect(Collectors.toList());
   }
 
