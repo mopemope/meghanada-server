@@ -11,8 +11,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import meghanada.cache.GlobalCache;
 import meghanada.project.Project;
-import meghanada.utils.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
@@ -303,7 +303,13 @@ public class Config {
     if (!this.checksumMap.containsKey(file)) {
       Map<String, String> checksumMap = new ConcurrentHashMap<>(64);
       if (file.exists()) {
-        checksumMap = new ConcurrentHashMap<>(FileUtils.readMapSetting(file));
+        final GlobalCache globalCache = GlobalCache.getInstance();
+        @SuppressWarnings("unchecked")
+        final Map<String, String> map =
+            globalCache.readCacheFromFile(file, ConcurrentHashMap.class);
+        if (map != null) {
+          checksumMap = map;
+        }
       }
       this.checksumMap.put(file, checksumMap);
     }

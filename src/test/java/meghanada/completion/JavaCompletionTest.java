@@ -76,12 +76,12 @@ public class JavaCompletionTest extends GradleTestBase {
         new File("./src/main/java/meghanada/analyze/ExpressionScope.java").getCanonicalFile();
     assert file.exists();
     final Collection<? extends CandidateUnit> staticLog =
-        timeIt(() -> completion.completionAt(file, 17, 4, "lo"));
+        timeIt(() -> completion.completionAt(file, 16, 4, "lo"));
     staticLog.forEach(a -> System.out.println(a.getDeclaration()));
     assertEquals(staticLog.size(), 1);
 
     final Collection<? extends CandidateUnit> pos =
-        timeIt(() -> completion.completionAt(file, 17, 8, "po"));
+        timeIt(() -> completion.completionAt(file, 16, 8, "po"));
     pos.forEach(a -> System.out.println(a.getDeclaration()));
     assertEquals(pos.size(), 1);
   }

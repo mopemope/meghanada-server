@@ -66,7 +66,8 @@ class JavaSourceLoader extends CacheLoader<File, Source> implements RemovalListe
     }
 
     log.debug("load file:{}", file);
-    final Source source = GlobalCache.getInstance().readCacheFromFile(file, Source.class);
+    final GlobalCache globalCache = GlobalCache.getInstance();
+    final Source source = globalCache.readCacheFromFile(file, Source.class);
     return Optional.ofNullable(source);
   }
 

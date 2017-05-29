@@ -1,10 +1,13 @@
 package meghanada.analyze;
 
 import com.google.common.base.MoreObjects;
+import java.io.Serializable;
 
-public abstract class AccessSymbol {
+public abstract class AccessSymbol implements Serializable {
 
+  private static final long serialVersionUID = -1404691982810815085L;
   static final int SCOPE_LIMIT = 32;
+
   public String declaringClass;
   public String scope = "";
   public String name;
@@ -12,8 +15,6 @@ public abstract class AccessSymbol {
   public Range range;
   public String returnType;
   public int argumentIndex = -1;
-
-  public AccessSymbol() {}
 
   public AccessSymbol(final String name, final int pos, final Range range) {
     this.name = name;

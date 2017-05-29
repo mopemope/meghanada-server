@@ -1,13 +1,15 @@
 package meghanada.analyze;
 
 import com.google.common.base.MoreObjects;
+import java.io.Serializable;
 import meghanada.reflect.CandidateUnit;
 import meghanada.reflect.FieldDescriptor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class Variable {
+public class Variable implements Serializable {
 
+  private static final long serialVersionUID = 5911384112219223687L;
   private static Logger log = LogManager.getLogger(Variable.class);
 
   public String name;
@@ -19,8 +21,6 @@ public class Variable {
   public boolean parameter;
   public boolean isField;
   public int argumentIndex = -1;
-
-  public Variable() {}
 
   public Variable(final String name, final int pos, final Range range) {
     this.name = name;

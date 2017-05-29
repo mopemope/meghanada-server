@@ -1,7 +1,6 @@
 package meghanada.reflect.asm;
 
 import com.google.common.base.MoreObjects;
-import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
@@ -259,7 +258,7 @@ class MethodAnalyzeVisitor extends MethodVisitor {
       }
       // fallback
       return false;
-    } catch (IOException e) {
+    } catch (Exception e) {
       log.debug(e.getMessage());
     }
 

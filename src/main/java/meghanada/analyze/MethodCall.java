@@ -7,31 +7,15 @@ import org.apache.logging.log4j.Logger;
 
 public class MethodCall extends AccessSymbol {
 
+  private static final long serialVersionUID = -2434830191914184294L;
   private static final Logger log = LogManager.getLogger(MethodCall.class);
 
   public Range nameRange;
   public List<String> arguments = Collections.emptyList();
 
-  public MethodCall() {
-    super();
-  }
-
   public MethodCall(final String name, final int pos, final Range nameRange, final Range range) {
     super(name, pos, range);
     this.nameRange = nameRange;
-  }
-
-  public void setArguments(final List<String> arguments) {
-    if (arguments != null) {
-      this.arguments = arguments;
-    }
-  }
-
-  public List<String> getArguments() {
-    if (this.arguments != null) {
-      return this.arguments;
-    }
-    return Collections.emptyList();
   }
 
   public MethodCall(
@@ -46,6 +30,19 @@ public class MethodCall extends AccessSymbol {
       super.scope = scope;
     } else {
       super.scope = name;
+    }
+  }
+
+  public List<String> getArguments() {
+    if (this.arguments != null) {
+      return this.arguments;
+    }
+    return Collections.emptyList();
+  }
+
+  public void setArguments(final List<String> arguments) {
+    if (arguments != null) {
+      this.arguments = arguments;
     }
   }
 

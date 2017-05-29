@@ -1,6 +1,7 @@
 package meghanada.reflect;
 
 import com.google.common.base.Objects;
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -8,9 +9,11 @@ import java.util.Set;
 import java.util.regex.Pattern;
 import meghanada.utils.ClassNameUtils;
 
-public abstract class MemberDescriptor implements CandidateUnit, Cloneable {
+public abstract class MemberDescriptor implements CandidateUnit, Cloneable, Serializable {
 
   protected static final Pattern TRIM_RE = Pattern.compile("<[\\w ?,]+>");
+  private static final long serialVersionUID = -6014921331666546814L;
+
   public String declaringClass;
   public String name;
   public MemberType memberType;

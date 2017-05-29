@@ -1,26 +1,20 @@
 package meghanada.reflect.names;
 
-import com.esotericsoftware.kryo.Kryo;
-import com.esotericsoftware.kryo.io.Input;
-import com.esotericsoftware.kryo.io.Output;
-import com.esotericsoftware.kryo.io.UnsafeInput;
-import com.esotericsoftware.kryo.io.UnsafeOutput;
 import com.github.javaparser.JavaParser;
-import com.github.javaparser.ParseException;
 import com.github.javaparser.ast.CompilationUnit;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Enumeration;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
+import meghanada.cache.GlobalCache;
 import meghanada.utils.ClassNameUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.nustaq.serialization.FSTConfiguration;
 
+@SuppressWarnings("CheckReturnValue")
 public class ParameterNamesIndexer {
 
   private static final String[] filterPackage =
@@ -34,15 +28,18 @@ public class ParameterNamesIndexer {
         "org.jcp.",
         "netscape"
       };
+
+  private static FSTConfiguration fstConfiguration = FSTConfiguration.createDefaultConfiguration();
+
   private static Logger log = LogManager.getLogger(ParameterNamesIndexer.class);
 
-  private Kryo kryo = new Kryo();
-
-  private ParameterNamesIndexer() {
-    kryo.register(MethodParameterNames.class);
+  static {
+    fstConfiguration.registerClass(ParameterName.class, MethodParameterNames.class);
   }
 
-  public static void main(String args[]) throws IOException, ParseException {
+  private ParameterNamesIndexer() {}
+
+  public static void main(String args[]) throws Exception {
     ParameterNamesIndexer parameterNamesIndexer = new ParameterNamesIndexer();
     File srcZip = new File(System.getProperty("java.home"), "../src.zip");
     parameterNamesIndexer.createIndex(srcZip);
@@ -57,7 +54,7 @@ public class ParameterNamesIndexer {
     return false;
   }
 
-  private void createIndex(File src) throws IOException, ParseException {
+  private void createIndex(File src) throws Exception {
     try (final ZipFile zipFile = new ZipFile(src)) {
       Enumeration<? extends ZipEntry> entries = zipFile.entries();
       while (entries.hasMoreElements()) {
@@ -74,9 +71,8 @@ public class ParameterNamesIndexer {
   }
 
   private void serializeParams(
-      final ZipFile zipFile, final ZipEntry zipEntry, final String javaName)
-      throws IOException, ParseException {
-    // log.debug("file {}", fileName);
+      final ZipFile zipFile, final ZipEntry zipEntry, final String javaName) throws Exception {
+
     try (InputStream in = zipFile.getInputStream(zipEntry)) {
       String fqcn = javaName.substring(0, javaName.length() - 5);
       CompilationUnit cu = JavaParser.parse(in, StandardCharsets.UTF_8);
@@ -93,17 +89,23 @@ public class ParameterNamesIndexer {
 
           File outFile = new File("./resources/params/" + dirPath, fileName);
           boolean result = outFile.getParentFile().mkdirs();
-          try (Output out = new UnsafeOutput(new FileOutputStream(outFile))) {
-            kryo.writeObject(out, mpn);
-            log.debug("output {}", outFile);
-          }
 
-          try (Input input = new UnsafeInput(new FileInputStream(outFile))) {
-            MethodParameterNames mpn2 = kryo.readObject(input, MethodParameterNames.class);
-            // log.debug("mpn {}", mpn);
-          }
+          log.info("start {} size:{}", javaName, mpn.names.size());
+          serialize(mpn, outFile);
+          MethodParameterNames names = deserialize(outFile);
+          assert names.equals(mpn);
+          log.info("end   {} size:{}", javaName, mpn.names.size());
         }
       }
     }
+    GlobalCache.getInstance().shutdown();
+  }
+
+  private static MethodParameterNames deserialize(File file) throws Exception {
+    return GlobalCache.getInstance().readCacheFromFile(file, MethodParameterNames.class);
+  }
+
+  private static void serialize(MethodParameterNames mpn, File file) throws Exception {
+    GlobalCache.getInstance().writeCacheToFile(file, mpn);
   }
 }

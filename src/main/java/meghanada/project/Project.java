@@ -1,6 +1,5 @@
 package meghanada.project;
 
-import com.esotericsoftware.kryo.DefaultSerializer;
 import com.google.common.base.Joiner;
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Objects;
@@ -11,6 +10,7 @@ import com.typesafe.config.ConfigFactory;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.Serializable;
 import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -40,16 +40,15 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.eclipse.jdt.core.JavaCore;
 
-@DefaultSerializer(ProjectSerializer.class)
-public abstract class Project {
+public abstract class Project implements Serializable {
 
   public static final String GRADLE_PROJECT_FILE = "build.gradle";
   public static final String MVN_PROJECT_FILE = "pom.xml";
   public static final String DEFAULT_PATH =
       File.separator + "src" + File.separator + "main" + File.separator;
   public static final String PROJECT_ROOT_KEY = "project.root";
-
   public static final Map<String, Project> loadedProject = new HashMap<>(4);
+  private static final long serialVersionUID = 7172580558461159805L;
   private static final String FORMATTER_FILE_KEY = "meghanada.formatter.file";
   private static final Logger log = LogManager.getLogger(Project.class);
   private static final String JAVA_HOME = "java-home";
@@ -93,21 +92,7 @@ public abstract class Project {
   public Project(final File projectRoot) throws IOException {
     this.projectRoot = projectRoot;
     this.name = projectRoot.getName();
-    System.setProperty(PROJECT_ROOT_KEY, this.projectRoot.getCanonicalPath());
-    final File file = new File(projectRoot, FORMATTER_FILE);
-    if (file.exists()) {
-      System.setProperty(FORMATTER_FILE_KEY, file.getCanonicalPath());
-    } else {
-      final File xml = new File(projectRoot, FORMATTER_FILE_XML);
-      if (xml.exists()) {
-        System.setProperty(FORMATTER_FILE_KEY, xml.getCanonicalPath());
-      }
-    }
-    final Config config = Config.load();
-    final boolean clearCacheOnStart = config.clearCacheOnStart();
-    if (clearCacheOnStart) {
-      this.clearCache();
-    }
+    this.initialize();
   }
 
   private static CompileResult clearMemberCache(final CompileResult compileResult) {
@@ -133,6 +118,39 @@ public abstract class Project {
         .map(root -> FileUtils.collectFiles(root, ".java"))
         .flatMap(Collection::stream)
         .collect(Collectors.toList());
+  }
+
+  public static Project readProjectCache(final File cacheFile) throws IOException {
+    final GlobalCache globalCache = GlobalCache.getInstance();
+    Project tempProject = globalCache.readCacheFromFile(cacheFile, Project.class);
+    if (tempProject != null) {
+      tempProject.initialize();
+    }
+    return tempProject;
+  }
+
+  public void writeProjectCache(final File cacheFile) {
+    final GlobalCache globalCache = GlobalCache.getInstance();
+    globalCache.asyncWriteCache(cacheFile, this);
+  }
+
+  private void initialize() throws IOException {
+    System.setProperty(PROJECT_ROOT_KEY, this.projectRoot.getCanonicalPath());
+    final File file = new File(projectRoot, FORMATTER_FILE);
+    if (file.exists()) {
+      System.setProperty(FORMATTER_FILE_KEY, file.getCanonicalPath());
+    } else {
+      final File xml = new File(projectRoot, FORMATTER_FILE_XML);
+      if (xml.exists()) {
+        System.setProperty(FORMATTER_FILE_KEY, xml.getCanonicalPath());
+      }
+    }
+    loadCaller();
+    final Config config = Config.load();
+    final boolean clearCacheOnStart = config.clearCacheOnStart();
+    if (clearCacheOnStart) {
+      this.clearCache();
+    }
   }
 
   public abstract Project parseProject() throws ProjectParseException;
@@ -587,6 +605,8 @@ public abstract class Project {
     cmd.add("-cp");
     cmd.add(cp);
     cmd.add(String.format("-Dproject.root=%s", this.projectRoot.getCanonicalPath()));
+    cmd.add(String.format("-Dmeghanada.output=%s", output.getCanonicalPath()));
+    cmd.add(String.format("-Dmeghanada.test-output=%s", testOutput.getCanonicalPath()));
     cmd.add("meghanada.junit.TestRunner");
     Collections.addAll(cmd, tests);
 
@@ -784,16 +804,22 @@ public abstract class Project {
     GlobalCache.getInstance().asyncWriteCache(callerFile, this.callerMap);
   }
 
-  synchronized void loadCaller() throws IOException {
+  private void loadCaller() throws IOException {
+
     System.setProperty(PROJECT_ROOT_KEY, projectRoot.getCanonicalPath());
     final File callerFile = FileUtils.getProjectDataFile(this.projectRoot, GlobalCache.CALLER_DATA);
     if (!callerFile.exists()) {
       return;
     }
+
+    final GlobalCache globalCache = GlobalCache.getInstance();
     @SuppressWarnings("unchecked")
     final Map<String, Set<String>> map =
-        GlobalCache.getInstance().readCacheFromFile(callerFile, ConcurrentHashMap.class);
-    this.callerMap = map;
+        globalCache.readCacheFromFile(callerFile, ConcurrentHashMap.class);
+
+    if (map != null) {
+      this.callerMap = map;
+    }
   }
 
   @Override

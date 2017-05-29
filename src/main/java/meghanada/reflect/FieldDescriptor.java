@@ -1,18 +1,15 @@
 package meghanada.reflect;
 
 import com.google.common.base.MoreObjects;
-import java.io.Serializable;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import javax.annotation.Nullable;
 import meghanada.utils.ClassNameUtils;
 
-public class FieldDescriptor extends MemberDescriptor implements Serializable {
+public class FieldDescriptor extends MemberDescriptor {
 
-  private static final long serialVersionUID = 4643756658266028450L;
-
-  public FieldDescriptor() {}
+  private static final long serialVersionUID = 7817892454168748759L;
 
   public FieldDescriptor(
       final String declaringClass,

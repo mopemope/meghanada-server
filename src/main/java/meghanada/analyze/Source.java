@@ -7,6 +7,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.Serializable;
 import java.nio.charset.Charset;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -31,9 +32,10 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.message.EntryMessage;
 
-public class Source {
+public class Source implements Serializable {
 
   public static final String REPORT_UNKNOWN_TREE = "report-unknown-tree";
+  private static final long serialVersionUID = 8712967042785424554L;
   private static final Logger log = LogManager.getLogger(Source.class);
 
   public final Set<String> importClasses = new HashSet<>(16);
@@ -52,10 +54,29 @@ public class Source {
   // temp flag
   public boolean hasCompileError;
 
-  public Source() {}
-
   public Source(final String filePath) {
     this.filePath = filePath;
+  }
+
+  private static boolean includeInnerClass(final ClassScope cs, final String fqcn) {
+    final String classScopeFQCN = cs.getFQCN();
+    if (fqcn.equals(classScopeFQCN)) {
+      return true;
+    }
+
+    final String replaced = ClassNameUtils.replaceInnerMark(classScopeFQCN);
+    if (fqcn.equals(replaced)) {
+      return true;
+    }
+
+    final List<ClassScope> children = cs.classScopes;
+    for (final ClassScope child : children) {
+      if (includeInnerClass(child, fqcn)) {
+        return true;
+      }
+    }
+
+    return false;
   }
 
   public void addImport(final String fqcn) {
@@ -465,27 +486,6 @@ public class Source {
     }
     final String key = System.getProperty(REPORT_UNKNOWN_TREE);
     return key != null && key.equals("true");
-  }
-
-  private static boolean includeInnerClass(final ClassScope cs, final String fqcn) {
-    final String classScopeFQCN = cs.getFQCN();
-    if (fqcn.equals(classScopeFQCN)) {
-      return true;
-    }
-
-    final String replaced = ClassNameUtils.replaceInnerMark(classScopeFQCN);
-    if (fqcn.equals(replaced)) {
-      return true;
-    }
-
-    final List<ClassScope> children = cs.classScopes;
-    for (final ClassScope child : children) {
-      if (includeInnerClass(child, fqcn)) {
-        return true;
-      }
-    }
-
-    return false;
   }
 
   public boolean addImportIfAbsent(final String fqcn) {

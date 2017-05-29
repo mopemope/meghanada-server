@@ -1,14 +1,15 @@
 package meghanada.reflect;
 
 import com.google.common.base.MoreObjects;
+import java.io.Serializable;
 import meghanada.utils.ClassNameUtils;
 
-public class MethodParameter {
+public class MethodParameter implements Serializable {
+
+  private static final long serialVersionUID = 2931973575424068754L;
 
   public String type;
   public String name;
-
-  public MethodParameter() {}
 
   public MethodParameter(final String type, final String name) {
     this.type = type;

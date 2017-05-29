@@ -1,6 +1,5 @@
 package meghanada.project.maven;
 
-import com.esotericsoftware.kryo.DefaultSerializer;
 import com.google.common.base.Strings;
 import com.google.common.io.Files;
 import java.io.File;
@@ -14,13 +13,13 @@ import meghanada.config.Config;
 import meghanada.project.Project;
 import meghanada.project.ProjectDependency;
 import meghanada.project.ProjectParseException;
-import meghanada.project.ProjectSerializer;
 import meghanada.utils.ClassNameUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-@DefaultSerializer(ProjectSerializer.class)
 public class MavenProject extends Project {
+
+  private static final long serialVersionUID = 1L;
 
   private static final String REPOSITORY = "repository";
   private static final String RESOLVE_TASK = "dependency:resolve";

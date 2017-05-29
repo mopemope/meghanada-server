@@ -20,7 +20,6 @@ import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -233,14 +232,7 @@ public final class FileUtils {
     return new File(root, path);
   }
 
-  @SuppressWarnings("unchecked")
-  public static synchronized Map<String, String> readMapSetting(final File inFile) {
-    final GlobalCache globalCache = GlobalCache.getInstance();
-    return globalCache.readCacheFromFile(inFile, HashMap.class);
-  }
-
-  public static synchronized void writeMapSetting(
-      final Map<String, String> map, final File outFile) {
+  public static void writeMapSetting(final Map<String, String> map, final File outFile) {
     final GlobalCache globalCache = GlobalCache.getInstance();
     globalCache.asyncWriteCache(outFile, map);
   }

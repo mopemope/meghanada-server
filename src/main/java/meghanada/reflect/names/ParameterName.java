@@ -6,7 +6,7 @@ import java.io.Serializable;
 
 public class ParameterName implements Serializable {
 
-  private static final long serialVersionUID = -4661482854311698261L;
+  private static final long serialVersionUID = 1337836727354025917L;
 
   public String type;
   public String name;

@@ -167,13 +167,13 @@ public class CachedASMReflectorTest extends GradleTestBase {
     CachedASMReflector cachedASMReflector = CachedASMReflector.getInstance();
 
     {
-      String fqcn = "com.esotericsoftware.kryo.Kryo";
+      String fqcn = "org.nustaq.serialization.FSTConfiguration";
       List<MemberDescriptor> memberDescriptors = cachedASMReflector.reflect(fqcn);
       // for (MemberDescriptor md : memberDescriptors) {
       // System.out.println(md);
       // }
       memberDescriptors.forEach(md -> System.out.println(md.getDisplayDeclaration()));
-      assertEquals(86, memberDescriptors.size());
+      assertEquals(119, memberDescriptors.size());
     }
   }
 
@@ -247,7 +247,7 @@ public class CachedASMReflectorTest extends GradleTestBase {
       String fqcn = "meghanada.reflect.MemberDescriptor";
       List<MemberDescriptor> memberDescriptors = cachedASMReflector.reflect(fqcn);
       memberDescriptors.forEach(m -> System.out.println(m.getDisplayDeclaration()));
-      assertEquals(44, memberDescriptors.size());
+      assertEquals(45, memberDescriptors.size());
     }
   }
 
@@ -372,7 +372,6 @@ public class CachedASMReflectorTest extends GradleTestBase {
     CachedASMReflector cachedASMReflector = CachedASMReflector.getInstance();
     cachedASMReflector.addClasspath(getOutputDir());
     cachedASMReflector.createClassIndexes();
-
     {
       String fqcn = "meghanada.reflect.CandidateUnit";
       List<MemberDescriptor> memberDescriptors = cachedASMReflector.reflect(fqcn);

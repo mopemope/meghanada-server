@@ -1,6 +1,7 @@
 package meghanada.analyze;
 
 import java.io.File;
+import java.io.Serializable;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -14,7 +15,9 @@ import javax.tools.Diagnostic;
 import javax.tools.JavaFileObject;
 import javax.tools.SimpleJavaFileObject;
 
-public class CompileResult {
+public class CompileResult implements Serializable {
+
+  private static final long serialVersionUID = 3418009907363450024L;
 
   private final boolean success;
   private final Map<File, Source> sources;

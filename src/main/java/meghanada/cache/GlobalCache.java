@@ -1,20 +1,13 @@
 package meghanada.cache;
 
-import com.esotericsoftware.kryo.Kryo;
-import com.esotericsoftware.kryo.io.Input;
-import com.esotericsoftware.kryo.io.Output;
-import com.esotericsoftware.kryo.io.UnsafeInput;
-import com.esotericsoftware.kryo.io.UnsafeOutput;
-import com.esotericsoftware.kryo.pool.KryoPool;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.LoadingCache;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.UncheckedIOException;
+import java.io.OutputStream;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -25,13 +18,28 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 import javax.annotation.Nullable;
+import meghanada.analyze.CompileResult;
+import meghanada.analyze.LineRange;
+import meghanada.analyze.Position;
+import meghanada.analyze.Range;
+import meghanada.analyze.Scope;
 import meghanada.analyze.Source;
+import meghanada.analyze.Variable;
 import meghanada.project.Project;
+import meghanada.project.ProjectDependency;
+import meghanada.project.gradle.GradleProject;
+import meghanada.project.maven.MavenProject;
+import meghanada.project.meghanada.MeghanadaProject;
 import meghanada.reflect.ClassIndex;
 import meghanada.reflect.MemberDescriptor;
+import meghanada.reflect.MethodParameter;
 import meghanada.reflect.names.MethodParameterNames;
+import meghanada.reflect.names.ParameterName;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.nustaq.serialization.FSTConfiguration;
+import org.nustaq.serialization.FSTObjectInput;
+import org.nustaq.serialization.FSTObjectOutput;
 
 public class GlobalCache {
 
@@ -48,12 +56,12 @@ public class GlobalCache {
   private static final int SOURCE_CACHE_MAX = 64;
   private static final int MEMBER_CACHE_MAX = SOURCE_CACHE_MAX;
   private static final int BURST_LIMIT = 16;
-  private static final int BUFFER_SIZE = 1024 * 32;
 
   private static final Logger log = LogManager.getLogger(GlobalCache.class);
+  private static FSTConfiguration fst;
 
   private static GlobalCache globalCache;
-  private final KryoPool kryoPool;
+
   private final Map<File, LoadingCache<File, Source>> sourceCaches;
   private final ExecutorService executorService = Executors.newCachedThreadPool();
   private final BlockingQueue<CacheRequest> blockingQueue = new LinkedBlockingDeque<>();
@@ -63,26 +71,15 @@ public class GlobalCache {
   private boolean ioBurstMode;
 
   private GlobalCache() {
-    this.sourceCaches = new HashMap<>(1);
-    this.kryoPool =
-        new KryoPool.Builder(
-                () -> {
-                  final Kryo kryo = new Kryo();
-                  kryo.getFieldSerializerConfig().setUseAsm(false);
-                  kryo.register(ClassIndex.class);
-                  kryo.register(MemberDescriptor.class);
-                  kryo.register(MethodParameterNames.class);
-                  return kryo;
-                })
-            .build();
 
+    this.sourceCaches = new HashMap<>(1);
     this.executorService.execute(
         () -> {
           while (!this.isTerminated) {
             try {
               final CacheRequest cr = blockingQueue.take();
               if (cr != null && !cr.shutdown) {
-                this.writeCacheToFile(cr.getFile(), cr.getTarget());
+                GlobalCache.getInstance().writeCacheToFile(cr.getFile(), cr.getTarget());
               }
             } catch (Exception e) {
               log.catching(e);
@@ -108,6 +105,92 @@ public class GlobalCache {
       globalCache = new GlobalCache();
     }
     return globalCache;
+  }
+
+  private static FSTConfiguration getFST() {
+    if (fst != null) {
+      return fst;
+    }
+    FSTConfiguration conf = FSTConfiguration.createDefaultConfiguration();
+    conf.registerClass(
+        Project.class,
+        ProjectDependency.class,
+        GradleProject.class,
+        MavenProject.class,
+        MeghanadaProject.class,
+        ParameterName.class,
+        MethodParameterNames.class,
+        Scope.class,
+        LineRange.class,
+        Position.class,
+        Variable.class,
+        Range.class,
+        CompileResult.class,
+        Source.class,
+        MethodParameter.class,
+        ClassIndex.class,
+        MemberDescriptor.class);
+    fst = conf;
+    return fst;
+  }
+
+  private static void writeObject(OutputStream output, Object obj) throws IOException {
+    FSTObjectOutput out = getFST().getObjectOutput(output);
+    out.writeObject(obj);
+    out.flush();
+  }
+
+  private static <T> T readObject(InputStream input, Class<T> clazz) throws Exception {
+    FSTObjectInput in = getFST().getObjectInput(input);
+    Object obj = in.readObject(clazz);
+    input.close();
+    if (obj == null) {
+      return null;
+    }
+    return clazz.cast(obj);
+  }
+
+  public void writeCacheToFile(final File file, final Object obj) {
+
+    final File parentFile = file.getParentFile();
+
+    if (!parentFile.exists() && !parentFile.mkdirs()) {
+      log.warn("{} mkdirs fail", parentFile);
+    }
+
+    try (FileOutputStream out = new FileOutputStream(file)) {
+      writeObject(out, obj);
+    } catch (Exception e) {
+      log.catching(e);
+      if (!file.delete()) {
+        log.warn("{} delete fail", file);
+      }
+    }
+  }
+
+  @Nullable
+  public <T> T readCacheFromFile(final File file, final Class<T> clazz) {
+    if (!file.exists()) {
+      log.warn("file not exists:{}", file);
+      return null;
+    }
+
+    try {
+      try (FileInputStream in = new FileInputStream(file)) {
+        return readObject(in, clazz);
+      }
+    } catch (Exception e) {
+      log.catching(e);
+      if (file.exists() && !file.delete()) {
+        log.warn("{} delete fail", file);
+      }
+      return null;
+    }
+  }
+
+  public <T> T readCacheFromInputStream(final InputStream in, final Class<T> clazz)
+      throws Exception {
+    return readObject(in, clazz);
   }
 
   public void setMemberCache(final LoadingCache<String, List<MemberDescriptor>> memberCache) {
@@ -154,7 +237,7 @@ public class GlobalCache {
               try {
                 final CacheRequest cr = blockingQueue.poll(5, TimeUnit.SECONDS);
                 if (cr != null && !cr.shutdown) {
-                  this.writeCacheToFile(cr.getFile(), cr.getTarget());
+                  GlobalCache.getInstance().writeCacheToFile(cr.getFile(), cr.getTarget());
                   readyShutdown = false;
                 }
                 if (this.blockingQueue.isEmpty()) {
@@ -212,58 +295,7 @@ public class GlobalCache {
     JavaSourceLoader.writeSourceCache(p, s);
   }
 
-  @Nullable
-  public <T> T readCacheFromFile(final File file, final Class<T> type) {
-    if (!file.exists()) {
-      return null;
-    }
-    try {
-      return kryoPool.run(
-          kryo -> {
-            try (final Input input = new UnsafeInput(new FileInputStream(file), BUFFER_SIZE)) {
-              return kryo.readObject(input, type);
-            } catch (FileNotFoundException e) {
-              throw new UncheckedIOException(e);
-            }
-          });
-    } catch (Exception e) {
-      // log.catching(e);
-      if (file.exists() && !file.delete()) {
-        log.warn("{} delete fail", file);
-      }
-      return null;
-    }
-  }
-
-  public <T> T readCacheFromInputStream(final InputStream in, final Class<T> type) {
-    return kryoPool.run(
-        kryo -> {
-          try (final Input input = new UnsafeInput(in)) {
-            return kryo.readObject(input, type);
-          }
-        });
-  }
-
-  private void writeCacheToFile(final File file, final Object obj) {
-    final File parentFile = file.getParentFile();
-    if (!parentFile.exists() && !parentFile.mkdirs()) {
-      log.warn("{} mkdirs fail", parentFile);
-    }
-    kryoPool.run(
-        kryo -> {
-          try (final Output output = new UnsafeOutput(new FileOutputStream(file), BUFFER_SIZE)) {
-            kryo.writeObject(output, obj);
-          } catch (Exception e) {
-            log.catching(e);
-            if (!file.delete()) {
-              log.warn("{} delete fail", file);
-            }
-          }
-          return true;
-        });
-  }
-
-  private void shutdown() throws InterruptedException {
+  public void shutdown() throws InterruptedException {
     if (this.isTerminated) {
       return;
     }

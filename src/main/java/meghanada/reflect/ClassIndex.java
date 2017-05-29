@@ -2,14 +2,16 @@ package meghanada.reflect;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Objects;
+import java.io.Serializable;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import meghanada.reflect.asm.CachedASMReflector;
 import meghanada.utils.ClassNameUtils;
 
-public class ClassIndex implements CandidateUnit, Cloneable {
+public class ClassIndex implements CandidateUnit, Cloneable, Serializable {
 
+  private static final long serialVersionUID = 4833311903131990013L;
   // fqcn
   public String declaration;
   public List<String> typeParameters;
@@ -20,8 +22,6 @@ public class ClassIndex implements CandidateUnit, Cloneable {
   public String name;
 
   private MemberType memberType = MemberType.CLASS;
-
-  public ClassIndex() {}
 
   public ClassIndex(
       final String declaration, final List<String> typeParameters, final List<String> supers) {

@@ -4,7 +4,6 @@ import static meghanada.config.Config.debugTimeItF;
 import static meghanada.utils.FunctionUtils.wrapIOConsumer;
 
 import com.android.builder.model.AndroidProject;
-import com.esotericsoftware.kryo.DefaultSerializer;
 import com.google.common.base.Joiner;
 import com.google.common.io.Files;
 import com.typesafe.config.ConfigFactory;
@@ -28,7 +27,6 @@ import meghanada.config.Config;
 import meghanada.project.Project;
 import meghanada.project.ProjectDependency;
 import meghanada.project.ProjectParseException;
-import meghanada.project.ProjectSerializer;
 import meghanada.utils.ClassNameUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
@@ -51,9 +49,9 @@ import org.gradle.tooling.model.idea.IdeaProject;
 import org.gradle.tooling.model.idea.IdeaSingleEntryLibraryDependency;
 import org.gradle.tooling.model.idea.IdeaSourceDirectory;
 
-@DefaultSerializer(ProjectSerializer.class)
 public class GradleProject extends Project {
 
+  private static final long serialVersionUID = 1L;
   private static final Logger log = LogManager.getLogger(GradleProject.class);
   private static String tempPath;
 

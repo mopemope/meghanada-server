@@ -9,7 +9,7 @@ import java.util.Map;
 
 public class MethodParameterNames implements Serializable {
 
-  private static final long serialVersionUID = 5960984180831020801L;
+  private static final long serialVersionUID = 6556924934040150075L;
 
   public String className;
   // key = methodName: val = Set

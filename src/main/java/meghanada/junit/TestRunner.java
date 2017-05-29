@@ -23,8 +23,11 @@ public class TestRunner {
   private int ignoreCnt;
 
   public TestRunner() throws IOException {
+    final String output = System.getProperty("meghanada.output");
+    final String testOutput = System.getProperty("meghanada.test-output");
     CachedASMReflector cachedASMReflector = CachedASMReflector.getInstance();
-    cachedASMReflector.addClasspath(new File("./"));
+    cachedASMReflector.addClasspath(new File(output));
+    cachedASMReflector.addClasspath(new File(testOutput));
     cachedASMReflector.createClassIndexes();
   }
 

@@ -151,7 +151,7 @@ public class Session {
 
       if (config.useFastBoot() && projectCache.exists()) {
         try {
-          final Project tempProject = Session.readProjectCache(projectCache);
+          final Project tempProject = Project.readProjectCache(projectCache);
           if (tempProject != null && tempProject.getId().equals(id)) {
             tempProject.setId(id);
             log.debug("load from cache project={}", tempProject);
@@ -183,7 +183,7 @@ public class Session {
       final Stopwatch stopwatch = Stopwatch.createStarted();
       final Project parsed = project.parseProject();
       if (config.useFastBoot()) {
-        Session.writeProjectCache(projectCache, parsed);
+        parsed.writeProjectCache(projectCache);
       }
       log.info("loaded project:{} elapsed:{}", project.getProjectRoot(), stopwatch.stop());
       log.traceExit(entryMessage);
@@ -208,16 +208,6 @@ public class Session {
       files.add(toolsJar.getCanonicalFile());
       return files;
     }
-  }
-
-  private static void writeProjectCache(final File cacheFile, final Project project) {
-    final GlobalCache globalCache = GlobalCache.getInstance();
-    globalCache.asyncWriteCache(cacheFile, project);
-  }
-
-  private static Project readProjectCache(final File cacheFile) {
-    final GlobalCache globalCache = GlobalCache.getInstance();
-    return globalCache.readCacheFromFile(cacheFile, Project.class);
   }
 
   private static File findProjectRoot(File base) {

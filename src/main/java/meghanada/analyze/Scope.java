@@ -1,5 +1,6 @@
 package meghanada.analyze;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -11,16 +12,16 @@ import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public abstract class Scope {
+public abstract class Scope implements Serializable {
 
+  private static final long serialVersionUID = -4765110551444765813L;
   private static final Logger log = LogManager.getLogger(Scope.class);
+
   public final Set<Variable> variables = new HashSet<>(16);
   public final List<FieldAccess> fieldAccesses = new ArrayList<>(16);
   public final List<MethodCall> methodCalls = new ArrayList<>(16);
   public int pos;
   public Range range;
-
-  public Scope() {}
 
   public Scope(final int pos, final Range range) {
     this.pos = pos;

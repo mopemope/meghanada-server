@@ -2,11 +2,11 @@ package meghanada.project;
 
 import static meghanada.utils.FunctionUtils.wrapIO;
 
-import com.esotericsoftware.kryo.DefaultSerializer;
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Objects;
 import java.io.File;
 import java.io.IOException;
+import java.io.Serializable;
 import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -18,9 +18,9 @@ import meghanada.session.Session;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-@DefaultSerializer(ProjectDependencySerializer.class)
-public class ProjectDependency {
+public class ProjectDependency implements Serializable {
 
+  private static final long serialVersionUID = 6556924934040150075L;
   private static final Logger log = LogManager.getLogger(ProjectDependency.class);
 
   private final String id;

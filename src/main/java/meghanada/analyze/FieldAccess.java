@@ -2,11 +2,9 @@ package meghanada.analyze;
 
 public class FieldAccess extends AccessSymbol {
 
-  public boolean isEnum;
+  private static final long serialVersionUID = -1933640313689982694L;
 
-  public FieldAccess() {
-    super();
-  }
+  public boolean isEnum;
 
   public FieldAccess(final String name, final int pos, final Range range) {
     super(name, pos, range);

@@ -7,13 +7,12 @@ import org.apache.logging.log4j.message.EntryMessage;
 
 public class ExpressionScope extends Scope {
 
+  private static final long serialVersionUID = -7562763157444092301L;
   private static final Logger log = LogManager.getLogger(ExpressionScope.class);
 
   public AccessSymbol expressionReturn;
   public boolean isField;
   public Scope parent;
-
-  public ExpressionScope() {}
 
   public ExpressionScope(final int pos, final Range range) {
     super(pos, range);

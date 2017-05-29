@@ -1,6 +1,10 @@
 package meghanada.analyze;
 
-public class LineRange {
+import java.io.Serializable;
+
+public class LineRange implements Serializable {
+
+  private static final long serialVersionUID = 4068103819277244238L;
 
   public int startPos;
   public int endPos;

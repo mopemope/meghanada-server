@@ -12,14 +12,14 @@ import org.apache.logging.log4j.message.EntryMessage;
 
 public class MethodScope extends BlockScope {
 
+  private static final long serialVersionUID = -6957893688780569397L;
   private static final Logger log = LogManager.getLogger(MethodScope.class);
+
   public final List<String> parameters = new ArrayList<>(3);
   public String name;
   public Range nameRange;
   public boolean isConstructor;
   public String returnType;
-
-  public MethodScope() {}
 
   public MethodScope(
       final String name, @Nullable final Range nameRange, final int pos, final Range range) {

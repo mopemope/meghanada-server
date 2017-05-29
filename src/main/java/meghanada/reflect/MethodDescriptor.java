@@ -16,13 +16,12 @@ import org.apache.logging.log4j.message.EntryMessage;
 
 public class MethodDescriptor extends MemberDescriptor {
 
+  private static final long serialVersionUID = -208297849947386075L;
   private static final Logger log = LogManager.getLogger(MethodDescriptor.class);
 
   public List<MethodParameter> parameters;
   public String[] exceptions;
   public String formalType;
-
-  public MethodDescriptor() {}
 
   public MethodDescriptor(
       final String declaringClass,

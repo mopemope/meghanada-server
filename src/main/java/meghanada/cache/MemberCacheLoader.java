@@ -69,15 +69,16 @@ class MemberCacheLoader extends CacheLoader<String, List<MemberDescriptor>>
   @SuppressWarnings("unchecked")
   private static List<MemberDescriptor> loadFromCache(final File cacheFile) {
     if (cacheFile.exists()) {
-      return GlobalCache.getInstance().readCacheFromFile(cacheFile, ArrayList.class);
+      final GlobalCache globalCache = GlobalCache.getInstance();
+      return globalCache.readCacheFromFile(cacheFile, ArrayList.class);
     }
     return null;
   }
 
   @SuppressWarnings("unchecked")
   private static Map<String, String> readCacheChecksum(final File inFile) {
-    final Map<String, String> map =
-        GlobalCache.getInstance().readCacheFromFile(inFile, HashMap.class);
+    final GlobalCache globalCache = GlobalCache.getInstance();
+    final Map<String, String> map = globalCache.readCacheFromFile(inFile, ConcurrentHashMap.class);
     if (map == null) {
       return new HashMap<>(64);
     }
@@ -86,9 +87,13 @@ class MemberCacheLoader extends CacheLoader<String, List<MemberDescriptor>>
 
   private static List<MemberDescriptor> getCachedMemberDescriptors(
       final String fqcn, final File cacheFilePath, final File file) throws IOException {
+
     if (file.exists()) {
+
       final String fileName = file.getName();
+
       if (file.isFile() && fileName.endsWith(".class")) {
+
         final String md5sum = FileUtils.getChecksum(file);
         final String filePath = file.getCanonicalPath();
         final List<MemberDescriptor> cachedResult =
@@ -97,6 +102,7 @@ class MemberCacheLoader extends CacheLoader<String, List<MemberDescriptor>>
           return cachedResult;
         }
       } else if (file.isFile() && fileName.endsWith(".jar") && !fileName.contains("SNAPSHOT")) {
+
         final List<MemberDescriptor> cachedResult = MemberCacheLoader.loadFromCache(cacheFilePath);
         if (cachedResult != null) {
           return cachedResult;
@@ -105,6 +111,7 @@ class MemberCacheLoader extends CacheLoader<String, List<MemberDescriptor>>
         // skip
         return null;
       } else {
+
         // Dir
         final File classFile =
             new File(file, ClassNameUtils.replace(fqcn, ".", File.separator) + ".class");
