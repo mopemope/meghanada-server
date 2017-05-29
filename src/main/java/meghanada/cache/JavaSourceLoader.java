@@ -27,9 +27,9 @@ class JavaSourceLoader extends CacheLoader<File, Source> implements RemovalListe
     this.project = project;
   }
 
-  private void writeSourceCache(final Source source) throws IOException {
+  static void writeSourceCache(final Project project, final Source source) throws IOException {
     final File sourceFile = source.getFile();
-    final File root = new File(this.project.getProjectRoot(), Config.MEGHANADA_DIR);
+    final File root = new File(project.getProjectRoot(), Config.MEGHANADA_DIR);
     final String path = FileUtils.toHashedPath(sourceFile, GlobalCache.CACHE_EXT);
     final String out = Joiner.on(File.separator).join(GlobalCache.SOURCE_CACHE_DIR, path);
     final File file = new File(root, out);
@@ -120,7 +120,7 @@ class JavaSourceLoader extends CacheLoader<File, Source> implements RemovalListe
           || cause.equals(RemovalCause.REPLACED)) {
         final Source source = notification.getValue();
         try {
-          writeSourceCache(source);
+          writeSourceCache(project, source);
         } catch (Exception e) {
           log.catching(e);
         }

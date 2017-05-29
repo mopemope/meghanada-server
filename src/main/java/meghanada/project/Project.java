@@ -902,6 +902,7 @@ public abstract class Project {
 
     CompiledSourceHandler(final Project project, final Map<String, Set<String>> callerMap)
         throws IOException {
+
       this.project = project;
       this.callerMap = callerMap;
       final Config config = Config.load();
@@ -942,6 +943,7 @@ public abstract class Project {
             final String md5sum = FileUtils.getChecksum(sourceFile);
             checksumMap.put(path, md5sum);
             globalCache.replaceSource(this.project, source);
+            globalCache.cacheSource(this.project, source);
           } else {
             // error
             checksumMap.remove(path);

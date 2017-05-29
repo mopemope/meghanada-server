@@ -12,6 +12,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.util.HashMap;
@@ -46,7 +47,7 @@ public class GlobalCache {
 
   private static final int SOURCE_CACHE_MAX = 64;
   private static final int MEMBER_CACHE_MAX = SOURCE_CACHE_MAX;
-  private static final int BURST_LIMIT = 32;
+  private static final int BURST_LIMIT = 16;
   private static final int BUFFER_SIZE = 1024 * 32;
 
   private static final Logger log = LogManager.getLogger(GlobalCache.class);
@@ -205,6 +206,10 @@ public class GlobalCache {
   public void invalidateSource(final Project project, final File file) {
     final LoadingCache<File, Source> sourceCache = this.getSourceCache(project);
     sourceCache.invalidate(file);
+  }
+
+  public void cacheSource(Project p, Source s) throws IOException {
+    JavaSourceLoader.writeSourceCache(p, s);
   }
 
   @Nullable
