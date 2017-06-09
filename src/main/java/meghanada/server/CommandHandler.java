@@ -1,5 +1,7 @@
 package meghanada.server;
 
+import static java.util.Objects.nonNull;
+
 import com.google.common.base.Joiner;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -86,9 +88,9 @@ public class CommandHandler {
     }
   }
 
-  public void compileProject(final long id) {
+  public void compileProject(final long id, String path) {
     try {
-      final CompileResult compileResult = session.compileProject(true);
+      final CompileResult compileResult = session.compileProject(path, true);
       final String out = outputFormatter.compileProject(id, compileResult);
       writer.write(out);
       writer.newLine();
@@ -116,11 +118,11 @@ public class CommandHandler {
     }
   }
 
-  public void runJUnit(final long id, final String test) {
+  public void runJUnit(final long id, String path, final String test) {
 
     try (final BufferedReader reader =
         new BufferedReader(
-            new InputStreamReader(this.session.runJUnit(test), StandardCharsets.UTF_8))) {
+            new InputStreamReader(this.session.runJUnit(path, test), StandardCharsets.UTF_8))) {
 
       String s;
       while ((s = reader.readLine()) != null) {
@@ -224,7 +226,7 @@ public class CommandHandler {
   public void backJump(final long id) {
     final Location location = session.backDeclaration();
     try {
-      if (location != null) {
+      if (nonNull(location)) {
         final String out = outputFormatter.jumpDeclaration(id, location);
         writer.write(out);
       }

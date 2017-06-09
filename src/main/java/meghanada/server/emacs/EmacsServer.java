@@ -6,6 +6,8 @@ import static com.leacox.motif.Motif.match;
 import static com.leacox.motif.cases.ListConsCases.headNil;
 import static com.leacox.motif.cases.ListConsCases.headTail;
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.util.Objects.isNull;
+import static java.util.Objects.nonNull;
 
 import com.google.common.base.Stopwatch;
 import java.io.BufferedReader;
@@ -98,8 +100,8 @@ public class EmacsServer implements Server {
             .get(
                 args -> {
                   // cp : Compile Project
-                  // usage: cp
-                  handler.compileProject(id);
+                  // usage: cp <filepath>
+                  handler.compileProject(id, args.get(0));
                   return true;
                 })
             .when(headTail(eq("fc"), any()))
@@ -122,11 +124,11 @@ public class EmacsServer implements Server {
             .get(
                 args -> {
                   // rj : Run JUnit Test
-                  // usage: rj <testName>
-                  if (args.isEmpty()) {
-                    handler.runJUnit(id, "");
+                  // usage: rj <path>, <testName>
+                  if (args.size() == 1) {
+                    handler.runJUnit(id, args.get(0), "");
                   } else {
-                    handler.runJUnit(id, args.get(0));
+                    handler.runJUnit(id, args.get(0), args.get(1));
                   }
                   return true;
                 })
@@ -251,7 +253,7 @@ public class EmacsServer implements Server {
       try {
         this.serverSocket.close();
         this.executorService.shutdownNow();
-        if (this.session != null) {
+        if (nonNull(this.session)) {
           this.session.shutdown(3);
         }
       } catch (Exception e) {
@@ -295,7 +297,7 @@ public class EmacsServer implements Server {
             final SExprParser parser = new SExprParser();
             while (start) {
               final String line = reader.readLine();
-              if (line == null || line.isEmpty()) {
+              if (isNull(line) || line.isEmpty()) {
                 log.info("close from client ...");
                 break;
               }

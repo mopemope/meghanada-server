@@ -1,5 +1,8 @@
 package meghanada.session;
 
+import static java.util.Objects.isNull;
+import static java.util.Objects.nonNull;
+
 import com.google.common.base.Joiner;
 import com.google.common.base.Stopwatch;
 import java.io.File;
@@ -116,7 +119,7 @@ public class Session {
       }
 
       File parent = base.getParentFile();
-      if (parent == null) {
+      if (isNull(parent)) {
         return Optional.empty();
       }
       base = base.getParentFile();
@@ -149,7 +152,7 @@ public class Session {
       if (config.useFastBoot()) {
         try {
           final Project tempProject = Project.loadProject(projectRootPath);
-          if (tempProject != null && tempProject.getId().equals(id)) {
+          if (nonNull(tempProject) && tempProject.getId().equals(id)) {
             tempProject.setId(id);
             log.debug("load from cache project={}", tempProject);
             log.info("load project from cache. projectRoot:{}", tempProject.getProjectRoot());
@@ -231,7 +234,7 @@ public class Session {
       }
 
       File parent = base.getParentFile();
-      if (parent == null) {
+      if (isNull(parent)) {
         return null;
       }
       base = base.getParentFile();
@@ -246,7 +249,7 @@ public class Session {
   private boolean searchAndChangeProject(final File base) throws IOException {
     final File projectRoot = Session.findProjectRoot(base);
 
-    if (projectRoot == null || this.currentProject.getProjectRoot().equals(projectRoot)) {
+    if (isNull(projectRoot) || this.currentProject.getProjectRoot().equals(projectRoot)) {
       // not change
       return false;
     }
@@ -254,6 +257,7 @@ public class Session {
     if (this.projects.containsKey(projectRoot)) {
       // loaded project
       this.currentProject = this.projects.get(projectRoot);
+      log.info("change project {}", this.currentProject.getName());
       String projectRootPath = this.currentProject.getProjectRootPath();
       System.setProperty(Project.PROJECT_ROOT_KEY, projectRootPath);
       this.getLocationSearcher().setProject(currentProject);
@@ -277,8 +281,9 @@ public class Session {
         .orElse(false);
   }
 
-  private Boolean setProject(final File projectRoot, final Project project) {
+  private boolean setProject(final File projectRoot, final Project project) {
     this.currentProject = project;
+    log.info("change project {}", this.currentProject.getName());
     this.projects.put(projectRoot, this.currentProject);
     this.getLocationSearcher().setProject(currentProject);
     this.getDeclarationSearcher().setProject(this.currentProject);
@@ -330,21 +335,21 @@ public class Session {
   }
 
   private LocationSearcher getLocationSearcher() {
-    if (this.locationSearcher == null) {
+    if (isNull(this.locationSearcher)) {
       this.locationSearcher = new LocationSearcher(currentProject);
     }
     return locationSearcher;
   }
 
   private JavaCompletion getCompletion() {
-    if (this.completion == null) {
+    if (isNull(this.completion)) {
       this.completion = new JavaCompletion(currentProject);
     }
     return this.completion;
   }
 
   private JavaVariableCompletion getVariableCompletion() {
-    if (this.variableCompletion == null) {
+    if (isNull(this.variableCompletion)) {
       this.variableCompletion = new JavaVariableCompletion(currentProject);
     }
     return variableCompletion;
@@ -357,6 +362,7 @@ public class Session {
     if (!FileUtils.isJavaFile(file)) {
       return Collections.emptyList();
     }
+    boolean b = this.changeProject(path);
     return getCompletion().completionAt(file, line, column, prefix);
   }
 
@@ -366,17 +372,14 @@ public class Session {
     if (this.started) {
       try {
         if (!file.exists()) {
-          return true;
+          return false;
         }
         final boolean changed = this.searchAndChangeProject(file);
         if (changed) {
           this.sessionEventBus.requestCreateCache();
-        } else {
-          // load source
-          final GlobalCache globalCache = GlobalCache.getInstance();
-          final Source source = globalCache.getSource(currentProject, file);
+          return true;
         }
-        return true;
+        return false;
       } catch (Exception e) {
         log.catching(e);
         return false;
@@ -393,6 +396,7 @@ public class Session {
     if (!FileUtils.isJavaFile(file)) {
       return Optional.of(new LocalVariable("void", Collections.emptyList()));
     }
+    boolean b = this.changeProject(path);
     return getVariableCompletion().localVariable(file, line);
   }
 
@@ -403,6 +407,7 @@ public class Session {
     if (!FileUtils.isJavaFile(file)) {
       return false;
     }
+    boolean b = this.changeProject(path);
     log.debug("addImport path={} fqcn={}", path, fqcn);
     return parseJavaSource(file).map(source -> source.addImportIfAbsent(fqcn)).orElse(false);
   }
@@ -413,6 +418,7 @@ public class Session {
     if (!FileUtils.isJavaFile(file)) {
       return;
     }
+    boolean b = this.changeProject(path);
 
     parseJavaSource(file)
         .ifPresent(
@@ -480,6 +486,7 @@ public class Session {
       return Collections.emptyMap();
     }
 
+    boolean b = this.changeProject(path);
     return parseJavaSource(file).map(Source::searchMissingImport).orElse(Collections.emptyMap());
   }
 
@@ -497,6 +504,7 @@ public class Session {
     if (!FileUtils.isJavaFile(file)) {
       return false;
     }
+    boolean b = this.changeProject(path);
     final GlobalCache globalCache = GlobalCache.getInstance();
     globalCache.invalidateSource(currentProject, file);
     Optional<Source> source = this.parseJavaSource(file);
@@ -506,10 +514,12 @@ public class Session {
   public synchronized CompileResult compileFile(final String path) throws IOException {
     // java file only
     final File file = normalize(path);
+    boolean b = this.changeProject(path);
     return currentProject.compileFile(file, true);
   }
 
-  public synchronized CompileResult compileProject(final boolean force) throws IOException {
+  public synchronized CompileResult compileProject(final String path, final boolean force)
+      throws IOException {
 
     final Project project = currentProject;
     final CompileResult result = project.compileJava(force);
@@ -547,11 +557,13 @@ public class Session {
     return file;
   }
 
-  public InputStream runJUnit(String test) throws IOException {
+  public InputStream runJUnit(String path, String test) throws IOException {
+    boolean b = this.changeProject(path);
     return currentProject.runJUnit(test);
   }
 
   public Optional<String> switchTest(final String path) throws IOException {
+    boolean b = this.changeProject(path);
     Project project = currentProject;
     String root = null;
     Set<File> roots;
@@ -574,7 +586,7 @@ public class Session {
         break;
       }
     }
-    if (root == null) {
+    if (isNull(root)) {
       return Optional.empty();
     }
 
@@ -608,6 +620,8 @@ public class Session {
   public synchronized Optional<Location> jumpDeclaration(
       final String path, final int line, final int column, final String symbol)
       throws ExecutionException, IOException {
+
+    boolean b = this.changeProject(path);
     final Optional<Location> location =
         this.getLocationSearcher().searchDeclarationLocation(new File(path), line, column, symbol);
 
@@ -632,6 +646,7 @@ public class Session {
   }
 
   public void formatCode(final String path) throws IOException {
+    boolean b = this.changeProject(path);
     final Project project = currentProject;
     final Optional<Properties> formatProperties = project.getFormatProperties();
     if (!formatProperties.isPresent()) {
@@ -670,12 +685,13 @@ public class Session {
   public Optional<Declaration> showDeclaration(
       final String path, final int line, final int column, final String symbol)
       throws IOException, ExecutionException {
+    boolean b = this.changeProject(path);
     final DeclarationSearcher searcher = this.getDeclarationSearcher();
     return searcher.searchDeclaration(new File(path), line, column, symbol);
   }
 
   private DeclarationSearcher getDeclarationSearcher() {
-    if (this.declarationSearcher == null) {
+    if (isNull(this.declarationSearcher)) {
       this.declarationSearcher = new DeclarationSearcher(currentProject);
     }
     return declarationSearcher;
