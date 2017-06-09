@@ -31,7 +31,7 @@ public class FieldSignatureVisitorTest extends GradleTestBase {
 
   @Test
   public void testReturnClass1() throws Exception {
-    File f = new File(getOutputDir(), "meghanada/reflect/ClassIndex.class");
+    File f = new File(getOutput(), "meghanada/reflect/ClassIndex.class");
     String fqcn = "meghanada.reflect.ClassIndex";
     TestVisitor visitor = doAnalyze(f, fqcn);
     System.out.println(visitor.result);
@@ -39,7 +39,7 @@ public class FieldSignatureVisitorTest extends GradleTestBase {
 
   @Test
   public void testReturnClass2() throws Exception {
-    File f = new File(getOutputDir(), "meghanada/reflect/asm/MethodAnalyzeVisitor.class");
+    File f = new File(getOutput(), "meghanada/reflect/asm/MethodAnalyzeVisitor.class");
     String fqcn = "meghanada.reflect.asm.MethodAnalyzeVisitor";
     TestVisitor visitor = doAnalyze(f, fqcn);
     System.out.println(visitor.result.get("lvtSlotIndex"));
@@ -56,7 +56,7 @@ public class FieldSignatureVisitorTest extends GradleTestBase {
 
   @Test
   public void testReturnClass3() throws Exception {
-    File f = new File(getTestOutputDir(), "meghanada/Gen1.class");
+    File f = new File(getTestOutput(), "meghanada/Gen1.class");
     String fqcn = "meghanada.Gen1";
     TestVisitor visitor = doAnalyze(f, fqcn);
 
@@ -71,7 +71,7 @@ public class FieldSignatureVisitorTest extends GradleTestBase {
             });
   }
 
-  private TestVisitor doAnalyze(File file, String fqcn) throws IOException {
+  private static TestVisitor doAnalyze(File file, String fqcn) throws IOException {
     // log.debug("class {}", name);
     try (InputStream in = new FileInputStream(file)) {
       ClassReader classReader = new ClassReader(in);

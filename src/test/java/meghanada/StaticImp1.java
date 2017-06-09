@@ -2,11 +2,8 @@ package meghanada;
 
 import static org.junit.Assert.assertTrue;
 
-import org.junit.Test;
-
 public class StaticImp1 {
 
-  @Test
   public void testExists() {
     try {
 

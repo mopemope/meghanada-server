@@ -1,6 +1,7 @@
 package meghanada.analyze;
 
 import static meghanada.config.Config.timeIt;
+import static meghanada.config.Config.timeItF;
 import static org.junit.Assert.assertNotNull;
 
 import java.io.File;
@@ -14,70 +15,40 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import meghanada.GradleTestBase;
-import meghanada.config.Config;
 import meghanada.docs.declaration.Declaration;
 import meghanada.docs.declaration.DeclarationSearcher;
-import meghanada.project.Project;
-import meghanada.project.gradle.GradleProject;
-import meghanada.reflect.asm.CachedASMReflector;
-import org.junit.BeforeClass;
+import meghanada.utils.FileUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.junit.Test;
 
 @SuppressWarnings("CheckReturnValue")
 public class JavaAnalyzerTest extends GradleTestBase {
 
-  private static Project project;
-
-  @org.junit.BeforeClass
-  public static void beforeClass() throws Exception {
-    GradleTestBase.setupReflector();
-    CachedASMReflector cachedASMReflector = CachedASMReflector.getInstance();
-    cachedASMReflector.addClasspath(getOutput());
-    cachedASMReflector.addClasspath(getTestOutput());
-    cachedASMReflector.createClassIndexes();
-  }
-
-  @BeforeClass
-  public static void setupProject() throws Exception {
-    // System.setProperty("log-level", "DEBUG");
-
-    if (project == null) {
-      String tmp = System.getProperty("java.io.tmpdir");
-      System.setProperty("project-cache-dir", new File(tmp, "meghanada/cache").getCanonicalPath());
-      project = new GradleProject(new File("./").getCanonicalFile());
-      project.parseProject();
-    }
-    Config.load();
-  }
-
-  protected static File getOutput() {
-    return project.getOutput();
-  }
-
-  protected static File getTestOutput() {
-    return project.getTestOutput();
-  }
+  private static final Logger log = LogManager.getLogger(JavaAnalyzerTest.class);
 
   @Test
   public void analyze01() throws Exception {
     final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8");
     final String cp = getClasspath();
 
-    List<File> files = new ArrayList<>();
+    List<File> files = new ArrayList<>(8);
     final File file = new File("./src/test/java/meghanada/Gen1.java").getCanonicalFile();
     assert file.exists();
     files.add(file);
 
     final String tmp = System.getProperty("java.io.tmpdir");
 
-    timeIt(
+    timeItF(
+        "1st:{}",
         () -> {
           final CompileResult compileResult = analyzer.analyzeAndCompile(files, cp, tmp);
           compileResult.getSources().values().forEach(Source::dump);
           return compileResult;
         });
 
-    timeIt(
+    timeItF(
+        "2nd:{}",
         () -> {
           return analyzer.analyzeAndCompile(files, cp, tmp);
         });
@@ -431,26 +402,6 @@ public class JavaAnalyzerTest extends GradleTestBase {
   }
 
   @Test
-  public void analyze16() throws Exception {
-    final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8");
-    final String cp = getClasspath();
-
-    List<File> files = new ArrayList<>();
-    final File file = new File("./src/test/java/meghanada/AllTests.java").getCanonicalFile();
-    assert file.exists();
-    files.add(file);
-
-    final String tmp = System.getProperty("java.io.tmpdir");
-
-    timeIt(
-        () -> {
-          final CompileResult compileResult = analyzer.analyzeAndCompile(files, cp, tmp);
-          compileResult.getSources().values().forEach(Source::dump);
-          return compileResult;
-        });
-  }
-
-  @Test
   public void analyze17() throws Exception {
     final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8");
     final String cp = getClasspath();
@@ -582,7 +533,7 @@ public class JavaAnalyzerTest extends GradleTestBase {
   @Test
   public void analyzeAll() throws Exception {
     System.setProperty(Source.REPORT_UNKNOWN_TREE, "true");
-    project.clearCache();
+    // project.clearCache();
     final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8");
     final String cp = getClasspath();
 
@@ -590,7 +541,11 @@ public class JavaAnalyzerTest extends GradleTestBase {
         Files.walk(
                 new File("./src/main/java").getCanonicalFile().toPath(),
                 FileVisitOption.FOLLOW_LINKS)
-            .filter(path -> path.toFile().isFile())
+            .filter(
+                path -> {
+                  File file = path.toFile();
+                  return FileUtils.isJavaFile(file);
+                })
             .map(Path::toFile)
             .collect(Collectors.toList());
 
@@ -598,7 +553,11 @@ public class JavaAnalyzerTest extends GradleTestBase {
         Files.walk(
                 new File("./src/test/java").getCanonicalFile().toPath(),
                 FileVisitOption.FOLLOW_LINKS)
-            .filter(path -> path.toFile().isFile())
+            .filter(
+                path -> {
+                  File file = path.toFile();
+                  return FileUtils.isJavaFile(file);
+                })
             .map(Path::toFile)
             .collect(Collectors.toList());
 
@@ -622,12 +581,20 @@ public class JavaAnalyzerTest extends GradleTestBase {
 
     List<File> files =
         Files.walk(new File("./src/main/java").toPath(), FileVisitOption.FOLLOW_LINKS)
-            .filter(path -> path.toFile().isFile())
+            .filter(
+                path -> {
+                  File file = path.toFile();
+                  return FileUtils.isJavaFile(file);
+                })
             .map(Path::toFile)
             .collect(Collectors.toList());
     List<File> testFiles =
         Files.walk(new File("./src/test/java").toPath(), FileVisitOption.FOLLOW_LINKS)
-            .filter(path -> path.toFile().isFile())
+            .filter(
+                path -> {
+                  File file = path.toFile();
+                  return FileUtils.isJavaFile(file);
+                })
             .map(Path::toFile)
             .collect(Collectors.toList());
     files.addAll(testFiles);

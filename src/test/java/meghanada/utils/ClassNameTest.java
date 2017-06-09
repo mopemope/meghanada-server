@@ -7,11 +7,6 @@ import org.junit.Test;
 
 public class ClassNameTest extends GradleTestBase {
 
-  @org.junit.BeforeClass
-  public static void beforeClass() throws Exception {
-    GradleTestBase.setupReflector();
-  }
-
   @Test
   public void getName1() throws Exception {
     ClassName className = new ClassName("Map.Entry<String, Long>");

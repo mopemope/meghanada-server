@@ -8,22 +8,13 @@ import static org.junit.Assert.assertTrue;
 import java.io.File;
 import meghanada.GradleTestBase;
 import meghanada.cache.GlobalCache;
-import meghanada.reflect.asm.CachedASMReflector;
 import org.junit.Test;
 
 public class LocationSearcherTest extends GradleTestBase {
 
-  private static LocationSearcher searcher;
+  private LocationSearcher searcher;
 
-  @org.junit.BeforeClass
-  public static void beforeClass() throws Exception {
-    GradleTestBase.setupReflector();
-    CachedASMReflector cachedASMReflector = CachedASMReflector.getInstance();
-    cachedASMReflector.addClasspath(getOutputDir());
-    cachedASMReflector.createClassIndexes();
-  }
-
-  private static LocationSearcher getSearcher() throws Exception {
+  private LocationSearcher getSearcher() throws Exception {
     if (searcher != null) {
       return searcher;
     }
@@ -52,7 +43,7 @@ public class LocationSearcherTest extends GradleTestBase {
     final LocationSearcher searcher = getSearcher();
     // private static Project findProject(File base) throws IOException
     final Location result =
-        timeIt(() -> searcher.searchDeclarationLocation(f, 103, 28, "base")).orElse(null);
+        timeIt(() -> searcher.searchDeclarationLocation(f, 109, 28, "base")).orElse(null);
     assertNotNull(result);
     assertEquals(94, result.getLine());
     assertEquals(52, result.getColumn());
@@ -63,10 +54,14 @@ public class LocationSearcherTest extends GradleTestBase {
     File f = new File("./src/main/java/meghanada/session/Session.java").getCanonicalFile();
     assert f.exists();
 
+    //    this.currentProject = this.projects.get(projectRoot);
+    //    this.getLocationSearcher().setProject(currentProject);
+    //    this.getDeclarationSearcher().setProject(this.currentProject);
+    //    this.getVariableCompletion().setProject(currentProject);
+
     LocationSearcher searcher = getSearcher();
-    // Set<File> sources = this.currentProject.getSourceDirectories();
     Location result =
-        timeIt(() -> searcher.searchDeclarationLocation(f, 267, 12, "currentProject")).orElse(null);
+        timeIt(() -> searcher.searchDeclarationLocation(f, 256, 12, "currentProject")).orElse(null);
     assertNotNull(result);
     assertEquals(67, result.getLine());
     assertEquals(19, result.getColumn());
@@ -105,7 +100,7 @@ public class LocationSearcherTest extends GradleTestBase {
 
     LocationSearcher searcher = getSearcher();
     Location result =
-        timeIt(() -> searcher.searchDeclarationLocation(f, 418, 5, "parseJavaSource")).orElse(null);
+        timeIt(() -> searcher.searchDeclarationLocation(f, 417, 5, "parseJavaSource")).orElse(null);
 
     assertNotNull(result);
     assertEquals(486, result.getLine());
@@ -123,7 +118,7 @@ public class LocationSearcherTest extends GradleTestBase {
         searcher.searchDeclarationLocation(f, 483, 46, "searchMissingImport").orElse(null);
     assertNotNull(result);
     assertTrue(result.getPath().contains("Source.java"));
-    assertEquals(346, result.getLine());
+    assertEquals(422, result.getLine());
     assertEquals(36, result.getColumn());
   }
 
@@ -198,7 +193,7 @@ public class LocationSearcherTest extends GradleTestBase {
         timeIt(
                 () -> {
                   System.setProperty("disable-source-jar", "true");
-                  return searcher.searchDeclarationLocation(f, 590, 22, "decompileArchive");
+                  return searcher.searchDeclarationLocation(f, 585, 22, "decompileArchive");
                 })
             .orElse(null);
     assertNotNull(result);
@@ -214,10 +209,10 @@ public class LocationSearcherTest extends GradleTestBase {
 
     LocationSearcher searcher = getSearcher();
     Location result =
-        timeIt(() -> searcher.searchDeclarationLocation(f, 59, 19, "getAllowClass")).orElse(null);
+        timeIt(() -> searcher.searchDeclarationLocation(f, 62, 19, "getAllowClass")).orElse(null);
     assertNotNull(result);
     assertTrue(result.getPath().contains("Config.java"));
-    assertEquals(327, result.getLine());
+    assertEquals(312, result.getLine());
     assertEquals(23, result.getColumn());
   }
 
@@ -247,11 +242,11 @@ public class LocationSearcherTest extends GradleTestBase {
           timeIt(
               () ->
                   searcher
-                      .searchDeclarationLocation(f, 511, 12, "analyzeVariableDecl")
+                      .searchDeclarationLocation(f, 512, 12, "analyzeVariableDecl")
                       .orElse(null));
       assertNotNull(result);
       assertTrue(result.getPath().contains("TreeAnalyzer.java"));
-      assertEquals(1803, result.getLine());
+      assertEquals(1840, result.getLine());
       assertEquals(16, result.getColumn());
     }
   }
@@ -278,10 +273,10 @@ public class LocationSearcherTest extends GradleTestBase {
 
     LocationSearcher searcher = getSearcher();
     Location result =
-        timeIt(() -> searcher.searchDeclarationLocation(f, 378, 17, "Source")).orElse(null);
+        timeIt(() -> searcher.searchDeclarationLocation(f, 376, 17, "Source")).orElse(null);
     assertNotNull(result);
     assertTrue(result.getPath().contains("Source.java"));
-    assertEquals(35, result.getLine());
+    assertEquals(46, result.getLine());
     assertEquals(14, result.getColumn());
   }
 
@@ -319,7 +314,7 @@ public class LocationSearcherTest extends GradleTestBase {
 
     LocationSearcher searcher = getSearcher();
     System.setProperty("disable-source-jar", "true");
-    Location result = searcher.searchDeclarationLocation(f, 44, 40, "LogManager").orElse(null);
+    Location result = searcher.searchDeclarationLocation(f, 57, 40, "LogManager").orElse(null);
     assertNotNull(result);
     assertTrue(result.getPath().contains(".java"));
     assertEquals(21, result.getLine());

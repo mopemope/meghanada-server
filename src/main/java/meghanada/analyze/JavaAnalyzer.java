@@ -1,5 +1,7 @@
 package meghanada.analyze;
 
+import static java.util.Objects.nonNull;
+
 import com.sun.source.tree.CompilationUnitTree;
 import com.sun.source.util.JavacTask;
 import com.sun.tools.javac.api.JavacTaskImpl;
@@ -25,6 +27,7 @@ import javax.tools.JavaFileObject;
 import javax.tools.StandardJavaFileManager;
 import javax.tools.ToolProvider;
 import meghanada.config.Config;
+import meghanada.reflect.asm.CachedASMReflector;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -52,7 +55,7 @@ public class JavaAnalyzer {
         diagnostic -> {
           final Diagnostic.Kind kind = diagnostic.getKind();
           final JavaFileObject fileObject = diagnostic.getSource();
-          if (fileObject != null && kind.equals(Diagnostic.Kind.ERROR)) {
+          if (nonNull(fileObject) && kind.equals(Diagnostic.Kind.ERROR)) {
             final URI uri = fileObject.toUri();
             try {
               temp.add(new File(uri.normalize()).getCanonicalFile());
@@ -136,22 +139,11 @@ public class JavaAnalyzer {
               "-encoding",
               "UTF-8");
 
-      // if (Main.isDevelop()) {
-      // log.info("---------- development compile log. output={}
-      // ----------", out);
-      // for (final String cp : StringUtils.split(classpath,
-      // File.pathSeparatorChar)) {
-      // log.info("{}", cp);
-      // }
-      // }
-
       final JavaCompiler.CompilationTask compilerTask =
           compiler.getTask(
               null, fileManager, diagnosticCollector, compileOptions, null, compilationUnits);
 
       final JavacTask javacTask = (JavacTask) compilerTask;
-
-      // this.replaceParser(compilerTask);
 
       final Iterable<? extends CompilationUnitTree> parsedIter = javacTask.parse();
       javacTask.analyze();
@@ -160,14 +152,32 @@ public class JavaAnalyzer {
           diagnosticCollector.getDiagnostics();
       final Set<File> errorFiles = JavaAnalyzer.getErrorFiles(diagnostics);
 
-      final Map<File, Source> analyzedMap = treeAnalyzer.analyze(parsedIter, errorFiles, handler);
+      final Map<File, Source> analyzedMap = treeAnalyzer.analyze(parsedIter, errorFiles);
 
       if (generate && !Config.load().useExternalBuilder()) {
         javacTask.generate();
+        CachedASMReflector.getInstance().updateClassIndexFromDirectory();
+      }
+
+      if (nonNull(handler)) {
+        analyzedMap
+            .values()
+            .parallelStream()
+            .forEach(
+                source -> {
+                  try {
+                    handler.analyzed(source);
+                  } catch (IOException e) {
+                    throw new UncheckedIOException(e);
+                  }
+                });
+        handler.complete();
       }
 
       final boolean success = errorFiles.size() == 0;
-      return new CompileResult(success, analyzedMap, diagnostics, errorFiles);
+      CompileResult result = new CompileResult(success, analyzedMap, diagnostics, errorFiles);
+      // ProjectDatabaseHelper.saveCompileResult(result);
+      return result;
     }
   }
 

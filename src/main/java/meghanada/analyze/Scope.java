@@ -1,7 +1,11 @@
 package meghanada.analyze;
 
+import static java.util.Objects.isNull;
+import static java.util.Objects.nonNull;
+
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -43,7 +47,7 @@ public abstract class Scope implements Serializable {
         if (scope instanceof BlockScope) {
           final BlockScope bs = (BlockScope) scope;
           final Scope inScope = Scope.getInnerScope(line, bs.scopes);
-          if (inScope != null) {
+          if (nonNull(inScope)) {
             return inScope;
           }
         }
@@ -98,7 +102,7 @@ public abstract class Scope implements Serializable {
 
   public void dumpVariable(final Logger logger) {
     for (final Variable v : this.variables) {
-      if (!v.name.equals("NULL_LITERAL") && v.fqcn == null) {
+      if (!v.name.equals("NULL_LITERAL") && isNull(v.fqcn)) {
         logger.warn("missing fqcn {}", v);
       } else {
         logger.trace("# {}", v);
@@ -164,10 +168,6 @@ public abstract class Scope implements Serializable {
     return result;
   }
 
-  public Set<Variable> getVariables() {
-    return variables;
-  }
-
   public Map<String, Variable> getVariableMap() {
     final Map<String, Variable> result = new HashMap<>(32);
     variables.forEach(
@@ -178,6 +178,24 @@ public abstract class Scope implements Serializable {
             result.putIfAbsent(v.name, v);
           }
         });
+    return result;
+  }
+
+  public Set<Variable> getVariables() {
+    return this.variables;
+  }
+
+  public Collection<FieldAccess> getFieldAccesses() {
+    return this.fieldAccesses;
+  }
+
+  public Collection<MethodCall> getMethodCalls() {
+    return this.methodCalls;
+  }
+
+  public Collection<AccessSymbol> getAccessSymbols() {
+    final List<AccessSymbol> result = new ArrayList<>(this.fieldAccesses);
+    result.addAll(this.methodCalls);
     return result;
   }
 }

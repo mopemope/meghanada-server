@@ -1,5 +1,8 @@
 package meghanada.config;
 
+import static java.util.Objects.isNull;
+import static java.util.Objects.nonNull;
+
 import com.google.common.base.Stopwatch;
 import com.typesafe.config.ConfigFactory;
 import java.io.File;
@@ -9,9 +12,6 @@ import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import meghanada.cache.GlobalCache;
 import meghanada.project.Project;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.Level;
@@ -33,7 +33,6 @@ public class Config {
   private static Config config;
 
   private final com.typesafe.config.Config c;
-  private final Map<File, Map<String, String>> checksumMap = new ConcurrentHashMap<>(4);
   private boolean debug;
   private List<String> includeList;
   private List<String> excludeList;
@@ -66,7 +65,7 @@ public class Config {
   }
 
   public static Config load() {
-    if (config == null) {
+    if (isNull(config)) {
       config = new Config();
     }
     return config;
@@ -173,7 +172,7 @@ public class Config {
   public List<String> gradlePrepareCompileTask() {
     final String tasks = c.getString(GRADLE_PREPARE_COMPILE_TASK);
     final String[] split = StringUtils.split(tasks, ",");
-    if (split == null) {
+    if (isNull(split)) {
       return Collections.emptyList();
     }
     return Arrays.asList(split);
@@ -182,7 +181,7 @@ public class Config {
   public List<String> gradlePrepareTestCompileTask() {
     final String tasks = c.getString(GRADLE_PREPARE_TEST_COMPILE_TASK);
     final String[] split = StringUtils.split(tasks, ",");
-    if (split == null) {
+    if (isNull(split)) {
       return Collections.emptyList();
     }
     return Arrays.asList(split);
@@ -221,9 +220,16 @@ public class Config {
   }
 
   public String getProjectSettingDir() {
+
+    String useTemp = c.getString("temp-project-setting-dir");
+    if (nonNull(useTemp) && !useTemp.isEmpty()) {
+      log.debug("use temp project setting dir {}", useTemp);
+      return useTemp;
+    }
+
     final String root = System.getProperty(Project.PROJECT_ROOT_KEY);
     try {
-      if (root != null && !root.isEmpty()) {
+      if (nonNull(root) && !root.isEmpty()) {
         return new File(root, MEGHANADA_DIR).getCanonicalPath();
       } else {
         return c.getString("project-setting-dir");
@@ -242,7 +248,7 @@ public class Config {
   }
 
   public List<String> getIncludeList() {
-    if (this.includeList == null) {
+    if (isNull(this.includeList)) {
       return Collections.emptyList();
     }
     return includeList;
@@ -253,7 +259,7 @@ public class Config {
   }
 
   public List<String> getExcludeList() {
-    if (this.excludeList == null) {
+    if (isNull(this.excludeList)) {
       return Collections.emptyList();
     }
     return excludeList;
@@ -295,27 +301,6 @@ public class Config {
     return c.getBoolean("clear-cache-on-start");
   }
 
-  public Map<File, Map<String, String>> getAllChecksumMap() {
-    return checksumMap;
-  }
-
-  public Map<String, String> getChecksumMap(final File file) throws IOException {
-    if (!this.checksumMap.containsKey(file)) {
-      Map<String, String> checksumMap = new ConcurrentHashMap<>(64);
-      if (file.exists()) {
-        final GlobalCache globalCache = GlobalCache.getInstance();
-        @SuppressWarnings("unchecked")
-        final Map<String, String> map =
-            globalCache.readCacheFromFile(file, ConcurrentHashMap.class);
-        if (map != null) {
-          checksumMap = map;
-        }
-      }
-      this.checksumMap.put(file, checksumMap);
-    }
-    return checksumMap.get(file);
-  }
-
   public boolean isBuildWithDependency() {
     return buildWithDependency;
   }
@@ -334,6 +319,10 @@ public class Config {
 
   public String getMavenLocalRepository() {
     return c.getString("maven-local-repository");
+  }
+
+  public boolean isSkipBuildSubProjects() {
+    return c.getBoolean("skip-build-subprojects");
   }
 
   @FunctionalInterface

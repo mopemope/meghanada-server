@@ -340,14 +340,9 @@ public class LocationSearcher {
               }
               final List<String> searchTargets = new ArrayList<>(2);
               searchTargets.add(declaringClass);
+
               final CachedASMReflector reflector = CachedASMReflector.getInstance();
-              reflector
-                  .containsClassIndex(declaringClass)
-                  .ifPresent(
-                      classIndex -> {
-                        final List<String> supers = classIndex.supers;
-                        searchTargets.addAll(supers);
-                      });
+              searchTargets.addAll(reflector.getSuperClass(declaringClass));
 
               return searchTargets
                   .stream()
@@ -419,8 +414,8 @@ public class LocationSearcher {
       final Map<String, String> standardClasses = reflector.getStandardClasses();
       fqcn = standardClasses.get(symbol);
       if (fqcn == null) {
-        if (source.packageName != null && !source.packageName.isEmpty()) {
-          fqcn = source.packageName + '.' + symbol;
+        if (!source.getPackageName().isEmpty()) {
+          fqcn = source.getPackageName() + '.' + symbol;
         } else {
           fqcn = symbol;
         }
@@ -663,6 +658,11 @@ public class LocationSearcher {
         return null;
       }
 
+      String tmpdir = System.getProperty("java.io.tmpdir");
+      File tmpParent = new File(tmpdir);
+      if (!tmpParent.exists() && !tmpParent.mkdirs()) {
+        log.warn("fail create tmpdir");
+      }
       // copy from src.zip
       final File temp = File.createTempFile(TEMP_FILE_PREFIX, FileUtils.JAVA_EXT);
       temp.deleteOnExit();
@@ -697,13 +697,7 @@ public class LocationSearcher {
                   searchTargets.add(declaringClass);
 
                   final CachedASMReflector reflector = CachedASMReflector.getInstance();
-                  reflector
-                      .containsClassIndex(declaringClass)
-                      .ifPresent(
-                          classIndex -> {
-                            final List<String> supers = classIndex.supers;
-                            searchTargets.addAll(supers);
-                          });
+                  searchTargets.addAll(reflector.getSuperClass(declaringClass));
 
                   return searchTargets
                       .stream()

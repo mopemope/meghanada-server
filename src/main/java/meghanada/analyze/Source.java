@@ -1,5 +1,8 @@
 package meghanada.analyze;
 
+import static java.util.Objects.isNull;
+import static java.util.Objects.nonNull;
+
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Strings;
 import java.io.BufferedReader;
@@ -17,24 +20,41 @@ import java.util.Comparator;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import jetbrains.exodus.entitystore.Entity;
+import jetbrains.exodus.entitystore.EntityId;
+import jetbrains.exodus.entitystore.StoreTransaction;
 import meghanada.cache.GlobalCache;
 import meghanada.reflect.CandidateUnit;
+import meghanada.reflect.ClassIndex;
 import meghanada.reflect.MemberDescriptor;
 import meghanada.reflect.asm.CachedASMReflector;
+import meghanada.store.Storable;
 import meghanada.utils.ClassNameUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.message.EntryMessage;
 
-public class Source implements Serializable {
+public class Source implements Serializable, Storable {
 
   public static final String REPORT_UNKNOWN_TREE = "report-unknown-tree";
+  public static final String ENTITY_TYPE = "Source";
+  public static final String LINK_CLASS_REFERENCES = "references";
+  public static final String LINK_REV_CLASS_REFERENCES = "_references";
+  public static final String LINK_CLASS = "_class";
+  public static final String LINK_VARIABLE = "variable";
+  public static final String LINK_FIELD_ACCESS = "fieldAccess";
+  public static final String LINK_METHOD_CALL = "methodCall";
+  public static final String LINK_SOURCE = "source";
+
   private static final long serialVersionUID = 8712967042785424554L;
   private static final Logger log = LogManager.getLogger(Source.class);
 
@@ -45,14 +65,13 @@ public class Source implements Serializable {
   public final List<ClassScope> classScopes = new ArrayList<>(1);
   public final Deque<ClassScope> currentClassScope = new ArrayDeque<>(1);
   public final Set<String> usingClasses = new HashSet<>(8);
-  public String filePath;
-  public String packageName;
-  public List<LineRange> lineRange;
-  public int classStartLine;
-  public Map<String, String> importMap;
-
+  public final String filePath;
   // temp flag
   public boolean hasCompileError;
+  private String packageName = "";
+  private LinkedList<LineRange> lineRange;
+  private int classStartLine;
+  private Map<String, String> importMap;
 
   public Source(final String filePath) {
     this.filePath = filePath;
@@ -79,6 +98,60 @@ public class Source implements Serializable {
     return false;
   }
 
+  private static void addClassReference(
+      StoreTransaction txn,
+      Entity mainEntity,
+      Map<String, ClassIndex> classIndex,
+      Entity entity,
+      String fqcn) {
+
+    if (isNull(fqcn)) {
+      return;
+    }
+    classIndex.computeIfPresent(
+        fqcn,
+        (key, index) -> {
+          try {
+            EntityId entityId = index.getEntityId();
+            if (nonNull(entityId)) {
+              Entity classEntity = txn.getEntity(entityId);
+              classEntity.addLink(LINK_CLASS_REFERENCES, entity);
+
+              entity.addLink(LINK_CLASS, classEntity);
+              mainEntity.addLink(LINK_REV_CLASS_REFERENCES, entity);
+            }
+          } catch (Exception e) {
+            log.warn(e.getMessage());
+          }
+          return index;
+        });
+  }
+
+  private static void deleteLinks(StoreTransaction txn, Entity mainEntity) {
+    Set<String> names = new HashSet<>(3);
+    names.add(LINK_VARIABLE);
+    names.add(LINK_FIELD_ACCESS);
+    names.add(LINK_METHOD_CALL);
+
+    // for (Entity entity : mainEntity.getLinks(LINK_REV_CLASS_REFERENCES)) {
+    //   Entity classEntity = entity.getLink(LINK_CLASS);
+    //   if (nonNull(classEntity)) {
+    //     // reload
+    //     classEntity.deleteLink(LINK_CLASS_REFERENCES, entity);
+    //   }
+    // }
+
+    for (Entity entity : mainEntity.getLinks(names)) {
+      entity.delete();
+    }
+
+    for (String name : names) {
+      mainEntity.deleteLinks(name);
+    }
+
+    // mainEntity.deleteLinks(LINK_REV_CLASS_REFERENCES);
+  }
+
   public void addImport(final String fqcn) {
     this.importClasses.add(fqcn);
     this.unused.add(fqcn);
@@ -96,7 +169,7 @@ public class Source implements Serializable {
 
   public Optional<ClassScope> getCurrentClass() {
     final ClassScope classScope = this.currentClassScope.peek();
-    if (classScope != null) {
+    if (nonNull(classScope)) {
       return classScope.getCurrentClass();
     }
     return Optional.empty();
@@ -123,12 +196,14 @@ public class Source implements Serializable {
     this.classScopes.add(classScope);
   }
 
-  private List<LineRange> getRange(final File file) throws IOException {
-    if (this.lineRange != null) {
+  private LinkedList<LineRange> getRanges(final File file) throws IOException {
+
+    if (nonNull(this.lineRange)) {
       return this.lineRange;
     }
+
     int last = 1;
-    final List<LineRange> list = new ArrayList<>(32);
+    final LinkedList<LineRange> list = new LinkedList<>();
     try (final BufferedReader br =
         new BufferedReader(
             new InputStreamReader(new FileInputStream(file), Charset.forName("UTF-8")))) {
@@ -145,7 +220,8 @@ public class Source implements Serializable {
 
   Position getPos(int pos) throws IOException {
     int line = 1;
-    for (final LineRange r : getRange(this.getFile())) {
+    final LinkedList<LineRange> ranges = getRanges(this.getFile());
+    for (final LineRange r : ranges) {
       if (r.contains(pos)) {
         return new Position(line, pos + 1);
       }
@@ -204,7 +280,7 @@ public class Source implements Serializable {
 
   public Optional<AccessSymbol> getExpressionReturn(final int line) {
     final Scope scope = Scope.getScope(line, this.classScopes);
-    if (scope != null && (scope instanceof TypeScope)) {
+    if (nonNull(scope) && (scope instanceof TypeScope)) {
       final TypeScope typeScope = (TypeScope) scope;
       return Optional.ofNullable(typeScope.getExpressionReturn(line));
     }
@@ -217,7 +293,7 @@ public class Source implements Serializable {
 
   public Optional<TypeScope> getTypeScope(final int line) {
     final Scope scope = Scope.getScope(line, this.classScopes);
-    if (scope != null) {
+    if (nonNull(scope)) {
       return Optional.of((TypeScope) scope);
     }
     return Optional.empty();
@@ -228,7 +304,7 @@ public class Source implements Serializable {
     final EntryMessage entryMessage = log.traceEntry("line={} column={}", line, column);
     int col = column;
     final Scope scope = Scope.getInnerScope(line, this.classScopes);
-    if (scope != null) {
+    if (nonNull(scope)) {
       final Collection<MethodCall> symbols = scope.getMethodCall(line);
       final int size = symbols.size();
       log.trace("variables:{}", symbols);
@@ -257,7 +333,7 @@ public class Source implements Serializable {
   public List<MethodCall> getMethodCall(final int line) {
     log.traceEntry("line={}", line);
     Scope scope = Scope.getScope(line, this.classScopes);
-    if (scope != null) {
+    if (nonNull(scope)) {
       if (scope instanceof TypeScope) {
         TypeScope typeScope = (TypeScope) scope;
         List<MethodCall> symbols = typeScope.getMethodCall(line);
@@ -273,7 +349,7 @@ public class Source implements Serializable {
 
   public List<FieldAccess> getFieldAccess(final int line) {
     Scope scope = Scope.getScope(line, this.classScopes);
-    if (scope != null) {
+    if (nonNull(scope)) {
       if (scope instanceof TypeScope) {
         TypeScope typeScope = (TypeScope) scope;
         List<FieldAccess> symbols = typeScope.getFieldAccess(line);
@@ -288,7 +364,7 @@ public class Source implements Serializable {
 
   public Map<String, Variable> getDeclaratorMap(final int line) {
     final Scope scope = Scope.getInnerScope(line, this.classScopes);
-    if (scope != null) {
+    if (nonNull(scope)) {
       return scope.getDeclaratorMap();
     }
     return Collections.emptyMap();
@@ -296,7 +372,7 @@ public class Source implements Serializable {
 
   public Map<String, Variable> getVariableMap(final int line) {
     final Scope scope = Scope.getInnerScope(line, this.classScopes);
-    if (scope != null) {
+    if (nonNull(scope)) {
       return scope.getVariableMap();
     }
     return Collections.emptyMap();
@@ -304,7 +380,7 @@ public class Source implements Serializable {
 
   public Optional<Variable> getVariable(final int line, final int col) {
     final Scope scope = Scope.getInnerScope(line, this.classScopes);
-    if (scope != null) {
+    if (nonNull(scope)) {
       return scope
           .getVariables()
           .stream()
@@ -319,7 +395,7 @@ public class Source implements Serializable {
     final List<MemberDescriptor> memberDescriptors = new ArrayList<>(8);
     for (final TypeScope typeScope : this.classScopes) {
       final List<MemberDescriptor> result = typeScope.getMemberDescriptors();
-      if (result != null) {
+      if (nonNull(result)) {
         memberDescriptors.addAll(result);
       }
     }
@@ -328,7 +404,7 @@ public class Source implements Serializable {
 
   public Optional<FieldAccess> searchFieldAccess(final int line, final int col, final String name) {
     final Scope scope = Scope.getScope(line, this.classScopes);
-    if (scope != null && (scope instanceof TypeScope)) {
+    if (nonNull(scope) && (scope instanceof TypeScope)) {
       final TypeScope ts = (TypeScope) scope;
       final Collection<FieldAccess> fieldAccesses = ts.getFieldAccess(line);
 
@@ -386,7 +462,7 @@ public class Source implements Serializable {
           continue;
         }
         final String pa = ClassNameUtils.getPackage(declaration);
-        if (this.packageName != null && pa.equals(this.packageName)) {
+        if (nonNull(this.packageName) && pa.equals(this.packageName)) {
           // remove same package
           continue;
         }
@@ -485,7 +561,7 @@ public class Source implements Serializable {
       return false;
     }
     final String key = System.getProperty(REPORT_UNKNOWN_TREE);
-    return key != null && key.equals("true");
+    return nonNull(key) && key.equals("true");
   }
 
   public boolean addImportIfAbsent(final String fqcn) {
@@ -548,7 +624,7 @@ public class Source implements Serializable {
 
   public Map<String, String> getImportedClassMap() {
 
-    if (this.importMap != null) {
+    if (nonNull(this.importMap)) {
       return this.importMap;
     }
 
@@ -567,12 +643,166 @@ public class Source implements Serializable {
   }
 
   public void addUnknown(@Nullable final String unknown) {
-    if (unknown == null) {
+    if (isNull(unknown)) {
       return;
     }
     final String trimed = unknown.trim();
     if (!trimed.isEmpty()) {
       this.unknown.add(trimed);
     }
+  }
+
+  @Override
+  public String getStoreId() {
+    return this.filePath;
+  }
+
+  @Override
+  public String getEntityType() {
+    return ENTITY_TYPE;
+  }
+
+  @Override
+  @SuppressWarnings("rawtypes")
+  public Map<String, Comparable> getSaveProperties() {
+    Map<String, Comparable> map = new HashMap<>(3);
+    map.put("filePath", this.filePath);
+    if (isNull(this.packageName)) {
+      map.put("packageName", "");
+    } else {
+      map.put("packageName", this.packageName);
+    }
+    map.put("fqcn", this.getFQCN());
+
+    return map;
+  }
+
+  // @Override
+  // public void storeExtraData(StoreTransaction txn, Entity mainEntity) {
+
+  //   Map<String, ClassIndex> classIndex = CachedASMReflector.getInstance().getGlobalClassIndex();
+  //   deleteLinks(txn, mainEntity);
+
+  //   for (ClassScope cs : this.getAllClassScopes()) {
+  //     Entity entity = txn.newEntity(ClassScope.ENTITY_TYPE);
+  //     cs.setEntityProps(entity);
+  //     entity.setLink(LINK_SOURCE, mainEntity);
+  //     // addClassReference(txn, mainEntity, classIndex, entity, cs.getFQCN());
+  //     // txn.saveEntity(entity);
+  //   }
+
+  //   for (Variable variable : getVariables()) {
+  //     Entity entity = txn.newEntity(Variable.ENTITY_TYPE);
+  //     variable.setEntityProps(entity);
+  //     mainEntity.addLink(LINK_VARIABLE, entity);
+  //     entity.setLink(LINK_SOURCE, mainEntity);
+  //     // addClassReference(txn, mainEntity, classIndex, entity, variable.fqcn);
+  //     // txn.saveEntity(entity);
+  //   }
+
+  //   for (FieldAccess fieldAccess : getFieldAccesses()) {
+
+  //     Entity entity = txn.newEntity(FieldAccess.ENTITY_TYPE);
+  //     fieldAccess.setEntityProps(entity);
+  //     mainEntity.addLink(LINK_FIELD_ACCESS, entity);
+  //     entity.setLink(LINK_SOURCE, mainEntity);
+  //     // addClassReference(txn, mainEntity, classIndex, entity, fieldAccess.declaringClass);
+  //     // txn.saveEntity(entity);
+  //   }
+
+  //   for (MethodCall methodCall : getMethodCalls()) {
+
+  //     Entity entity = txn.newEntity(MethodCall.ENTITY_TYPE);
+  //     methodCall.setEntityProps(entity);
+  //     // TODO arguments
+  //     mainEntity.addLink(LINK_METHOD_CALL, entity);
+  //     entity.setLink(LINK_SOURCE, mainEntity);
+  //     // addClassReference(txn, mainEntity, classIndex, entity, methodCall.declaringClass);
+  //     // txn.saveEntity(entity);
+  //   }
+  // }
+
+  private Set<ClassScope> getAllClassScopes(ClassScope classScope) {
+    Set<ClassScope> set = new LinkedHashSet<>(8);
+    for (ClassScope cs : classScope.getClassScopes()) {
+      set.add(cs);
+      set.addAll(getAllClassScopes(cs));
+    }
+    return set;
+  }
+
+  private Set<ClassScope> getAllClassScopes() {
+    Set<ClassScope> set = new LinkedHashSet<>(8);
+    for (ClassScope cs : this.classScopes) {
+      set.addAll(getAllClassScopes(cs));
+    }
+    return set;
+  }
+
+  public String getFQCN() {
+    if (this.classScopes.isEmpty()) {
+      return "";
+    }
+    return this.classScopes.get(0).getFQCN();
+  }
+
+  public Collection<Variable> getVariables() {
+
+    final Set<Variable> result = new HashSet<>(8);
+    for (final ClassScope c : this.classScopes) {
+      result.addAll(c.getVariables());
+    }
+
+    return result;
+  }
+
+  public Collection<FieldAccess> getFieldAccesses() {
+
+    final List<FieldAccess> result = new ArrayList<>(8);
+    for (final ClassScope c : this.classScopes) {
+      result.addAll(c.getFieldAccesses());
+    }
+
+    return result;
+  }
+
+  public Collection<MethodCall> getMethodCalls() {
+
+    final List<MethodCall> result = new ArrayList<>(8);
+    for (final ClassScope c : this.classScopes) {
+      result.addAll(c.getMethodCalls());
+    }
+
+    return result;
+  }
+
+  public Collection<AccessSymbol> getAccessSymbols() {
+
+    final List<AccessSymbol> result = new ArrayList<>(8);
+    for (final ClassScope c : this.classScopes) {
+      result.addAll(c.getAccessSymbols());
+    }
+
+    return result;
+  }
+
+  @Nonnull
+  public String getPackageName() {
+    if (isNull(packageName)) {
+      return "";
+    }
+    return packageName;
+  }
+
+  public void setPackageName(String packageName) {
+    this.packageName = packageName;
+  }
+
+  public int getClassStartLine() {
+    return classStartLine;
+  }
+
+  public void setClassStartLine(int classStartLine) {
+    this.classStartLine = classStartLine;
   }
 }

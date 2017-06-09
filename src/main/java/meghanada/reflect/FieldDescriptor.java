@@ -1,5 +1,8 @@
 package meghanada.reflect;
 
+import static java.util.Objects.isNull;
+import static java.util.Objects.nonNull;
+
 import com.google.common.base.MoreObjects;
 import java.util.Collections;
 import java.util.HashMap;
@@ -19,7 +22,7 @@ public class FieldDescriptor extends MemberDescriptor {
     this.declaringClass = declaringClass;
     this.name = name.trim();
     this.memberType = MemberType.FIELD;
-    if (modifier == null) {
+    if (isNull(modifier)) {
       this.modifier = "";
     } else {
       this.modifier = modifier.trim();
@@ -37,7 +40,7 @@ public class FieldDescriptor extends MemberDescriptor {
   @Override
   public String getDeclaration() {
     StringBuilder sb = new StringBuilder(32);
-    if (this.modifier != null && this.modifier.length() > 0) {
+    if (nonNull(this.modifier) && !this.modifier.isEmpty()) {
       sb.append(this.modifier).append(' ');
     }
     return sb.append(this.getDisplayDeclaration()).toString();
@@ -46,7 +49,7 @@ public class FieldDescriptor extends MemberDescriptor {
   @Override
   public String getDisplayDeclaration() {
     final String returnType = this.getReturnType();
-    if (returnType == null) {
+    if (isNull(returnType)) {
       return "";
     }
     final String rt = ClassNameUtils.getSimpleName(returnType) + ' ' + this.name;
@@ -56,7 +59,7 @@ public class FieldDescriptor extends MemberDescriptor {
   @Nullable
   @Override
   public String getReturnType() {
-    if (this.returnType != null) {
+    if (nonNull(this.returnType)) {
       String rt = this.returnType;
       if (this.hasTypeParameters()) {
         rt = super.renderTypeParameters(rt, false);
@@ -84,7 +87,7 @@ public class FieldDescriptor extends MemberDescriptor {
   @Nullable
   @Override
   public String getRawReturnType() {
-    if (this.returnType != null) {
+    if (nonNull(this.returnType)) {
       final String rt = this.returnType;
       if (this.hasTypeParameters()) {
         return super.renderTypeParameters(rt, false);

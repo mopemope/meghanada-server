@@ -9,6 +9,7 @@ import java.util.Enumeration;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import meghanada.cache.GlobalCache;
+import meghanada.store.Serializer;
 import meghanada.utils.ClassNameUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -43,6 +44,14 @@ public class ParameterNamesIndexer {
     ParameterNamesIndexer parameterNamesIndexer = new ParameterNamesIndexer();
     File srcZip = new File(System.getProperty("java.home"), "../src.zip");
     parameterNamesIndexer.createIndex(srcZip);
+  }
+
+  private static MethodParameterNames deserialize(File file) throws Exception {
+    return Serializer.readObjectFromFile(file, MethodParameterNames.class);
+  }
+
+  private static void serialize(MethodParameterNames mpn, File file) throws Exception {
+    Serializer.writeObjectToFile(file, mpn);
   }
 
   private boolean ignorePackage(String target) {
@@ -99,13 +108,5 @@ public class ParameterNamesIndexer {
       }
     }
     GlobalCache.getInstance().shutdown();
-  }
-
-  private static MethodParameterNames deserialize(File file) throws Exception {
-    return GlobalCache.getInstance().readCacheFromFile(file, MethodParameterNames.class);
-  }
-
-  private static void serialize(MethodParameterNames mpn, File file) throws Exception {
-    GlobalCache.getInstance().writeCacheToFile(file, mpn);
   }
 }

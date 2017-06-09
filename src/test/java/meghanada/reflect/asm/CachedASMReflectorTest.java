@@ -12,15 +12,14 @@ import meghanada.GradleTestBase;
 import meghanada.cache.GlobalCache;
 import meghanada.reflect.CandidateUnit;
 import meghanada.reflect.MemberDescriptor;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.junit.Ignore;
 import org.junit.Test;
 
 public class CachedASMReflectorTest extends GradleTestBase {
 
-  @org.junit.BeforeClass
-  public static void beforeClass() throws Exception {
-    GradleTestBase.setupReflector();
-  }
+  private static Logger log = LogManager.getLogger(CachedASMReflectorTest.class);
 
   @Ignore
   @Test
@@ -35,7 +34,7 @@ public class CachedASMReflectorTest extends GradleTestBase {
 
   @Ignore
   @Test
-  public void testSearchClasses() throws Exception {
+  public void testSearchMap() throws Exception {
     final CachedASMReflector cachedASMReflector = CachedASMReflector.getInstance();
     boolean isOpenJDK = System.getProperty("java.home").contains("openjdk");
 
@@ -51,7 +50,7 @@ public class CachedASMReflectorTest extends GradleTestBase {
   }
 
   @Test
-  public void testSearchClasses1() throws Exception {
+  public void testSearchClasses01() throws Exception {
     final CachedASMReflector cachedASMReflector = CachedASMReflector.getInstance();
     final Collection<? extends CandidateUnit> candidateUnits =
         cachedASMReflector.searchClasses("Map", false, false);
@@ -240,7 +239,7 @@ public class CachedASMReflectorTest extends GradleTestBase {
   @Test
   public void testLocalReflect3() throws Exception {
     CachedASMReflector cachedASMReflector = CachedASMReflector.getInstance();
-    cachedASMReflector.addClasspath(getOutputDir());
+    cachedASMReflector.addClasspath(getOutput());
     cachedASMReflector.createClassIndexes();
 
     {
@@ -254,7 +253,7 @@ public class CachedASMReflectorTest extends GradleTestBase {
   @Test
   public void testLocalReflect5() throws Exception {
     CachedASMReflector cachedASMReflector = CachedASMReflector.getInstance();
-    cachedASMReflector.addClasspath(getOutputDir());
+    cachedASMReflector.addClasspath(getOutput());
     cachedASMReflector.createClassIndexes();
 
     {
@@ -268,7 +267,7 @@ public class CachedASMReflectorTest extends GradleTestBase {
   @Test
   public void testLocalReflect6() throws Exception {
     CachedASMReflector cachedASMReflector = CachedASMReflector.getInstance();
-    cachedASMReflector.addClasspath(getOutputDir());
+    cachedASMReflector.addClasspath(getOutput());
     cachedASMReflector.createClassIndexes();
 
     {
@@ -282,8 +281,8 @@ public class CachedASMReflectorTest extends GradleTestBase {
   @Test
   public void testLocalReflect7() throws Exception {
     CachedASMReflector cachedASMReflector = CachedASMReflector.getInstance();
-    cachedASMReflector.addClasspath(getOutputDir());
-    cachedASMReflector.addClasspath(getTestOutputDir());
+    cachedASMReflector.addClasspath(getOutput());
+    cachedASMReflector.addClasspath(getTestOutput());
     cachedASMReflector.createClassIndexes();
 
     {
@@ -297,8 +296,8 @@ public class CachedASMReflectorTest extends GradleTestBase {
   @Test
   public void testLocalReflect8() throws Exception {
     CachedASMReflector cachedASMReflector = CachedASMReflector.getInstance();
-    cachedASMReflector.addClasspath(getOutputDir());
-    cachedASMReflector.addClasspath(getTestOutputDir());
+    cachedASMReflector.addClasspath(getOutput());
+    cachedASMReflector.addClasspath(getTestOutput());
     cachedASMReflector.createClassIndexes();
     String fqcn = "meghanada.Gen3<Long>";
     List<MemberDescriptor> memberDescriptors = timeIt(() -> cachedASMReflector.reflect(fqcn));
@@ -312,8 +311,8 @@ public class CachedASMReflectorTest extends GradleTestBase {
   @Test
   public void testLocalReflect9() throws Exception {
     CachedASMReflector cachedASMReflector = CachedASMReflector.getInstance();
-    cachedASMReflector.addClasspath(getOutputDir());
-    cachedASMReflector.addClasspath(getTestOutputDir());
+    cachedASMReflector.addClasspath(getOutput());
+    cachedASMReflector.addClasspath(getTestOutput());
     cachedASMReflector.createClassIndexes();
 
     {
@@ -341,8 +340,8 @@ public class CachedASMReflectorTest extends GradleTestBase {
   @Test
   public void testLocalReflect10() throws Exception {
     CachedASMReflector cachedASMReflector = CachedASMReflector.getInstance();
-    cachedASMReflector.addClasspath(getOutputDir());
-    cachedASMReflector.addClasspath(getTestOutputDir());
+    cachedASMReflector.addClasspath(getOutput());
+    cachedASMReflector.addClasspath(getTestOutput());
     cachedASMReflector.createClassIndexes();
 
     {
@@ -370,7 +369,7 @@ public class CachedASMReflectorTest extends GradleTestBase {
   @Test
   public void testLocalInterface1() throws Exception {
     CachedASMReflector cachedASMReflector = CachedASMReflector.getInstance();
-    cachedASMReflector.addClasspath(getOutputDir());
+    cachedASMReflector.addClasspath(getOutput());
     cachedASMReflector.createClassIndexes();
     {
       String fqcn = "meghanada.reflect.CandidateUnit";
@@ -383,7 +382,7 @@ public class CachedASMReflectorTest extends GradleTestBase {
   @Test
   public void testLocalInterface2() throws Exception {
     CachedASMReflector cachedASMReflector = CachedASMReflector.getInstance();
-    cachedASMReflector.addClasspath(getOutputDir());
+    cachedASMReflector.addClasspath(getOutput());
     cachedASMReflector.createClassIndexes();
 
     {
@@ -391,6 +390,16 @@ public class CachedASMReflectorTest extends GradleTestBase {
       List<MemberDescriptor> memberDescriptors = cachedASMReflector.reflect(fqcn);
       memberDescriptors.forEach(m -> System.out.println(m.getDisplayDeclaration()));
       assertEquals(12, memberDescriptors.size());
+    }
+  }
+
+  @Test
+  public void testGetSupers01() throws Exception {
+    final CachedASMReflector cachedASMReflector = CachedASMReflector.getInstance();
+    Collection<String> superClass =
+        cachedASMReflector.getSuperClass("meghanada.analyze.ClassScope");
+    for (String clazz : superClass) {
+      log.info("class {}", clazz);
     }
   }
 }

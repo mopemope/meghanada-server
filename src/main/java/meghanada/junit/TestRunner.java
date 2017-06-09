@@ -1,13 +1,18 @@
 package meghanada.junit;
 
+import static java.util.Objects.nonNull;
+
 import com.google.common.base.Stopwatch;
 import com.google.common.base.Strings;
+import com.google.common.io.Files;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import meghanada.reflect.ClassIndex;
 import meghanada.reflect.asm.CachedASMReflector;
+import meghanada.store.ProjectDatabaseHelper;
+import meghanada.utils.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.runner.JUnitCore;
@@ -17,12 +22,19 @@ import org.junit.runner.notification.Failure;
 
 public class TestRunner {
 
+  public static final String TEMP_PROJECT_SETTING_DIR = "meghanada.temp.project.setting.dir";
   private static Logger log = LogManager.getLogger(TestRunner.class);
   private int runCnt;
   private int failureCnt;
   private int ignoreCnt;
 
   public TestRunner() throws IOException {
+
+    final File tempDir = Files.createTempDir();
+    tempDir.deleteOnExit();
+    final String path = tempDir.getCanonicalPath();
+    System.setProperty(TEMP_PROJECT_SETTING_DIR, path);
+
     final String output = System.getProperty("meghanada.output");
     final String testOutput = System.getProperty("meghanada.test-output");
     CachedASMReflector cachedASMReflector = CachedASMReflector.getInstance();
@@ -31,8 +43,23 @@ public class TestRunner {
     cachedASMReflector.createClassIndexes();
   }
 
-  public static void main(String... args) throws IOException, ClassNotFoundException {
-    new TestRunner().runTests(args);
+  public static void main(String... args) throws Exception {
+
+    TestRunner runner = null;
+    try {
+      runner = new TestRunner();
+      runner.runTests(args);
+    } finally {
+      if (nonNull(runner)) {
+        runner.cleanup();
+      }
+    }
+  }
+
+  private void cleanup() throws Exception {
+    ProjectDatabaseHelper.shutdown();
+    String p = System.getProperty(TEMP_PROJECT_SETTING_DIR);
+    FileUtils.deleteFiles(new File(p), true);
   }
 
   private List<Class<?>> getTestClass(String testName) throws ClassNotFoundException {
@@ -53,6 +80,9 @@ public class TestRunner {
 
     for (String arg : args) {
       List<Request> requests = collectTests(arg);
+      if (requests.isEmpty()) {
+        log.warn("test not found {}", (Object[]) args);
+      }
       for (Request request : requests) {
         this.runJunit(arg, request);
       }

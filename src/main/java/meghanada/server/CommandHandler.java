@@ -1,5 +1,6 @@
 package meghanada.server;
 
+import com.google.common.base.Joiner;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -235,6 +236,12 @@ public class CommandHandler {
 
   public void runTask(final long id, final List<String> args) {
     try (final InputStream in = this.session.runTask(args)) {
+      String tasks = Joiner.on(" ").join(args);
+      writer.write("run task: ");
+      writer.write(tasks);
+      writer.newLine();
+      writer.newLine();
+
       final byte[] buf = new byte[512];
       int read;
       while ((read = in.read(buf)) > 0) {

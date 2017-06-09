@@ -1,6 +1,5 @@
 package meghanada.cache;
 
-import com.google.common.base.Joiner;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.RemovalCause;
 import com.google.common.cache.RemovalListener;
@@ -13,6 +12,7 @@ import meghanada.analyze.CompileResult;
 import meghanada.analyze.Source;
 import meghanada.config.Config;
 import meghanada.project.Project;
+import meghanada.store.ProjectDatabaseHelper;
 import meghanada.utils.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -27,47 +27,13 @@ class JavaSourceLoader extends CacheLoader<File, Source> implements RemovalListe
     this.project = project;
   }
 
-  static void writeSourceCache(final Project project, final Source source) throws IOException {
-    final File sourceFile = source.getFile();
-    final File root = new File(project.getProjectRoot(), Config.MEGHANADA_DIR);
-    final String path = FileUtils.toHashedPath(sourceFile, GlobalCache.CACHE_EXT);
-    final String out = Joiner.on(File.separator).join(GlobalCache.SOURCE_CACHE_DIR, path);
-    final File file = new File(root, out);
-
-    final File parentFile = file.getParentFile();
-    if (!parentFile.exists() && !parentFile.mkdirs()) {
-      log.warn("{} mkdirs fail", file.getParent());
-    }
-
-    log.debug("write file:{}", file);
-    GlobalCache.getInstance().asyncWriteCache(file, source);
+  private void deleteSource(final Source source) throws Exception {
+    ProjectDatabaseHelper.deleteSource(source.getStoreId());
   }
 
-  private void removeSourceCache(final Source source) throws IOException {
-    final File sourceFile = source.getFile();
-    final File root = new File(this.project.getProjectRoot(), Config.MEGHANADA_DIR);
-    final String path = FileUtils.toHashedPath(sourceFile, GlobalCache.CACHE_EXT);
-    final String out = Joiner.on(File.separator).join(GlobalCache.SOURCE_CACHE_DIR, path);
-    final File file = new File(root, out);
-    if (file.exists() && !file.delete()) {
-      log.warn("{} delete fail", file);
-    }
-  }
-
-  private Optional<Source> loadFromCache(final File sourceFile) throws IOException {
-
-    final File root = new File(this.project.getProjectRoot(), Config.MEGHANADA_DIR);
-    final String path = FileUtils.toHashedPath(sourceFile, GlobalCache.CACHE_EXT);
-    final String out = Joiner.on(File.separator).join(GlobalCache.SOURCE_CACHE_DIR, path);
-    final File file = new File(root, out);
-
-    if (!file.exists()) {
-      return Optional.empty();
-    }
-
-    log.debug("load file:{}", file);
-    final GlobalCache globalCache = GlobalCache.getInstance();
-    final Source source = globalCache.readCacheFromFile(file, Source.class);
+  private Optional<Source> loadSource(final File sourceFile) throws Exception {
+    String filePath = sourceFile.getCanonicalPath();
+    Source source = ProjectDatabaseHelper.loadSource(filePath);
     return Optional.ofNullable(source);
   }
 
@@ -82,22 +48,22 @@ class JavaSourceLoader extends CacheLoader<File, Source> implements RemovalListe
       final CompileResult compileResult = project.parseFile(file);
       return compileResult.getSources().get(file);
     }
-    final File projectRoot = this.project.getProjectRoot();
-    final File checksumFile =
-        FileUtils.getProjectDataFile(projectRoot, GlobalCache.SOURCE_CHECKSUM_DATA);
-    final Map<String, String> finalChecksumMap = config.getChecksumMap(checksumFile);
+
+    final String projectRootPath = this.project.getProjectRootPath();
+    final Map<String, String> checksumMap = ProjectDatabaseHelper.getChecksumMap(projectRootPath);
 
     final String path = file.getCanonicalPath();
     final String md5sum = FileUtils.getChecksum(file);
-    if (finalChecksumMap.containsKey(path)) {
+    if (checksumMap.containsKey(path)) {
       // compare checksum
-      final String prevSum = finalChecksumMap.get(path);
+      final String prevSum = checksumMap.get(path);
       if (md5sum.equals(prevSum)) {
         // not modify
         // load from cache
         try {
-          final Optional<Source> source = loadFromCache(file);
+          final Optional<Source> source = loadSource(file);
           if (source.isPresent()) {
+            log.debug("hit source cache {}", file);
             return source.get();
           }
         } catch (Exception e) {
@@ -105,7 +71,7 @@ class JavaSourceLoader extends CacheLoader<File, Source> implements RemovalListe
         }
       }
     }
-
+    log.warn("source cache miss {}", file);
     final CompileResult compileResult = project.parseFile(file.getCanonicalFile());
     return compileResult.getSources().get(file.getCanonicalFile());
   }
@@ -115,23 +81,12 @@ class JavaSourceLoader extends CacheLoader<File, Source> implements RemovalListe
     final RemovalCause cause = notification.getCause();
 
     final Config config = Config.load();
-    if (config.useSourceCache()) {
-      if (cause.equals(RemovalCause.EXPIRED)
-          || cause.equals(RemovalCause.SIZE)
-          || cause.equals(RemovalCause.REPLACED)) {
-        final Source source = notification.getValue();
-        try {
-          writeSourceCache(project, source);
-        } catch (Exception e) {
-          log.catching(e);
-        }
-      } else if (cause.equals(RemovalCause.EXPLICIT)) {
-        final Source source = notification.getValue();
-        try {
-          removeSourceCache(source);
-        } catch (Exception e) {
-          log.catching(e);
-        }
+    if (config.useSourceCache() && cause.equals(RemovalCause.EXPLICIT)) {
+      final Source source = notification.getValue();
+      try {
+        deleteSource(source);
+      } catch (Exception e) {
+        log.catching(e);
       }
     }
   }

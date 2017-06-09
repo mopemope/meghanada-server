@@ -1,5 +1,7 @@
 package meghanada.reflect.asm;
 
+import static java.util.Objects.isNull;
+import static java.util.Objects.nonNull;
 import static meghanada.utils.FunctionUtils.wrapIO;
 import static meghanada.utils.FunctionUtils.wrapIOConsumer;
 
@@ -7,6 +9,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -60,7 +63,7 @@ public class ASMReflector {
   }
 
   public static ASMReflector getInstance() {
-    if (asmReflector == null) {
+    if (isNull(asmReflector)) {
       asmReflector = new ASMReflector();
     }
     return asmReflector;
@@ -139,6 +142,7 @@ public class ASMReflector {
       final File file,
       boolean allowSuper)
       throws IOException {
+
     final ClassReader classReader = new ClassReader(in);
     final String className = ClassNameUtils.replaceSlash(classReader.getClassName());
 
@@ -162,8 +166,8 @@ public class ASMReflector {
           new ClassAnalyzeVisitor(className, true, false);
       classReader.accept(classAnalyzeVisitor, 0);
       final ClassIndex classIndex = classAnalyzeVisitor.getClassIndex();
-      classIndex.isInterface = isInterface;
-      classIndex.isAnnotation = isAnnotation;
+      classIndex.setInterface(isInterface);
+      classIndex.setAnnotation(isAnnotation);
       indexes.put(classIndex, file);
     } else {
       if (isPublic || isProtected || isSuper) {
@@ -171,8 +175,8 @@ public class ASMReflector {
             new ClassAnalyzeVisitor(className, true, false);
         classReader.accept(classAnalyzeVisitor, 0);
         final ClassIndex classIndex = classAnalyzeVisitor.getClassIndex();
-        classIndex.isInterface = isInterface;
-        classIndex.isAnnotation = isAnnotation;
+        classIndex.setInterface(isInterface);
+        classIndex.setAnnotation(isAnnotation);
         indexes.put(classIndex, file);
       }
     }
@@ -207,9 +211,10 @@ public class ASMReflector {
 
   private static List<String> replaceSuperClassTypeParameters(
       final String name, final ClassIndex classIndex) {
+
     final List<String> strings = ClassNameUtils.parseTypeParameter(name);
     final Iterator<String> iterator = strings.iterator();
-    final Iterator<String> tpIterator = classIndex.typeParameters.iterator();
+    final Iterator<String> tpIterator = classIndex.getTypeParameters().iterator();
     final Map<String, String> replace = new HashMap<>(4);
     while (iterator.hasNext()) {
       final String real = iterator.next();
@@ -225,11 +230,11 @@ public class ASMReflector {
         }
       }
     }
-    List<String> supers = new ArrayList<>(classIndex.supers);
+    List<String> supers = new ArrayList<>(classIndex.getSupers());
     if (!replace.isEmpty()) {
       supers =
           classIndex
-              .supers
+              .getSupers()
               .stream()
               .map(s -> ClassNameUtils.replaceFromMap(s, replace))
               .collect(Collectors.toList());
@@ -258,8 +263,27 @@ public class ASMReflector {
     return false;
   }
 
+  Map<String, ClassIndex> getClassIndexes(File file) throws IOException {
+    Map<ClassIndex, File> classes = this.getClasses(file);
+    Map<String, ClassIndex> result = new HashMap<>(classes.size());
+
+    classes.forEach(
+        (index, f) -> {
+          final String fqcn = index.getRawDeclaration();
+          try {
+            index.setFilePath(f.getCanonicalPath());
+          } catch (IOException e) {
+            throw new UncheckedIOException(e);
+          }
+          result.put(fqcn, index);
+        });
+
+    return result;
+  }
+
   Map<ClassIndex, File> getClasses(final File file) throws IOException {
-    final Map<ClassIndex, File> indexes = new ConcurrentHashMap<>(8);
+
+    final Map<ClassIndex, File> indexes = new ConcurrentHashMap<>(32);
 
     if (file.isFile() && file.getName().endsWith("jar")) {
       try (final JarFile jarFile = new JarFile(file);
@@ -301,6 +325,7 @@ public class ASMReflector {
       try (final InputStream in = new FileInputStream(file)) {
         ASMReflector.readClassIndex(indexes, in, file, true);
       }
+
     } else if (file.isDirectory()) {
       try (final Stream<Path> pathStream = Files.walk(file.toPath());
           final Stream<File> stream =
@@ -353,7 +378,7 @@ public class ASMReflector {
         clazz -> {
           final String key = ClassNameUtils.removeTypeParameter(clazz);
           final List<MemberDescriptor> list = collect.get(key);
-          if (list != null) {
+          if (nonNull(list)) {
             list.forEach(
                 md -> {
                   if (md.matchType(CandidateUnit.MemberType.METHOD)) {
@@ -376,7 +401,9 @@ public class ASMReflector {
   private List<MemberDescriptor> reflectAll(
       final File file, final String targetClass, final List<String> targetClasses)
       throws IOException {
+
     if (file.isFile() && file.getName().endsWith(".jar")) {
+
       try (final JarFile jarFile = new JarFile(file)) {
         final Enumeration<JarEntry> entries = jarFile.entries();
         final List<MemberDescriptor> results = new ArrayList<>(64);
@@ -398,7 +425,7 @@ public class ASMReflector {
 
           while (classIterator.hasNext()) {
             final String nameWithTP = classIterator.next();
-            if (nameWithTP != null) {
+            if (nonNull(nameWithTP)) {
               final boolean isSuper = !targetClass.equals(nameWithTP);
               final String nameWithoutTP = ClassNameUtils.removeTypeParameter(nameWithTP);
 
@@ -441,7 +468,7 @@ public class ASMReflector {
         final boolean isSuper = !targetClass.equals(nameWithTP);
         final String fqcn = ClassNameUtils.removeTypeParameter(nameWithTP);
         final List<MemberDescriptor> members = getMembersFromClassFile(file, file, fqcn, false);
-        if (members != null) {
+        if (nonNull(members)) {
           // 1 file
           if (isSuper) {
             replaceDescriptorsType(nameWithTP, members);
@@ -450,6 +477,7 @@ public class ASMReflector {
         }
       }
       return Collections.emptyList();
+
     } else if (file.isDirectory()) {
       try (final Stream<Path> pathStream = Files.walk(file.toPath());
           final Stream<File> stream =
@@ -470,6 +498,7 @@ public class ASMReflector {
                               path.substring(rootPath.length() + 1, path.length() - 6));
 
                       final Iterator<String> stringIterator = targetClasses.iterator();
+
                       while (stringIterator.hasNext()) {
                         final String nameWithTP = stringIterator.next();
                         final boolean isSuper = !targetClass.equals(nameWithTP);
@@ -481,7 +510,7 @@ public class ASMReflector {
 
                         final List<MemberDescriptor> members =
                             getMembersFromClassFile(file, f, fqcn, false);
-                        if (members != null) {
+                        if (nonNull(members)) {
 
                           if (isSuper) {
                             replaceDescriptorsType(nameWithTP, members);
@@ -493,7 +522,7 @@ public class ASMReflector {
                       }
                       return Collections.<MemberDescriptor>emptyList();
                     }))
-            .filter(memberDescriptors -> memberDescriptors != null && memberDescriptors.size() > 0)
+            .filter(memberDescriptors -> nonNull(memberDescriptors) && memberDescriptors.size() > 0)
             .flatMap(Collection::stream)
             .collect(Collectors.toList());
       }
@@ -550,7 +579,7 @@ public class ASMReflector {
       }
     } else if (file.isFile() && file.getName().endsWith(".class")) {
       final List<MemberDescriptor> members = getMembersFromClassFile(file, file, nameWithoutTP);
-      if (members != null) {
+      if (nonNull(members)) {
         return members;
       }
     } else if (file.isDirectory()) {
@@ -559,7 +588,7 @@ public class ASMReflector {
             .map(Path::toFile)
             .filter(f -> f.isFile() && f.getName().endsWith(".class"))
             .map(wrapIO(f -> getMembersFromClassFile(file, f, nameWithoutTP)))
-            .filter(descriptors -> descriptors != null && descriptors.size() > 0)
+            .filter(descriptors -> nonNull(descriptors) && descriptors.size() > 0)
             .findFirst()
             .orElse(Collections.emptyList());
       }
@@ -596,7 +625,7 @@ public class ASMReflector {
     final ClassIndex classIndex = cv.getClassIndex();
     List<List<MemberDescriptor>> lists =
         classIndex
-            .supers
+            .getSupers()
             .stream()
             .parallel()
             .map(wrapIO(s -> reflect(parent, s)))
@@ -627,18 +656,19 @@ public class ASMReflector {
     return members;
   }
 
-  public InheritanceInfo getReflectInfo(final Map<ClassIndex, File> index, final String fqcn) {
+  public InheritanceInfo getReflectInfo(final Map<String, ClassIndex> index, final String fqcn) {
     final InheritanceInfo info = new InheritanceInfo(fqcn);
-    final InheritanceInfo reflectInfo = this.getReflectInfo(index, fqcn, info);
+    final InheritanceInfo reflectInfo = this.searchReflectInfo(index, fqcn, info);
     reflectInfo.inherit = reflectInfo.inherit.stream().distinct().collect(Collectors.toList());
     return reflectInfo;
   }
 
-  private InheritanceInfo getReflectInfo(
-      final Map<ClassIndex, File> index, final String name, final InheritanceInfo info) {
-    for (Map.Entry<ClassIndex, File> entry : index.entrySet()) {
-      final ClassIndex classIndex = entry.getKey();
-      final File file = entry.getValue();
+  private InheritanceInfo searchReflectInfo(
+      final Map<String, ClassIndex> index, final String name, final InheritanceInfo info) {
+
+    for (Map.Entry<String, ClassIndex> entry : index.entrySet()) {
+      final ClassIndex classIndex = entry.getValue();
+      final File file = new File(classIndex.getFilePath());
 
       final String searchName = ClassNameUtils.removeTypeParameter(name);
       final String target = classIndex.toString();
@@ -650,16 +680,25 @@ public class ASMReflector {
       final Optional<String> opt = ClassNameUtils.toInnerClassName(name);
       if (opt.isPresent()) {
         final String inner = opt.get();
+
         if (target.equals(inner)) {
+
           if (!info.classFileMap.containsKey(file)) {
             info.classFileMap.put(file, new ArrayList<>(8));
           }
+
           info.inherit.add(name);
           info.classFileMap.get(file).add(name);
           final List<String> supers =
               ASMReflector.replaceSuperClassTypeParameters(name, classIndex);
+
           Collections.reverse(supers);
-          supers.forEach(superClass -> this.getReflectInfo(index, superClass, info));
+
+          supers.forEach(
+              superClass -> {
+                InheritanceInfo ignored = this.searchReflectInfo(index, superClass, info);
+              });
+
           break;
         }
       }
@@ -668,7 +707,7 @@ public class ASMReflector {
   }
 
   private void addInheritance(
-      final Map<ClassIndex, File> index,
+      final Map<String, ClassIndex> index,
       final String name,
       final InheritanceInfo info,
       final ClassIndex classIndex,
@@ -683,6 +722,6 @@ public class ASMReflector {
     final List<String> supers = ASMReflector.replaceSuperClassTypeParameters(name, classIndex);
 
     Collections.reverse(supers);
-    supers.forEach(superClass -> this.getReflectInfo(index, superClass, info));
+    supers.forEach(superClass -> this.searchReflectInfo(index, superClass, info));
   }
 }

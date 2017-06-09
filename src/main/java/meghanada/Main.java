@@ -62,7 +62,24 @@ public class Main {
       return;
     }
 
-    Runtime.getRuntime().addShutdownHook(new Thread(() -> log.info("shutdown server")));
+    Runtime.getRuntime()
+        .addShutdownHook(
+            new Thread(
+                () -> {
+                  log.info("shutdown server");
+                  final Runtime runtime = Runtime.getRuntime();
+                  final float maxMemory = runtime.maxMemory() / 1024 / 1024;
+                  final float totalMemory = runtime.totalMemory() / 1024 / 1024;
+                  final float usedMemory =
+                      (runtime.totalMemory() - runtime.freeMemory()) / 1024 / 1024;
+
+                  log.info(
+                      "memory usage (used/total/max): {}MB / {}MB / {}MB",
+                      String.format("%.2f", usedMemory),
+                      String.format("%.2f", totalMemory),
+                      String.format("%.2f", maxMemory));
+                }));
+
     System.setProperty("home", Config.getInstalledPath().getParentFile().getCanonicalPath());
 
     addFileAppender();
@@ -95,7 +112,7 @@ public class Main {
     if (cmd.hasOption("gradle-version")) {
       final String gradleVersion = cmd.getOptionValue("gradle-version", "");
       if (!version.isEmpty()) {
-        System.setProperty("gradle-version", gradleVersion);
+        System.setProperty("meghanada.gradle-version", gradleVersion);
       }
     }
 

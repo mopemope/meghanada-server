@@ -7,12 +7,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-import meghanada.cache.GlobalCache;
 import meghanada.reflect.CandidateUnit;
 import meghanada.reflect.MethodDescriptor;
 import meghanada.reflect.MethodParameter;
 import meghanada.reflect.names.MethodParameterNames;
 import meghanada.reflect.names.ParameterName;
+import meghanada.store.Serializer;
 import meghanada.utils.ClassNameUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -78,7 +78,7 @@ class MethodAnalyzeVisitor extends MethodVisitor {
       target = signature;
     }
     this.methodSignature = target;
-    this.interfaceMethod = this.classAnalyzeVisitor.getClassIndex().isInterface;
+    this.interfaceMethod = this.classAnalyzeVisitor.getClassIndex().isInterface();
 
     // log.trace("name:{} sig:{}", name, target);
     // log.trace("classIndex:{}", classAnalyzeVisitor.getClassIndex().isInterface);
@@ -245,9 +245,7 @@ class MethodAnalyzeVisitor extends MethodVisitor {
         return false;
       }
 
-      final GlobalCache globalCache = GlobalCache.getInstance();
-      final MethodParameterNames mn =
-          globalCache.readCacheFromInputStream(in, MethodParameterNames.class);
+      final MethodParameterNames mn = Serializer.readObject(in, MethodParameterNames.class);
       final List<List<ParameterName>> pmsList = mn.names.get(name);
       if (pmsList == null) {
         return false;

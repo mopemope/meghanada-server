@@ -29,12 +29,12 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import meghanada.Main;
 import meghanada.analyze.Source;
 import meghanada.cache.GlobalCache;
 import meghanada.config.Config;
 import meghanada.formatter.JavaFormatter;
 import meghanada.project.Project;
+import meghanada.store.ProjectDatabaseHelper;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.message.EntryMessage;
@@ -44,28 +44,35 @@ public final class FileUtils {
   public static final String JAVA_EXT = ".java";
   public static final String JAR_EXT = ".jar";
   public static final String CLASS_EXT = ".class";
+  public static final String PACKAGE_INFO = "package-info.java";
   private static final Logger log = LogManager.getLogger(FileUtils.class);
   private static final String ALGORITHM_SHA_512 = "SHA-512";
-  private static final String UTF_8 = "UTF-8";
 
   public static boolean isJavaFile(final File file) {
-    return file.getName().endsWith(JAVA_EXT) && file.exists();
+    return file.isFile() && file.getName().endsWith(JAVA_EXT) && file.exists();
   }
 
   public static String getChecksum(final File file) throws IOException {
     final EntryMessage entryMessage = log.traceEntry("file={}", file);
+
     try {
+
       final MessageDigest md = MessageDigest.getInstance(ALGORITHM_SHA_512);
       try (final InputStream is = Files.newInputStream(file.toPath());
           DigestInputStream dis = new DigestInputStream(is, md)) {
-        final byte[] buf = new byte[8192];
+
+        final byte[] buf = new byte[4096];
+
         while (dis.read(buf) != -1) {}
+
         final byte[] digest = md.digest();
+
         final StringBuilder sb = new StringBuilder(128);
         for (final int b : digest) {
           sb.append(Character.forDigit(b >> 4 & 0xF, 16));
           sb.append(Character.forDigit(b & 0xF, 16));
         }
+
         log.traceExit(entryMessage);
         return sb.toString();
       }
@@ -219,47 +226,6 @@ public final class FileUtils {
     return properties.getProperty("version");
   }
 
-  public static File getProjectDataFile(final File projectRoot, final String key)
-      throws IOException {
-    final File settingDirFile = new File(projectRoot, Config.MEGHANADA_DIR);
-    final File root = new File(settingDirFile, GlobalCache.DATA_DIR);
-    if (!root.exists() && !root.mkdirs()) {
-      log.warn("fail create directory={}", root);
-    }
-    final String path =
-        FileUtils.toHashedPath(
-            settingDirFile.getCanonicalPath() + ':' + key, GlobalCache.CACHE_EXT);
-    return new File(root, path);
-  }
-
-  public static void writeMapSetting(final Map<String, String> map, final File outFile) {
-    final GlobalCache globalCache = GlobalCache.getInstance();
-    globalCache.asyncWriteCache(outFile, map);
-  }
-
-  public static String toHashedPath(final File f, final String suffix) throws IOException {
-    final String path = f.getCanonicalPath();
-    return toHashedPath(path, suffix);
-  }
-
-  public static String toHashedPath(final String path, final String suffix) {
-    try {
-      final MessageDigest md = MessageDigest.getInstance(ALGORITHM_SHA_512);
-      md.update(path.getBytes(UTF_8));
-      md.update(Main.getVersion().getBytes(UTF_8));
-      final byte[] digest = md.digest();
-      final StringBuilder sb = new StringBuilder(128);
-      for (final int b : digest) {
-        sb.append(Character.forDigit(b >> 4 & 0xF, 16));
-        sb.append(Character.forDigit(b & 0xF, 16));
-      }
-      sb.append(suffix);
-      return sb.toString();
-    } catch (IOException | NoSuchAlgorithmException e) {
-      throw new RuntimeException(e);
-    }
-  }
-
   public static Optional<File> getSourceFile(final String importClass, final Set<File> sourceRoots)
       throws IOException {
 
@@ -289,6 +255,24 @@ public final class FileUtils {
     return false;
   }
 
+  public static Optional<File> getClassFile(
+      String path, final Set<File> sourceRoots, final File out) throws IOException {
+
+    String outPath = out.getCanonicalPath();
+    for (File rootFile : sourceRoots) {
+      final String root = rootFile.getCanonicalPath();
+      if (path.startsWith(root)) {
+        final String src = path.substring(root.length());
+        final String classFile = ClassNameUtils.replace(src, JAVA_EXT, CLASS_EXT);
+        final Path p = Paths.get(outPath, classFile);
+        if (Files.exists(p, LinkOption.NOFOLLOW_LINKS)) {
+          return Optional.of(p.toFile());
+        }
+      }
+    }
+    return Optional.empty();
+  }
+
   public static Collection<File> getPackagePrivateSource(final List<File> compileFiles) {
     final Set<File> temp = Collections.newSetFromMap(new ConcurrentHashMap<File, Boolean>(8));
 
@@ -308,10 +292,8 @@ public final class FileUtils {
       final File output)
       throws IOException {
 
-    final File checksumFile =
-        FileUtils.getProjectDataFile(projectRoot, GlobalCache.SOURCE_CHECKSUM_DATA);
-    final Config config = Config.load();
-    final Map<String, String> map = config.getChecksumMap(checksumFile);
+    String projectRootPath = projectRoot.getCanonicalPath();
+    final Map<String, String> map = ProjectDatabaseHelper.getChecksumMap(projectRootPath);
 
     final List<File> fileList =
         sourceFiles
@@ -322,8 +304,10 @@ public final class FileUtils {
                     return false;
                   }
                   try {
+                    String fileName = f.getName();
                     final String path = f.getCanonicalPath();
-                    if (!FileUtils.hasClassFile(path, sourceRoots, output)) {
+                    if (!fileName.equals(PACKAGE_INFO)
+                        && !FileUtils.hasClassFile(path, sourceRoots, output)) {
                       return true;
                     }
 
@@ -348,25 +332,23 @@ public final class FileUtils {
                 })
             .collect(Collectors.toList());
 
-    FileUtils.writeMapSetting(map, checksumFile);
-    config.getAllChecksumMap().put(checksumFile, map);
-
+    ProjectDatabaseHelper.saveChecksumMap(projectRootPath, map);
     log.debug("remove unmodified {} To {}", sourceFiles.size(), fileList.size());
     log.trace("modified : {}", fileList);
     return fileList;
   }
 
-  public static void invalidateChecksum(final File projectRoot, final String path)
-      throws IOException {
-
-    final File checksumFile =
-        FileUtils.getProjectDataFile(projectRoot, GlobalCache.SOURCE_CHECKSUM_DATA);
-    final Config config = Config.load();
-    final Map<String, String> map = config.getChecksumMap(checksumFile);
-    map.remove(path);
-    FileUtils.writeMapSetting(map, checksumFile);
-    config.getAllChecksumMap().put(checksumFile, map);
-  }
+  //  public static void invalidateChecksum(final File projectRoot, final String path)
+  //      throws IOException {
+  //
+  //    final File checksumFile =
+  //        FileUtils.getProjectDataFile(projectRoot, GlobalCache.SOURCE_CHECKSUM_DATA);
+  //    final Config config = Config.load();
+  //    final Map<String, String> map = config.getChecksumMap(checksumFile);
+  //    map.remove(path);
+  //    FileUtils.writeMapSetting(map, checksumFile);
+  //    config.getAllChecksumMap().put(checksumFile, map);
+  //  }
 
   private static String readFile(String path) throws IOException {
     final byte[] encoded = Files.readAllBytes(Paths.get(path));

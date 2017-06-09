@@ -9,22 +9,13 @@ import static org.junit.Assert.assertTrue;
 import java.io.File;
 import java.util.Optional;
 import meghanada.GradleTestBase;
-import meghanada.reflect.asm.CachedASMReflector;
 import org.junit.Test;
 
 public class DeclarationSearcherTest extends GradleTestBase {
 
-  private static DeclarationSearcher searcher;
+  private DeclarationSearcher searcher;
 
-  @org.junit.BeforeClass
-  public static void beforeClass() throws Exception {
-    GradleTestBase.setupReflector();
-    CachedASMReflector cachedASMReflector = CachedASMReflector.getInstance();
-    cachedASMReflector.addClasspath(getOutputDir());
-    cachedASMReflector.createClassIndexes();
-  }
-
-  private static DeclarationSearcher getSearcher() throws Exception {
+  private DeclarationSearcher getSearcher() throws Exception {
     if (searcher != null) {
       return searcher;
     }

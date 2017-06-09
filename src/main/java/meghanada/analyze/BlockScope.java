@@ -1,10 +1,15 @@
 package meghanada.analyze;
 
+import static java.util.Objects.nonNull;
+
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Deque;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -184,18 +189,74 @@ public class BlockScope extends Scope {
   public List<MethodCall> getMethodCall(final int line) {
     for (final BlockScope bs : this.scopes) {
       final List<MethodCall> methodCalls = bs.getMethodCall(line);
-      if (methodCalls != null && !methodCalls.isEmpty()) {
+      if (nonNull(methodCalls) && !methodCalls.isEmpty()) {
         return methodCalls;
       }
     }
 
     for (final ExpressionScope es : this.expressions) {
       final List<MethodCall> methodCalls = es.getMethodCall(line);
-      if (methodCalls != null && !methodCalls.isEmpty()) {
+      if (nonNull(methodCalls) && !methodCalls.isEmpty()) {
         return methodCalls;
       }
     }
 
     return super.getMethodCall(line);
+  }
+
+  @Override
+  public Set<Variable> getVariables() {
+
+    final Set<Variable> result = new HashSet<>(this.variables);
+    for (final ExpressionScope e : this.expressions) {
+      result.addAll(e.getVariables());
+    }
+
+    for (final BlockScope bs : scopes) {
+      result.addAll(bs.getVariables());
+    }
+    return result;
+  }
+
+  @Override
+  public Collection<FieldAccess> getFieldAccesses() {
+
+    final List<FieldAccess> result = new ArrayList<>(this.fieldAccesses);
+    for (final ExpressionScope e : this.expressions) {
+      result.addAll(e.getFieldAccesses());
+    }
+
+    for (final BlockScope bs : scopes) {
+      result.addAll(bs.getFieldAccesses());
+    }
+    return result;
+  }
+
+  @Override
+  public Collection<MethodCall> getMethodCalls() {
+
+    final List<MethodCall> result = new ArrayList<>(this.methodCalls);
+    for (final ExpressionScope e : this.expressions) {
+      result.addAll(e.getMethodCalls());
+    }
+
+    for (final BlockScope bs : scopes) {
+      result.addAll(bs.getMethodCalls());
+    }
+    return result;
+  }
+
+  @Override
+  public Collection<AccessSymbol> getAccessSymbols() {
+
+    final List<AccessSymbol> result = new ArrayList<>(this.getAccessSymbols());
+    for (final ExpressionScope e : this.expressions) {
+      result.addAll(e.getAccessSymbols());
+    }
+
+    for (final BlockScope bs : scopes) {
+      result.addAll(bs.getAccessSymbols());
+    }
+    return result;
   }
 }

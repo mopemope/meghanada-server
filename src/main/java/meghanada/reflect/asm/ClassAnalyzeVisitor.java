@@ -64,6 +64,7 @@ class ClassAnalyzeVisitor extends ClassVisitor {
     this.access = access;
     final boolean isInterface = (Opcodes.ACC_INTERFACE & access) == Opcodes.ACC_INTERFACE;
     // log.debug("name {} sig {} IF:{}", name, signature, isInterface);
+
     if (signature != null) {
       // generics
       // log.debug("name {} sig {}", name, signature);
@@ -74,8 +75,8 @@ class ClassAnalyzeVisitor extends ClassVisitor {
 
       this.classTypeParameters = classSignatureVisitor.getTypeParameters();
       this.classIndex = classSignatureVisitor.getClassIndex();
-      if (!this.classIndex.supers.contains(ClassNameUtils.OBJECT_CLASS)) {
-        this.classIndex.supers.add(ClassNameUtils.OBJECT_CLASS);
+      if (!this.classIndex.getSupers().contains(ClassNameUtils.OBJECT_CLASS)) {
+        this.classIndex.addSuper(ClassNameUtils.OBJECT_CLASS);
       }
     } else {
       this.classTypeParameters = new ArrayList<>(4);
@@ -87,7 +88,7 @@ class ClassAnalyzeVisitor extends ClassVisitor {
       Arrays.stream(interfaces)
           .forEach(interfaceName -> supers.add(ClassNameUtils.replaceSlash(interfaceName)));
       this.classIndex = new ClassIndex(this.className, new ArrayList<>(4), supers);
-      this.classIndex.isInterface = isInterface;
+      this.classIndex.setInterface(isInterface);
     }
   }
 
@@ -185,7 +186,7 @@ class ClassAnalyzeVisitor extends ClassVisitor {
   @Override
   public AnnotationVisitor visitAnnotation(String desc, boolean visible) {
     if (visible && desc.equals(FUNCTIONAL)) {
-      this.classIndex.functional = true;
+      this.classIndex.setFunctional(true);
     }
     return super.visitAnnotation(desc, visible);
   }

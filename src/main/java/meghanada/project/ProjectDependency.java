@@ -13,6 +13,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import meghanada.analyze.CompileResult;
+import meghanada.config.Config;
 import meghanada.reflect.asm.CachedASMReflector;
 import meghanada.session.Session;
 import org.apache.logging.log4j.LogManager;
@@ -107,9 +108,11 @@ public class ProjectDependency implements Serializable {
         if (this.dependencyFilePath != null) {
           return this.dependencyFilePath;
         }
+
         // get gradle's project archive
         final File projectArchive =
             new File(file, "build" + File.separator + "libs" + File.separator + this.id + ".jar");
+
         if (projectArchive.exists()) {
           // add index
           final List<File> temp = new ArrayList<>(1);
@@ -121,18 +124,29 @@ public class ProjectDependency implements Serializable {
           if (this.dependencyFilePath != null) {
             return this.dependencyFilePath;
           }
+
           final File output =
               Session.findProject(this.file)
                   .map(
-                      wrapIO(
-                          project -> {
-                            // cache build result
-                            final CompileResult compileResult = project.compileJava();
-                            if (!compileResult.isSuccess()) {
-                              log.warn("Compile Error : {}", compileResult.getDiagnosticsSummary());
-                            }
+                      project -> {
+                        // cache build result
+                        try {
+                          project.setSubProject(true);
+                          if (Config.load().isSkipBuildSubProjects()) {
+                            log.info("skip build project {}", project.getName());
                             return project.getOutput();
-                          }))
+                          }
+                          CompileResult compileResult = project.compileJava();
+                          if (!compileResult.isSuccess()) {
+                            log.warn("Compile Error : {}", compileResult.getDiagnosticsSummary());
+                          }
+                          return project.getOutput();
+                        } catch (IOException e) {
+                          throw new UncheckedIOException(e);
+                        } finally {
+                          project.setSubProject(false);
+                        }
+                      })
                   .orElse(this.file);
 
           this.dependencyFilePath = output.getCanonicalPath();

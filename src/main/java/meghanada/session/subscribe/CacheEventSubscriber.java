@@ -25,13 +25,8 @@ public class CacheEventSubscriber extends AbstractSubscriber {
   }
 
   @Subscribe
-  public synchronized void on(final SessionEventBus.ClassCacheRequest request) {
-    if (request.onlyOutputDir) {
-      final CachedASMReflector reflector = CachedASMReflector.getInstance();
-      reflector.updateClassIndexFromDirectory();
-    } else {
-      this.analyze();
-    }
+  public void on(final SessionEventBus.ClassCacheRequest request) {
+    this.analyze();
   }
 
   private void analyze() {
@@ -39,6 +34,19 @@ public class CacheEventSubscriber extends AbstractSubscriber {
     final Session session = super.sessionEventBus.getSession();
     final Project project = session.getCurrentProject();
     final CachedASMReflector reflector = CachedASMReflector.getInstance();
+    reflector.addClasspath(project.getOutput());
+    reflector.addClasspath(project.getTestOutput());
+    project
+        .getDependencies()
+        .stream()
+        .filter(pd -> pd.getType().equals(ProjectDependency.Type.PROJECT))
+        .forEach(
+            pd -> {
+              final File df = new File(pd.getDependencyFilePath());
+              if (df.exists() && df.isDirectory()) {
+                reflector.addClasspath(df);
+              }
+            });
 
     final Collection<File> dependentJars = session.getDependentJars();
     final int size = dependentJars.size();
@@ -75,35 +83,20 @@ public class CacheEventSubscriber extends AbstractSubscriber {
           }
         });
 
-    reflector.addClasspath(project.getOutput());
-    reflector.addClasspath(project.getTestOutput());
-    project
-        .getDependencies()
-        .stream()
-        .filter(pd -> pd.getType().equals(ProjectDependency.Type.PROJECT))
-        .forEach(
-            pd -> {
-              final File df = new File(pd.getDependencyFilePath());
-              if (df.exists() && df.isDirectory()) {
-                reflector.addClasspath(df);
-              }
-            });
-    reflector.updateClassIndexFromDirectory();
-
     final Runtime runtime = Runtime.getRuntime();
     final float maxMemory = runtime.maxMemory() / 1024 / 1024;
     final float totalMemory = runtime.totalMemory() / 1024 / 1024;
     final float usedMemory = (runtime.totalMemory() - runtime.freeMemory()) / 1024 / 1024;
 
     log.info(
-        "create class index. size:{} total elapsed:{}",
+        "class index size:{} total elapsed:{}",
         reflector.getGlobalClassIndex().size(),
         stopwatch.stop());
     log.info(
-        "jvm memory (used/total/max): {}MB / {}MB / {}MB",
+        "memory usage (used/total/max): {}MB / {}MB / {}MB",
         String.format("%.2f", usedMemory),
         String.format("%.2f", totalMemory),
         String.format("%.2f", maxMemory));
-    log.info("Done indexing");
+    log.info("Ready");
   }
 }

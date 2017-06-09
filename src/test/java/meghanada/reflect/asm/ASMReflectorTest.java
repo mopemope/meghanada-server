@@ -48,7 +48,7 @@ public class ASMReflectorTest extends GradleTestBase {
     {
       String fqcn = "java.util.Map$Entry";
       File jar = getRTJar();
-      Map<ClassIndex, File> index = asmReflector.getClasses(jar);
+      Map<String, ClassIndex> index = asmReflector.getClassIndexes(jar);
       final InheritanceInfo info = asmReflector.getReflectInfo(index, fqcn);
       stopwatch.start();
       System.out.println(info);
@@ -66,7 +66,7 @@ public class ASMReflectorTest extends GradleTestBase {
     {
       String fqcn = "java.util.Map.Entry";
       File jar = getRTJar();
-      Map<ClassIndex, File> index = asmReflector.getClasses(jar);
+      Map<String, ClassIndex> index = asmReflector.getClassIndexes(jar);
       final InheritanceInfo info = asmReflector.getReflectInfo(index, fqcn);
 
       System.out.println(info);
@@ -88,7 +88,7 @@ public class ASMReflectorTest extends GradleTestBase {
     {
       String fqcn = "java.util.Map";
       File jar = getRTJar();
-      Map<ClassIndex, File> index = asmReflector.getClasses(jar);
+      Map<String, ClassIndex> index = asmReflector.getClassIndexes(jar);
       final InheritanceInfo info = asmReflector.getReflectInfo(index, fqcn);
 
       stopwatch.start();
@@ -123,7 +123,7 @@ public class ASMReflectorTest extends GradleTestBase {
     {
       String fqcn = "java.util.Enumeration<? extends ZipEntry>";
       File jar = getRTJar();
-      Map<ClassIndex, File> index = asmReflector.getClasses(jar);
+      Map<String, ClassIndex> index = asmReflector.getClassIndexes(jar);
       final InheritanceInfo info = asmReflector.getReflectInfo(index, fqcn);
 
       stopwatch.start();
@@ -142,7 +142,7 @@ public class ASMReflectorTest extends GradleTestBase {
     {
       String fqcn = "java.util.Map<? extends String, ? extends Long>";
       File jar = getRTJar();
-      Map<ClassIndex, File> index = asmReflector.getClasses(jar);
+      Map<String, ClassIndex> index = asmReflector.getClassIndexes(jar);
       final InheritanceInfo info = asmReflector.getReflectInfo(index, fqcn);
 
       stopwatch.start();
@@ -161,7 +161,7 @@ public class ASMReflectorTest extends GradleTestBase {
     {
       String fqcn = "com.google.common.cache.CacheBuilder<Object, Object>";
       File jar = getJar("guava");
-      Map<ClassIndex, File> index = asmReflector.getClasses(jar);
+      Map<String, ClassIndex> index = asmReflector.getClassIndexes(jar);
       final InheritanceInfo info = asmReflector.getReflectInfo(index, fqcn);
 
       stopwatch.start();
@@ -183,9 +183,8 @@ public class ASMReflectorTest extends GradleTestBase {
     Stopwatch stopwatch = Stopwatch.createUnstarted();
     {
       File jar = getRTJar();
-      Map<ClassIndex, File> index = asmReflector.getClasses(jar);
-
       String fqcn = "java.util.stream.Stream<java.util.List<java.lang.String>>";
+      Map<String, ClassIndex> index = asmReflector.getClassIndexes(jar);
       final InheritanceInfo info = asmReflector.getReflectInfo(index, fqcn);
 
       stopwatch.start();
@@ -210,9 +209,8 @@ public class ASMReflectorTest extends GradleTestBase {
     Stopwatch stopwatch = Stopwatch.createUnstarted();
     {
       File jar = getRTJar();
-      Map<ClassIndex, File> index = asmReflector.getClasses(jar);
-
       String fqcn = "java.lang.String";
+      Map<String, ClassIndex> index = asmReflector.getClassIndexes(jar);
       final InheritanceInfo info = asmReflector.getReflectInfo(index, fqcn);
       System.out.println(info);
       stopwatch.start();
@@ -227,9 +225,8 @@ public class ASMReflectorTest extends GradleTestBase {
     ASMReflector asmReflector = ASMReflector.getInstance();
     {
       File jar = getRTJar();
-      Map<ClassIndex, File> index = asmReflector.getClasses(jar);
-
       String fqcn = "java.util.List";
+      Map<String, ClassIndex> index = asmReflector.getClassIndexes(jar);
       final InheritanceInfo info = asmReflector.getReflectInfo(index, fqcn);
       System.out.println(info);
       List<MemberDescriptor> memberDescriptors1 =
@@ -252,9 +249,8 @@ public class ASMReflectorTest extends GradleTestBase {
     Stopwatch stopwatch = Stopwatch.createUnstarted();
     {
       File jar = getRTJar();
-      Map<ClassIndex, File> index = asmReflector.getClasses(jar);
-
       String fqcn = "java.util.function.Predicate";
+      Map<String, ClassIndex> index = asmReflector.getClassIndexes(jar);
       final InheritanceInfo info = asmReflector.getReflectInfo(index, fqcn);
       System.out.println(info);
       stopwatch.start();
@@ -273,11 +269,11 @@ public class ASMReflectorTest extends GradleTestBase {
     // Config.load().setDebug();
     {
       File jar = getRTJar();
-      Map<ClassIndex, File> index = asmReflector.getClasses(jar);
 
       // Config.load().setDebug();
       String fqcn =
           "java.util.stream.Stream<java.util.stream.Stream<java.util.List<java.lang.String>>>";
+      Map<String, ClassIndex> index = asmReflector.getClassIndexes(jar);
       final InheritanceInfo info = asmReflector.getReflectInfo(index, fqcn);
       System.out.println(info);
       stopwatch.start();
@@ -298,7 +294,7 @@ public class ASMReflectorTest extends GradleTestBase {
     Stopwatch stopwatch = Stopwatch.createUnstarted();
     {
       File jar = getRTJar();
-      Map<ClassIndex, File> index = asmReflector.getClasses(jar);
+      Map<String, ClassIndex> index = asmReflector.getClassIndexes(jar);
 
       String fqcn = "java.util.jar.JarFile";
       final InheritanceInfo info = asmReflector.getReflectInfo(index, fqcn);
@@ -321,8 +317,8 @@ public class ASMReflectorTest extends GradleTestBase {
     Stopwatch stopwatch = Stopwatch.createUnstarted();
     {
       File jar = getJar("guava");
-      Map<ClassIndex, File> index = asmReflector.getClasses(jar);
 
+      Map<String, ClassIndex> index = asmReflector.getClassIndexes(jar);
       String fqcn = "com.google.common.base.Joiner";
       final InheritanceInfo info = asmReflector.getReflectInfo(index, fqcn);
       System.out.println(info);
@@ -341,8 +337,8 @@ public class ASMReflectorTest extends GradleTestBase {
   @Test
   public void testReflectAll8() throws Exception {
     final ASMReflector asmReflector = ASMReflector.getInstance();
-    final File file = getTestOutputDir();
-    final Map<ClassIndex, File> index = asmReflector.getClasses(file);
+    final File file = getTestOutput();
+    Map<String, ClassIndex> index = asmReflector.getClassIndexes(file);
     final String fqcn = "meghanada.Gen4";
     final List<MemberDescriptor> memberDescriptors =
         debugIt(
@@ -364,7 +360,7 @@ public class ASMReflectorTest extends GradleTestBase {
     {
       String fqcn = "java.util.Map";
       File jar = getRTJar();
-      Map<ClassIndex, File> index = asmReflector.getClasses(jar);
+      Map<String, ClassIndex> index = asmReflector.getClassIndexes(jar);
 
       stopwatch.start();
       final InheritanceInfo info = asmReflector.getReflectInfo(index, fqcn);
@@ -381,8 +377,7 @@ public class ASMReflectorTest extends GradleTestBase {
       String fqcn = "java.util.stream.Stream";
       File jar = getRTJar();
 
-      Map<ClassIndex, File> index = asmReflector.getClasses(jar);
-
+      Map<String, ClassIndex> index = asmReflector.getClassIndexes(jar);
       stopwatch.start();
       final InheritanceInfo info1 = asmReflector.getReflectInfo(index, fqcn);
       System.out.println(stopwatch.stop());
@@ -403,7 +398,7 @@ public class ASMReflectorTest extends GradleTestBase {
     {
       String fqcn = "com.google.common.eventbus.SubscriberExceptionHandler";
       File jar = getJar("guava");
-      Map<ClassIndex, File> index = asmReflector.getClasses(jar);
+      Map<String, ClassIndex> index = asmReflector.getClassIndexes(jar);
       final InheritanceInfo info = asmReflector.getReflectInfo(index, fqcn);
 
       stopwatch.start();
@@ -430,15 +425,16 @@ public class ASMReflectorTest extends GradleTestBase {
       List<MemberDescriptor> memberDescriptors =
           timeIt(
               () -> {
-                Map<ClassIndex, File> index = asmReflector.getClasses(jar);
-                index
-                    .keySet()
-                    .forEach(
-                        classIndex -> {
-                          if (classIndex.isAnnotation) {
-                            System.out.println("anno: " + classIndex);
-                          }
-                        });
+                Map<String, ClassIndex> index = asmReflector.getClassIndexes(jar);
+                //                Map<ClassIndex, File> index = asmReflector.getClasses(jar);
+                //                index
+                //                    .keySet()
+                //                    .forEach(
+                //                        classIndex -> {
+                //                          if (classIndex.isAnnotation) {
+                //                            System.out.println("anno: " + classIndex);
+                //                          }
+                //                        });
                 final InheritanceInfo info = asmReflector.getReflectInfo(index, fqcn);
                 return asmReflector.reflectAll(info);
               });

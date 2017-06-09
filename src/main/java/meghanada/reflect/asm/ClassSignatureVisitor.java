@@ -198,7 +198,7 @@ class ClassSignatureVisitor extends SignatureVisitor {
             this.getName(),
             this.getTypeParameters(),
             this.superClasses.stream().map(ClassInfo::toString).collect(Collectors.toList()));
-    classIndex.isInterface = this.isInterface;
+    classIndex.setInterface(this.isInterface);
     return classIndex;
   }
 

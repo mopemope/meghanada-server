@@ -196,8 +196,8 @@ public class DeclarationSearcher {
     Optional<Declaration> result;
     String fqcn = source.getImportedClassFQCN(symbol, null);
     if (fqcn == null) {
-      if (source.packageName != null) {
-        fqcn = source.packageName + '.' + symbol;
+      if (!source.getPackageName().isEmpty()) {
+        fqcn = source.getPackageName() + '.' + symbol;
         result =
             reflector
                 .containsClassIndex(fqcn)

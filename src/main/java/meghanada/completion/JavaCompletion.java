@@ -59,8 +59,9 @@ public class JavaCompletion {
         .map(
             classIndex -> {
               final String name =
-                  ClassNameUtils.getSimpleName(ClassNameUtils.replaceInnerMark(classIndex.name));
-              classIndex.name = '@' + name;
+                  ClassNameUtils.getSimpleName(
+                      ClassNameUtils.replaceInnerMark(classIndex.getName()));
+              classIndex.setName('@' + name);
               return classIndex;
             })
         .collect(Collectors.toList());
@@ -330,7 +331,7 @@ public class JavaCompletion {
   }
 
   private static Collection<MemberDescriptor> reflectWithFQCN(
-      final String ownPackage, final String fqcn, final String prefix) {
+      final String fqcn, final String prefix) {
     final String target = prefix.toLowerCase();
     return doReflect(fqcn)
         .stream()
@@ -356,18 +357,15 @@ public class JavaCompletion {
 
     log.debug("search '{}' field or method", var);
 
-    String ownPackage = source.packageName;
+    String ownPackage = source.getPackageName();
     final Set<CandidateUnit> res = new HashSet<>(32);
 
     {
       // completion static method
       String fqcn = source.getImportedClassFQCN(var, null);
       if (fqcn != null) {
-        if (!fqcn.contains(".") && ownPackage != null) {
+        if (!fqcn.contains(".") && !ownPackage.isEmpty()) {
           fqcn = ownPackage + '.' + fqcn;
-        }
-        if (ownPackage == null) {
-          ownPackage = "";
         }
 
         final Collection<? extends CandidateUnit> result =
@@ -533,6 +531,34 @@ public class JavaCompletion {
     };
   }
 
+  private static List<ClassIndex> completionImport(final String searchWord) {
+
+    final Config config = Config.load();
+    final boolean useFuzzySearch = config.useClassFuzzySearch();
+    final int idx = searchWord.lastIndexOf(':');
+    final Stream<ClassIndex> stream;
+    final CachedASMReflector reflector = CachedASMReflector.getInstance();
+
+    if (idx > 0) {
+      final String classPrefix = searchWord.substring(idx + 1, searchWord.length());
+      if (useFuzzySearch) {
+        stream = reflector.fuzzySearchClassesStream(classPrefix.toLowerCase(), false);
+      } else {
+        stream = reflector.searchClassesStream(classPrefix.toLowerCase(), true, false);
+      }
+      return stream
+          .map(
+              cl -> {
+                cl.setMemberType(CandidateUnit.MemberType.IMPORT);
+                return cl;
+              })
+          .sorted(comparing(classPrefix))
+          .collect(Collectors.toList());
+    }
+
+    return Collections.emptyList();
+  }
+
   public void setProject(Project project) {
     this.project = project;
   }
@@ -565,34 +591,6 @@ public class JavaCompletion {
       log.catching(t);
       return Collections.emptyList();
     }
-  }
-
-  private static List<ClassIndex> completionImport(final String searchWord) {
-
-    final Config config = Config.load();
-    final boolean useFuzzySearch = config.useClassFuzzySearch();
-    final int idx = searchWord.lastIndexOf(':');
-    final Stream<ClassIndex> stream;
-    final CachedASMReflector reflector = CachedASMReflector.getInstance();
-
-    if (idx > 0) {
-      final String classPrefix = searchWord.substring(idx + 1, searchWord.length());
-      if (useFuzzySearch) {
-        stream = reflector.fuzzySearchClassesStream(classPrefix.toLowerCase(), false);
-      } else {
-        stream = reflector.searchClassesStream(classPrefix.toLowerCase(), true, false);
-      }
-      return stream
-          .map(
-              cl -> {
-                cl.setMemberType(CandidateUnit.MemberType.IMPORT);
-                return cl;
-              })
-          .sorted(comparing(classPrefix))
-          .collect(Collectors.toList());
-    }
-
-    return Collections.emptyList();
   }
 
   private Collection<? extends CandidateUnit> specialCompletion(
@@ -631,14 +629,14 @@ public class JavaCompletion {
 
       final int prefixIdx = searchWord.lastIndexOf('#');
       final int classIdx = searchWord.lastIndexOf(':');
-      final String pkg = source.packageName;
+      final String pkg = source.getPackageName();
 
       if (classIdx > 0 && prefixIdx > 0) {
         final String prefix = searchWord.substring(prefixIdx + 1);
         // return methods of prefix class
         String fqcn = searchWord.substring(classIdx + 1, prefixIdx);
         fqcn = ClassNameUtils.replace(fqcn, ClassNameUtils.CAPTURE_OF, "");
-        return reflectWithFQCN(pkg, fqcn, prefix)
+        return reflectWithFQCN(fqcn, prefix)
             .stream()
             .sorted(methodComparing(prefix))
             .collect(Collectors.toList());
@@ -715,7 +713,7 @@ public class JavaCompletion {
         .asMap()
         .values()
         .stream()
-        .map(source -> ClassIndex.createPackage(source.packageName))
+        .map(source -> ClassIndex.createPackage(source.getPackageName()))
         .collect(Collectors.toSet());
   }
 }

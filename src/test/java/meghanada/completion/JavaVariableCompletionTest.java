@@ -9,19 +9,9 @@ import java.util.Optional;
 import meghanada.GradleTestBase;
 import meghanada.analyze.MethodCall;
 import meghanada.analyze.Range;
-import meghanada.reflect.asm.CachedASMReflector;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class JavaVariableCompletionTest extends GradleTestBase {
-
-  @BeforeClass
-  public static void beforeClass() throws Exception {
-    GradleTestBase.setupReflector();
-    CachedASMReflector cachedASMReflector = CachedASMReflector.getInstance();
-    cachedASMReflector.addClasspath(getOutputDir());
-    cachedASMReflector.createClassIndexes();
-  }
 
   @Test
   public void localVariable() throws Exception {
@@ -122,6 +112,6 @@ public class JavaVariableCompletionTest extends GradleTestBase {
   }
 
   private JavaVariableCompletion getCompilation() throws Exception {
-    return new JavaVariableCompletion(GradleTestBase.getProject());
+    return new JavaVariableCompletion(getProject());
   }
 }

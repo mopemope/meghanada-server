@@ -1,5 +1,6 @@
 package meghanada.project.gradle;
 
+import static java.util.Objects.nonNull;
 import static meghanada.config.Config.debugTimeItF;
 import static meghanada.utils.FunctionUtils.wrapIOConsumer;
 
@@ -55,13 +56,22 @@ public class GradleProject extends Project {
   private static final Logger log = LogManager.getLogger(GradleProject.class);
   private static String tempPath;
 
-  private final File rootProject;
-  private final Map<String, File> allModules = new ConcurrentHashMap<>(4);
-  private final List<String> prepareCompileTask = new ArrayList<>(2);
-  private final List<String> prepareTestCompileTask = new ArrayList<>(2);
+  private File rootProject;
+  private transient Map<String, File> allModules;
+  private transient List<String> prepareCompileTask;
+  private transient List<String> prepareTestCompileTask;
 
   public GradleProject(final File projectRoot) throws IOException {
     super(projectRoot);
+    this.initialize();
+  }
+
+  @Override
+  protected void initialize() throws IOException {
+    super.initialize();
+    this.allModules = new ConcurrentHashMap<>(4);
+    this.prepareCompileTask = new ArrayList<>(2);
+    this.prepareTestCompileTask = new ArrayList<>(2);
     this.rootProject = GradleProject.searchRootProject(projectRoot);
     String tmp = getTmpDir();
   }
@@ -112,6 +122,10 @@ public class GradleProject extends Project {
       return replaced.substring(1);
     }
     return replaced;
+  }
+
+  public static String getTempPath() {
+    return tempPath;
   }
 
   @Override
@@ -165,7 +179,10 @@ public class GradleProject extends Project {
 
   private void parseIdeaModule(final IdeaModule ideaModule) throws IOException {
     final org.gradle.tooling.model.GradleProject gradleProject = ideaModule.getGradleProject();
-    this.name = convertName(gradleProject.getPath());
+    String name = convertName(gradleProject.getPath());
+    if (nonNull(name) && !name.isEmpty()) {
+      this.name = name;
+    }
     final AndroidProject androidProject =
         AndroidSupport.getAndroidProject(this.rootProject, gradleProject);
     if (androidProject != null) {
@@ -298,7 +315,6 @@ public class GradleProject extends Project {
       PipedInputStream inputStream = new PipedInputStream(outputStream);
       build.setStandardError(outputStream);
       build.setStandardOutput(outputStream);
-
       final VoidResultHandler handler =
           new VoidResultHandler(outputStream, inputStream, projectConnection);
       build.run(handler);

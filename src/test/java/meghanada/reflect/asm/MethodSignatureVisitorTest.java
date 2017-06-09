@@ -29,7 +29,7 @@ public class MethodSignatureVisitorTest extends GradleTestBase {
 
   @Test
   public void testMethod1() throws Exception {
-    final File f = new File(getTestOutputDir(), "meghanada/Gen3.class");
+    final File f = new File(getTestOutput(), "meghanada/Gen3.class");
     final String fqcn = "meghanada.Gen3";
     TestVisitor visitor = timeIt(() -> doAnalyze(f, fqcn));
   }

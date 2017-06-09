@@ -125,17 +125,16 @@ public class Session {
 
   private static Optional<Project> loadProject(final File projectRoot, final String targetFile)
       throws IOException {
+
     final EntryMessage entryMessage =
         log.traceEntry("projectRoot={} targetFile={}", projectRoot, targetFile);
+
     final String projectRootPath = projectRoot.getCanonicalPath();
     System.setProperty(Project.PROJECT_ROOT_KEY, projectRootPath);
 
     try {
       final Config config = Config.load();
-      final File settingFile = new File(projectRoot, Config.MEGHANADA_DIR);
-      if (!settingFile.exists() && !settingFile.mkdirs()) {
-        log.warn("{} mkdirs fail", settingFile);
-      }
+
       final String id = FileUtils.findProjectID(projectRoot, targetFile);
       if (Project.loadedProject.containsKey(id)) {
         // loaded skip
@@ -147,11 +146,9 @@ public class Session {
 
       log.trace("project projectID={} projectRoot={}", id, projectRoot);
 
-      final File projectCache = FileUtils.getProjectDataFile(projectRoot, GlobalCache.PROJECT_DATA);
-
-      if (config.useFastBoot() && projectCache.exists()) {
+      if (config.useFastBoot()) {
         try {
-          final Project tempProject = Project.readProjectCache(projectCache);
+          final Project tempProject = Project.loadProject(projectRootPath);
           if (tempProject != null && tempProject.getId().equals(id)) {
             tempProject.setId(id);
             log.debug("load from cache project={}", tempProject);
@@ -160,10 +157,7 @@ public class Session {
             return Optional.of(tempProject.mergeFromProjectConfig());
           }
         } catch (Exception ex) {
-          // delete broken cache
-          if (!projectCache.delete()) {
-            log.warn("{} delete fail", projectCache);
-          }
+          log.catching(ex);
         }
       }
 
@@ -179,13 +173,15 @@ public class Session {
           project = new MeghanadaProject(projectRoot);
           break;
       }
+
       project.setId(id);
       final Stopwatch stopwatch = Stopwatch.createStarted();
       final Project parsed = project.parseProject();
       if (config.useFastBoot()) {
-        parsed.writeProjectCache(projectCache);
+        parsed.saveProject();
       }
       log.info("loaded project:{} elapsed:{}", project.getProjectRoot(), stopwatch.stop());
+
       log.traceExit(entryMessage);
       return Optional.of(parsed.mergeFromProjectConfig());
     } finally {
@@ -258,10 +254,13 @@ public class Session {
     if (this.projects.containsKey(projectRoot)) {
       // loaded project
       this.currentProject = this.projects.get(projectRoot);
+      String projectRootPath = this.currentProject.getProjectRootPath();
+      System.setProperty(Project.PROJECT_ROOT_KEY, projectRootPath);
       this.getLocationSearcher().setProject(currentProject);
       this.getDeclarationSearcher().setProject(this.currentProject);
-      this.getVariableCompletion().setProject(currentProject);
-      return false;
+      this.getVariableCompletion().setProject(this.currentProject);
+      this.getCompletion().setProject(this.currentProject);
+      return true;
     }
 
     if (currentProject instanceof GradleProject) {
@@ -421,8 +420,8 @@ public class Session {
               final List<String> optimized = source.optimizeImports();
               boolean addLine = false;
               final StringBuilder sb = new StringBuilder(1024 * 4);
-              if (source.packageName != null && !source.packageName.isEmpty()) {
-                sb.append("package ").append(source.packageName).append(";\n");
+              if (!source.getPackageName().isEmpty()) {
+                sb.append("package ").append(source.getPackageName()).append(";\n");
               }
 
               if (source.staticImportClass.size() > 0) {
@@ -453,11 +452,12 @@ public class Session {
 
               try (final Stream<String> stream =
                   Files.lines(file.toPath(), StandardCharsets.UTF_8)) {
+                int startLine = source.getClassStartLine();
                 stream
-                    .skip(source.classStartLine)
+                    .skip(startLine)
                     .forEach(
                         s -> {
-                          if (!s.contains("package ")) {
+                          if (startLine > 0 || !s.contains("package ")) {
                             sb.append(s).append('\n');
                           }
                         });
@@ -499,16 +499,14 @@ public class Session {
     }
     final GlobalCache globalCache = GlobalCache.getInstance();
     globalCache.invalidateSource(currentProject, file);
-    this.parseJavaSource(file).ifPresent(source -> this.sessionEventBus.requestCreateCache(true));
-    return true;
+    Optional<Source> source = this.parseJavaSource(file);
+    return source.isPresent();
   }
 
   public synchronized CompileResult compileFile(final String path) throws IOException {
     // java file only
     final File file = normalize(path);
-    final CompileResult compileResult = currentProject.compileFile(file, true);
-    this.sessionEventBus.requestCreateCache(true);
-    return compileResult;
+    return currentProject.compileFile(file, true);
   }
 
   public synchronized CompileResult compileProject(final boolean force) throws IOException {
@@ -516,21 +514,19 @@ public class Session {
     final Project project = currentProject;
     final CompileResult result = project.compileJava(force);
     if (result.hasDiagnostics()) {
-      log.warn("compileProject report:{}", result.getDiagnosticsSummary());
+      log.warn("project {} compile report:{}", project.getName(), result.getDiagnosticsSummary());
     }
 
-    if (result.isSuccess()) {
-
-      final CompileResult testResult = project.compileTestJava(force);
-      if (testResult.hasDiagnostics()) {
-        for (final Diagnostic<? extends JavaFileObject> diagnostic : testResult.getDiagnostics()) {
-          result.getDiagnostics().add(diagnostic);
-        }
-        log.warn("compileProject test report:{}", testResult.getDiagnosticsSummary());
+    final CompileResult testResult = project.compileTestJava(force);
+    if (testResult.hasDiagnostics()) {
+      for (final Diagnostic<? extends JavaFileObject> diagnostic : testResult.getDiagnostics()) {
+        result.getDiagnostics().add(diagnostic);
       }
+      log.warn(
+          "peoject {} test compile report:{}",
+          project.getName(),
+          testResult.getDiagnosticsSummary());
     }
-
-    this.sessionEventBus.requestCreateCache(true);
 
     return result;
   }
@@ -664,7 +660,6 @@ public class Session {
     temp.addAll(this.currentProject.getTestSources());
     this.sessionEventBus.requestWatchFiles(new ArrayList<>(temp));
     final CachedASMReflector reflector = CachedASMReflector.getInstance();
-    reflector.resetClassFileMap();
     reflector.addClasspath(Session.getSystemJars());
     this.sessionEventBus.requestCreateCache();
     this.projects

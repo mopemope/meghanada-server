@@ -1,5 +1,7 @@
 package meghanada.reflect;
 
+import static java.util.Objects.nonNull;
+
 import com.google.common.base.Objects;
 import java.io.Serializable;
 import java.util.HashMap;
@@ -56,7 +58,7 @@ public abstract class MemberDescriptor implements CandidateUnit, Cloneable, Seri
   }
 
   public boolean hasTypeParameters() {
-    return this.typeParameters != null && this.typeParameters.size() > 0;
+    return nonNull(this.typeParameters) && !this.typeParameters.isEmpty();
   }
 
   protected String renderTypeParameters(final String str, boolean formalType) {
@@ -94,13 +96,13 @@ public abstract class MemberDescriptor implements CandidateUnit, Cloneable, Seri
   }
 
   public void clearTypeParameterMap() {
-    if (this.typeParameterMap != null) {
+    if (nonNull(this.typeParameterMap)) {
       this.typeParameterMap.clear();
     }
   }
 
   private boolean containsTypeParameter(final String typeParameter) {
-    return this.typeParameters != null && this.typeParameters.contains(typeParameter);
+    return nonNull(this.typeParameters) && this.typeParameters.contains(typeParameter);
   }
 
   public void putTypeParameter(final String t, final String real) {

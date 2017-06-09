@@ -5,7 +5,6 @@ import com.google.common.base.MoreObjects;
 import com.google.common.base.Objects;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.util.concurrent.UncheckedExecutionException;
 import com.typesafe.config.ConfigFactory;
 import java.io.File;
 import java.io.IOException;
@@ -28,26 +27,29 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import javax.tools.Diagnostic;
 import javax.tools.JavaFileObject;
+import meghanada.analyze.ClassScope;
 import meghanada.analyze.CompileResult;
 import meghanada.analyze.JavaAnalyzer;
 import meghanada.analyze.Source;
 import meghanada.cache.GlobalCache;
 import meghanada.config.Config;
 import meghanada.formatter.JavaFormatter;
+import meghanada.store.ProjectDatabaseHelper;
+import meghanada.store.Storable;
 import meghanada.utils.ClassNameUtils;
 import meghanada.utils.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.eclipse.jdt.core.JavaCore;
 
-public abstract class Project implements Serializable {
+public abstract class Project implements Serializable, Storable {
 
   public static final String GRADLE_PROJECT_FILE = "build.gradle";
   public static final String MVN_PROJECT_FILE = "pom.xml";
-  public static final String DEFAULT_PATH =
-      File.separator + "src" + File.separator + "main" + File.separator;
   public static final String PROJECT_ROOT_KEY = "project.root";
   public static final Map<String, Project> loadedProject = new HashMap<>(4);
+  public static final String ENTITY_TYPE = "Project";
+
   private static final long serialVersionUID = 7172580558461159805L;
   private static final String FORMATTER_FILE_KEY = "meghanada.formatter.file";
   private static final Logger log = LogManager.getLogger(Project.class);
@@ -69,8 +71,9 @@ public abstract class Project implements Serializable {
   private static final String FORMATTER_FILE_XML = "meghanadaFormatter.xml";
   private static final Pattern SEP_COMPILE = Pattern.compile("/", Pattern.LITERAL);
 
-  protected final File projectRoot;
-  protected final Set<ProjectDependency> dependencies = new HashSet<>(16);
+  protected File projectRoot;
+  protected Set<ProjectDependency> dependencies = new HashSet<>(16);
+  protected String projectRootPath;
   protected Set<File> sources = new HashSet<>(2);
   protected Set<File> resources = new HashSet<>(2);
   protected File output;
@@ -85,13 +88,15 @@ public abstract class Project implements Serializable {
   private Map<String, Set<String>> callerMap = new ConcurrentHashMap<>(128);
   private String cachedClasspath;
   private String cachedAllClasspath;
-  private JavaAnalyzer javaAnalyzer;
+  private transient JavaAnalyzer javaAnalyzer;
   private String[] prevTest;
-  private Properties formatProperties;
+  private transient Properties formatProperties;
+  private boolean subProject;
 
   public Project(final File projectRoot) throws IOException {
     this.projectRoot = projectRoot;
     this.name = projectRoot.getName();
+    this.projectRootPath = this.projectRoot.getCanonicalPath();
     this.initialize();
   }
 
@@ -103,14 +108,6 @@ public abstract class Project implements Serializable {
     return compileResult;
   }
 
-  private static String getCanonicalPath(File f) {
-    try {
-      return f.getCanonicalPath();
-    } catch (IOException e) {
-      throw new UncheckedIOException(e);
-    }
-  }
-
   private static List<File> collectJavaFiles(final Set<File> sourceDirs) {
     return sourceDirs
         .parallelStream()
@@ -120,22 +117,20 @@ public abstract class Project implements Serializable {
         .collect(Collectors.toList());
   }
 
-  public static Project readProjectCache(final File cacheFile) throws IOException {
-    final GlobalCache globalCache = GlobalCache.getInstance();
-    Project tempProject = globalCache.readCacheFromFile(cacheFile, Project.class);
+  public static Project loadProject(final String projectRoot) throws Exception {
+    Project tempProject = ProjectDatabaseHelper.loadProject(projectRoot);
     if (tempProject != null) {
       tempProject.initialize();
     }
     return tempProject;
   }
 
-  public void writeProjectCache(final File cacheFile) {
-    final GlobalCache globalCache = GlobalCache.getInstance();
-    globalCache.asyncWriteCache(cacheFile, this);
+  public void saveProject() {
+    ProjectDatabaseHelper.saveProject(this, true);
   }
 
-  private void initialize() throws IOException {
-    System.setProperty(PROJECT_ROOT_KEY, this.projectRoot.getCanonicalPath());
+  protected void initialize() throws IOException {
+    System.setProperty(PROJECT_ROOT_KEY, this.projectRootPath);
     final File file = new File(projectRoot, FORMATTER_FILE);
     if (file.exists()) {
       System.setProperty(FORMATTER_FILE_KEY, file.getCanonicalPath());
@@ -217,7 +212,7 @@ public abstract class Project implements Serializable {
       return this.cachedClasspath;
     }
 
-    final List<String> classpath = new ArrayList<>(32);
+    final Set<String> classpath = new HashSet<>(32);
 
     this.dependencies
         .stream()
@@ -234,19 +229,19 @@ public abstract class Project implements Serializable {
     return this.cachedClasspath;
   }
 
-  private String allClasspath() {
+  private String allClasspath() throws IOException {
     if (this.cachedAllClasspath != null) {
       return this.cachedAllClasspath;
     }
 
-    final List<String> classpath = new ArrayList<>(32);
+    final Set<String> classpath = new HashSet<>(32);
     this.dependencies
         .stream()
         .map(ProjectDependency::getDependencyFilePath)
         .forEach(classpath::add);
 
-    classpath.add(getCanonicalPath(this.output));
-    classpath.add(getCanonicalPath(this.testOutput));
+    classpath.add(this.output.getCanonicalPath());
+    classpath.add(this.testOutput.getCanonicalPath());
     this.cachedAllClasspath = String.join(File.pathSeparator, classpath);
     return this.cachedAllClasspath;
   }
@@ -259,7 +254,7 @@ public abstract class Project implements Serializable {
 
     final String origin = System.getProperty(PROJECT_ROOT_KEY);
     try {
-      System.setProperty(PROJECT_ROOT_KEY, projectRoot.getCanonicalPath());
+      System.setProperty(PROJECT_ROOT_KEY, projectRootPath);
 
       List<File> files = Project.collectJavaFiles(sources);
       if (files != null && !files.isEmpty()) {
@@ -271,11 +266,6 @@ public abstract class Project implements Serializable {
           this.callerMap.clear();
         }
         final Stopwatch stopwatch = Stopwatch.createStarted();
-        final File callerFile =
-            FileUtils.getProjectDataFile(this.projectRoot, GlobalCache.CALLER_DATA);
-        if (force && callerFile.exists() && !callerFile.delete()) {
-          log.warn("{} delete fail", callerFile);
-        }
 
         files =
             force
@@ -304,7 +294,7 @@ public abstract class Project implements Serializable {
             compileResult.getDiagnostics().size(),
             stopwatch.stop());
 
-        System.setProperty(PROJECT_ROOT_KEY, projectRoot.getCanonicalPath());
+        System.setProperty(PROJECT_ROOT_KEY, projectRootPath);
         return compileResult;
       }
       return new CompileResult(true);
@@ -330,7 +320,7 @@ public abstract class Project implements Serializable {
 
     final String origin = System.getProperty(PROJECT_ROOT_KEY);
     try {
-      System.setProperty(PROJECT_ROOT_KEY, projectRoot.getCanonicalPath());
+      System.setProperty(PROJECT_ROOT_KEY, projectRootPath);
 
       List<File> files = Project.collectJavaFiles(testSources);
       if (files != null && !files.isEmpty()) {
@@ -342,11 +332,6 @@ public abstract class Project implements Serializable {
         }
 
         final Stopwatch stopwatch = Stopwatch.createStarted();
-        final File callerFile =
-            FileUtils.getProjectDataFile(this.projectRoot, GlobalCache.CALLER_DATA);
-        if (force && callerFile.exists() && !callerFile.delete()) {
-          log.warn("{} delete fail", callerFile);
-        }
 
         files =
             force
@@ -375,7 +360,7 @@ public abstract class Project implements Serializable {
             compileResult.getDiagnostics().size(),
             stopwatch.stop());
 
-        System.setProperty(PROJECT_ROOT_KEY, projectRoot.getCanonicalPath());
+        System.setProperty(PROJECT_ROOT_KEY, projectRootPath);
         return compileResult;
       }
       return new CompileResult(true);
@@ -523,6 +508,10 @@ public abstract class Project implements Serializable {
     return projectRoot;
   }
 
+  public String getProjectRootPath() {
+    return projectRootPath;
+  }
+
   public File normalize(String src) {
     File file = new File(src);
     if (!file.isAbsolute()) {
@@ -572,7 +561,7 @@ public abstract class Project implements Serializable {
     try {
       return runUnitTest(test);
     } finally {
-      System.setProperty(PROJECT_ROOT_KEY, this.projectRoot.getCanonicalPath());
+      System.setProperty(PROJECT_ROOT_KEY, this.projectRootPath);
     }
   }
 
@@ -604,7 +593,7 @@ public abstract class Project implements Serializable {
     cmd.add("-Xmx4G");
     cmd.add("-cp");
     cmd.add(cp);
-    cmd.add(String.format("-Dproject.root=%s", this.projectRoot.getCanonicalPath()));
+    cmd.add(String.format("-Dproject.root=%s", this.projectRootPath));
     cmd.add(String.format("-Dmeghanada.output=%s", output.getCanonicalPath()));
     cmd.add(String.format("-Dmeghanada.test-output=%s", testOutput.getCanonicalPath()));
     cmd.add("meghanada.junit.TestRunner");
@@ -770,12 +759,10 @@ public abstract class Project implements Serializable {
     final Set<File> temp = Collections.newSetFromMap(new ConcurrentHashMap<File, Boolean>(16));
     temp.addAll(files);
     temp.addAll(FileUtils.getPackagePrivateSource(files));
-
     sourceRoots
         .parallelStream()
         .forEach(
             root -> {
-              // TODO add same package
               try {
                 final String rootPath = root.getCanonicalPath();
                 for (final File file : files) {
@@ -800,26 +787,32 @@ public abstract class Project implements Serializable {
   }
 
   private synchronized void writeCaller() throws IOException {
-    final File callerFile = FileUtils.getProjectDataFile(this.projectRoot, GlobalCache.CALLER_DATA);
-    GlobalCache.getInstance().asyncWriteCache(callerFile, this.callerMap);
+    ProjectDatabaseHelper.saveCallerMap(this.projectRootPath, this.callerMap);
   }
 
   private void loadCaller() throws IOException {
 
-    System.setProperty(PROJECT_ROOT_KEY, projectRoot.getCanonicalPath());
-    final File callerFile = FileUtils.getProjectDataFile(this.projectRoot, GlobalCache.CALLER_DATA);
-    if (!callerFile.exists()) {
-      return;
-    }
-
-    final GlobalCache globalCache = GlobalCache.getInstance();
     @SuppressWarnings("unchecked")
-    final Map<String, Set<String>> map =
-        globalCache.readCacheFromFile(callerFile, ConcurrentHashMap.class);
+    final Map<String, Set<String>> map = ProjectDatabaseHelper.getCallerMap(this.projectRootPath);
+    this.callerMap = map;
+  }
 
-    if (map != null) {
-      this.callerMap = map;
-    }
+  @Override
+  public String getStoreId() {
+    return this.projectRootPath;
+  }
+
+  @Override
+  public String getEntityType() {
+    return ENTITY_TYPE;
+  }
+
+  @Override
+  @SuppressWarnings("rawtypes")
+  public Map<String, Comparable> getSaveProperties() {
+    Map<String, Comparable> map = new HashMap<>(6);
+    map.put("name", name);
+    return map;
   }
 
   @Override
@@ -836,8 +829,9 @@ public abstract class Project implements Serializable {
   }
 
   public void clearCache() throws IOException {
-    System.setProperty(PROJECT_ROOT_KEY, this.projectRoot.getCanonicalPath());
-    final File projectSettingDir = new File(projectRoot, Config.MEGHANADA_DIR);
+    ProjectDatabaseHelper.shutdown();
+    System.setProperty(PROJECT_ROOT_KEY, this.projectRootPath);
+    final File projectSettingDir = new File(Config.load().getProjectSettingDir());
     log.info("clear cache {}", projectSettingDir);
     FileUtils.deleteFiles(projectSettingDir, false);
   }
@@ -918,13 +912,20 @@ public abstract class Project implements Serializable {
     this.cachedAllClasspath = null;
   }
 
+  public boolean isSubProject() {
+    return subProject;
+  }
+
+  public void setSubProject(boolean subProject) {
+    this.subProject = subProject;
+  }
+
   private static class CompiledSourceHandler implements JavaAnalyzer.SourceAnalyzedHandler {
 
     private final boolean useSourceCache;
     private final Map<String, Set<String>> callerMap;
     private final Map<String, String> checksumMap;
     private final Project project;
-    private final File checksumFile;
 
     CompiledSourceHandler(final Project project, final Map<String, Set<String>> callerMap)
         throws IOException {
@@ -933,61 +934,52 @@ public abstract class Project implements Serializable {
       this.callerMap = callerMap;
       final Config config = Config.load();
       this.useSourceCache = config.useSourceCache();
-      final Map<File, Map<String, String>> checksum = config.getAllChecksumMap();
-      this.checksumFile =
-          FileUtils.getProjectDataFile(project.projectRoot, GlobalCache.SOURCE_CHECKSUM_DATA);
-      this.checksumMap = checksum.getOrDefault(checksumFile, new ConcurrentHashMap<>(64));
+      this.checksumMap = ProjectDatabaseHelper.getChecksumMap(project.projectRootPath);
     }
 
     @Override
     public void analyzed(final Source source) throws IOException {
-      if (useSourceCache) {
-        final GlobalCache globalCache = GlobalCache.getInstance();
-        source
-            .getClassScopes()
-            .forEach(
-                cs -> {
-                  final String fqcn = cs.getFQCN();
-                  source.usingClasses.forEach(
-                      s -> {
-                        if (this.callerMap.containsKey(s)) {
-                          final Set<String> set = this.callerMap.get(s);
-                          set.add(fqcn);
-                          this.callerMap.put(s, set);
-                        } else {
-                          final Set<String> set = new HashSet<>(16);
-                          set.add(fqcn);
-                          this.callerMap.put(s, set);
-                        }
-                      });
-                  source.usingClasses.clear();
-                });
-        final File sourceFile = source.getFile();
-        final String path = sourceFile.getCanonicalPath();
-        try {
-          if (!source.hasCompileError) {
-            final String md5sum = FileUtils.getChecksum(sourceFile);
-            checksumMap.put(path, md5sum);
-            globalCache.replaceSource(this.project, source);
-            globalCache.cacheSource(this.project, source);
+
+      if (!useSourceCache) {
+        return;
+      }
+
+      final GlobalCache globalCache = GlobalCache.getInstance();
+      List<ClassScope> classScopes = source.getClassScopes();
+      for (ClassScope cs : classScopes) {
+        final String fqcn = cs.getFQCN();
+        for (String clazz : source.usingClasses) {
+          if (this.callerMap.containsKey(clazz)) {
+            final Set<String> set = this.callerMap.get(clazz);
+            set.add(fqcn);
+            this.callerMap.put(clazz, set);
           } else {
-            // error
-            checksumMap.remove(path);
-            globalCache.invalidateSource(this.project, sourceFile);
+            final Set<String> set = new HashSet<>(16);
+            set.add(fqcn);
+            this.callerMap.put(clazz, set);
           }
-        } catch (Exception e) {
-          throw new UncheckedExecutionException(e);
         }
+        source.usingClasses.clear();
+      }
+
+      final File sourceFile = source.getFile();
+      final String path = sourceFile.getCanonicalPath();
+      if (!source.hasCompileError) {
+        final String md5sum = FileUtils.getChecksum(sourceFile);
+        checksumMap.put(path, md5sum);
+        globalCache.replaceSource(this.project, source);
+        ProjectDatabaseHelper.saveSource(source);
+      } else {
+        // error
+        checksumMap.remove(path);
+        globalCache.invalidateSource(this.project, sourceFile);
       }
     }
 
     @Override
     public void complete() throws IOException {
-      final Config config = Config.load();
-      final Map<File, Map<String, String>> checksum = config.getAllChecksumMap();
-      FileUtils.writeMapSetting(checksumMap, checksumFile);
-      checksum.put(checksumFile, checksumMap);
-      project.writeCaller();
+      ProjectDatabaseHelper.saveChecksumMap(this.project.projectRootPath, this.checksumMap);
+      this.project.writeCaller();
     }
   }
 }

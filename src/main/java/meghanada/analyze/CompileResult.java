@@ -1,8 +1,13 @@
 package meghanada.analyze;
 
+import static java.util.Objects.isNull;
+import static java.util.Objects.nonNull;
+
 import java.io.File;
-import java.io.Serializable;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.net.URI;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -14,10 +19,14 @@ import java.util.stream.Collectors;
 import javax.tools.Diagnostic;
 import javax.tools.JavaFileObject;
 import javax.tools.SimpleJavaFileObject;
+import jetbrains.exodus.entitystore.Entity;
+import jetbrains.exodus.entitystore.StoreTransaction;
+import meghanada.store.Storable;
 
-public class CompileResult implements Serializable {
+public class CompileResult implements Storable {
 
-  private static final long serialVersionUID = 3418009907363450024L;
+  public static final String DIAGNOSTIC_ENTITY_TYPE = "Diagnostic";
+  public static final String ENTITY_TYPE = "CompileResult";
 
   private final boolean success;
   private final Map<File, Source> sources;
@@ -38,12 +47,14 @@ public class CompileResult implements Serializable {
       final Map<File, Source> sources,
       final List<Diagnostic<? extends JavaFileObject>> diagnostics,
       final Set<File> errorFiles) {
+
     this(success, sources);
     this.diagnostics = new ArrayList<>(diagnostics);
     this.errorFiles = errorFiles;
   }
 
   public static Diagnostic<? extends JavaFileObject> getDiagnosticFromThrowable(final Throwable t) {
+
     final int length = t.getStackTrace().length;
     if (length > 0) {
       final StackTraceElement st = t.getStackTrace()[0];
@@ -67,7 +78,7 @@ public class CompileResult implements Serializable {
   }
 
   public boolean hasDiagnostics() {
-    return diagnostics != null && diagnostics.size() > 0;
+    return nonNull(diagnostics) && !diagnostics.isEmpty();
   }
 
   public String getDiagnosticsSummary() {
@@ -84,6 +95,71 @@ public class CompileResult implements Serializable {
 
   public Set<File> getErrorFiles() {
     return errorFiles;
+  }
+
+  @Override
+  public String getStoreId() {
+    long now = Instant.now().getEpochSecond();
+    return Long.toString(now);
+  }
+
+  @Override
+  public String getEntityType() {
+    return ENTITY_TYPE;
+  }
+
+  @Override
+  @SuppressWarnings("rawtypes")
+  public Map<String, Comparable> getSaveProperties() {
+
+    Map<String, Comparable> prop = new HashMap<>(3);
+    long now = Instant.now().getEpochSecond();
+    prop.put("createdAt", now);
+    prop.put("result", this.success);
+    prop.put("problems", this.diagnostics.size());
+    return prop;
+  }
+
+  @Override
+  public void storeExtraData(StoreTransaction txn, Entity mainEntity) {
+
+    for (Diagnostic<? extends JavaFileObject> diagnostic : this.diagnostics) {
+      String kind = diagnostic.getKind().toString();
+      long line = diagnostic.getLineNumber();
+      long column = diagnostic.getColumnNumber();
+
+      String message = diagnostic.getMessage(null);
+      if (isNull(message)) {
+        message = "";
+      }
+      JavaFileObject fileObject = diagnostic.getSource();
+      String path = null;
+      if (fileObject != null) {
+        final URI uri = fileObject.toUri();
+        final File file = new File(uri);
+        try {
+          path = file.getCanonicalPath();
+        } catch (IOException e) {
+          throw new UncheckedIOException(e);
+        }
+      }
+
+      String code = diagnostic.getCode();
+      Entity entity = txn.newEntity(CompileResult.DIAGNOSTIC_ENTITY_TYPE);
+      entity.setProperty("kind", kind);
+      entity.setProperty("line", line);
+      entity.setProperty("column", column);
+      entity.setProperty("message", message);
+      if (nonNull(path)) {
+        entity.setProperty("path", path);
+      }
+      if (nonNull(code)) {
+        entity.setProperty("code", code);
+      }
+
+      // txn.saveEntity(entity);
+      mainEntity.addLink("diagnostic", entity);
+    }
   }
 
   static class JavaDiagnostic implements Diagnostic<JavaFileObject> {

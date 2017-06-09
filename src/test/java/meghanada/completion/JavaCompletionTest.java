@@ -7,21 +7,10 @@ import java.io.File;
 import java.util.Collection;
 import meghanada.GradleTestBase;
 import meghanada.reflect.CandidateUnit;
-import meghanada.reflect.asm.CachedASMReflector;
-import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
 public class JavaCompletionTest extends GradleTestBase {
-
-  @BeforeClass
-  public static void beforeClass() throws Exception {
-    GradleTestBase.setupReflector();
-    CachedASMReflector cachedASMReflector = CachedASMReflector.getInstance();
-    cachedASMReflector.addClasspath(getOutputDir());
-    cachedASMReflector.addClasspath(getTestOutputDir());
-    cachedASMReflector.createClassIndexes();
-  }
 
   @Test
   public void testCompletion01() throws Exception {
@@ -66,7 +55,7 @@ public class JavaCompletionTest extends GradleTestBase {
     final Collection<? extends CandidateUnit> units =
         timeIt(() -> completion.completionAt(file, 8, 9, "@Test"));
     units.forEach(a -> System.out.println(a.getDeclaration()));
-    assertEquals(5, units.size());
+    assertEquals(6, units.size());
   }
 
   @Test
@@ -93,7 +82,7 @@ public class JavaCompletionTest extends GradleTestBase {
         new File("./src/main/java/meghanada/analyze/ExpressionScope.java").getCanonicalFile();
     assert file.exists();
     final Collection<? extends CandidateUnit> logMethod =
-        timeIt(() -> completion.completionAt(file, 17, 4, "*log#"));
+        timeIt(() -> completion.completionAt(file, 18, 4, "*log#"));
     logMethod.forEach(a -> System.out.println(a.getDeclaration()));
     assertEquals(369, logMethod.size());
   }

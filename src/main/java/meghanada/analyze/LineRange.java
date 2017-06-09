@@ -16,7 +16,7 @@ public class LineRange implements Serializable {
     this.endPos = endPos;
   }
 
-  public boolean contains(int pos) {
+  public boolean contains(final int pos) {
     return this.startPos <= pos && pos <= this.endPos;
   }
 

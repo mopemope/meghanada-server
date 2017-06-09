@@ -1,5 +1,8 @@
 package meghanada.reflect;
 
+import static java.util.Objects.isNull;
+import static java.util.Objects.nonNull;
+
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Objects;
 import java.util.Collections;
@@ -31,9 +34,10 @@ public class MethodDescriptor extends MemberDescriptor {
       final String[] exceptions,
       final String returnType,
       final boolean hashDefault) {
+
     this.declaringClass = declaringClass;
     this.name = name.trim();
-    if (modifier == null) {
+    if (isNull(modifier)) {
       this.modifier = "";
     } else {
       this.modifier = modifier.trim();
@@ -48,7 +52,7 @@ public class MethodDescriptor extends MemberDescriptor {
 
   private String getException() {
     StringBuilder exBuilder = new StringBuilder(32);
-    if (exceptions != null && exceptions.length > 0) {
+    if (nonNull(exceptions) && exceptions.length > 0) {
       exBuilder.append("throws ");
       for (String ex : exceptions) {
         if (exBuilder.length() > 7) {
@@ -66,13 +70,13 @@ public class MethodDescriptor extends MemberDescriptor {
     if (this.memberType.equals(MemberType.CONSTRUCTOR)) {
       String s = this.getConstructorDeclaration();
       if (this.hasTypeParameters()) {
-        s = renderTypeParameters(s, formalType != null);
+        s = renderTypeParameters(s, nonNull(formalType));
       }
       return ClassNameUtils.replaceInnerMark(s);
     } else {
       String s = this.getMethodDeclaration();
       if (this.hasTypeParameters()) {
-        s = renderTypeParameters(s, formalType != null);
+        s = renderTypeParameters(s, nonNull(formalType));
       }
       return ClassNameUtils.replaceInnerMark(s);
     }
@@ -80,7 +84,7 @@ public class MethodDescriptor extends MemberDescriptor {
 
   private StringBuilder appendParameters(final StringBuilder sb) {
 
-    if (this.parameters != null) {
+    if (nonNull(this.parameters)) {
       final Iterator<MethodParameter> iterator = this.parameters.iterator();
 
       while (iterator.hasNext()) {
@@ -95,7 +99,7 @@ public class MethodDescriptor extends MemberDescriptor {
 
   private StringBuilder appendParameterTypes(final StringBuilder sb) {
 
-    if (this.parameters != null) {
+    if (nonNull(this.parameters)) {
       final Iterator<MethodParameter> iterator = this.parameters.iterator();
 
       while (iterator.hasNext()) {
@@ -119,7 +123,7 @@ public class MethodDescriptor extends MemberDescriptor {
   private String getConstructorDeclaration() {
     final StringBuilder sb = new StringBuilder(64);
 
-    if (this.modifier != null && modifier.length() > 0) {
+    if (nonNull(this.modifier) && !modifier.isEmpty()) {
       sb.append(this.modifier).append(' ');
     }
     sb.append(this.getDisplayDeclaration()).append(' ');
@@ -134,10 +138,10 @@ public class MethodDescriptor extends MemberDescriptor {
 
   private String getMethodDeclaration() {
     final StringBuilder sb = new StringBuilder(64);
-    if (this.modifier != null && !this.modifier.isEmpty()) {
+    if (nonNull(this.modifier) && !this.modifier.isEmpty()) {
       sb.append(this.modifier).append(' ');
     }
-    if (this.formalType != null) {
+    if (nonNull(this.formalType)) {
       sb.append(this.formalType).append(' ');
     }
     sb.append(this.getDisplayDeclaration()).append(' ');
@@ -149,13 +153,13 @@ public class MethodDescriptor extends MemberDescriptor {
     if (this.memberType.equals(MemberType.CONSTRUCTOR)) {
       String s = this.getConstructorDisplayDeclaration();
       if (this.hasTypeParameters()) {
-        s = renderTypeParameters(s, formalType != null);
+        s = renderTypeParameters(s, nonNull(formalType));
       }
       return ClassNameUtils.replaceInnerMark(s);
     } else {
       String s = this.getMethodDisplayDeclaration();
       if (this.hasTypeParameters()) {
-        s = renderTypeParameters(s, formalType != null);
+        s = renderTypeParameters(s, nonNull(formalType));
       }
       return ClassNameUtils.replaceInnerMark(s);
     }
@@ -164,10 +168,10 @@ public class MethodDescriptor extends MemberDescriptor {
   @Nullable
   @Override
   public String getReturnType() {
-    if (this.returnType != null) {
+    if (nonNull(this.returnType)) {
       final String rt = this.returnType;
       if (this.hasTypeParameters()) {
-        return this.renderTypeParameters(rt, formalType != null);
+        return this.renderTypeParameters(rt, nonNull(formalType));
       }
       return rt;
     }
@@ -221,14 +225,14 @@ public class MethodDescriptor extends MemberDescriptor {
 
   @Override
   public String getRawReturnType() {
-    if (this.returnType != null && this.hasTypeParameters()) {
-      return renderTypeParameters(this.returnType, formalType != null);
+    if (nonNull(this.returnType) && this.hasTypeParameters()) {
+      return renderTypeParameters(this.returnType, nonNull(formalType));
     }
     return returnType;
   }
 
   public boolean containsTypeParameter(String typeParameter) {
-    return this.typeParameters != null && this.typeParameters.contains(typeParameter);
+    return nonNull(this.typeParameters) && this.typeParameters.contains(typeParameter);
   }
 
   @Override
@@ -242,12 +246,12 @@ public class MethodDescriptor extends MemberDescriptor {
 
   @Override
   public List<String> getParameters() {
-    if (this.parameters == null) {
+    if (isNull(this.parameters)) {
       return Collections.emptyList();
     }
     return this.parameters
         .stream()
-        .map(p -> renderTypeParameters(p.type, formalType != null))
+        .map(p -> renderTypeParameters(p.type, nonNull(formalType)))
         .collect(Collectors.toList());
   }
 

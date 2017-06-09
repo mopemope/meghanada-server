@@ -1,5 +1,7 @@
 package meghanada.analyze;
 
+import static java.util.Objects.nonNull;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -55,7 +57,7 @@ public class TypeScope extends MethodScope {
 
   public AccessSymbol getExpressionReturn(final int line) {
     final Scope scope = getScope(line, super.scopes);
-    if (scope != null && (scope instanceof BlockScope)) {
+    if (nonNull(scope) && (scope instanceof BlockScope)) {
       final BlockScope blockScope = (BlockScope) scope;
       final Optional<ExpressionScope> result = blockScope.getExpression(line);
       final Optional<AccessSymbol> accessSymbol =
@@ -73,12 +75,12 @@ public class TypeScope extends MethodScope {
   public List<MethodCall> getMethodCall(final int line) {
     for (final ExpressionScope expressionScope : expressions) {
       final List<MethodCall> methodCalls = expressionScope.getMethodCall(line);
-      if (methodCalls != null && !methodCalls.isEmpty()) {
+      if (nonNull(methodCalls) && !methodCalls.isEmpty()) {
         return methodCalls;
       }
     }
     final Scope scope = getScope(line, super.scopes);
-    if (scope != null) {
+    if (nonNull(scope)) {
       return scope.getMethodCall(line);
     }
     return super.methodCalls

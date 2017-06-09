@@ -34,9 +34,9 @@ public class ClassSignatureVisitorTest extends GradleTestBase {
 
     assertEquals(expected, visitor.getTypeParameters());
     final ClassIndex index = visitor.getClassIndex();
-    System.out.println(index.isInterface);
-    assertEquals(true, index.isInterface);
-    assertEquals(0, index.supers.size());
+    System.out.println(index.isInterface());
+    assertEquals(true, index.isInterface());
+    assertEquals(0, index.getSupers().size());
   }
 
   @org.junit.Test
@@ -52,8 +52,8 @@ public class ClassSignatureVisitorTest extends GradleTestBase {
 
     assertEquals(expected, visitor.getTypeParameters());
     final ClassIndex index = visitor.getClassIndex();
-    assertEquals(true, index.isInterface);
-    assertEquals(1, index.supers.size());
+    assertEquals(true, index.isInterface());
+    assertEquals(1, index.getSupers().size());
   }
 
   @org.junit.Test
@@ -69,8 +69,8 @@ public class ClassSignatureVisitorTest extends GradleTestBase {
 
     assertEquals(expected, visitor.getTypeParameters());
     final ClassIndex index = visitor.getClassIndex();
-    assertEquals(true, index.isInterface);
-    assertEquals(0, index.supers.size());
+    assertEquals(true, index.isInterface());
+    assertEquals(0, index.getSupers().size());
   }
 
   @org.junit.Test
@@ -88,8 +88,8 @@ public class ClassSignatureVisitorTest extends GradleTestBase {
 
     visitor.getSuperClasses().forEach(cd -> System.out.println("super:" + cd.getClassName()));
     final ClassIndex index = visitor.getClassIndex();
-    assertEquals(false, index.isInterface);
-    assertEquals(2, index.supers.size());
+    assertEquals(false, index.isInterface());
+    assertEquals(2, index.getSupers().size());
   }
 
   @org.junit.Test

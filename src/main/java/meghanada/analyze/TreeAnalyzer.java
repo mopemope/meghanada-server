@@ -1,6 +1,7 @@
 package meghanada.analyze;
 
-import static meghanada.utils.FunctionUtils.wrapIOConsumer;
+import static java.util.Objects.isNull;
+import static java.util.Objects.nonNull;
 
 import com.google.common.base.Joiner;
 import com.sun.source.tree.CompilationUnitTree;
@@ -30,6 +31,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.Name;
+import meghanada.reflect.ClassIndex;
 import meghanada.reflect.asm.CachedASMReflector;
 import meghanada.utils.ClassName;
 import meghanada.utils.ClassNameUtils;
@@ -40,7 +42,6 @@ import org.apache.logging.log4j.message.EntryMessage;
 public class TreeAnalyzer {
 
   private static final Logger log = LogManager.getLogger(TreeAnalyzer.class);
-  private static final int SOURCE_LIMIT = 16;
 
   TreeAnalyzer() {}
 
@@ -230,8 +231,8 @@ public class TreeAnalyzer {
     }
 
     final CachedASMReflector cachedASMReflector = CachedASMReflector.getInstance();
-    if (!src.importClasses.contains(simpleName)
-        && !cachedASMReflector.getGlobalClassIndex().containsKey(simpleName)) {
+    Map<String, ClassIndex> classIndex = cachedASMReflector.getGlobalClassIndex();
+    if (!src.importClasses.contains(simpleName) && !classIndex.containsKey(simpleName)) {
 
       src.addUnknown(simpleName);
 
@@ -313,7 +314,7 @@ public class TreeAnalyzer {
     currentScope.ifPresent(
         sc -> {
           if (variable.fqcn != null) {
-            if (variable.parameter) {
+            if (variable.isParameter) {
               Scope parent = sc;
               if (sc instanceof ExpressionScope) {
                 final ExpressionScope expressionScope1 = (ExpressionScope) sc;
@@ -345,7 +346,7 @@ public class TreeAnalyzer {
       type = src.getImportedClassFQCN(type, type);
 
       if (vd.getTag().equals(JCTree.Tag.VARDEF)) {
-        variable.def = true;
+        variable.isDef = true;
       }
 
       final String typeSym = typeTree.toString();
@@ -365,9 +366,9 @@ public class TreeAnalyzer {
     final Source src = context.getSource();
     log.trace("file={}", src.getFile());
     if (packageExpr == null) {
-      src.packageName = "";
+      src.setPackageName("");
     } else {
-      src.packageName = packageExpr.toString();
+      src.setPackageName(packageExpr.toString());
     }
 
     final EndPosTable endPosTable = ((JCTree.JCCompilationUnit) cut).endPositions;
@@ -411,7 +412,7 @@ public class TreeAnalyzer {
         }
       }
     }
-    src.classStartLine = firstLine;
+    src.setClassStartLine(firstLine);
 
     try {
 
@@ -451,10 +452,10 @@ public class TreeAnalyzer {
           final Range nameRange = Range.create(src, nameStart, nameStart + simpleName.length());
 
           final String fqcn;
-          if (src.packageName == null || src.packageName.isEmpty()) {
+          if (src.getPackageName().isEmpty()) {
             fqcn = simpleName.toString();
           } else {
-            fqcn = src.packageName + '.' + simpleName.toString();
+            fqcn = src.getPackageName() + '.' + simpleName.toString();
           }
           final ClassScope classScope = new ClassScope(fqcn, nameRange, startPos, range);
           classScope.isEnum = isEnum;
@@ -773,6 +774,7 @@ public class TreeAnalyzer {
       }
 
     } else if (tree instanceof JCTree.JCSynchronized) {
+
       final JCTree.JCSynchronized jcSynchronized = (JCTree.JCSynchronized) tree;
       final JCTree.JCExpression expression = jcSynchronized.getExpression();
       if (expression != null) {
@@ -782,6 +784,7 @@ public class TreeAnalyzer {
       if (block != null) {
         this.analyzeParsedTree(context, block);
       }
+
     } else if (tree instanceof JCTree.JCAssert) {
 
       final JCTree.JCAssert jcAssert = (JCTree.JCAssert) tree;
@@ -793,13 +796,17 @@ public class TreeAnalyzer {
       if (detail != null) {
         this.analyzeParsedTree(context, detail);
       }
+
     } else if (tree instanceof JCTree.JCArrayTypeTree) {
+
       final JCTree.JCArrayTypeTree arrayTypeTree = (JCTree.JCArrayTypeTree) tree;
       final JCTree type = arrayTypeTree.getType();
       if (type != null) {
         this.analyzeParsedTree(context, type);
       }
+
     } else if (tree instanceof JCTree.JCDoWhileLoop) {
+
       final JCTree.JCDoWhileLoop doWhileLoop = (JCTree.JCDoWhileLoop) tree;
       final JCTree.JCExpression condition = doWhileLoop.getCondition();
       if (condition != null) {
@@ -809,36 +816,56 @@ public class TreeAnalyzer {
       if (statement != null) {
         this.analyzeParsedTree(context, statement);
       }
+
     } else if (tree instanceof JCTree.JCLabeledStatement) {
+
       final JCTree.JCLabeledStatement labeledStatement = (JCTree.JCLabeledStatement) tree;
       final JCTree.JCStatement statement = labeledStatement.getStatement();
       if (statement != null) {
         this.analyzeParsedTree(context, statement);
       }
+
     } else if (tree instanceof JCTree.JCTypeApply) {
+
       final JCTree.JCTypeApply typeApply = (JCTree.JCTypeApply) tree;
       final JCTree type = typeApply.getType();
       if (type != null) {
         this.analyzeParsedTree(context, type);
       }
+
     } else if (tree instanceof JCTree.JCAssignOp) {
+
       final JCTree.JCAssignOp assignOp = (JCTree.JCAssignOp) tree;
       final JCTree.JCExpression expression = assignOp.getExpression();
       if (expression != null) {
         this.analyzeParsedTree(context, expression);
       }
+
     } else if (tree instanceof JCTree.JCAnnotation) {
+
       final JCTree.JCAnnotation annotation = (JCTree.JCAnnotation) tree;
       for (final JCTree.JCExpression expression : annotation.getArguments()) {
         this.analyzeParsedTree(context, expression);
       }
       final JCTree annotationType = annotation.getAnnotationType();
       this.analyzeParsedTree(context, annotationType);
+
     } else if (tree instanceof JCTree.JCSkip) {
+
       // skip
+
+    } else if (tree instanceof JCTree.JCErroneous) {
+
+      // skip error
+
     } else {
+
       Source src = context.getSource();
-      log.warn("@@ unknown tree class={} expr={} filePath={}", tree.getClass(), tree, src.filePath);
+      log.warn(
+          "@@ unknown or broken tree class={} expr={} filePath={}",
+          tree.getClass(),
+          tree,
+          src.filePath);
     }
 
     log.traceExit(entryMessage);
@@ -982,16 +1009,16 @@ public class TreeAnalyzer {
   }
 
   private Optional<String> getTypeString(final Source src, @Nullable final Type type) {
-    if (type == null) {
+    if (isNull(type)) {
       return Optional.empty();
     }
     if (type instanceof Type.ErrorType) {
       final Type originalType = type.getOriginalType();
-      if (originalType == null) {
+      if (isNull(originalType)) {
         return Optional.empty();
       }
       String s;
-      if (originalType != null && originalType.toString().equals("<any>")) {
+      if (originalType.toString().equals("<any>")) {
         s = type.toString();
       } else {
         s = originalType.toString();
@@ -999,17 +1026,18 @@ public class TreeAnalyzer {
       src.addUnknown(s);
       return Optional.empty();
     }
+
     if (type instanceof Type.CapturedType) {
       final Type.CapturedType capturedType = (Type.CapturedType) type;
       final Type.WildcardType wildcardType = capturedType.wildcard;
       if (wildcardType.kind.toString().equals("?")) {
         final Type upperBound = type.getUpperBound();
-        if (upperBound != null && upperBound.tsym != null) {
+        if (nonNull(upperBound) && nonNull(upperBound.tsym)) {
           final String s = upperBound.tsym.flatName().toString();
           return Optional.of(s);
         }
       }
-      if (wildcardType.type != null && wildcardType.type.tsym != null) {
+      if (nonNull(wildcardType.type) && nonNull(wildcardType.type.tsym)) {
         final String s =
             wildcardType.kind.toString() + wildcardType.type.tsym.flatName().toString();
         return Optional.of(s);
@@ -1018,19 +1046,19 @@ public class TreeAnalyzer {
     } else if (type instanceof Type.ArrayType) {
       final Type.ArrayType arrayType = (Type.ArrayType) type;
       final Type componentType = arrayType.getComponentType();
-      if (componentType != null && componentType.tsym != null) {
+      if (nonNull(componentType) && nonNull(componentType.tsym)) {
         final String s = arrayType.toString();
         return Optional.of(s);
       }
       return Optional.empty();
     } else if (type instanceof Type.WildcardType) {
       final Type.WildcardType wildcardType = (Type.WildcardType) type;
-      if (wildcardType.type != null) {
-        if (wildcardType.kind.toString().equals("?") && wildcardType.type.tsym != null) {
+      if (nonNull(wildcardType.type)) {
+        if (wildcardType.kind.toString().equals("?") && nonNull(wildcardType.type.tsym)) {
           final String s = wildcardType.type.tsym.flatName().toString();
           return Optional.of(s);
         }
-        if (wildcardType.type.tsym != null) {
+        if (nonNull(wildcardType.type.tsym)) {
           final String s =
               wildcardType.kind.toString() + wildcardType.type.tsym.flatName().toString();
           return Optional.of(s);
@@ -1040,7 +1068,7 @@ public class TreeAnalyzer {
     } else if (type instanceof Type.MethodType) {
       final Type.MethodType methodType = (Type.MethodType) type;
       final Type returnType = methodType.getReturnType();
-      if (returnType != null && returnType.tsym != null) {
+      if (nonNull(returnType) && nonNull(returnType.tsym)) {
         String baseType = returnType.tsym.flatName().toString();
         final List<Type> typeArguments = returnType.getTypeArguments();
         baseType = getFlatName(src, baseType, typeArguments);
@@ -1051,7 +1079,7 @@ public class TreeAnalyzer {
       if (type.toString().equals("?")) {
         return Optional.of(ClassNameUtils.OBJECT_CLASS);
       }
-      if (type.tsym == null) {
+      if (isNull(type.tsym)) {
         return Optional.empty();
       }
       String baseType = type.tsym.flatName().toString();
@@ -1089,6 +1117,7 @@ public class TreeAnalyzer {
       int preferredPos,
       int endPos)
       throws IOException {
+
     final Source src = context.getSource();
     EndPosTable endPosTable = context.getEndPosTable();
     final Type returnType = methodInvocation.type;
@@ -1097,6 +1126,7 @@ public class TreeAnalyzer {
     final int argumentIndex = context.getArgumentIndex();
     final List<JCTree.JCExpression> argumentExpressions = methodInvocation.getArguments();
     final java.util.List<String> arguments = getArgumentsType(context, argumentExpressions);
+
     context.setParameter(isParameter);
     context.setArgumentIndex(argumentIndex);
 
@@ -1107,7 +1137,7 @@ public class TreeAnalyzer {
       final JCTree.JCIdent ident = (JCTree.JCIdent) methodSelect;
       final String s = ident.getName().toString();
       final Symbol sym = ident.sym;
-      if (sym != null) {
+      if (nonNull(sym)) {
         final Symbol owner = sym.owner;
         final int nameBegin = ident.getStartPosition();
         final int nameEnd = ident.getEndPosition(endPosTable);
@@ -1116,11 +1146,13 @@ public class TreeAnalyzer {
 
         if (s.equals("super")) {
           // call super constructor
-          if (owner != null && owner.type != null) {
+          if (nonNull(owner) && nonNull(owner.type)) {
             final String constructor = owner.flatName().toString();
             final MethodCall mc = new MethodCall(s, constructor, nameBegin, nameRange, range);
+
             this.getTypeString(src, owner.type)
                 .ifPresent(fqcn -> mc.declaringClass = TreeAnalyzer.markFQCN(src, fqcn));
+
             this.setReturnTypeAndArgType(context, src, owner.type, mc);
             src.getCurrentScope()
                 .ifPresent(
@@ -1129,9 +1161,10 @@ public class TreeAnalyzer {
                       scope.addMethodCall(mc);
                     });
           }
+
         } else {
           final MethodCall mc = new MethodCall(s, preferredPos + 1, nameRange, range);
-          if (owner != null && owner.type != null) {
+          if (nonNull(owner) && nonNull(owner.type)) {
             this.getTypeString(src, owner.type)
                 .ifPresent(
                     fqcn -> {
@@ -1149,9 +1182,7 @@ public class TreeAnalyzer {
           src.getCurrentScope()
               .ifPresent(
                   scope -> {
-                    if (arguments != null) {
-                      mc.setArguments(arguments);
-                    }
+                    mc.setArguments(arguments);
                     scope.addMethodCall(mc);
                   });
         }
@@ -1169,13 +1200,13 @@ public class TreeAnalyzer {
       final Range range = Range.create(src, start, endPos);
       final MethodCall methodCall = new MethodCall(selectScope, name, start + 1, nameRange, range);
 
-      if (owner == null) {
+      if (isNull(owner)) {
         // call static
         if (expression instanceof JCTree.JCIdent) {
           final JCTree.JCIdent ident = (JCTree.JCIdent) expression;
           final String nm = ident.getName().toString();
           final String clazz = src.getImportedClassFQCN(nm, null);
-          if (clazz != null) {
+          if (nonNull(clazz)) {
             methodCall.declaringClass = TreeAnalyzer.markFQCN(src, clazz);
           } else {
             if (src.isReportUnknown()) {
@@ -1200,12 +1231,12 @@ public class TreeAnalyzer {
             .ifPresent(fqcn -> methodCall.declaringClass = TreeAnalyzer.markFQCN(src, fqcn));
       }
 
-      if (returnType == null) {
+      if (isNull(returnType)) {
         if (expression instanceof JCTree.JCIdent) {
           final JCTree.JCIdent ident = (JCTree.JCIdent) expression;
           final String nm = ident.getName().toString();
           final String clazz = src.getImportedClassFQCN(nm, null);
-          if (clazz != null) {
+          if (nonNull(clazz)) {
             methodCall.returnType = TreeAnalyzer.markFQCN(src, clazz);
             methodCall.argumentIndex = context.getArgumentIndex();
             context.setArgumentFQCN(methodCall.returnType);
@@ -1239,9 +1270,7 @@ public class TreeAnalyzer {
       src.getCurrentScope()
           .ifPresent(
               scope -> {
-                if (arguments != null) {
-                  methodCall.setArguments(arguments);
-                }
+                methodCall.setArguments(arguments);
                 scope.addMethodCall(methodCall);
               });
 
@@ -1345,113 +1374,115 @@ public class TreeAnalyzer {
 
     src.getCurrentBlock()
         .ifPresent(
-            wrapIOConsumer(
-                blockScope -> {
-                  final Range range = Range.create(src, preferredPos, endPos);
+            bs -> {
+              try {
+                final Range range = Range.create(src, preferredPos, endPos);
 
-                  final ExpressionScope expressionScope = new ExpressionScope(preferredPos, range);
-                  if (blockScope instanceof ClassScope) {
-                    expressionScope.isField = true;
+                final ExpressionScope expressionScope = new ExpressionScope(preferredPos, range);
+                if (bs instanceof ClassScope) {
+                  expressionScope.isField = true;
+                }
+                bs.startExpression(expressionScope);
+                if (expressionKind.equals(Tree.Kind.ASSIGNMENT)) {
+                  final JCTree.JCAssign assign = (JCTree.JCAssign) expressionTree;
+                  final JCTree.JCExpression lhs = assign.lhs;
+                  final JCTree.JCExpression rhs = assign.rhs;
+                  if (lhs != null) {
+                    this.analyzeParsedTree(context, lhs);
                   }
-                  blockScope.startExpression(expressionScope);
-                  if (expressionKind.equals(Tree.Kind.ASSIGNMENT)) {
-                    final JCTree.JCAssign assign = (JCTree.JCAssign) expressionTree;
-                    final JCTree.JCExpression lhs = assign.lhs;
-                    final JCTree.JCExpression rhs = assign.rhs;
+                  if (rhs != null) {
+                    this.analyzeParsedTree(context, rhs);
+                  }
+                } else if (expressionKind.equals(Tree.Kind.METHOD_INVOCATION)) {
+                  final JCTree.JCMethodInvocation methodInvocation =
+                      (JCTree.JCMethodInvocation) expressionTree;
+                  this.analyzeParsedTree(context, methodInvocation);
+                } else if (expressionKind.equals(Tree.Kind.POSTFIX_DECREMENT)
+                    || expressionKind.equals(Tree.Kind.POSTFIX_INCREMENT)) {
+                  if (expressionTree instanceof JCTree.JCUnary) {
+                    final JCTree.JCUnary jcUnary = (JCTree.JCUnary) expressionTree;
+                    final JCTree.JCExpression args = jcUnary.getExpression();
+                    if (args != null) {
+                      this.analyzeParsedTree(context, args);
+                    }
+                  } else {
+                    log.warn(
+                        "POSTFIX_XXXXX expressionKind:{} tree:{}",
+                        expressionKind,
+                        expressionTree.getClass());
+                  }
+
+                } else if (expressionKind.equals(Tree.Kind.PREFIX_DECREMENT)
+                    || expressionKind.equals(Tree.Kind.PREFIX_INCREMENT)) {
+                  if (expressionTree instanceof JCTree.JCUnary) {
+                    final JCTree.JCUnary jcUnary = (JCTree.JCUnary) expressionTree;
+                    final JCTree.JCExpression args = jcUnary.getExpression();
+                    if (args != null) {
+                      this.analyzeParsedTree(context, args);
+                    }
+                  } else {
+                    log.warn(
+                        "PREFIX_XXXXX expressionKind:{} tree:{}",
+                        expressionKind,
+                        expressionTree.getClass());
+                  }
+                } else if (expressionKind.equals(Tree.Kind.PLUS_ASSIGNMENT)
+                    || expressionKind.equals(Tree.Kind.MINUS_ASSIGNMENT)
+                    || expressionKind.equals(Tree.Kind.AND_ASSIGNMENT)
+                    || expressionKind.equals(Tree.Kind.OR_ASSIGNMENT)
+                    || expressionKind.equals(Tree.Kind.XOR_ASSIGNMENT)
+                    || expressionKind.equals(Tree.Kind.DIVIDE_ASSIGNMENT)
+                    || expressionKind.equals(Tree.Kind.LEFT_SHIFT_ASSIGNMENT)
+                    || expressionKind.equals(Tree.Kind.RIGHT_SHIFT_ASSIGNMENT)
+                    || expressionKind.equals(Tree.Kind.UNSIGNED_RIGHT_SHIFT_ASSIGNMENT)
+                    || expressionKind.equals(Tree.Kind.REMAINDER_ASSIGNMENT)
+                    || expressionKind.equals(Tree.Kind.MULTIPLY_ASSIGNMENT)) {
+                  if (expressionTree instanceof JCTree.JCAssignOp) {
+                    final JCTree.JCAssignOp assignOp = (JCTree.JCAssignOp) expressionTree;
+                    final JCTree.JCExpression lhs = assignOp.lhs;
+                    final JCTree.JCExpression rhs = assignOp.rhs;
                     if (lhs != null) {
                       this.analyzeParsedTree(context, lhs);
                     }
                     if (rhs != null) {
                       this.analyzeParsedTree(context, rhs);
                     }
-                  } else if (expressionKind.equals(Tree.Kind.METHOD_INVOCATION)) {
-                    final JCTree.JCMethodInvocation methodInvocation =
-                        (JCTree.JCMethodInvocation) expressionTree;
-                    this.analyzeParsedTree(context, methodInvocation);
-                  } else if (expressionKind.equals(Tree.Kind.POSTFIX_DECREMENT)
-                      || expressionKind.equals(Tree.Kind.POSTFIX_INCREMENT)) {
-                    if (expressionTree instanceof JCTree.JCUnary) {
-                      final JCTree.JCUnary jcUnary = (JCTree.JCUnary) expressionTree;
-                      final JCTree.JCExpression args = jcUnary.getExpression();
-                      if (args != null) {
-                        this.analyzeParsedTree(context, args);
-                      }
-                    } else {
-                      log.warn(
-                          "POSTFIX_XXXXX expressionKind:{} tree:{}",
-                          expressionKind,
-                          expressionTree.getClass());
-                    }
-
-                  } else if (expressionKind.equals(Tree.Kind.PREFIX_DECREMENT)
-                      || expressionKind.equals(Tree.Kind.PREFIX_INCREMENT)) {
-                    if (expressionTree instanceof JCTree.JCUnary) {
-                      final JCTree.JCUnary jcUnary = (JCTree.JCUnary) expressionTree;
-                      final JCTree.JCExpression args = jcUnary.getExpression();
-                      if (args != null) {
-                        this.analyzeParsedTree(context, args);
-                      }
-                    } else {
-                      log.warn(
-                          "PREFIX_XXXXX expressionKind:{} tree:{}",
-                          expressionKind,
-                          expressionTree.getClass());
-                    }
-                  } else if (expressionKind.equals(Tree.Kind.PLUS_ASSIGNMENT)
-                      || expressionKind.equals(Tree.Kind.MINUS_ASSIGNMENT)
-                      || expressionKind.equals(Tree.Kind.AND_ASSIGNMENT)
-                      || expressionKind.equals(Tree.Kind.OR_ASSIGNMENT)
-                      || expressionKind.equals(Tree.Kind.XOR_ASSIGNMENT)
-                      || expressionKind.equals(Tree.Kind.DIVIDE_ASSIGNMENT)
-                      || expressionKind.equals(Tree.Kind.LEFT_SHIFT_ASSIGNMENT)
-                      || expressionKind.equals(Tree.Kind.RIGHT_SHIFT_ASSIGNMENT)
-                      || expressionKind.equals(Tree.Kind.UNSIGNED_RIGHT_SHIFT_ASSIGNMENT)
-                      || expressionKind.equals(Tree.Kind.REMAINDER_ASSIGNMENT)
-                      || expressionKind.equals(Tree.Kind.MULTIPLY_ASSIGNMENT)) {
-                    if (expressionTree instanceof JCTree.JCAssignOp) {
-                      final JCTree.JCAssignOp assignOp = (JCTree.JCAssignOp) expressionTree;
-                      final JCTree.JCExpression lhs = assignOp.lhs;
-                      final JCTree.JCExpression rhs = assignOp.rhs;
-                      if (lhs != null) {
-                        this.analyzeParsedTree(context, lhs);
-                      }
-                      if (rhs != null) {
-                        this.analyzeParsedTree(context, rhs);
-                      }
-                    } else {
-                      log.warn(
-                          "XXXX_ASSIGNMENT expressionKind:{} tree:{}",
-                          expressionKind,
-                          expressionTree.getClass());
-                    }
-                  } else if (expressionKind.equals(Tree.Kind.NEW_CLASS)) {
-                    if (expressionTree instanceof JCTree.JCNewClass) {
-                      final JCTree.JCNewClass newClass = (JCTree.JCNewClass) expressionTree;
-                      this.analyzeParsedTree(context, newClass);
-                    } else {
-                      log.warn(
-                          "NEW_CLASS expressionKind:{} tree:{}",
-                          expressionKind,
-                          expressionTree.getClass());
-                    }
-                  } else if (expressionKind.equals(Tree.Kind.ERRONEOUS)) {
-                    if (expressionTree instanceof JCTree.JCErroneous) {
-                      final JCTree.JCErroneous erroneous = (JCTree.JCErroneous) expressionTree;
-                      final List<? extends JCTree> errorTrees = erroneous.getErrorTrees();
-                      if (errorTrees != null) {
-
-                        for (final JCTree tree : errorTrees) {
-                          this.analyzeParsedTree(context, tree);
-                        }
-                      }
-                    }
                   } else {
                     log.warn(
-                        "expressionKind:{} tree:{}", expressionKind, expressionTree.getClass());
+                        "XXXX_ASSIGNMENT expressionKind:{} tree:{}",
+                        expressionKind,
+                        expressionTree.getClass());
                   }
+                } else if (expressionKind.equals(Tree.Kind.NEW_CLASS)) {
+                  if (expressionTree instanceof JCTree.JCNewClass) {
+                    final JCTree.JCNewClass newClass = (JCTree.JCNewClass) expressionTree;
+                    this.analyzeParsedTree(context, newClass);
+                  } else {
+                    log.warn(
+                        "NEW_CLASS expressionKind:{} tree:{}",
+                        expressionKind,
+                        expressionTree.getClass());
+                  }
+                } else if (expressionKind.equals(Tree.Kind.ERRONEOUS)) {
+                  if (expressionTree instanceof JCTree.JCErroneous) {
+                    final JCTree.JCErroneous erroneous = (JCTree.JCErroneous) expressionTree;
+                    final List<? extends JCTree> errorTrees = erroneous.getErrorTrees();
+                    if (errorTrees != null) {
 
-                  blockScope.endExpression();
-                }));
+                      for (final JCTree tree : errorTrees) {
+                        this.analyzeParsedTree(context, tree);
+                      }
+                    }
+                  }
+                } else {
+                  log.warn("expressionKind:{} tree:{}", expressionKind, expressionTree.getClass());
+                }
+
+                bs.endExpression();
+              } catch (IOException e) {
+                throw new UncheckedIOException(e);
+              }
+            });
   }
 
   private void analyzeFieldAccess(
@@ -1599,22 +1630,25 @@ public class TreeAnalyzer {
 
     src.getCurrentClass()
         .ifPresent(
-            wrapIOConsumer(
-                parent -> {
-                  final String parentName = parent.name;
-                  final String fqcn = parentName + ClassNameUtils.INNER_MARK + simpleName;
-                  final ClassScope classScope = new ClassScope(fqcn, nameRange, startPos, range);
-                  classScope.isInterface = isInterface;
-                  classScope.isEnum = isEnum;
-                  log.trace("maybe inner class={}", classScope);
-                  parent.startClass(classScope);
+            parent -> {
+              try {
+                final String parentName = parent.name;
+                final String fqcn = parentName + ClassNameUtils.INNER_MARK + simpleName;
+                final ClassScope classScope = new ClassScope(fqcn, nameRange, startPos, range);
+                classScope.isInterface = isInterface;
+                classScope.isEnum = isEnum;
+                log.trace("maybe inner class={}", classScope);
+                parent.startClass(classScope);
 
-                  for (final JCTree tree1 : classDecl.getMembers()) {
-                    this.analyzeParsedTree(context, tree1);
-                  }
+                for (final JCTree tree1 : classDecl.getMembers()) {
+                  this.analyzeParsedTree(context, tree1);
+                }
 
-                  final Optional<ClassScope> ignore = parent.endClass();
-                }));
+                final Optional<ClassScope> ignore = parent.endClass();
+              } catch (IOException e) {
+                throw new UncheckedIOException(e);
+              }
+            });
   }
 
   private void parseModifiers(
@@ -1741,63 +1775,66 @@ public class TreeAnalyzer {
 
     src.getCurrentClass()
         .ifPresent(
-            wrapIOConsumer(
-                (ClassScope classScope) -> {
-                  String methodName = name;
-                  boolean isConstructor = false;
-                  String returnFQCN = "";
+            classScope -> {
+              try {
+                String methodName = name;
+                boolean isConstructor = false;
+                String returnFQCN = "";
 
-                  if (!name.equals("<init>")) {
-                    // set return type
-                    final JCTree returnTypeExpr = md.getReturnType();
-                    if (returnTypeExpr != null) {
-                      final Type type = returnTypeExpr.type;
-                      if (type != null) {
-                        returnFQCN = getTypeString(src, type).orElse(type.toString());
-                      } else {
-                        returnFQCN = resolveTypeFromImport(src, returnTypeExpr);
-                      }
-                    }
-                  } else {
-                    isConstructor = true;
-                    Symbol.MethodSymbol sym = md.sym;
-                    if (sym != null && sym.owner != null && sym.owner.type != null) {
-                      final Type type = sym.owner.type;
-                      methodName = getTypeString(src, type).orElse(name);
-                      returnFQCN = methodName;
+                if (!name.equals("<init>")) {
+                  // set return type
+                  final JCTree returnTypeExpr = md.getReturnType();
+                  if (returnTypeExpr != null) {
+                    final Type type = returnTypeExpr.type;
+                    if (type != null) {
+                      returnFQCN = getTypeString(src, type).orElse(type.toString());
+                    } else {
+                      returnFQCN = resolveTypeFromImport(src, returnTypeExpr);
                     }
                   }
-
-                  final MethodScope methodScope =
-                      classScope.startMethod(
-                          methodName, nameRange, preferredPos, range, isConstructor);
-                  methodScope.returnType = TreeAnalyzer.markFQCN(src, returnFQCN);
-
-                  // check method parameter
-                  context.setParameter(true);
-
-                  for (final JCTree.JCVariableDecl vd : md.getParameters()) {
-                    this.analyzeParsedTree(context, vd);
+                } else {
+                  isConstructor = true;
+                  Symbol.MethodSymbol sym = md.sym;
+                  if (sym != null && sym.owner != null && sym.owner.type != null) {
+                    final Type type = sym.owner.type;
+                    methodName = getTypeString(src, type).orElse(name);
+                    returnFQCN = methodName;
                   }
+                }
 
-                  context.setParameter(false);
+                final MethodScope methodScope =
+                    classScope.startMethod(
+                        methodName, nameRange, preferredPos, range, isConstructor);
+                methodScope.returnType = TreeAnalyzer.markFQCN(src, returnFQCN);
 
-                  // set exceptions
-                  final List<JCTree.JCExpression> throwsList = md.getThrows();
-                  if (throwsList != null) {
-                    for (final JCTree.JCExpression expr : throwsList) {
-                      final String ex = resolveTypeFromImport(src, expr);
-                      final String fqcn = TreeAnalyzer.markFQCN(src, ex);
-                    }
+                // check method parameter
+                context.setParameter(true);
+
+                for (final JCTree.JCVariableDecl vd : md.getParameters()) {
+                  this.analyzeParsedTree(context, vd);
+                }
+
+                context.setParameter(false);
+
+                // set exceptions
+                final List<JCTree.JCExpression> throwsList = md.getThrows();
+                if (throwsList != null) {
+                  for (final JCTree.JCExpression expr : throwsList) {
+                    final String ex = resolveTypeFromImport(src, expr);
+                    final String fqcn = TreeAnalyzer.markFQCN(src, ex);
                   }
+                }
 
-                  final JCTree.JCBlock body = md.getBody();
-                  // parse body
-                  if (body != null) {
-                    this.analyzeParsedTree(context, body);
-                  }
-                  final Optional<MethodScope> endMethod = classScope.endMethod();
-                }));
+                final JCTree.JCBlock body = md.getBody();
+                // parse body
+                if (body != null) {
+                  this.analyzeParsedTree(context, body);
+                }
+                final Optional<MethodScope> endMethod = classScope.endMethod();
+              } catch (IOException e) {
+                throw new UncheckedIOException(e);
+              }
+            });
   }
 
   private void analyzeVariableDecl(
@@ -1823,147 +1860,128 @@ public class TreeAnalyzer {
     final Optional<BlockScope> cb = src.getCurrentBlock();
 
     cb.ifPresent(
-        wrapIOConsumer(
-            bs -> {
-              final String vName = name.toString();
-              final Range range = Range.create(src, preferredPos, endPos);
-              final Range nameRange =
-                  Range.create(src, preferredPos, preferredPos + vName.length());
+        bs -> {
+          try {
+            final String vName = name.toString();
+            final Range range = Range.create(src, preferredPos, endPos);
+            final Range nameRange = Range.create(src, preferredPos, preferredPos + vName.length());
 
-              final ExpressionScope expressionScope = new ExpressionScope(preferredPos, range);
-              if (bs instanceof ClassScope) {
-                expressionScope.isField = true;
-              }
-              bs.startExpression(expressionScope);
+            final ExpressionScope expressionScope = new ExpressionScope(preferredPos, range);
+            if (bs instanceof ClassScope) {
+              expressionScope.isField = true;
+            }
+            bs.startExpression(expressionScope);
 
-              if (typeTree instanceof JCTree.JCTypeUnion) {
+            if (typeTree instanceof JCTree.JCTypeUnion) {
 
-                final JCTree.JCTypeUnion union = (JCTree.JCTypeUnion) typeTree;
+              final JCTree.JCTypeUnion union = (JCTree.JCTypeUnion) typeTree;
 
-                TreeAnalyzer.parseUnionVariable(
-                    vd, preferredPos, src, typeTree, vName, nameRange, union);
+              TreeAnalyzer.parseUnionVariable(
+                  vd, preferredPos, src, typeTree, vName, nameRange, union);
 
-              } else {
+            } else {
 
-                try {
+              try {
 
-                  final Variable variable = new Variable(vName, preferredPos, nameRange);
+                final Variable variable = new Variable(vName, preferredPos, nameRange);
 
-                  if (vd.getTag().equals(JCTree.Tag.VARDEF)) {
-                    variable.def = true;
-                  }
-                  if (context.isParameter()) {
-                    variable.parameter = true;
-                  }
+                if (vd.getTag().equals(JCTree.Tag.VARDEF)) {
+                  variable.isDef = true;
+                }
+                if (context.isParameter()) {
+                  variable.isParameter = true;
+                }
 
-                  if (typeTree instanceof JCTree.JCExpression) {
+                if (typeTree instanceof JCTree.JCExpression) {
 
-                    final JCTree.JCExpression expression = (JCTree.JCExpression) typeTree;
-                    final Type type = expression.type;
+                  final JCTree.JCExpression expression = (JCTree.JCExpression) typeTree;
+                  final Type type = expression.type;
 
-                    if (type == null && expression instanceof JCTree.JCIdent) {
+                  if (type == null && expression instanceof JCTree.JCIdent) {
 
-                      final JCTree.JCIdent ident = (JCTree.JCIdent) expression;
-                      final String nm = ident.getName().toString();
-                      final String identClazz = src.getImportedClassFQCN(nm, null);
+                    final JCTree.JCIdent ident = (JCTree.JCIdent) expression;
+                    final String nm = ident.getName().toString();
+                    final String identClazz = src.getImportedClassFQCN(nm, null);
 
-                      if (identClazz != null) {
-                        final String typeSym = typeTree.toString();
-                        final boolean markUnUse = requireImport(src, typeSym, identClazz);
-                        log.trace(
-                            "typeSym:{} type:{} markUnuse:{}", typeSym, identClazz, markUnUse);
+                    if (identClazz != null) {
+                      final String typeSym = typeTree.toString();
+                      final boolean markUnUse = requireImport(src, typeSym, identClazz);
+                      log.trace("typeSym:{} type:{} markUnuse:{}", typeSym, identClazz, markUnUse);
 
-                        variable.fqcn = TreeAnalyzer.markFQCN(src, identClazz, markUnUse);
-
-                      } else {
-
-                        src.addUnknown(nm);
-                        if (src.isReportUnknown()) {
-                          log.warn(
-                              "unknown ident class expression={} {} {}",
-                              expression,
-                              expression.getClass(),
-                              src.filePath);
-                        }
-                      }
+                      variable.fqcn = TreeAnalyzer.markFQCN(src, identClazz, markUnUse);
 
                     } else {
 
-                      final String fqcn = resolveTypeFromImport(src, expression);
-                      final String typeSym = typeTree.toString();
-                      final boolean markUnUse = requireImport(src, typeSym, fqcn);
-                      log.trace("typeSym:{} type:{} markUnuse:{}", typeSym, fqcn, markUnUse);
-
-                      if (fqcn != null) {
-                        variable.fqcn = TreeAnalyzer.markFQCN(src, fqcn, markUnUse);
+                      src.addUnknown(nm);
+                      if (src.isReportUnknown()) {
+                        log.warn(
+                            "unknown ident class expression={} {} {}",
+                            expression,
+                            expression.getClass(),
+                            src.filePath);
                       }
                     }
+
                   } else {
-                    if (src.isReportUnknown()) {
-                      log.warn("unknown typeTree class expression={} {}", typeTree, src.filePath);
+
+                    final String fqcn = resolveTypeFromImport(src, expression);
+                    final String typeSym = typeTree.toString();
+                    final boolean markUnUse = requireImport(src, typeSym, fqcn);
+                    log.trace("typeSym:{} type:{} markUnuse:{}", typeSym, fqcn, markUnUse);
+
+                    if (fqcn != null) {
+                      variable.fqcn = TreeAnalyzer.markFQCN(src, fqcn, markUnUse);
                     }
                   }
-
-                  TreeAnalyzer.addNormalVariable(src, variable);
-
-                  if (initializer != null) {
-                    this.analyzeParsedTree(context, initializer);
+                } else {
+                  if (src.isReportUnknown()) {
+                    log.warn("unknown typeTree class expression={} {}", typeTree, src.filePath);
                   }
-
-                } finally {
-                  bs.endExpression();
                 }
+
+                TreeAnalyzer.addNormalVariable(src, variable);
+
+                if (initializer != null) {
+                  this.analyzeParsedTree(context, initializer);
+                }
+
+              } finally {
+                bs.endExpression();
               }
-            }));
+            }
+          } catch (IOException e) {
+            throw new UncheckedIOException(e);
+          }
+        });
   }
 
   public Map<File, Source> analyze(
-      final Iterable<? extends CompilationUnitTree> parsed,
-      final Set<File> errorFiles,
-      @Nullable final JavaAnalyzer.SourceAnalyzedHandler handler) {
+      final Iterable<? extends CompilationUnitTree> parsed, final Set<File> errorFiles) {
 
-    final Map<File, Source> analyzeMap = new ConcurrentHashMap<>(SOURCE_LIMIT);
+    final Map<File, Source> analyzeMap = new ConcurrentHashMap<>(64);
 
     if (log.isDebugEnabled()) {
-      parsed.forEach(
-          wrapIOConsumer(
-              cut -> {
-                final Source source = this.analyzeUnit(cut, errorFiles);
-                if (handler != null) {
-                  handler.analyzed(source);
-                }
-                if (analyzeMap.size() < SOURCE_LIMIT) {
-                  final File file = source.getFile();
-                  analyzeMap.putIfAbsent(file, source);
-                }
-              }));
+      parsed.forEach(cut -> tryAnalyzeUnit(errorFiles, analyzeMap, cut));
     } else {
       try (Stream<? extends CompilationUnitTree> stream =
           StreamSupport.stream(parsed.spliterator(), true)) {
-        stream.forEach(
-            wrapIOConsumer(
-                cut -> {
-                  final Source source = this.analyzeUnit(cut, errorFiles);
-                  if (handler != null) {
-                    handler.analyzed(source);
-                  }
-                  if (analyzeMap.size() < SOURCE_LIMIT) {
-                    final File file = source.getFile();
-                    analyzeMap.putIfAbsent(file, source);
-                  }
-                }));
-      }
-    }
-
-    if (handler != null) {
-      try {
-        handler.complete();
-      } catch (IOException e) {
-        throw new UncheckedIOException(e);
+        // parallel
+        stream.forEach(cut -> tryAnalyzeUnit(errorFiles, analyzeMap, cut));
       }
     }
 
     return analyzeMap;
+  }
+
+  private void tryAnalyzeUnit(
+      Set<File> errorFiles, Map<File, Source> analyzeMap, CompilationUnitTree cut) {
+    try {
+      final Source source = this.analyzeUnit(cut, errorFiles);
+      final File file = source.getFile();
+      analyzeMap.putIfAbsent(file, source);
+    } catch (IOException e) {
+      throw new UncheckedIOException(e);
+    }
   }
 
   private Source analyzeUnit(final CompilationUnitTree cut, final Set<File> errorFiles)

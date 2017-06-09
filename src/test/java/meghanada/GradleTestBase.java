@@ -1,11 +1,14 @@
 package meghanada;
 
+import static java.util.Objects.nonNull;
+
 import com.google.common.base.Stopwatch;
+import com.google.common.io.Files;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.nio.file.Files;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import meghanada.config.Config;
@@ -13,39 +16,37 @@ import meghanada.project.Project;
 import meghanada.project.ProjectDependency;
 import meghanada.project.gradle.GradleProject;
 import meghanada.reflect.asm.CachedASMReflector;
+import meghanada.store.ProjectDatabaseHelper;
+import meghanada.utils.FileUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
 @SuppressWarnings("CheckReturnValue")
 public class GradleTestBase {
 
+  public static final String TEMP_PROJECT_SETTING_DIR = "meghanada.temp.project.setting.dir";
+  private static final Logger log = LogManager.getLogger(GradleTestBase.class);
   public static Project project;
 
-  public static Project getProject() {
-    return project;
-  }
-
-  @BeforeClass
+  @SuppressWarnings("CheckReturnValue")
   public static void setupProject() throws Exception {
-    // System.setProperty("log-level", "DEBUG");
+    System.setProperty("meghanada.source.cache", "false");
 
-    System.setProperty("source.cache", "false");
     if (project == null) {
-      String tmp = System.getProperty("java.io.tmpdir");
-      System.setProperty("project-cache-dir", new File(tmp, "meghanada/cache").getCanonicalPath());
-      project = new GradleProject(new File("./").getCanonicalFile());
-      project.parseProject();
+      // replace tmp
+      Project newProject = new GradleProject(new File("./").getCanonicalFile());
+
+      final File tempDir = Files.createTempDir();
+      tempDir.deleteOnExit();
+      final String path = tempDir.getCanonicalPath();
+      System.setProperty(TEMP_PROJECT_SETTING_DIR, path);
+      log.info("create database {}", path);
+      project = newProject.parseProject();
     }
     Config.load();
-  }
-
-  protected static void setupReflector() throws Exception {
-    GradleTestBase.setupProject();
-    CachedASMReflector cachedASMReflector = CachedASMReflector.getInstance();
-    cachedASMReflector.addClasspath(getSystemJars());
-    cachedASMReflector.addClasspath(getJars());
-    final Stopwatch stopwatch = Stopwatch.createStarted();
-    cachedASMReflector.createClassIndexes();
-    System.out.println("createClassIndexes elapsed:" + stopwatch.stop());
+    log.info("finish setupProject");
   }
 
   protected static File getJar(String name) {
@@ -60,7 +61,7 @@ public class GradleTestBase {
               }
               return null;
             })
-        .filter(f -> f != null)
+        .filter(Objects::nonNull)
         .findFirst()
         .orElse(null);
   }
@@ -69,7 +70,7 @@ public class GradleTestBase {
     return new File(Config.load().getJavaHomeDir(), "/lib/rt.jar");
   }
 
-  protected static Set<File> getJars() {
+  public static Set<File> getJars() {
     return project
         .getDependencies()
         .stream()
@@ -77,35 +78,77 @@ public class GradleTestBase {
         .collect(Collectors.toSet());
   }
 
-  protected static List<File> getSystemJars() throws IOException {
-    final String javaHome = Config.load().getJavaHomeDir();
-    File jvmDir = new File(javaHome);
-    return Files.walk(jvmDir.toPath())
-        .filter(
-            path -> {
-              String name = path.toFile().getName();
-              return name.endsWith(".jar") && !name.endsWith("policy.jar");
-            })
-        .map(
-            path -> {
-              try {
-                return path.toFile().getCanonicalFile();
-              } catch (IOException e) {
-                throw new UncheckedIOException(e);
-              }
-            })
-        .collect(Collectors.toList());
+  public static Set<File> getJars(Project tmp) {
+    return tmp.getDependencies()
+        .stream()
+        .map(ProjectDependency::getFile)
+        .collect(Collectors.toSet());
   }
 
-  protected static File getOutputDir() {
+  public static List<File> getSystemJars() {
+    final String javaHome = Config.load().getJavaHomeDir();
+    File jvmDir = new File(javaHome);
+    try {
+      return java.nio.file.Files.walk(jvmDir.toPath())
+          .filter(
+              path -> {
+                String name = path.toFile().getName();
+                return name.endsWith(".jar") && !name.endsWith("policy.jar");
+              })
+          .map(
+              path -> {
+                try {
+                  return path.toFile().getCanonicalFile();
+                } catch (IOException e) {
+                  throw new UncheckedIOException(e);
+                }
+              })
+          .collect(Collectors.toList());
+    } catch (IOException e) {
+      throw new UncheckedIOException(e);
+    }
+  }
+
+  public static Project getProject() {
+    return project;
+  }
+
+  protected static File getOutput() {
     return project.getOutput();
   }
 
-  protected static File getTestOutputDir() {
+  protected static File getTestOutput() {
     return project.getTestOutput();
   }
 
-  protected static Set<File> getSourceDir() {
-    return project.getAllSources();
+  @BeforeClass
+  public static void setupReflector() throws Exception {
+    setupProject();
+    CachedASMReflector cachedASMReflector = CachedASMReflector.getInstance();
+    addClasspath(cachedASMReflector);
+    final Stopwatch stopwatch = Stopwatch.createStarted();
+    cachedASMReflector.createClassIndexes();
+    log.info("createClassIndexes elapsed: {}", stopwatch.stop());
+  }
+
+  @AfterClass
+  public static void shutdown() throws IOException, InterruptedException {
+    ProjectDatabaseHelper.shutdown();
+    String p = System.getProperty(TEMP_PROJECT_SETTING_DIR);
+    File file = new File(p);
+    FileUtils.deleteFiles(file, true);
+    assert !file.exists();
+    String tempPath = GradleProject.getTempPath();
+    if (nonNull(tempPath)) {
+      FileUtils.deleteFiles(new File(tempPath), true);
+    }
+    log.info("deleted database {}", file);
+  }
+
+  private static void addClasspath(CachedASMReflector cachedASMReflector) {
+    cachedASMReflector.addClasspath(getSystemJars());
+    cachedASMReflector.addClasspath(getJars());
+    cachedASMReflector.addClasspath(getOutput());
+    cachedASMReflector.addClasspath(getTestOutput());
   }
 }

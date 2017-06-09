@@ -1,27 +1,39 @@
 package meghanada.reflect;
 
+import static java.util.Objects.isNull;
+import static java.util.Objects.nonNull;
+
 import com.google.common.base.Joiner;
 import com.google.common.base.Objects;
 import java.io.Serializable;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import jetbrains.exodus.entitystore.Entity;
+import jetbrains.exodus.entitystore.EntityId;
 import meghanada.reflect.asm.CachedASMReflector;
+import meghanada.store.Storable;
 import meghanada.utils.ClassNameUtils;
 
-public class ClassIndex implements CandidateUnit, Cloneable, Serializable {
+public class ClassIndex implements CandidateUnit, Cloneable, Serializable, Storable {
 
+  public static final String ENTITY_TYPE = "ClassIndex";
   private static final long serialVersionUID = 4833311903131990013L;
-  // fqcn
-  public String declaration;
-  public List<String> typeParameters;
-  public List<String> supers;
-  public boolean isInterface;
-  public boolean isAnnotation;
-  public boolean functional;
-  public String name;
 
+  // fqcn
+  private final String declaration;
+  private final List<String> typeParameters;
+  private final List<String> supers;
+
+  private boolean isInterface;
+  private boolean isAnnotation;
+  private boolean functional;
+  private String name;
+  private String filePath;
   private MemberType memberType = MemberType.CLASS;
+  private EntityId entityID;
 
   public ClassIndex(
       final String declaration, final List<String> typeParameters, final List<String> supers) {
@@ -44,13 +56,13 @@ public class ClassIndex implements CandidateUnit, Cloneable, Serializable {
     return this.name;
   }
 
+  public void setName(String name) {
+    this.name = name;
+  }
+
   @Override
   public String getType() {
     return this.memberType.toString();
-  }
-
-  public void setMemberType(final MemberType memberType) {
-    this.memberType = memberType;
   }
 
   @Override
@@ -61,7 +73,7 @@ public class ClassIndex implements CandidateUnit, Cloneable, Serializable {
   @Override
   public String getDisplayDeclaration() {
     final StringBuilder sb = new StringBuilder(this.declaration);
-    if (this.typeParameters != null && this.typeParameters.size() > 0) {
+    if (nonNull(this.typeParameters) && !this.typeParameters.isEmpty()) {
       sb.append('<');
       Joiner.on(", ").appendTo(sb, this.typeParameters).append('>');
     }
@@ -71,7 +83,7 @@ public class ClassIndex implements CandidateUnit, Cloneable, Serializable {
   @Override
   public String getReturnType() {
     StringBuilder sb = new StringBuilder(this.declaration);
-    if (this.typeParameters != null && this.typeParameters.size() > 0) {
+    if (nonNull(this.typeParameters) && !this.typeParameters.isEmpty()) {
       sb.append('<');
       Joiner.on(", ").appendTo(sb, this.typeParameters).append('>');
     }
@@ -100,7 +112,7 @@ public class ClassIndex implements CandidateUnit, Cloneable, Serializable {
     if (this == o) {
       return true;
     }
-    if (o == null || getClass() != o.getClass()) {
+    if (isNull(o) || getClass() != o.getClass()) {
       return false;
     }
     ClassIndex that = (ClassIndex) o;
@@ -144,5 +156,96 @@ public class ClassIndex implements CandidateUnit, Cloneable, Serializable {
       throw new UnsupportedOperationException(e);
     }
     return ci;
+  }
+
+  @Override
+  public String getStoreId() {
+    return this.declaration;
+  }
+
+  @Override
+  public String getEntityType() {
+    return ENTITY_TYPE;
+  }
+
+  @Override
+  @SuppressWarnings("rawtypes")
+  public Map<String, Comparable> getSaveProperties() {
+    Map<String, Comparable> map = new HashMap<>(6);
+    map.put("declaration", this.declaration);
+    map.put("name", this.name);
+    if (isNull(this.filePath)) {
+      // use test only
+      map.put("filePath", "");
+    } else {
+      map.put("filePath", this.filePath);
+    }
+    map.put("isAnnotation", this.isAnnotation);
+    map.put("isInterface", this.isInterface);
+    map.put("functional", this.functional);
+
+    return map;
+  }
+
+  @Override
+  public void onSuccess(Entity entity) {
+    this.entityID = entity.getId();
+  }
+
+  @Override
+  public EntityId getEntityId() {
+    return entityID;
+  }
+
+  public String getFilePath() {
+    return filePath;
+  }
+
+  public void setFilePath(String filePath) {
+    this.filePath = filePath;
+  }
+
+  public void addSuper(String clazz) {
+    this.supers.add(clazz);
+  }
+
+  public List<String> getSupers() {
+    return supers;
+  }
+
+  public boolean isInterface() {
+    return isInterface;
+  }
+
+  public void setInterface(boolean anInterface) {
+    isInterface = anInterface;
+  }
+
+  public boolean isAnnotation() {
+    return isAnnotation;
+  }
+
+  public void setAnnotation(boolean annotation) {
+    isAnnotation = annotation;
+  }
+
+  public boolean isFunctional() {
+    return functional;
+  }
+
+  public void setFunctional(boolean functional) {
+    this.functional = functional;
+  }
+
+  public MemberType getMemberType() {
+    return memberType;
+  }
+
+  public void setMemberType(final MemberType memberType) {
+    this.memberType = memberType;
+  }
+
+  public void setEntityID(EntityId entityID) {
+    this.entityID = entityID;
   }
 }

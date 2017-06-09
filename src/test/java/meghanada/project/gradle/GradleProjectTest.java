@@ -1,69 +1,158 @@
 package meghanada.project.gradle;
 
+import static java.util.Objects.nonNull;
+import static meghanada.GradleTestBase.getJars;
+import static meghanada.GradleTestBase.getSystemJars;
 import static meghanada.config.Config.timeIt;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
+import com.google.common.io.Files;
 import java.io.File;
 import meghanada.analyze.CompileResult;
 import meghanada.project.Project;
-import org.apache.commons.lang3.StringUtils;
-import org.junit.After;
+import meghanada.reflect.asm.CachedASMReflector;
+import meghanada.store.ProjectDatabaseHelper;
+import meghanada.utils.FileUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 @SuppressWarnings("CheckReturnValue")
 public class GradleProjectTest {
 
+  public static final String TEMP_PROJECT_SETTING_DIR = "meghanada.temp.project.setting.dir";
+  private static final Logger log = LogManager.getLogger(GradleProjectTest.class);
   private Project project;
+  private File projectRoot;
+  private String projectRootPath;
 
-  @Before
-  public void setUp() throws Exception {
-    if (this.project == null) {
-      this.project = new GradleProject(new File("./").getCanonicalFile());
+  @AfterClass
+  public static void shutdown() throws Exception {
+    ProjectDatabaseHelper.shutdown();
+    String p = System.getProperty(TEMP_PROJECT_SETTING_DIR);
+    File file = new File(p);
+    FileUtils.deleteFiles(file, true);
+    String tempPath = GradleProject.getTempPath();
+    if (nonNull(tempPath)) {
+      FileUtils.deleteFiles(new File(tempPath), true);
     }
   }
 
-  @After
-  public void tearDown() throws Exception {
-    System.out.printf("call teardown");
+  @Before
+  public void setUp() throws Exception {
+
+    if (this.project == null) {
+
+      System.setProperty("meghanada.test", "true");
+      this.projectRoot = new File("./").getCanonicalFile();
+      this.projectRootPath = this.projectRoot.getCanonicalPath();
+      this.project = new GradleProject(projectRoot);
+      String tmpdir = System.getProperty("java.io.tmpdir");
+      File tmpParent = new File(tmpdir);
+      if (!tmpParent.exists() && !tmpParent.mkdirs()) {
+        log.warn("fail create tmpdir");
+      }
+
+      final File tempDir = Files.createTempDir();
+      tempDir.deleteOnExit();
+      final String path = tempDir.getCanonicalPath();
+      System.setProperty(TEMP_PROJECT_SETTING_DIR, path);
+    }
   }
 
   @Test
-  public void testRunTask1() throws Exception {
-    this.project.parseProject();
-    final File outputDirectory = this.project.getOutput();
+  public void testParse01() throws Exception {
+    Project parsed = this.project.parseProject();
+    final File outputDirectory = parsed.getOutput();
+    assertNotNull(outputDirectory);
     System.out.println(outputDirectory);
   }
 
   @Test
-  public void testParse1() throws Exception {
-    final Project project =
-        timeIt(
-            () -> {
-              return this.project.parseProject();
-            });
+  public void testParse02() throws Exception {
+    final Project project = timeIt(() -> this.project.parseProject());
+
     final String classpath = project.classpath();
-    for (final String cp : StringUtils.split(classpath, File.pathSeparatorChar)) {
-      System.out.println(cp);
-    }
+    assertNotNull(classpath);
+    //    for (final String cp : StringUtils.split(classpath, File.pathSeparatorChar)) {
+    //      System.out.println(cp);
+    //    }
+    final String all = project.classpath();
+    assertNotNull(all);
+  }
+
+  @Ignore
+  @Test
+  public void testLoadProject01() throws Exception {
+    Project parsed = project.parseProject();
+    String classpath1 = parsed.classpath();
+    timeIt(parsed::saveProject);
+
+    Thread.sleep(1000);
+
+    Project load = timeIt(() -> Project.loadProject(this.projectRootPath));
+    String classpath2 = load.classpath();
+    assertEquals(classpath1, classpath2);
+    timeIt(load::saveProject);
   }
 
   @Test
-  public void testCompile1() throws Exception {
+  public void testCompile01() throws Exception {
     final CompileResult compileResult =
         timeIt(
             () -> {
               project.parseProject();
               return this.project.compileJava();
             });
-    final String classpath = project.classpath();
-    for (final String cp : StringUtils.split(classpath, File.pathSeparatorChar)) {
-      System.out.println(cp);
-    }
 
-    System.out.println(compileResult.getDiagnosticsSummary());
+    log.info("compile message {}", compileResult.getDiagnosticsSummary());
     assertTrue(compileResult.isSuccess());
-    // this.project.compileJava(false);
+    Thread.sleep(3000);
+  }
+
+  @Ignore
+  @Test
+  public void testCompile02() throws Exception {
+    project.parseProject();
+    setupReflector(project);
+    Thread.sleep(1000 * 3);
+    final CompileResult compileResult = this.project.compileJava(true);
+
+    assertTrue(compileResult.isSuccess());
+
+    String fqcn = "meghanada.store.ProjectDatabase";
+    Thread.sleep(1000 * 5);
+    ProjectDatabaseHelper.getClassIndexLinks(
+        fqcn,
+        "references",
+        entities -> {
+          log.info("references {}", entities.size());
+        });
+
+    for (int i = 0; i < 5; i++) {
+      this.project.compileJava(true);
+      Thread.sleep(1000 * 5);
+      ProjectDatabaseHelper.getClassIndexLinks(
+          fqcn,
+          "references",
+          entities -> {
+            log.info("references {}", entities.size());
+          });
+    }
+  }
+
+  private void setupReflector(Project p) {
+    CachedASMReflector cachedASMReflector = CachedASMReflector.getInstance();
+    cachedASMReflector.addClasspath(getSystemJars());
+    cachedASMReflector.addClasspath(getJars(p));
+    cachedASMReflector.addClasspath(p.getOutput());
+    cachedASMReflector.addClasspath(p.getTestOutput());
+    cachedASMReflector.createClassIndexes();
   }
 
   //    @Ignore

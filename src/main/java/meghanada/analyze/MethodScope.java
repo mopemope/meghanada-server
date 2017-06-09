@@ -80,7 +80,7 @@ public class MethodScope extends BlockScope {
   public void dump() {
     final EntryMessage entryMessage =
         log.traceEntry(
-            "**** {} {} return {} parameter {}",
+            "**** {} {} return {} isParameter {}",
             this.getScopeType(),
             this.name,
             this.returnType,

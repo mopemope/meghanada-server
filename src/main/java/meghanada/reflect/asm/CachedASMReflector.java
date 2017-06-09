@@ -1,17 +1,18 @@
 package meghanada.reflect.asm;
 
+import static java.util.Objects.nonNull;
 import static meghanada.utils.FunctionUtils.wrapIOConsumer;
 
-import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.UncheckedExecutionException;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -22,14 +23,14 @@ import java.util.concurrent.ExecutionException;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import jetbrains.exodus.entitystore.EntityId;
 import meghanada.cache.GlobalCache;
-import meghanada.config.Config;
 import meghanada.reflect.CandidateUnit;
 import meghanada.reflect.ClassIndex;
 import meghanada.reflect.MemberDescriptor;
+import meghanada.store.ProjectDatabaseHelper;
 import meghanada.utils.ClassName;
 import meghanada.utils.ClassNameUtils;
-import meghanada.utils.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -44,19 +45,13 @@ public class CachedASMReflector {
 
   private final Map<String, ClassIndex> globalClassIndex = new ConcurrentHashMap<>(CACHE_SIZE);
 
-  // Key:FQCN Val:JarFile
-  private final Map<String, File> classFileMap = new ConcurrentHashMap<>(CACHE_SIZE);
-
-  private final Map<ClassIndex, File> reflectIndex = new ConcurrentHashMap<>(CACHE_SIZE);
-
   private final Set<File> jars = new HashSet<>(64);
   private final Set<File> directories = new HashSet<>(8);
-
   private Map<String, String> standardClasses;
 
   private CachedASMReflector() {
     final GlobalCache globalCache = GlobalCache.getInstance();
-    globalCache.setupMemberCache(this.classFileMap, this.reflectIndex);
+    globalCache.setupMemberCache();
   }
 
   public static CachedASMReflector getInstance() {
@@ -68,6 +63,7 @@ public class CachedASMReflector {
 
   private static boolean containsKeyword(
       final String keyword, final boolean partial, final ClassIndex index) {
+
     final String name = index.getName();
     if (ClassNameUtils.isAnonymousClass(name)) {
       return false;
@@ -113,56 +109,6 @@ public class CachedASMReflector {
     return members;
   }
 
-  private static boolean existsClassCache(final String className) {
-    final File outFile = getClassCacheFile(className);
-    return outFile.exists();
-  }
-
-  private static File getClassCacheFile(final String className) {
-
-    final Config config = Config.load();
-    final String dir = config.getProjectSettingDir();
-    final File root = new File(dir);
-    final String path = FileUtils.toHashedPath(className, GlobalCache.CACHE_EXT);
-    final String out1 = Joiner.on(File.separator).join(GlobalCache.CLASS_CACHE_DIR, path);
-    return new File(root, out1);
-  }
-
-  public static void writeCache(final ClassIndex classIndex, final List<MemberDescriptor> members)
-      throws FileNotFoundException {
-    final Config config = Config.load();
-    final String fqcn = classIndex.getRawDeclaration();
-    final String dir = config.getProjectSettingDir();
-    final File root = new File(dir);
-    final String path = FileUtils.toHashedPath(fqcn, GlobalCache.CACHE_EXT);
-
-    final String out1 = Joiner.on(File.separator).join(GlobalCache.CLASS_CACHE_DIR, path);
-    final String out2 = Joiner.on(File.separator).join(GlobalCache.MEMBER_CACHE_DIR, path);
-    final File file1 = new File(root, out1);
-    final File file2 = new File(root, out2);
-
-    if (!file1.getParentFile().exists() && !file1.getParentFile().mkdirs()) {
-      log.warn("{} mkdirs fail", file1);
-    }
-    if (!file2.getParentFile().exists() && !file2.getParentFile().mkdirs()) {
-      log.warn("{} mkdirs fail", file2);
-    }
-
-    // ClassIndex
-    final GlobalCache globalCache = GlobalCache.getInstance();
-    globalCache.asyncWriteCache(file1, classIndex);
-    globalCache.asyncWriteCache(file2, members);
-  }
-
-  private static ClassIndex readClassIndexFromCache(final String fqcn) throws IOException {
-    final File in = CachedASMReflector.getClassCacheFile(fqcn);
-    if (in.exists()) {
-      final GlobalCache globalCache = GlobalCache.getInstance();
-      return globalCache.readCacheFromFile(in, ClassIndex.class);
-    }
-    return null;
-  }
-
   public void addClasspath(final Collection<File> depends) {
     depends.forEach(this::addClasspath);
   }
@@ -186,98 +132,125 @@ public class CachedASMReflector {
         .parallelStream()
         .forEach(
             wrapIOConsumer(
-                file -> {
-                  if (file.getName().endsWith(".jar") && this.classFileMap.containsValue(file)) {
-                    //skip cached jar
-                    return;
-                  }
-
+                root -> {
+                  // TODO is loaded ?
                   final ASMReflector reflector = ASMReflector.getInstance();
                   reflector
-                      .getClasses(file)
+                      .getClasses(root)
                       .entrySet()
                       .parallelStream()
-                      .forEach(
-                          classIndexFileEntry -> {
-                            final ClassIndex classIndex1 = classIndexFileEntry.getKey();
-                            final File file1 = classIndexFileEntry.getValue();
-                            final String fqcn = classIndex1.getRawDeclaration();
-                            this.globalClassIndex.put(fqcn, classIndex1);
-                            this.classFileMap.put(fqcn, file1);
-                            this.reflectIndex.put(classIndex1, file1);
-                          });
+                      .forEach(entry -> addClassIndex(entry.getKey(), entry.getValue()));
                 }));
 
     this.updateClassIndexFromDirectory();
+    this.saveAllClassIndexes();
   }
 
-  public void createClassIndexes(final Collection<File> jars) {
-    jars.parallelStream()
+  private void saveAllClassIndexes() {
+    List<ClassIndex> jarIndexes =
+        globalClassIndex
+            .values()
+            .stream()
+            .filter(classIndex -> classIndex.getFilePath().endsWith(".jar"))
+            .collect(Collectors.toList());
+    List<ClassIndex> otherIndexes =
+        globalClassIndex
+            .values()
+            .stream()
+            .filter(classIndex -> !classIndex.getFilePath().endsWith(".jar"))
+            .collect(Collectors.toList());
+
+    ProjectDatabaseHelper.saveClassIndexes(jarIndexes, false);
+    ProjectDatabaseHelper.saveClassIndexes(otherIndexes, true);
+  }
+
+  private void updateClassIndexes() {
+    List<ClassIndex> otherIndexes =
+        globalClassIndex
+            .values()
+            .stream()
+            .filter(classIndex -> !classIndex.getFilePath().endsWith(".jar"))
+            .collect(Collectors.toList());
+
+    ProjectDatabaseHelper.saveClassIndexes(otherIndexes, true);
+  }
+
+  private void addClassIndex(ClassIndex newIndex, File file) {
+
+    final String fqcn = newIndex.getRawDeclaration();
+    ClassIndex old = this.globalClassIndex.get(fqcn);
+
+    if (nonNull(old)) {
+      EntityId entityId = old.getEntityId();
+      if (nonNull(entityId)) {
+        // inheriting entityID
+        newIndex.setEntityID(entityId);
+      }
+    }
+    try {
+      newIndex.setFilePath(file.getCanonicalPath());
+    } catch (IOException e) {
+      throw new UncheckedIOException(e);
+    }
+
+    this.globalClassIndex.put(fqcn, newIndex);
+  }
+
+  public void createClassIndexes(final Collection<File> addJars) {
+    addJars
+        .parallelStream()
         .forEach(
             wrapIOConsumer(
-                file -> {
-                  if (file.getName().endsWith(".jar") && this.classFileMap.containsValue(file)) {
-                    //skip cached jar
-                    return;
-                  }
-                  if (this.jars.contains(file)) {
+                jar -> {
+                  if (this.jars.contains(jar)) {
                     return;
                   }
                   final ASMReflector reflector = ASMReflector.getInstance();
                   reflector
-                      .getClasses(file)
+                      .getClasses(jar)
                       .entrySet()
                       .parallelStream()
-                      .forEach(
-                          classIndexFileEntry -> {
-                            final ClassIndex classIndex1 = classIndexFileEntry.getKey();
-                            final File file1 = classIndexFileEntry.getValue();
-                            final String fqcn = classIndex1.getRawDeclaration();
-                            this.globalClassIndex.put(fqcn, classIndex1);
-                            this.classFileMap.put(fqcn, file1);
-                            this.reflectIndex.put(classIndex1, file1);
-                          });
+                      .forEach(entry -> addClassIndex(entry.getKey(), entry.getValue()));
                 }));
-    this.jars.addAll(jars);
+    this.jars.addAll(addJars);
+    this.saveAllClassIndexes();
   }
 
   public void updateClassIndexFromDirectory() {
+
     try (Stream<File> stream = this.directories.stream().parallel()) {
       stream.forEach(
           wrapIOConsumer(
               file -> {
-                if (file.getName().endsWith(".jar") && this.classFileMap.containsValue(file)) {
-                  //skip cached jar
-                  return;
-                }
+                // TODO is loaded ?
                 final ASMReflector reflector = ASMReflector.getInstance();
                 reflector
                     .getClasses(file)
                     .entrySet()
                     .parallelStream()
-                    .forEach(
-                        classIndexFileEntry -> {
-                          final ClassIndex classIndex1 = classIndexFileEntry.getKey();
-                          final File file1 = classIndexFileEntry.getValue();
-                          final String fqcn = classIndex1.getRawDeclaration();
-                          this.globalClassIndex.put(fqcn, classIndex1);
-                          this.classFileMap.put(fqcn, file1);
-                          this.reflectIndex.put(classIndex1, file1);
-                        });
+                    .forEach(entry -> addClassIndex(entry.getKey(), entry.getValue()));
               }));
     }
+    this.updateClassIndexes();
   }
 
   public boolean containsFQCN(String fqcn) {
-    return this.classFileMap.containsKey(fqcn);
+    return this.globalClassIndex.containsKey(fqcn);
   }
 
   public File getClassFile(String fqcn) {
-    return this.classFileMap.get(fqcn);
+    ClassIndex classIndex = this.globalClassIndex.get(fqcn);
+    if (nonNull(classIndex)) {
+      String filePath = classIndex.getFilePath();
+      if (nonNull(filePath)) {
+        return new File(filePath);
+      }
+    }
+    return null;
   }
 
   public Map<String, String> getPackageClasses(String packageName) {
-    // log.debug("getPackageClasses packageName:{}", packageName);
+
     if (this.globalClassIndex.isEmpty()) {
       this.createClassIndexes();
     }
@@ -309,7 +282,7 @@ public class CachedASMReflector {
 
     final List<ClassIndex> result = new ArrayList<>(64);
     for (final ClassIndex c : this.globalClassIndex.values()) {
-      if (anno && !c.isAnnotation) {
+      if (anno && !c.isAnnotation()) {
         continue;
       }
       final String name = c.getName();
@@ -328,7 +301,7 @@ public class CachedASMReflector {
         .parallelStream()
         .filter(
             classIndex -> {
-              if (anno && !classIndex.isAnnotation) {
+              if (anno && !classIndex.isAnnotation()) {
                 return false;
               }
               final String name = classIndex.getName();
@@ -376,7 +349,8 @@ public class CachedASMReflector {
       if (keyword.isEmpty()) {
         result.add(c.clone());
       } else {
-        if (!(anno && !c.isAnnotation) && CachedASMReflector.containsKeyword(keyword, partial, c)) {
+        if (!(anno && !c.isAnnotation())
+            && CachedASMReflector.containsKeyword(keyword, partial, c)) {
           result.add(c.clone());
         }
       }
@@ -395,7 +369,7 @@ public class CachedASMReflector {
                 // match all
                 return true;
               }
-              return !(anno && !classIndex.isAnnotation)
+              return !(anno && !classIndex.isAnnotation())
                   && CachedASMReflector.containsKeyword(keyword, partial, classIndex);
             })
         .map(ClassIndex::clone);
@@ -425,7 +399,8 @@ public class CachedASMReflector {
     final GlobalCache globalCache = GlobalCache.getInstance();
     try {
       final List<MemberDescriptor> members = new ArrayList<>(16);
-      for (final MemberDescriptor md : globalCache.getMemberDescriptors(classWithoutTP)) {
+      List<MemberDescriptor> list = globalCache.getMemberDescriptors(classWithoutTP);
+      for (final MemberDescriptor md : list) {
         members.add(md.clone());
       }
       if (cn.hasTypeParameter()) {
@@ -484,9 +459,32 @@ public class CachedASMReflector {
   }
 
   public Stream<String> getSuperClassStream(final String className) {
-    return this.containsClassIndex(className)
-        .map(classIndex -> classIndex.supers.stream())
-        .orElse(new ArrayList<String>(0).stream());
+    return this.getSuperClass(className).stream();
+  }
+
+  public Collection<String> getSuperClass(final String className) {
+
+    Set<String> result = new LinkedHashSet<>(4);
+    this.containsClassIndex(className)
+        .ifPresent(
+            ci -> {
+              List<String> supers = ci.getSupers();
+              if (supers.isEmpty()) {
+                return;
+              }
+              result.addAll(supers);
+              if (supers.size() == 1 && supers.get(0).equals(ClassNameUtils.OBJECT_CLASS)) {
+                return;
+              }
+
+              for (String superClazz : supers) {
+                if (!superClazz.equals(ClassNameUtils.OBJECT_CLASS)) {
+                  result.addAll(getSuperClass(superClazz));
+                }
+              }
+            });
+
+    return result;
   }
 
   public Optional<ClassIndex> containsClassIndex(final String className) {
@@ -506,9 +504,5 @@ public class CachedASMReflector {
     }
     this.standardClasses = map;
     return this.standardClasses;
-  }
-
-  public void resetClassFileMap() {
-    this.classFileMap.clear();
   }
 }

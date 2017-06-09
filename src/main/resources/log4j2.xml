@@ -9,6 +9,7 @@
     <Loggers>
         <Logger name="org.gradle.tooling" level="info"/>
         <Logger name="org.eclipse.aether" level="info"/>
+        <Logger name="jetbrains.exodus" level="error"/>
         <Logger name="log4j.logger.org.apache.http" level="info"/>
         <Root level="info" includeLocation="true">
             <AppenderRef ref="STDOUT"/>
