@@ -44,6 +44,13 @@ public abstract class Scope implements Serializable {
   public static Scope getInnerScope(final int line, final List<? extends Scope> scopeList) {
     for (Scope scope : scopeList) {
       if (scope.contains(line)) {
+        if (scope instanceof ClassScope) {
+          final ClassScope cs = (ClassScope) scope;
+          final Scope inScope = Scope.getInnerScope(line, cs.classScopes);
+          if (nonNull(inScope)) {
+            return inScope;
+          }
+        }
         if (scope instanceof BlockScope) {
           final BlockScope bs = (BlockScope) scope;
           final Scope inScope = Scope.getInnerScope(line, bs.scopes);
@@ -170,14 +177,15 @@ public abstract class Scope implements Serializable {
 
   public Map<String, Variable> getVariableMap() {
     final Map<String, Variable> result = new HashMap<>(32);
-    variables.forEach(
-        v -> {
-          if (v.isDecl()) {
-            result.put(v.name, v);
-          } else {
-            result.putIfAbsent(v.name, v);
-          }
-        });
+    getVariables()
+        .forEach(
+            v -> {
+              if (v.isDecl()) {
+                result.put(v.name, v);
+              } else {
+                result.putIfAbsent(v.name, v);
+              }
+            });
     return result;
   }
 

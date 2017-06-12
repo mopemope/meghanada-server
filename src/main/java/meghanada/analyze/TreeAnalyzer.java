@@ -1228,7 +1228,24 @@ public class TreeAnalyzer {
         }
       } else {
         this.getTypeString(src, owner)
-            .ifPresent(fqcn -> methodCall.declaringClass = TreeAnalyzer.markFQCN(src, fqcn));
+            .ifPresent(
+                fqcn -> {
+                  methodCall.declaringClass = TreeAnalyzer.markFQCN(src, fqcn);
+
+                  if (expression instanceof JCTree.JCIdent) {
+                    final JCTree.JCIdent ident = (JCTree.JCIdent) expression;
+                    int vStart = ident.getStartPosition();
+                    int vEndPos = ident.getEndPosition(context.getEndPosTable());
+                    try {
+                      Range vRange = Range.create(src, vStart, vEndPos);
+                      Variable variable = new Variable(selectScope, ident.pos, vRange);
+                      variable.fqcn = fqcn;
+                      src.getCurrentScope().ifPresent(s -> s.addVariable(variable));
+                    } catch (IOException e) {
+                      throw new UncheckedIOException(e);
+                    }
+                  }
+                });
       }
 
       if (isNull(returnType)) {
@@ -1517,7 +1534,23 @@ public class TreeAnalyzer {
 
       if (owner != null && owner.type != null) {
         this.getTypeString(src, owner.type)
-            .ifPresent(fqcn -> fa.declaringClass = TreeAnalyzer.markFQCN(src, fqcn));
+            .ifPresent(
+                fqcn -> {
+                  fa.declaringClass = TreeAnalyzer.markFQCN(src, fqcn);
+                  if (selected instanceof JCTree.JCIdent) {
+                    JCTree.JCIdent ident = (JCTree.JCIdent) selected;
+                    int vStart = ident.getStartPosition();
+                    int vEnd = ident.getEndPosition(context.getEndPosTable());
+                    try {
+                      Range vRange = Range.create(src, vStart, vEnd);
+                      Variable variable = new Variable(selectScope, ident.pos, vRange);
+                      variable.fqcn = fqcn;
+                      src.getCurrentScope().ifPresent(s -> s.addVariable(variable));
+                    } catch (IOException e) {
+
+                    }
+                  }
+                });
       }
       if (sym.type != null) {
         this.setReturnTypeAndArgType(context, src, sym.type, fa);
@@ -1639,9 +1672,8 @@ public class TreeAnalyzer {
                 classScope.isEnum = isEnum;
                 log.trace("maybe inner class={}", classScope);
                 parent.startClass(classScope);
-
-                for (final JCTree tree1 : classDecl.getMembers()) {
-                  this.analyzeParsedTree(context, tree1);
+                for (final JCTree memberTree : classDecl.getMembers()) {
+                  this.analyzeParsedTree(context, memberTree);
                 }
 
                 final Optional<ClassScope> ignore = parent.endClass();

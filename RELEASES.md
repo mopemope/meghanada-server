@@ -1,3 +1,7 @@
+# Version 0.7.13 (2017-06-12)
+
+* Fix cache update bugs
+
 # Version 0.7.11 (2017-06-09)
 
 * Change to use fast-serialization.
