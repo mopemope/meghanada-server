@@ -132,12 +132,9 @@ class MemberCacheLoader extends CacheLoader<String, List<MemberDescriptor>>
   @Override
   public void onRemoval(final RemovalNotification<String, List<MemberDescriptor>> notification) {
     final RemovalCause cause = notification.getCause();
-    if (cause.equals(RemovalCause.EXPIRED)
-        || cause.equals(RemovalCause.SIZE)
-        || cause.equals(RemovalCause.REPLACED)) {
+    if (cause.equals(RemovalCause.EXPLICIT)) {
       final String key = notification.getKey();
-      final List<MemberDescriptor> value = notification.getValue();
-      storeMembers(key, value);
+      ProjectDatabaseHelper.deleteMemberDescriptors(key);
     }
   }
 }
