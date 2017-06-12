@@ -258,7 +258,7 @@ public class LocationSearcherTest extends GradleTestBase {
                       .orElse(null));
       assertNotNull(result);
       assertTrue(result.getPath().contains("TreeAnalyzer.java"));
-      assertEquals(1860, result.getLine());
+      assertEquals(1872, result.getLine());
       assertEquals(16, result.getColumn());
     }
   }
