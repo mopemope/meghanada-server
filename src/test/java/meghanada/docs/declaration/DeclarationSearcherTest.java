@@ -213,4 +213,22 @@ public class DeclarationSearcherTest extends GradleTestBase {
           assertEquals(-1, declaration.argumentIndex);
         });
   }
+
+  @Test
+  public void testVar04() throws Exception {
+    File f = new File("./src/main/java/meghanada/project/Project.java").getCanonicalFile();
+    assert f.exists();
+
+    final DeclarationSearcher searcher = getSearcher();
+    final Optional<Declaration> result =
+        timeIt(() -> searcher.searchDeclaration(f, 967, 7, "source"));
+    assertNotNull(result);
+    assertTrue(result.isPresent());
+    result.ifPresent(
+        declaration -> {
+          assertEquals("source", declaration.scopeInfo);
+          assertEquals("meghanada.analyze.Source", declaration.signature);
+          // assertEquals(-1, declaration.argumentIndex);
+        });
+  }
 }
