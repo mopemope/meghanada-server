@@ -964,6 +964,7 @@ public abstract class Project implements Serializable, Storable {
 
       final File sourceFile = source.getFile();
       final String path = sourceFile.getCanonicalPath();
+      source.invalidateCache();
       if (!source.hasCompileError) {
         final String md5sum = FileUtils.getChecksum(sourceFile);
         checksumMap.put(path, md5sum);

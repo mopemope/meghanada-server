@@ -71,11 +71,6 @@ public class GlobalCache {
     return this.memberCache.get(fqcn);
   }
 
-  public void replaceMemberDescriptors(
-      final String fqcn, final List<MemberDescriptor> memberDescriptors) {
-    this.memberCache.put(fqcn, memberDescriptors);
-  }
-
   public void invalidateMemberDescriptors(final String fqcn) {
     this.memberCache.invalidate(fqcn);
   }
