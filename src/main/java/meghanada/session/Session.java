@@ -696,4 +696,20 @@ public class Session {
     }
     return declarationSearcher;
   }
+
+  public InputStream execMain(String path) throws Exception {
+    boolean b = this.changeProject(path);
+    Optional<Source> source = this.parseJavaSource(new File(path));
+    return source
+        .map(
+            src -> {
+              try {
+                String clazz = src.getFQCN();
+                return currentProject.execMainClass(clazz);
+              } catch (IOException e) {
+                throw new UncheckedIOException(e);
+              }
+            })
+        .orElse(null);
+  }
 }

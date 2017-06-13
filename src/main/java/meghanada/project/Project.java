@@ -588,9 +588,10 @@ public abstract class Project implements Serializable, Storable {
     cmd.add("-XX:+TieredCompilation");
     cmd.add("-XX:+UseConcMarkSweepGC");
     cmd.add("-XX:SoftRefLRUPolicyMSPerMB=50");
-    cmd.add("-Xverify:none");
-    cmd.add("-Xms256m");
-    cmd.add("-Xmx4G");
+    cmd.add("-XX:ReservedCodeCacheSize=240m");
+    cmd.add("-Dsun.io.useCanonCaches=false");
+    cmd.add("-Xms128m");
+    cmd.add("-Xmx750m");
     cmd.add("-cp");
     cmd.add(cp);
     cmd.add(String.format("-Dproject.root=%s", this.projectRootPath));
@@ -918,6 +919,41 @@ public abstract class Project implements Serializable, Storable {
 
   public void setSubProject(boolean subProject) {
     this.subProject = subProject;
+  }
+
+  public InputStream execMainClass(String mainClazz) throws IOException {
+    log.debug("exec file:{}", mainClazz);
+
+    final Config config = Config.load();
+    final List<String> cmd = new ArrayList<>(16);
+    final String binJava =
+        SEP_COMPILE.matcher("/bin/java").replaceAll(Matcher.quoteReplacement(File.separator));
+
+    final String javaCmd = new File(config.getJavaHomeDir(), binJava).getCanonicalPath();
+    cmd.add(javaCmd);
+
+    String cp = this.allClasspath();
+
+    final String jarPath = Config.getInstalledPath().getCanonicalPath();
+
+    cp += File.pathSeparator + jarPath;
+    cmd.add("-ea");
+    cmd.add("-XX:+TieredCompilation");
+    cmd.add("-XX:+UseConcMarkSweepGC");
+    cmd.add("-XX:SoftRefLRUPolicyMSPerMB=50");
+    cmd.add("-XX:ReservedCodeCacheSize=240m");
+    cmd.add("-Dsun.io.useCanonCaches=false");
+    cmd.add("-Xms128m");
+    cmd.add("-Xmx750m");
+    cmd.add("-cp");
+    cmd.add(cp);
+    cmd.add(String.format("-Dproject.root=%s", this.projectRootPath));
+    cmd.add(String.format("-Dmeghanada.output=%s", output.getCanonicalPath()));
+    cmd.add(String.format("-Dmeghanada.test-output=%s", testOutput.getCanonicalPath()));
+    cmd.add(mainClazz);
+
+    log.debug("run cmd {}", Joiner.on(" ").join(cmd));
+    return this.runProcess(cmd);
   }
 
   private static class CompiledSourceHandler implements JavaAnalyzer.SourceAnalyzedHandler {

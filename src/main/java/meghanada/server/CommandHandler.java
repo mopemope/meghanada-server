@@ -1,5 +1,6 @@
 package meghanada.server;
 
+import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 
 import com.google.common.base.Joiner;
@@ -309,6 +310,39 @@ public class CommandHandler {
       writer.write(out);
       writer.newLine();
       writer.flush();
+    } catch (Throwable t) {
+      writeError(id, t);
+    }
+  }
+
+  public void execMain(final long id, String path) {
+    InputStream in = null;
+    try {
+      in = this.session.execMain(path);
+      if (isNull(in)) {
+        writer.write("missing main function");
+        writer.newLine();
+        writer.flush();
+        return;
+      }
+    } catch (Throwable t) {
+      writeError(id, t);
+      return;
+    }
+
+    try (final BufferedReader reader =
+        new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8))) {
+
+      String s;
+      while ((s = reader.readLine()) != null) {
+        if (!s.startsWith("SLF4J: ")) {
+          writer.write(s);
+          writer.newLine();
+          writer.flush();
+        }
+      }
+
+      writer.newLine();
     } catch (Throwable t) {
       writeError(id, t);
     }

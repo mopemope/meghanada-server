@@ -220,6 +220,14 @@ public class EmacsServer implements Server {
                   handler.ping(id);
                   return true;
                 })
+            .when(headTail(eq("em"), any()))
+            .get(
+                args -> {
+                  // em : Exec main
+                  // usage: em <path>
+                  handler.execMain(id, args.get(0));
+                  return true;
+                })
             .when(headNil(eq("q")))
             .get(
                 () -> {
