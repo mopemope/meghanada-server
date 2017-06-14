@@ -14,6 +14,8 @@ import java.io.InputStream;
 import java.io.Serializable;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -26,6 +28,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -56,10 +59,12 @@ class ProjectDatabase {
   private static final Logger log = LogManager.getLogger(ProjectDatabase.class);
 
   private static final int MERGE_SIZE = 10;
-  private static final int BURST_LIMIT = MERGE_SIZE;
+  private static final int BURST_LIMIT = 32;
 
   private static ProjectDatabase projectDatabase;
   private static AtomicLong seq = new AtomicLong(1);
+  private static int MAX_WORKER = 4;
+  private static long WORKER_DURATION = 2;
 
   private final BlockingQueue<StoreRequest> blockingQueue = new LinkedBlockingDeque<>();
   private ExecutorService executorService = null;
@@ -67,7 +72,8 @@ class ProjectDatabase {
   private PersistentEntityStore entityStore = null;
   private String projectRoot;
   private boolean isTerminated;
-  private boolean ioBurstMode;
+  private AtomicInteger extraWorkers = new AtomicInteger(0);
+  private Instant lastAddWorker = Instant.now();
 
   private ProjectDatabase() {
     open();
@@ -226,7 +232,6 @@ class ProjectDatabase {
                 if (nonNull(req) && !req.isShutdown()) {
                   mergeAndStore(req);
                 }
-                log.debug("!remain {} elapsed {}", blockingQueue.size(), stopwatch.stop());
                 if (blockingQueue.isEmpty()) {
                   log.debug("store queue is empty");
                 }
@@ -400,37 +405,35 @@ class ProjectDatabase {
     }
   }
 
+  private boolean addableWorker() {
+    Instant now = Instant.now();
+    Duration duration = Duration.between(this.lastAddWorker, now);
+    long delta = duration.getSeconds();
+    return this.blockingQueue.size() > BURST_LIMIT
+        && extraWorkers.get() <= MAX_WORKER
+        && delta > WORKER_DURATION;
+  }
+
   private void runWorker() {
-
-    if (!this.ioBurstMode && this.blockingQueue.size() > BURST_LIMIT) {
-      this.ioBurstMode = true;
-
+    if (this.addableWorker()) {
+      lastAddWorker = Instant.now();
       this.executorService.execute(
           () -> {
-            boolean readyShutdown = false;
-            while (!this.isTerminated && this.ioBurstMode) {
+            extraWorkers.incrementAndGet();
+            boolean start = true;
+            while (!this.isTerminated && start) {
               try {
-
-                StoreRequest req = blockingQueue.take();
-
-                Stopwatch stopwatch = Stopwatch.createStarted();
+                StoreRequest req = blockingQueue.poll(3, TimeUnit.SECONDS);
                 if (nonNull(req) && !req.isShutdown()) {
                   mergeAndStore(req);
-                  readyShutdown = false;
-                }
-                log.debug("@remain {} elapsed {}", blockingQueue.size(), stopwatch.stop());
-
-                if (this.blockingQueue.isEmpty()) {
-                  if (readyShutdown) {
-                    this.ioBurstMode = false;
-                  } else {
-                    readyShutdown = true;
-                  }
+                } else {
+                  start = false;
                 }
               } catch (Exception e) {
                 log.catching(e);
               }
             }
+            extraWorkers.decrementAndGet();
           });
     }
   }
@@ -593,9 +596,6 @@ class ProjectDatabase {
     req.setShutdown(true);
     try {
       this.blockingQueue.put(req);
-      if (this.ioBurstMode) {
-        this.blockingQueue.put(req);
-      }
     } catch (InterruptedException e) {
       log.catching(e);
     }
