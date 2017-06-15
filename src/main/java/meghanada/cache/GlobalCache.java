@@ -11,6 +11,7 @@ import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import meghanada.analyze.Source;
+import meghanada.config.Config;
 import meghanada.project.Project;
 import meghanada.reflect.MemberDescriptor;
 import org.apache.logging.log4j.LogManager;
@@ -18,8 +19,7 @@ import org.apache.logging.log4j.Logger;
 
 public class GlobalCache {
 
-  private static final int SOURCE_CACHE_MAX = 64;
-  private static final int MEMBER_CACHE_MAX = SOURCE_CACHE_MAX;
+  private static final int MEMBER_CACHE_MAX = 128;
 
   private static final Logger log = LogManager.getLogger(GlobalCache.class);
 
@@ -62,7 +62,7 @@ public class GlobalCache {
     this.memberCache =
         CacheBuilder.newBuilder()
             .maximumSize(MEMBER_CACHE_MAX)
-            .expireAfterAccess(5, TimeUnit.MINUTES)
+            .expireAfterAccess(10, TimeUnit.MINUTES)
             .removalListener(memberCacheLoader)
             .build(memberCacheLoader);
   }
@@ -81,10 +81,11 @@ public class GlobalCache {
       return this.sourceCaches.get(projectRoot);
     } else {
       final JavaSourceLoader javaSourceLoader = new JavaSourceLoader(project);
+      int size = Config.load().getSourceCacheSize();
       final LoadingCache<File, Source> loadingCache =
           CacheBuilder.newBuilder()
-              .maximumSize(SOURCE_CACHE_MAX)
-              .expireAfterAccess(5, TimeUnit.MINUTES)
+              .maximumSize(size)
+              .expireAfterAccess(10, TimeUnit.MINUTES)
               .removalListener(javaSourceLoader)
               .build(javaSourceLoader);
       this.sourceCaches.put(projectRoot, loadingCache);

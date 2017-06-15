@@ -325,6 +325,10 @@ public class Config {
     return c.getBoolean("skip-build-subprojects");
   }
 
+  public int getSourceCacheSize() {
+    return c.getInt("source-cache-size");
+  }
+
   @FunctionalInterface
   public interface SimpleSupplier<R> {
 
