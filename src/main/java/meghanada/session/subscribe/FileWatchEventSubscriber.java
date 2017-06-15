@@ -10,8 +10,8 @@ import meghanada.config.Config;
 import meghanada.project.Project;
 import meghanada.session.SessionEventBus;
 import meghanada.store.ProjectDatabaseHelper;
+import meghanada.utils.FileUtils;
 import meghanada.watcher.FileSystemWatcher;
-import meghanada.watcher.FileSystemWatcher.DeleteEvent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -32,11 +32,18 @@ public class FileWatchEventSubscriber extends AbstractSubscriber {
   @Subscribe
   public void on(final FileSystemWatcher.DeleteEvent event) {
     final File file = event.getFile();
+
     try {
       String filePath = file.getCanonicalPath();
       GlobalCache globalCache = GlobalCache.getInstance();
-      globalCache.invalidateSource(sessionEventBus.getSession().getCurrentProject(), file);
+      Project project = sessionEventBus.getSession().getCurrentProject();
+      globalCache.invalidateSource(project, file);
       ProjectDatabaseHelper.deleteSource(filePath);
+      FileUtils.getClassFile(filePath, project.getSources(), project.getOutput())
+          .ifPresent(File::delete);
+      FileUtils.getClassFile(filePath, project.getTestSources(), project.getTestOutput())
+          .ifPresent(File::delete);
+
     } catch (Throwable e) {
       log.catching(e);
     }

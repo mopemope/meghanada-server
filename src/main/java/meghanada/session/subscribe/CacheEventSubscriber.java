@@ -12,6 +12,7 @@ import meghanada.project.ProjectDependency;
 import meghanada.reflect.asm.CachedASMReflector;
 import meghanada.session.Session;
 import meghanada.session.SessionEventBus;
+import meghanada.store.ProjectDatabaseHelper;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -57,6 +58,10 @@ public class CacheEventSubscriber extends AbstractSubscriber {
           reflector.createClassIndexes();
         });
 
+    if (cleanUnusedSource(project)) {
+      project.resetCallerMap();
+    }
+
     log.info("start analyze sources ...");
     timeItF(
         "analyzed and compiled. elapsed:{}",
@@ -98,5 +103,9 @@ public class CacheEventSubscriber extends AbstractSubscriber {
         String.format("%.2f", totalMemory),
         String.format("%.2f", maxMemory));
     log.info("Ready");
+  }
+
+  private boolean cleanUnusedSource(Project project) {
+    return ProjectDatabaseHelper.deleteUnunsedSource(project);
   }
 }

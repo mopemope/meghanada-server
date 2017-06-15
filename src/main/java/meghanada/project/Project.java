@@ -790,6 +790,10 @@ public abstract class Project implements Serializable, Storable {
     return new ArrayList<>(temp);
   }
 
+  public void resetCallerMap() {
+    this.callerMap.clear();
+  }
+
   private synchronized void writeCaller() throws IOException {
     ProjectDatabaseHelper.saveCallerMap(this.projectRootPath, this.callerMap);
   }

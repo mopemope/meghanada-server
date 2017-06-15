@@ -5,6 +5,8 @@ import static java.util.Objects.isNull;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -23,6 +25,7 @@ import meghanada.project.Project;
 import meghanada.reflect.ClassIndex;
 import meghanada.reflect.MemberDescriptor;
 import meghanada.reflect.asm.CachedASMReflector;
+import meghanada.utils.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -287,6 +290,32 @@ public class ProjectDatabaseHelper {
   public static void saveCompileResult(CompileResult result) {
     ProjectDatabase database = ProjectDatabase.getInstance();
     database.asyncStoreObject(result, false);
+  }
+
+  public static boolean deleteUnunsedSource(Project p) {
+    ProjectDatabase database = ProjectDatabase.getInstance();
+    return database.execute(
+        txn -> {
+          EntityIterable all = txn.getAll(Source.ENTITY_TYPE);
+          boolean result = false;
+          for (Entity entity : all) {
+
+            String path = (String) entity.getProperty("filePath");
+            if (!Files.exists(Paths.get(path))) {
+              entity.delete();
+              try {
+                FileUtils.getClassFile(path, p.getSources(), p.getOutput()).ifPresent(File::delete);
+                FileUtils.getClassFile(path, p.getTestSources(), p.getTestOutput())
+                    .ifPresent(File::delete);
+
+              } catch (IOException e) {
+                log.catching(e);
+              }
+              result = true;
+            }
+          }
+          return result;
+        });
   }
 
   public static void reset() {
