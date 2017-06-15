@@ -114,7 +114,7 @@ public class FileSystemWatcher {
         if (event.kind() == StandardWatchEventKinds.ENTRY_CREATE) {
           watchKeys.register(path);
         }
-      } else if (Files.isRegularFile(path, LinkOption.NOFOLLOW_LINKS)) {
+      } else {
         log.debug("{} {}", watchEvent.kind().name(), path);
         // Dispatch
         FileEvent fe = toEvent(watchEvent, path);
@@ -154,7 +154,7 @@ public class FileSystemWatcher {
     }
   }
 
-  private static class DeleteEvent extends FileEvent {
+  public static class DeleteEvent extends FileEvent {
     DeleteEvent(final File file) {
       super(file);
     }
