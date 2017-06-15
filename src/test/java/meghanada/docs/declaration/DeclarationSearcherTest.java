@@ -221,7 +221,7 @@ public class DeclarationSearcherTest extends GradleTestBase {
 
     final DeclarationSearcher searcher = getSearcher();
     final Optional<Declaration> result =
-        timeIt(() -> searcher.searchDeclaration(f, 1003, 7, "source"));
+        timeIt(() -> searcher.searchDeclaration(f, 1006, 7, "source"));
     assertNotNull(result);
     assertTrue(result.isPresent());
     result.ifPresent(
@@ -239,7 +239,7 @@ public class DeclarationSearcherTest extends GradleTestBase {
 
     final DeclarationSearcher searcher = getSearcher();
     final Optional<Declaration> result =
-        timeIt(() -> searcher.searchDeclaration(f, 998, 9, "source"));
+        timeIt(() -> searcher.searchDeclaration(f, 1001, 9, "source"));
     assertNotNull(result);
     assertTrue(result.isPresent());
     result.ifPresent(

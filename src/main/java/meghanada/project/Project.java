@@ -405,7 +405,8 @@ public abstract class Project implements Serializable, Storable {
     return getJavaAnalyzer().analyzeAndCompile(files, this.allClasspath(), output, false);
   }
 
-  public CompileResult compileFile(final File file, final boolean force) throws IOException {
+  public CompileResult compileFile(final File file, final boolean force, final boolean withRelated)
+      throws IOException {
     boolean isTest = false;
     final String filepath = file.getCanonicalPath();
 
@@ -431,8 +432,10 @@ public abstract class Project implements Serializable, Storable {
     final Set<File> sources = isTest ? this.getAllSources() : this.getSourcesAndResources();
     files =
         force ? files : FileUtils.getModifiedSources(projectRoot, files, sources, new File(output));
-    files = this.getRelatedSources(sources, files);
 
+    if (withRelated) {
+      files = this.getRelatedSources(sources, files);
+    }
     if (isTest) {
       this.prepareTestCompile(files);
     } else {

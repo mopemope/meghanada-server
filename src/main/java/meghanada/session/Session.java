@@ -515,7 +515,7 @@ public class Session {
     // java file only
     final File file = normalize(path);
     boolean b = this.changeProject(path);
-    return currentProject.compileFile(file, true);
+    return currentProject.compileFile(file, true, true);
   }
 
   public synchronized CompileResult compileProject(final String path, final boolean force)
@@ -711,5 +711,12 @@ public class Session {
               }
             })
         .orElse(null);
+  }
+
+  public synchronized CompileResult diagnostic(final String path) throws IOException {
+    // java file only
+    final File file = normalize(path);
+    boolean b = this.changeProject(path);
+    return currentProject.compileFile(file, false, false);
   }
 }

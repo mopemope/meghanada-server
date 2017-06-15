@@ -68,7 +68,7 @@ public class CommandHandler {
   public void diagnostics(final long id, final String path) {
     try {
       final String canonicalPath = new File(path).getCanonicalPath();
-      final CompileResult compileResult = session.compileFile(canonicalPath);
+      final CompileResult compileResult = session.diagnostic(canonicalPath);
       final String out = outputFormatter.diagnostics(id, compileResult, canonicalPath);
       writer.write(out);
       writer.newLine();
