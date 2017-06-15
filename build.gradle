@@ -1,14 +1,14 @@
 plugins {
-  id 'com.gradle.build-scan' version '1.7'
+  id 'com.gradle.build-scan' version '1.8'
   id 'java'
   id 'maven'
   id 'jacoco'
   id 'pmd'
   id 'application'
   id 'com.github.johnrengelman.shadow' version '2.0.0'
-  id 'com.github.ben-manes.versions' version '0.14.0'
+  id 'com.github.ben-manes.versions' version '0.15.0'
   id 'com.jfrog.bintray' version '1.7.3'
-  id 'org.ajoberstar.grgit' version '1.7.1'
+  id 'org.ajoberstar.grgit' version '1.7.2'
   id 'net.ltgt.errorprone' version '0.0.10'
   id 'com.github.sherter.google-java-format' version '0.6'
 }
@@ -26,7 +26,7 @@ ext {
   date = new Date().format("yyyy-MM-dd'T'HH:mm:ssZ")
   sourceCompatibility = 1.8
 
-  gradleVersion = '3.5'
+  gradleVersion = '4.0'
   log4jVersion = '2.8.2'
   xodusVersion = '1.0.5'
 }
@@ -97,7 +97,7 @@ dependencies {
   compile 'org.apache.maven:maven-model-builder:3.5.0'
   compile 'com.leacox.motif:motif:0.1'
   compile 'com.leacox.motif:motif-hamcrest:0.1'
-  compile 'com.github.javaparser:javaparser-core:3.2.6'
+  compile 'com.github.javaparser:javaparser-core:3.2.7'
   compile "org.apache.logging.log4j:log4j-core:$log4jVersion"
   compile "org.apache.logging.log4j:log4j-api:$log4jVersion"
   compile "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"

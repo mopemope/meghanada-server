@@ -1,5 +1,6 @@
 package meghanada.project.gradle;
 
+import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static meghanada.config.Config.debugTimeItF;
 import static meghanada.utils.FunctionUtils.wrapIOConsumer;
@@ -32,6 +33,7 @@ import meghanada.utils.ClassNameUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.maven.artifact.versioning.ComparableVersion;
 import org.gradle.tooling.BuildLauncher;
 import org.gradle.tooling.GradleConnectionException;
 import org.gradle.tooling.GradleConnector;
@@ -41,6 +43,7 @@ import org.gradle.tooling.internal.consumer.DefaultGradleConnector;
 import org.gradle.tooling.model.DomainObjectSet;
 import org.gradle.tooling.model.GradleModuleVersion;
 import org.gradle.tooling.model.UnsupportedMethodException;
+import org.gradle.tooling.model.build.BuildEnvironment;
 import org.gradle.tooling.model.idea.IdeaContentRoot;
 import org.gradle.tooling.model.idea.IdeaDependency;
 import org.gradle.tooling.model.idea.IdeaJavaLanguageSettings;
@@ -49,6 +52,7 @@ import org.gradle.tooling.model.idea.IdeaModuleDependency;
 import org.gradle.tooling.model.idea.IdeaProject;
 import org.gradle.tooling.model.idea.IdeaSingleEntryLibraryDependency;
 import org.gradle.tooling.model.idea.IdeaSourceDirectory;
+import org.gradle.util.GradleVersion;
 
 public class GradleProject extends Project {
 
@@ -60,24 +64,15 @@ public class GradleProject extends Project {
   private transient Map<String, File> allModules;
   private transient List<String> prepareCompileTask;
   private transient List<String> prepareTestCompileTask;
+  private transient ComparableVersion gradleVersion = null;
 
   public GradleProject(final File projectRoot) throws IOException {
     super(projectRoot);
     this.initialize();
   }
 
-  @Override
-  protected void initialize() throws IOException {
-    super.initialize();
-    this.allModules = new ConcurrentHashMap<>(4);
-    this.prepareCompileTask = new ArrayList<>(2);
-    this.prepareTestCompileTask = new ArrayList<>(2);
-    this.rootProject = GradleProject.searchRootProject(projectRoot);
-    String tmp = getTmpDir();
-  }
-
   private static String getTmpDir() throws IOException {
-    if (tempPath != null) {
+    if (nonNull(tempPath)) {
       return tempPath;
     }
     final File tempDir = Files.createTempDir();
@@ -92,7 +87,7 @@ public class GradleProject extends Project {
 
     File result = dir;
     dir = dir.getParentFile();
-    if (dir == null) {
+    if (isNull(dir)) {
       System.setProperty("user.dir", result.getCanonicalPath());
       return result;
     }
@@ -108,7 +103,7 @@ public class GradleProject extends Project {
       }
       result = dir;
       dir = dir.getParentFile();
-      if (dir == null) {
+      if (isNull(dir)) {
         break;
       }
     }
@@ -129,18 +124,35 @@ public class GradleProject extends Project {
   }
 
   @Override
+  protected void initialize() throws IOException {
+    super.initialize();
+    this.allModules = new ConcurrentHashMap<>(4);
+    this.prepareCompileTask = new ArrayList<>(2);
+    this.prepareTestCompileTask = new ArrayList<>(2);
+    this.rootProject = GradleProject.searchRootProject(projectRoot);
+    String tmp = getTmpDir();
+  }
+
+  @Override
   public Project parseProject() throws ProjectParseException {
     final ProjectConnection connection = getProjectConnection();
     log.info("loading gradle project:{}", new File(this.projectRoot, Project.GRADLE_PROJECT_FILE));
     try {
+      BuildEnvironment env = connection.getModel(BuildEnvironment.class);
+      String version = env.getGradle().getGradleVersion();
+      if (isNull(version)) {
+        version = GradleVersion.current().getVersion();
+      }
+      if (nonNull(version)) {
+        this.gradleVersion = new ComparableVersion(version);
+      }
+
       final IdeaProject ideaProject =
           debugTimeItF(
               "get idea project model elapsed={}", () -> connection.getModel(IdeaProject.class));
       this.setCompileTarget(ideaProject);
-
       log.trace("load root project path:{}", this.rootProject);
       final DomainObjectSet<? extends IdeaModule> modules = ideaProject.getModules();
-
       final List<? extends IdeaModule> mainModules =
           modules
               .parallelStream()
@@ -158,14 +170,21 @@ public class GradleProject extends Project {
       mainModules.forEach(wrapIOConsumer(this::parseIdeaModule));
 
       // set default output
-      if (super.output == null) {
-        final String build =
-            Joiner.on(File.separator).join(this.projectRoot, "build", "classes", "main");
+      if (isNull(super.output)) {
+
+        String build = Joiner.on(File.separator).join(this.projectRoot, "build", "classes", "main");
+        if (nonNull(gradleVersion) && gradleVersion.compareTo(new ComparableVersion("4.0")) >= 0) {
+          build =
+              Joiner.on(File.separator).join(this.projectRoot, "build", "classes", "java", "main");
+        }
         super.output = this.normalize(build);
       }
-      if (super.testOutput == null) {
-        final String build =
-            Joiner.on(File.separator).join(this.projectRoot, "build", "classes", "test");
+      if (isNull(super.testOutput)) {
+        String build = Joiner.on(File.separator).join(this.projectRoot, "build", "classes", "test");
+        if (nonNull(gradleVersion) && gradleVersion.compareTo(new ComparableVersion("4.0")) >= 0) {
+          build =
+              Joiner.on(File.separator).join(this.projectRoot, "build", "classes", "java", "test");
+        }
         super.testOutput = this.normalize(build);
       }
 
@@ -185,7 +204,7 @@ public class GradleProject extends Project {
     }
     final AndroidProject androidProject =
         AndroidSupport.getAndroidProject(this.rootProject, gradleProject);
-    if (androidProject != null) {
+    if (nonNull(androidProject)) {
       // parse android
       this.isAndroidProject = true;
       final AndroidSupport androidSupport = new AndroidSupport(this);
@@ -211,14 +230,22 @@ public class GradleProject extends Project {
   private void parseIdeaModule(
       final org.gradle.tooling.model.GradleProject gradleProject, final IdeaModule ideaModule)
       throws IOException {
-    if (this.output == null) {
+
+    if (isNull(this.output)) {
       final String buildDir = gradleProject.getBuildDirectory().getCanonicalPath();
       String build = Joiner.on(File.separator).join(buildDir, "classes", "main");
+      if (nonNull(gradleVersion) && gradleVersion.compareTo(new ComparableVersion("4.0")) >= 0) {
+        build = Joiner.on(File.separator).join(buildDir, "classes", "java", "main");
+      }
       this.output = this.normalize(build);
     }
-    if (this.testOutput == null) {
+
+    if (isNull(this.testOutput)) {
       final String buildDir = gradleProject.getBuildDirectory().getCanonicalPath();
       String build = Joiner.on(File.separator).join(buildDir, "classes", "test");
+      if (nonNull(gradleVersion) && gradleVersion.compareTo(new ComparableVersion("4.0")) >= 0) {
+        build = Joiner.on(File.separator).join(buildDir, "classes", "java", "test");
+      }
       this.testOutput = this.normalize(build);
     }
     final Set<ProjectDependency> dependencies = this.analyzeDependencies(ideaModule);
@@ -245,11 +272,17 @@ public class GradleProject extends Project {
     if (this.output == null) {
       final String buildDir = new File(this.getProjectRoot(), "build").getCanonicalPath();
       String build = Joiner.on(File.separator).join(buildDir, "classes", "main");
+      if (nonNull(gradleVersion) && gradleVersion.compareTo(new ComparableVersion("4.0")) >= 0) {
+        build = Joiner.on(File.separator).join(buildDir, "classes", "java", "main");
+      }
       this.output = this.normalize(build);
     }
     if (this.testOutput == null) {
       final String buildDir = new File(this.getProjectRoot(), "build").getCanonicalPath();
       String build = Joiner.on(File.separator).join(buildDir, "classes", "test");
+      if (nonNull(gradleVersion) && gradleVersion.compareTo(new ComparableVersion("4.0")) >= 0) {
+        build = Joiner.on(File.separator).join(buildDir, "classes", "java", "test");
+      }
       this.testOutput = this.normalize(build);
     }
 
@@ -282,7 +315,6 @@ public class GradleProject extends Project {
       final DefaultGradleConnector defaultGradleConnector = (DefaultGradleConnector) connector;
       defaultGradleConnector.daemonMaxIdleTime(1, TimeUnit.HOURS);
     }
-
     return connector.connect();
   }
 
@@ -374,7 +406,7 @@ public class GradleProject extends Project {
         String scope = libraryDependency.getScope().getScope();
         String id;
         String version;
-        if (gradleModuleVersion == null) {
+        if (isNull(gradleModuleVersion)) {
           id = file.getName();
           // dummy
           version = "1.0.0";
@@ -387,7 +419,7 @@ public class GradleProject extends Project {
                   gradleModuleVersion.getVersion());
           version = gradleModuleVersion.getVersion();
         }
-        if (scope == null) {
+        if (isNull(scope)) {
           scope = "COMPILE";
         }
         final ProjectDependency.Type type = ProjectDependency.getFileType(file);
@@ -495,14 +527,14 @@ public class GradleProject extends Project {
       if (config.hasPath(Config.GRADLE_PREPARE_COMPILE_TASK)) {
         final String taskConfig = config.getString(Config.GRADLE_PREPARE_COMPILE_TASK);
         final String[] tasks = StringUtils.split(taskConfig, ",");
-        if (tasks != null) {
+        if (nonNull(tasks)) {
           Collections.addAll(this.prepareCompileTask, tasks);
         }
       }
       if (config.hasPath(Config.GRADLE_PREPARE_TEST_COMPILE_TASK)) {
         final String taskConfig = config.getString(Config.GRADLE_PREPARE_TEST_COMPILE_TASK);
         final String[] tasks = StringUtils.split(taskConfig, ",");
-        if (tasks != null) {
+        if (nonNull(tasks)) {
           Collections.addAll(this.prepareTestCompileTask, tasks);
         }
       }
