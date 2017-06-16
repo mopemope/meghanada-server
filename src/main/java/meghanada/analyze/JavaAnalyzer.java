@@ -35,6 +35,7 @@ public class JavaAnalyzer {
 
   private static final Logger log = LogManager.getLogger(JavaAnalyzer.class);
 
+  private final JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
   private String compileSource = "1.8";
   private String compileTarget = "1.8";
 
@@ -116,7 +117,6 @@ public class JavaAnalyzer {
       @Nullable final SourceAnalyzedHandler handler)
       throws IOException {
 
-    final JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
     final Config config = Config.load();
     final TreeAnalyzer treeAnalyzer = new TreeAnalyzer();
     try (final StandardJavaFileManager fileManager =
