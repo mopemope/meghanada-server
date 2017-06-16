@@ -116,7 +116,7 @@ public class MethodScope extends BlockScope {
     return nameRange;
   }
 
-  public int getBeginLine() {
+  public long getBeginLine() {
     return range.begin.line;
   }
 

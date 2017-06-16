@@ -5,6 +5,7 @@ import static java.util.Objects.nonNull;
 
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Strings;
+import com.sun.source.tree.LineMap;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -69,12 +70,18 @@ public class Source implements Serializable, Storable {
   // temp flag
   public boolean hasCompileError;
   private String packageName = "";
-  private LinkedList<LineRange> lineRange;
-  private int classStartLine;
+  private long classStartLine;
   private Map<String, String> importMap;
+  private transient LinkedList<LineRange> lineRange;
+  private transient LineMap lineMap;
 
-  public Source(final String filePath) {
+  public Source(String filePath) {
     this.filePath = filePath;
+  }
+
+  public Source(String filePath, LineMap lineMap) {
+    this(filePath);
+    this.lineMap = lineMap;
   }
 
   private static boolean includeInnerClass(final ClassScope cs, final String fqcn) {
@@ -219,6 +226,15 @@ public class Source implements Serializable, Storable {
   }
 
   Position getPos(int pos) throws IOException {
+    if (pos == -1) {
+      return new Position(-1, -1);
+    }
+    if (nonNull(this.lineMap)) {
+      long lineNumber = this.lineMap.getLineNumber(pos);
+      long columnNumber = this.lineMap.getColumnNumber(pos);
+      return new Position(lineNumber, columnNumber);
+    }
+
     int line = 1;
     final LinkedList<LineRange> ranges = getRanges(this.getFile());
     for (final LineRange r : ranges) {
@@ -677,51 +693,6 @@ public class Source implements Serializable, Storable {
     return map;
   }
 
-  // @Override
-  // public void storeExtraData(StoreTransaction txn, Entity mainEntity) {
-
-  //   Map<String, ClassIndex> classIndex = CachedASMReflector.getInstance().getGlobalClassIndex();
-  //   deleteLinks(txn, mainEntity);
-
-  //   for (ClassScope cs : this.getAllClassScopes()) {
-  //     Entity entity = txn.newEntity(ClassScope.ENTITY_TYPE);
-  //     cs.setEntityProps(entity);
-  //     entity.setLink(LINK_SOURCE, mainEntity);
-  //     // addClassReference(txn, mainEntity, classIndex, entity, cs.getFQCN());
-  //     // txn.saveEntity(entity);
-  //   }
-
-  //   for (Variable variable : getVariables()) {
-  //     Entity entity = txn.newEntity(Variable.ENTITY_TYPE);
-  //     variable.setEntityProps(entity);
-  //     mainEntity.addLink(LINK_VARIABLE, entity);
-  //     entity.setLink(LINK_SOURCE, mainEntity);
-  //     // addClassReference(txn, mainEntity, classIndex, entity, variable.fqcn);
-  //     // txn.saveEntity(entity);
-  //   }
-
-  //   for (FieldAccess fieldAccess : getFieldAccesses()) {
-
-  //     Entity entity = txn.newEntity(FieldAccess.ENTITY_TYPE);
-  //     fieldAccess.setEntityProps(entity);
-  //     mainEntity.addLink(LINK_FIELD_ACCESS, entity);
-  //     entity.setLink(LINK_SOURCE, mainEntity);
-  //     // addClassReference(txn, mainEntity, classIndex, entity, fieldAccess.declaringClass);
-  //     // txn.saveEntity(entity);
-  //   }
-
-  //   for (MethodCall methodCall : getMethodCalls()) {
-
-  //     Entity entity = txn.newEntity(MethodCall.ENTITY_TYPE);
-  //     methodCall.setEntityProps(entity);
-  //     // TODO arguments
-  //     mainEntity.addLink(LINK_METHOD_CALL, entity);
-  //     entity.setLink(LINK_SOURCE, mainEntity);
-  //     // addClassReference(txn, mainEntity, classIndex, entity, methodCall.declaringClass);
-  //     // txn.saveEntity(entity);
-  //   }
-  // }
-
   private Set<ClassScope> getAllClassScopes(ClassScope classScope) {
     Set<ClassScope> set = new LinkedHashSet<>(8);
     for (ClassScope cs : classScope.getClassScopes()) {
@@ -798,11 +769,11 @@ public class Source implements Serializable, Storable {
     this.packageName = packageName;
   }
 
-  public int getClassStartLine() {
+  public long getClassStartLine() {
     return classStartLine;
   }
 
-  public void setClassStartLine(int classStartLine) {
+  public void setClassStartLine(long classStartLine) {
     this.classStartLine = classStartLine;
   }
 }

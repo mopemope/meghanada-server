@@ -7,6 +7,7 @@ import com.google.common.base.Joiner;
 import com.sun.source.tree.CompilationUnitTree;
 import com.sun.source.tree.ExpressionTree;
 import com.sun.source.tree.ImportTree;
+import com.sun.source.tree.LineMap;
 import com.sun.source.tree.Tree;
 import com.sun.source.tree.VariableTree;
 import com.sun.tools.javac.code.Symbol;
@@ -375,7 +376,7 @@ public class TreeAnalyzer {
     context.setEndPosTable(endPosTable);
     final CachedASMReflector cachedASMReflector = CachedASMReflector.getInstance();
 
-    int firstLine = 0;
+    long firstLine = 0;
     for (final ImportTree imp : cut.getImports()) {
       final JCTree.JCImport jcImport = (JCTree.JCImport) imp;
       final int startPos = jcImport.getPreferredPosition();
@@ -479,6 +480,7 @@ public class TreeAnalyzer {
         }
       }
     } catch (final IOException e) {
+      log.catching(e);
       throw new UncheckedIOException(e);
     }
   }
@@ -1907,7 +1909,6 @@ public class TreeAnalyzer {
             if (typeTree instanceof JCTree.JCTypeUnion) {
 
               final JCTree.JCTypeUnion union = (JCTree.JCTypeUnion) typeTree;
-
               TreeAnalyzer.parseUnionVariable(
                   vd, preferredPos, src, typeTree, vName, nameRange, union);
 
@@ -1916,7 +1917,6 @@ public class TreeAnalyzer {
               try {
 
                 final Variable variable = new Variable(vName, preferredPos, nameRange);
-
                 if (vd.getTag().equals(JCTree.Tag.VARDEF)) {
                   variable.isDef = true;
                 }
@@ -2018,18 +2018,18 @@ public class TreeAnalyzer {
 
   private Source analyzeUnit(final CompilationUnitTree cut, final Set<File> errorFiles)
       throws IOException {
+
+    LineMap lineMap = cut.getLineMap();
     final URI uri = cut.getSourceFile().toUri();
     final File file = new File(uri.normalize());
     final String path = file.getCanonicalPath();
-    final Source source = new Source(path);
+    final Source source = new Source(path, lineMap);
     if (errorFiles.contains(file)) {
       source.hasCompileError = true;
     }
     final SourceContext context = new SourceContext(source);
-    final EntryMessage entryMessage = log.traceEntry("---------- analyze file:{} ----------", file);
     this.analyzeCompilationUnitTree(context, cut);
     source.resetLineRange();
-    log.traceExit(entryMessage);
     return source;
   }
 }

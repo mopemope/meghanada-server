@@ -233,8 +233,8 @@ public class SexpOutputFormatter implements OutputFormatter {
             + String.join(
                 LIST_SEP,
                 doubleQuote(loc.getPath()),
-                Integer.toString(loc.getLine()),
-                Integer.toString(loc.getColumn()))
+                Long.toString(loc.getLine()),
+                Long.toString(loc.getColumn()))
             + RPAREN;
     return success(result);
   }

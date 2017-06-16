@@ -280,7 +280,7 @@ public abstract class Project implements Serializable, Storable {
 
         this.prepareCompile(files);
 
-        final CompiledSourceHandler handler = new CompiledSourceHandler(this, this.callerMap);
+        final CompiledSourceHandler handler = new CompiledSourceHandler(this);
         final CompileResult compileResult =
             clearMemberCache(
                 getJavaAnalyzer()
@@ -345,7 +345,7 @@ public abstract class Project implements Serializable, Storable {
         final String classpath = this.allClasspath();
         this.prepareTestCompile(files);
 
-        final CompiledSourceHandler handler = new CompiledSourceHandler(this, this.callerMap);
+        final CompiledSourceHandler handler = new CompiledSourceHandler(this);
         final CompileResult compileResult =
             clearMemberCache(
                 getJavaAnalyzer()
@@ -442,7 +442,7 @@ public abstract class Project implements Serializable, Storable {
       this.prepareCompile(files);
     }
 
-    final CompiledSourceHandler handler = new CompiledSourceHandler(this, this.callerMap);
+    final CompiledSourceHandler handler = new CompiledSourceHandler(this);
     final CompileResult compileResult =
         clearMemberCache(
             getJavaAnalyzer().analyzeAndCompile(files, this.allClasspath(), output, true, handler));
@@ -491,7 +491,7 @@ public abstract class Project implements Serializable, Storable {
       this.prepareCompile(files);
     }
 
-    final CompiledSourceHandler handler = new CompiledSourceHandler(this, this.callerMap);
+    final CompiledSourceHandler handler = new CompiledSourceHandler(this);
     final CompileResult compileResult =
         clearMemberCache(
             getJavaAnalyzer().analyzeAndCompile(files, this.allClasspath(), output, true, handler));
@@ -963,21 +963,61 @@ public abstract class Project implements Serializable, Storable {
     return this.runProcess(cmd);
   }
 
+  public CompileResult compileString(final String sourceFile, final String sourceCode)
+      throws IOException {
+
+    boolean isTest = false;
+
+    for (final File source : this.testSources) {
+      String testPath = source.getCanonicalPath();
+      if (sourceFile.startsWith(testPath)) {
+        isTest = true;
+        break;
+      }
+    }
+
+    String output;
+    if (isTest) {
+      output = this.testOutput.getCanonicalPath();
+    } else {
+      output = this.output.getCanonicalPath();
+    }
+    final Stopwatch stopwatch = Stopwatch.createStarted();
+
+    CompiledSourceHandler handler = new CompiledSourceHandler(this, true);
+    CompileResult compileResult =
+        clearMemberCache(
+            getJavaAnalyzer()
+                .runAnalyzeAndCompile(
+                    this.allClasspath(), output, sourceFile, sourceCode, true, handler));
+
+    log.info(
+        "file {} compile and analyze problem:{} elapsed:{}",
+        sourceFile,
+        compileResult.getDiagnostics().size(),
+        stopwatch.stop());
+    return compileResult;
+  }
+
   private static class CompiledSourceHandler implements JavaAnalyzer.SourceAnalyzedHandler {
 
     private final boolean useSourceCache;
     private final Map<String, Set<String>> callerMap;
     private final Map<String, String> checksumMap;
     private final Project project;
+    private boolean diagnostics = false;
 
-    CompiledSourceHandler(final Project project, final Map<String, Set<String>> callerMap)
-        throws IOException {
-
+    CompiledSourceHandler(Project project) throws IOException {
       this.project = project;
-      this.callerMap = callerMap;
+      this.callerMap = project.callerMap;
       final Config config = Config.load();
       this.useSourceCache = config.useSourceCache();
       this.checksumMap = ProjectDatabaseHelper.getChecksumMap(project.projectRootPath);
+    }
+
+    CompiledSourceHandler(final Project project, boolean diagnostics) throws IOException {
+      this(project);
+      this.diagnostics = diagnostics;
     }
 
     @Override

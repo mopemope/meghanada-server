@@ -23,6 +23,7 @@ import meghanada.location.Location;
 import meghanada.reflect.CandidateUnit;
 import meghanada.session.Session;
 import meghanada.utils.ClassNameUtils;
+import meghanada.utils.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -66,14 +67,33 @@ public class CommandHandler {
   }
 
   public void diagnostics(final long id, final String path) {
+    File f = new File(path);
     try {
-      final String canonicalPath = new File(path).getCanonicalPath();
-      final CompileResult compileResult = session.diagnostic(canonicalPath);
-      final String out = outputFormatter.diagnostics(id, compileResult, canonicalPath);
+      String contents = org.apache.commons.io.FileUtils.readFileToString(f);
+      final CompileResult compileResult = session.diagnosticString(path, contents);
+      final String out = outputFormatter.diagnostics(id, compileResult, path);
       writer.write(out);
       writer.newLine();
     } catch (Throwable t) {
       writeError(id, t);
+    }
+  }
+
+  public void diagnostics(final long id, final String sourceFile, final String sourceCodeFile) {
+    File f = new File(sourceCodeFile);
+    f.deleteOnExit();
+    try {
+      String contents = org.apache.commons.io.FileUtils.readFileToString(new File(sourceCodeFile));
+      final CompileResult compileResult = session.diagnosticString(sourceFile, contents);
+      final String out = outputFormatter.diagnostics(id, compileResult, sourceFile);
+      writer.write(out);
+      writer.newLine();
+    } catch (Throwable t) {
+      writeError(id, t);
+    } finally {
+      if (f.exists()) {
+        f.delete();
+      }
     }
   }
 

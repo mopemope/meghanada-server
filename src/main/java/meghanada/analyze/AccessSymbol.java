@@ -37,8 +37,8 @@ public abstract class AccessSymbol implements Serializable {
   }
 
   public boolean containsColumn(final int col) {
-    final int start = this.range.begin.column;
-    final int end = this.range.end.column;
+    final long start = this.range.begin.column;
+    final long end = this.range.end.column;
     return start <= col && col <= end;
   }
 

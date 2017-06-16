@@ -4,10 +4,10 @@ import com.google.common.base.MoreObjects;
 
 public class Location {
   private final String path;
-  private final int line;
-  private final int column;
+  private final long line;
+  private final long column;
 
-  public Location(final String path, final int line, final int column) {
+  public Location(final String path, final long line, final long column) {
     this.path = path;
     this.line = line;
     this.column = column;
@@ -26,11 +26,11 @@ public class Location {
     return path;
   }
 
-  public int getLine() {
+  public long getLine() {
     return line;
   }
 
-  public int getColumn() {
+  public long getColumn() {
     return column;
   }
 }

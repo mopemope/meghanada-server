@@ -120,6 +120,14 @@ public class EmacsServer implements Server {
                   handler.diagnostics(id, args.get(0));
                   return true;
                 })
+            .when(headTail(eq("dl"), any()))
+            .get(
+                args -> {
+                  // dl : Diagnostic live
+                  // usage: dl <filepath> <contents-file>
+                  handler.diagnostics(id, args.get(0), args.get(1));
+                  return true;
+                })
             .when(headTail(eq("rj"), any()))
             .get(
                 args -> {

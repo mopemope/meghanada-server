@@ -2,6 +2,7 @@ package meghanada.analyze;
 
 import static meghanada.config.Config.timeIt;
 import static meghanada.config.Config.timeItF;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
 import java.io.File;
@@ -608,6 +609,32 @@ public class JavaAnalyzerTest extends GradleTestBase {
           // compileResult.getSources().values().forEach(Source::dump);
           return compileResult;
         });
+  }
+
+  @Test
+  public void analyzeFromString01() throws Exception {
+    final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8");
+    final String cp = getClasspath();
+
+    final String tmp = System.getProperty("java.io.tmpdir");
+    String path = "./src/test/java/meghanada/Hello.java";
+    String code = "class Hello {}";
+    CompileResult result = analyzer.runAnalyzeAndCompile(cp, tmp, path, code, false, null);
+    String summary = result.getDiagnosticsSummary();
+    assertEquals(result.isSuccess(), true);
+  }
+
+  @Test
+  public void analyzeFromString02() throws Exception {
+    final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8");
+    final String cp = getClasspath();
+
+    final String tmp = System.getProperty("java.io.tmpdir");
+    String path = "./src/test/java/meghanada/Hello.java";
+    String code = "class Hello {a}";
+    CompileResult result = analyzer.runAnalyzeAndCompile(cp, tmp, path, code, false, null);
+    String summary = result.getDiagnosticsSummary();
+    assertEquals(result.isSuccess(), false);
   }
 
   private String getClasspath() throws IOException {

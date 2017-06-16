@@ -458,7 +458,7 @@ public class Session {
 
               try (final Stream<String> stream =
                   Files.lines(file.toPath(), StandardCharsets.UTF_8)) {
-                int startLine = source.getClassStartLine();
+                long startLine = source.getClassStartLine();
                 stream
                     .skip(startLine)
                     .forEach(
@@ -713,10 +713,8 @@ public class Session {
         .orElse(null);
   }
 
-  public synchronized CompileResult diagnostic(final String path) throws IOException {
-    // java file only
-    final File file = normalize(path);
-    boolean b = this.changeProject(path);
-    return currentProject.compileFile(file, false, false);
+  public CompileResult diagnosticString(String sourceFile, String sourceCode) throws IOException {
+    boolean b = this.changeProject(sourceFile);
+    return currentProject.compileString(sourceFile, sourceCode);
   }
 }

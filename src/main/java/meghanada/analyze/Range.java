@@ -28,8 +28,8 @@ public class Range implements Serializable {
   }
 
   public boolean containsLine(final int line) {
-    final int start = this.begin.line;
-    final int end = this.end.line;
+    final long start = this.begin.line;
+    final long end = this.end.line;
     return start <= line && line <= end;
   }
 
@@ -37,8 +37,8 @@ public class Range implements Serializable {
     if (this.begin.line != this.end.line) {
       return false;
     }
-    final int start = this.begin.column;
-    final int end = this.end.column;
+    final long start = this.begin.column;
+    final long end = this.end.column;
     return start <= col && col <= end;
   }
 

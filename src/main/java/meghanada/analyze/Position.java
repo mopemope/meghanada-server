@@ -7,10 +7,10 @@ public class Position implements Serializable {
 
   private static final long serialVersionUID = -1827615026831853860L;
 
-  public int line;
-  public int column;
+  public long line;
+  public long column;
 
-  public Position(final int line, final int column) {
+  public Position(final long line, final long column) {
     this.line = line;
     this.column = column;
   }

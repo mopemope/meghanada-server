@@ -55,9 +55,9 @@ public class LocationSearcherTest extends GradleTestBase {
 
     final LocationSearcher searcher = getSearcher();
     final Location result =
-        timeIt(() -> searcher.searchDeclarationLocation(f, 1005, 7, "source")).orElse(null);
+        timeIt(() -> searcher.searchDeclarationLocation(f, 1045, 7, "source")).orElse(null);
     assertNotNull(result);
-    assertEquals(984, result.getLine());
+    assertEquals(1024, result.getLine());
     assertEquals(39, result.getColumn());
   }
 
@@ -130,7 +130,7 @@ public class LocationSearcherTest extends GradleTestBase {
         searcher.searchDeclarationLocation(f, 490, 46, "searchMissingImport").orElse(null);
     assertNotNull(result);
     assertTrue(result.getPath().contains("Source.java"));
-    assertEquals(422, result.getLine());
+    assertEquals(438, result.getLine());
     assertEquals(36, result.getColumn());
   }
 
@@ -254,11 +254,11 @@ public class LocationSearcherTest extends GradleTestBase {
           timeIt(
               () ->
                   searcher
-                      .searchDeclarationLocation(f, 512, 12, "analyzeVariableDecl")
+                      .searchDeclarationLocation(f, 514, 12, "analyzeVariableDecl")
                       .orElse(null));
       assertNotNull(result);
       assertTrue(result.getPath().contains("TreeAnalyzer.java"));
-      assertEquals(1872, result.getLine());
+      assertEquals(1874, result.getLine());
       assertEquals(16, result.getColumn());
     }
   }
@@ -285,10 +285,10 @@ public class LocationSearcherTest extends GradleTestBase {
 
     LocationSearcher searcher = getSearcher();
     Location result =
-        timeIt(() -> searcher.searchDeclarationLocation(f, 376, 17, "Source")).orElse(null);
+        timeIt(() -> searcher.searchDeclarationLocation(f, 510, 14, "Source")).orElse(null);
     assertNotNull(result);
     assertTrue(result.getPath().contains("Source.java"));
-    assertEquals(46, result.getLine());
+    assertEquals(47, result.getLine());
     assertEquals(14, result.getColumn());
   }
 

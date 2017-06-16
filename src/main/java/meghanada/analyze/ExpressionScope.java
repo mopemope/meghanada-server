@@ -20,8 +20,8 @@ public class ExpressionScope extends Scope {
 
   @Override
   public void addMethodCall(final MethodCall mcs) {
-    final Integer endCol = super.range.end.column;
-    final Integer endLine = super.range.end.line;
+    final long endCol = super.range.end.column;
+    final long endLine = super.range.end.line;
     final Position mcsEnd = mcs.range.end;
     if (mcsEnd.column + 1 == endCol && mcsEnd.line == endLine) {
       this.expressionReturn = mcs;
