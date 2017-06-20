@@ -67,17 +67,7 @@ public class Main {
             new Thread(
                 () -> {
                   log.info("shutdown server");
-                  final Runtime runtime = Runtime.getRuntime();
-                  final float maxMemory = runtime.maxMemory() / 1024 / 1024;
-                  final float totalMemory = runtime.totalMemory() / 1024 / 1024;
-                  final float usedMemory =
-                      (runtime.totalMemory() - runtime.freeMemory()) / 1024 / 1024;
-
-                  log.info(
-                      "memory usage (used/total/max): {}MB / {}MB / {}MB",
-                      String.format("%.2f", usedMemory),
-                      String.format("%.2f", totalMemory),
-                      String.format("%.2f", maxMemory));
+                  Config.load().showMemory();
                 }));
 
     System.setProperty("home", Config.getInstalledPath().getParentFile().getCanonicalPath());

@@ -329,6 +329,18 @@ public class Config {
     return c.getInt("source-cache-size");
   }
 
+  public void showMemory() {
+    final Runtime runtime = Runtime.getRuntime();
+    final float maxMemory = runtime.maxMemory() / 1024 / 1024;
+    final float totalMemory = runtime.totalMemory() / 1024 / 1024;
+    final float usedMemory = (runtime.totalMemory() - runtime.freeMemory()) / 1024 / 1024;
+    log.info(
+        "memory usage (used/total/max): {}MB / {}MB / {}MB",
+        String.format("%.2f", usedMemory),
+        String.format("%.2f", totalMemory),
+        String.format("%.2f", maxMemory));
+  }
+
   @FunctionalInterface
   public interface SimpleSupplier<R> {
 

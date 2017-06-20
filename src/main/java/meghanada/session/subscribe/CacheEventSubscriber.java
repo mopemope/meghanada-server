@@ -7,6 +7,7 @@ import com.google.common.eventbus.Subscribe;
 import java.io.File;
 import java.util.Collection;
 import meghanada.analyze.CompileResult;
+import meghanada.config.Config;
 import meghanada.project.Project;
 import meghanada.project.ProjectDependency;
 import meghanada.reflect.asm.CachedASMReflector;
@@ -52,7 +53,7 @@ public class CacheEventSubscriber extends AbstractSubscriber {
     final Collection<File> dependentJars = session.getDependentJars();
     final int size = dependentJars.size();
     timeItF(
-        "create class index. read " + size + " jars. elapsed:{}",
+        "create class index ... read " + size + " jars. elapsed:{}",
         () -> {
           reflector.addClasspath(dependentJars);
           reflector.createClassIndexes();
@@ -70,18 +71,18 @@ public class CacheEventSubscriber extends AbstractSubscriber {
             final CompileResult compileResult = project.compileJava();
             if (compileResult.isSuccess()) {
               if (compileResult.hasDiagnostics()) {
-                log.warn("Compile Warning : {}", compileResult.getDiagnosticsSummary());
+                log.warn("compile message: {}", compileResult.getDiagnosticsSummary());
               }
               final CompileResult testCompileResult = project.compileTestJava();
               if (testCompileResult.isSuccess()) {
                 if (testCompileResult.hasDiagnostics()) {
-                  log.warn("Test Compile Warning : {}", testCompileResult.getDiagnosticsSummary());
+                  log.warn("compile(test) message: {}", testCompileResult.getDiagnosticsSummary());
                 }
               } else {
-                log.warn("Test Compile Error : {}", testCompileResult.getDiagnosticsSummary());
+                log.warn("compile(test) error: {}", testCompileResult.getDiagnosticsSummary());
               }
             } else {
-              log.warn("Compile Error : {}", compileResult.getDiagnosticsSummary());
+              log.warn("compile message  {}", compileResult.getDiagnosticsSummary());
             }
           } catch (Exception e) {
             log.catching(e);
@@ -97,11 +98,9 @@ public class CacheEventSubscriber extends AbstractSubscriber {
         "class index size:{} total elapsed:{}",
         reflector.getGlobalClassIndex().size(),
         stopwatch.stop());
-    log.info(
-        "memory usage (used/total/max): {}MB / {}MB / {}MB",
-        String.format("%.2f", usedMemory),
-        String.format("%.2f", totalMemory),
-        String.format("%.2f", maxMemory));
+
+    Config.load().showMemory();
+
     log.info("Ready");
   }
 
