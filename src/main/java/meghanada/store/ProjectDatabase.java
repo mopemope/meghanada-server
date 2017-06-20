@@ -609,6 +609,10 @@ class ProjectDatabase {
     this.close();
   }
 
+  public ExecutorService getExecutorService() {
+    return executorService;
+  }
+
   static class StoreRequest {
 
     private final long id;

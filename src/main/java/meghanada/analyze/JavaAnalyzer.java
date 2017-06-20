@@ -19,6 +19,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import javax.annotation.Nullable;
 import javax.tools.Diagnostic;
 import javax.tools.DiagnosticCollector;
@@ -31,16 +35,16 @@ import meghanada.config.Config;
 import meghanada.reflect.asm.CachedASMReflector;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.openjdk.tools.javac.code.Kinds.Kind;
 
 public class JavaAnalyzer {
 
   private static final Logger log = LogManager.getLogger(JavaAnalyzer.class);
 
   private static final JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
+  private final TreeAnalyzer treeAnalyzer = new TreeAnalyzer();
+  private final ExecutorService executorService = Executors.newSingleThreadExecutor();
   private String compileSource = "1.8";
   private String compileTarget = "1.8";
-  private final TreeAnalyzer treeAnalyzer = new TreeAnalyzer();
 
   public JavaAnalyzer(final String compileSource, final String compileTarget) {
     this.compileSource = compileSource;
@@ -49,6 +53,16 @@ public class JavaAnalyzer {
         "compiler settings compileSource:{} compileTarget:{}",
         this.compileSource,
         this.compileTarget);
+    Runtime.getRuntime()
+        .addShutdownHook(
+            new Thread(
+                () -> {
+                  try {
+                    shutdown();
+                  } catch (Throwable t) {
+                    log.catching(t);
+                  }
+                }));
   }
 
   private static Set<File> getErrorFiles(
@@ -57,19 +71,18 @@ public class JavaAnalyzer {
     final Set<File> temp =
         Collections.newSetFromMap(new ConcurrentHashMap<File, Boolean>(diagnostics.size()));
 
-    diagnostics.forEach(
-        diagnostic -> {
-          final Diagnostic.Kind kind = diagnostic.getKind();
-          final JavaFileObject fileObject = diagnostic.getSource();
-          if (nonNull(fileObject) && kind.equals(Diagnostic.Kind.ERROR)) {
-            final URI uri = fileObject.toUri();
-            try {
-              temp.add(new File(uri.normalize()).getCanonicalFile());
-            } catch (IOException e) {
-              throw new UncheckedIOException(e);
-            }
-          }
-        });
+    for (Diagnostic<? extends JavaFileObject> diagnostic : diagnostics) {
+      final Diagnostic.Kind kind = diagnostic.getKind();
+      final JavaFileObject fileObject = diagnostic.getSource();
+      if (nonNull(fileObject) && kind.equals(Diagnostic.Kind.ERROR)) {
+        final URI uri = fileObject.toUri();
+        try {
+          temp.add(new File(uri.normalize()).getCanonicalFile());
+        } catch (IOException e) {
+          throw new UncheckedIOException(e);
+        }
+      }
+    }
 
     return temp;
   }
@@ -236,20 +249,40 @@ public class JavaAnalyzer {
       final Set<File> errorFiles = JavaAnalyzer.getErrorFiles(diagnostics);
       final Map<File, Source> analyzedMap = treeAnalyzer.analyze(parsedIter, errorFiles);
 
-      if (generate && !Config.load().useExternalBuilder()) {
-        javacTask.generate();
-        CachedASMReflector.getInstance().updateClassIndexFromDirectory();
-      }
-
-      if (nonNull(handler)) {
-        for (Source source : analyzedMap.values()) {
-          handler.analyzed(source);
-        }
-        handler.complete();
-      }
-
+      Future<?> future =
+          this.getExecutorService()
+              .submit(
+                  () -> {
+                    try {
+                      if (generate && !Config.load().useExternalBuilder()) {
+                        javacTask.generate();
+                        CachedASMReflector.getInstance().updateClassIndexFromDirectory();
+                      }
+                      if (nonNull(handler)) {
+                        for (Source source : analyzedMap.values()) {
+                          handler.analyzed(source);
+                        }
+                        handler.complete();
+                      }
+                    } catch (IOException e) {
+                      log.catching(e);
+                    }
+                  });
       final boolean success = errorFiles.size() == 0;
       return new CompileResult(success, analyzedMap, diagnostics, errorFiles);
+    }
+  }
+
+  public ExecutorService getExecutorService() {
+    return this.executorService;
+  }
+
+  public void shutdown() {
+    this.executorService.shutdown();
+    try {
+      this.executorService.awaitTermination(3, TimeUnit.SECONDS);
+    } catch (InterruptedException e) {
+      log.catching(e);
     }
   }
 

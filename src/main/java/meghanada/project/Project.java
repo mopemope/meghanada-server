@@ -1056,7 +1056,11 @@ public abstract class Project implements Serializable, Storable {
       } else {
         // error
         checksumMap.remove(path);
-        globalCache.invalidateSource(this.project, sourceFile);
+        if (!this.diagnostics) {
+          globalCache.replaceSource(this.project, source);
+        } else {
+          globalCache.invalidateSource(this.project, sourceFile);
+        }
       }
     }
 
