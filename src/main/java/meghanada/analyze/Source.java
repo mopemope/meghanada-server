@@ -679,18 +679,14 @@ public class Source implements Serializable, Storable {
   }
 
   @Override
-  @SuppressWarnings("rawtypes")
-  public Map<String, Comparable> getSaveProperties() {
-    Map<String, Comparable> map = new HashMap<>(3);
-    map.put("filePath", this.filePath);
+  public void store(StoreTransaction txn, Entity entity) {
+    entity.setProperty("filePath", this.filePath);
     if (isNull(this.packageName)) {
-      map.put("packageName", "");
+      entity.setProperty("packageName", "");
     } else {
-      map.put("packageName", this.packageName);
+      entity.setProperty("packageName", this.packageName);
     }
-    map.put("fqcn", this.getFQCN());
-
-    return map;
+    entity.setProperty("fqcn", this.getFQCN());
   }
 
   private Set<ClassScope> getAllClassScopes(ClassScope classScope) {

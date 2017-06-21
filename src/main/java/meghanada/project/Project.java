@@ -27,6 +27,8 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import javax.tools.Diagnostic;
 import javax.tools.JavaFileObject;
+import jetbrains.exodus.entitystore.Entity;
+import jetbrains.exodus.entitystore.StoreTransaction;
 import meghanada.analyze.ClassScope;
 import meghanada.analyze.CompileResult;
 import meghanada.analyze.JavaAnalyzer;
@@ -816,11 +818,8 @@ public abstract class Project implements Serializable, Storable {
   }
 
   @Override
-  @SuppressWarnings("rawtypes")
-  public Map<String, Comparable> getSaveProperties() {
-    Map<String, Comparable> map = new HashMap<>(6);
-    map.put("name", name);
-    return map;
+  public void store(StoreTransaction txn, Entity entity) {
+    entity.setProperty("name", name);
   }
 
   @Override

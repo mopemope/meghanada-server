@@ -7,12 +7,11 @@ import com.google.common.base.Joiner;
 import com.google.common.base.Objects;
 import java.io.Serializable;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import jetbrains.exodus.entitystore.Entity;
 import jetbrains.exodus.entitystore.EntityId;
+import jetbrains.exodus.entitystore.StoreTransaction;
 import meghanada.reflect.asm.CachedASMReflector;
 import meghanada.store.Storable;
 import meghanada.utils.ClassNameUtils;
@@ -169,22 +168,18 @@ public class ClassIndex implements CandidateUnit, Cloneable, Serializable, Stora
   }
 
   @Override
-  @SuppressWarnings("rawtypes")
-  public Map<String, Comparable> getSaveProperties() {
-    Map<String, Comparable> map = new HashMap<>(6);
-    map.put("declaration", this.declaration);
-    map.put("name", this.name);
+  public void store(StoreTransaction txn, Entity entity) {
+    entity.setProperty("declaration", this.declaration);
+    entity.setProperty("name", this.name);
     if (isNull(this.filePath)) {
       // use test only
-      map.put("filePath", "");
+      entity.setProperty("filePath", "");
     } else {
-      map.put("filePath", this.filePath);
+      entity.setProperty("filePath", this.filePath);
     }
-    map.put("isAnnotation", this.isAnnotation);
-    map.put("isInterface", this.isInterface);
-    map.put("functional", this.functional);
-
-    return map;
+    entity.setProperty("isAnnotation", this.isAnnotation);
+    entity.setProperty("isInterface", this.isInterface);
+    entity.setProperty("functional", this.functional);
   }
 
   @Override

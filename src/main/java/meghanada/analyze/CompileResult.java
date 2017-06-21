@@ -109,19 +109,12 @@ public class CompileResult implements Storable {
   }
 
   @Override
-  @SuppressWarnings("rawtypes")
-  public Map<String, Comparable> getSaveProperties() {
+  public void store(StoreTransaction txn, Entity entity) {
 
-    Map<String, Comparable> prop = new HashMap<>(3);
     long now = Instant.now().getEpochSecond();
-    prop.put("createdAt", now);
-    prop.put("result", this.success);
-    prop.put("problems", this.diagnostics.size());
-    return prop;
-  }
-
-  @Override
-  public void storeExtraData(StoreTransaction txn, Entity mainEntity) {
+    entity.setProperty("createdAt", now);
+    entity.setProperty("result", this.success);
+    entity.setProperty("problems", this.diagnostics.size());
 
     for (Diagnostic<? extends JavaFileObject> diagnostic : this.diagnostics) {
       String kind = diagnostic.getKind().toString();
@@ -145,20 +138,19 @@ public class CompileResult implements Storable {
       }
 
       String code = diagnostic.getCode();
-      Entity entity = txn.newEntity(CompileResult.DIAGNOSTIC_ENTITY_TYPE);
-      entity.setProperty("kind", kind);
-      entity.setProperty("line", line);
-      entity.setProperty("column", column);
-      entity.setProperty("message", message);
+      Entity subEntity = txn.newEntity(CompileResult.DIAGNOSTIC_ENTITY_TYPE);
+      subEntity.setProperty("kind", kind);
+      subEntity.setProperty("line", line);
+      subEntity.setProperty("column", column);
+      subEntity.setProperty("message", message);
       if (nonNull(path)) {
-        entity.setProperty("path", path);
+        subEntity.setProperty("path", path);
       }
       if (nonNull(code)) {
-        entity.setProperty("code", code);
+        subEntity.setProperty("code", code);
       }
 
-      // txn.saveEntity(entity);
-      mainEntity.addLink("diagnostic", entity);
+      entity.addLink("diagnostic", entity);
     }
   }
 
