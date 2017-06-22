@@ -14,7 +14,6 @@ import meghanada.analyze.CompileResult;
 import meghanada.project.Project;
 import meghanada.reflect.asm.CachedASMReflector;
 import meghanada.store.ProjectDatabaseHelper;
-import meghanada.utils.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.AfterClass;
@@ -36,10 +35,10 @@ public class GradleProjectTest {
     ProjectDatabaseHelper.shutdown();
     String p = System.getProperty(TEMP_PROJECT_SETTING_DIR);
     File file = new File(p);
-    FileUtils.deleteFiles(file, true);
+    org.apache.commons.io.FileUtils.deleteDirectory(file);
     String tempPath = GradleProject.getTempPath();
     if (nonNull(tempPath)) {
-      FileUtils.deleteFiles(new File(tempPath), true);
+      org.apache.commons.io.FileUtils.deleteDirectory(new File(tempPath));
     }
   }
 

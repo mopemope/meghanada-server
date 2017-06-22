@@ -133,13 +133,29 @@ public class CachedASMReflector {
         .forEach(
             wrapIOConsumer(
                 root -> {
-                  // TODO is loaded ?
-                  final ASMReflector reflector = ASMReflector.getInstance();
-                  reflector
-                      .getClasses(root)
-                      .entrySet()
-                      .parallelStream()
-                      .forEach(entry -> addClassIndex(entry.getKey(), entry.getValue()));
+                  String name = root.getName();
+                  if (name.endsWith(".jar")
+                      && !name.endsWith("SNAPSHOT.jar")
+                      && ProjectDatabaseHelper.getLoadJar(root.getPath())) {
+                    List<ClassIndex> indexes =
+                        ProjectDatabaseHelper.getClassIndexes(root.getPath());
+
+                    for (ClassIndex index : indexes) {
+                      index.loaded = true;
+                      String fqcn = index.getRawDeclaration();
+                      this.globalClassIndex.put(fqcn, index);
+                    }
+                  } else {
+                    final ASMReflector reflector = ASMReflector.getInstance();
+                    reflector
+                        .getClasses(root)
+                        .entrySet()
+                        .parallelStream()
+                        .forEach(entry -> addClassIndex(entry.getKey(), entry.getValue()));
+                    if (name.endsWith(".jar") && !name.endsWith("SNAPSHOT.jar")) {
+                      ProjectDatabaseHelper.saveLoadJar(root.getPath());
+                    }
+                  }
                 }));
 
     this.updateClassIndexFromDirectory();
@@ -147,18 +163,20 @@ public class CachedASMReflector {
   }
 
   private void saveAllClassIndexes() {
-    List<ClassIndex> jarIndexes =
-        globalClassIndex
-            .values()
-            .stream()
-            .filter(classIndex -> classIndex.getFilePath().endsWith(".jar"))
-            .collect(Collectors.toList());
-    List<ClassIndex> otherIndexes =
-        globalClassIndex
-            .values()
-            .stream()
-            .filter(classIndex -> !classIndex.getFilePath().endsWith(".jar"))
-            .collect(Collectors.toList());
+    List<ClassIndex> jarIndexes = new ArrayList<>();
+    List<ClassIndex> otherIndexes = new ArrayList<>();
+    globalClassIndex
+        .values()
+        .forEach(
+            index -> {
+              if (!index.getFilePath().endsWith(".jar")) {
+                otherIndexes.add(index);
+              } else {
+                if (!index.loaded) {
+                  jarIndexes.add(index);
+                }
+              }
+            });
 
     ProjectDatabaseHelper.saveClassIndexes(jarIndexes, false);
     ProjectDatabaseHelper.saveClassIndexes(otherIndexes, true);

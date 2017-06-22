@@ -638,7 +638,7 @@ public class LocationSearcher {
       }
       return null;
     } finally {
-      FileUtils.deleteFiles(output, false);
+      org.apache.commons.io.FileUtils.deleteDirectory(output);
     }
   }
 

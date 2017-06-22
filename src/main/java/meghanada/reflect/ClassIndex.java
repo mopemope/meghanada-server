@@ -19,6 +19,7 @@ import meghanada.utils.ClassNameUtils;
 public class ClassIndex implements CandidateUnit, Cloneable, Serializable, Storable {
 
   public static final String ENTITY_TYPE = "ClassIndex";
+  public static final String FILE_ENTITY_TYPE = "ClassIndexFile";
   private static final long serialVersionUID = 4833311903131990013L;
 
   // fqcn
@@ -33,6 +34,7 @@ public class ClassIndex implements CandidateUnit, Cloneable, Serializable, Stora
   private String filePath;
   private MemberType memberType = MemberType.CLASS;
   private EntityId entityID;
+  public transient boolean loaded;
 
   public ClassIndex(
       final String declaration, final List<String> typeParameters, final List<String> supers) {

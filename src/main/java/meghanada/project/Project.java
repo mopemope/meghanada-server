@@ -840,7 +840,7 @@ public abstract class Project implements Serializable, Storable {
     System.setProperty(PROJECT_ROOT_KEY, this.projectRootPath);
     final File projectSettingDir = new File(Config.load().getProjectSettingDir());
     log.info("clear cache {}", projectSettingDir);
-    FileUtils.deleteFiles(projectSettingDir, false);
+    org.apache.commons.io.FileUtils.deleteDirectory(projectSettingDir);
   }
 
   private Optional<Properties> readFormatPropertiesFromFile() {

@@ -125,6 +125,7 @@ public class GradleTestBase {
   public static void setupReflector() throws Exception {
     setupProject();
     CachedASMReflector cachedASMReflector = CachedASMReflector.getInstance();
+    cachedASMReflector.getGlobalClassIndex().clear();
     addClasspath(cachedASMReflector);
     final Stopwatch stopwatch = Stopwatch.createStarted();
     cachedASMReflector.createClassIndexes();
@@ -136,11 +137,11 @@ public class GradleTestBase {
     ProjectDatabaseHelper.shutdown();
     String p = System.getProperty(TEMP_PROJECT_SETTING_DIR);
     File file = new File(p);
-    FileUtils.deleteFiles(file, true);
+    org.apache.commons.io.FileUtils.deleteDirectory(file);
     assert !file.exists();
     String tempPath = GradleProject.getTempPath();
     if (nonNull(tempPath)) {
-      FileUtils.deleteFiles(new File(tempPath), true);
+      org.apache.commons.io.FileUtils.deleteDirectory(new File(tempPath));
     }
     log.info("deleted database {}", file);
   }

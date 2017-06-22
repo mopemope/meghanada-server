@@ -45,7 +45,6 @@ import jetbrains.exodus.env.Environments;
 import meghanada.Main;
 import meghanada.config.Config;
 import meghanada.project.Project;
-import meghanada.utils.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -89,7 +88,7 @@ class ProjectDatabase {
                 }));
   }
 
-  public static ProjectDatabase getInstance() {
+  public static synchronized ProjectDatabase getInstance() {
     checkChangeProject();
     if (projectDatabase != null) {
       projectDatabase.open();
@@ -330,7 +329,7 @@ class ProjectDatabase {
         if (nonNull(files)) {
           for (File file : files) {
             if (file.isDirectory() && file.getName().startsWith(name) && !file.equals(base)) {
-              FileUtils.deleteFiles(file, true);
+              org.apache.commons.io.FileUtils.deleteDirectory(file);
             }
           }
         }
@@ -339,7 +338,7 @@ class ProjectDatabase {
           this.environment = Environments.newInstance(base);
         } catch (ExodusException ex) {
           // try re-create
-          FileUtils.deleteFiles(base, true);
+          org.apache.commons.io.FileUtils.deleteDirectory(base);
           this.environment = Environments.newInstance(base);
         }
         this.entityStore = PersistentEntityStores.newInstance(environment, STORE_NAME);

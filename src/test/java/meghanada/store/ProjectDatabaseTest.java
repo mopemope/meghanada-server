@@ -13,7 +13,6 @@ import java.util.Collections;
 import java.util.List;
 import meghanada.project.Project;
 import meghanada.reflect.ClassIndex;
-import meghanada.utils.FileUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -31,8 +30,7 @@ public class ProjectDatabaseTest {
     tempDir.deleteOnExit();
     final String path = tempDir.getCanonicalPath();
     System.setProperty(TEMP_PROJECT_SETTING_DIR, path);
-    FileUtils.deleteFiles(new File(path), true);
-
+    org.apache.commons.io.FileUtils.deleteDirectory(new File(path));
     String projectRoot = new File(".").getCanonicalPath();
     System.setProperty(Project.PROJECT_ROOT_KEY, projectRoot);
 
@@ -45,7 +43,7 @@ public class ProjectDatabaseTest {
       database.shutdown();
     }
     String p = System.getProperty(TEMP_PROJECT_SETTING_DIR);
-    FileUtils.deleteFiles(new File(p), true);
+    org.apache.commons.io.FileUtils.deleteDirectory(new File(p));
   }
 
   @Test

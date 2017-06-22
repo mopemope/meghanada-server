@@ -121,36 +121,6 @@ public final class FileUtils {
     }
   }
 
-  public static void deleteFiles(final File root, final boolean deleteRoot) throws IOException {
-    if (!root.exists()) {
-      return;
-    }
-    Files.walkFileTree(
-        root.toPath(),
-        new SimpleFileVisitor<Path>() {
-          @Override
-          public FileVisitResult visitFile(final Path file, final BasicFileAttributes attrs)
-              throws IOException {
-            Files.delete(file);
-            return FileVisitResult.CONTINUE;
-          }
-
-          @Override
-          public FileVisitResult postVisitDirectory(final Path dir, final IOException exc)
-              throws IOException {
-            if (deleteRoot) {
-              Files.delete(dir);
-            } else {
-              if (!dir.toFile().equals(root)) {
-                Files.delete(dir);
-              }
-            }
-
-            return FileVisitResult.CONTINUE;
-          }
-        });
-  }
-
   public static boolean filterFile(final File file) {
     final Config config = Config.load();
 

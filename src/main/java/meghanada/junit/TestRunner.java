@@ -12,7 +12,6 @@ import java.util.List;
 import meghanada.reflect.ClassIndex;
 import meghanada.reflect.asm.CachedASMReflector;
 import meghanada.store.ProjectDatabaseHelper;
-import meghanada.utils.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.runner.JUnitCore;
@@ -59,7 +58,7 @@ public class TestRunner {
   private void cleanup() throws Exception {
     ProjectDatabaseHelper.shutdown();
     String p = System.getProperty(TEMP_PROJECT_SETTING_DIR);
-    FileUtils.deleteFiles(new File(p), true);
+    org.apache.commons.io.FileUtils.deleteDirectory(new File(p));
   }
 
   private List<Class<?>> getTestClass(String testName) throws ClassNotFoundException {

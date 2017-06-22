@@ -1,6 +1,7 @@
 package meghanada.store;
 
 import static java.util.Objects.isNull;
+import static java.util.Objects.nonNull;
 
 import java.io.File;
 import java.io.IOException;
@@ -44,6 +45,45 @@ public class ProjectDatabaseHelper {
     if (!indexes.isEmpty()) {
       projectDatabase.asyncStoreObjects(indexes, allowUpdate);
     }
+  }
+
+  public static boolean getLoadJar(String filePath) {
+    ProjectDatabase database = ProjectDatabase.getInstance();
+    return database.computeInReadonly(
+        txn -> {
+          EntityIterable it = txn.find(ClassIndex.FILE_ENTITY_TYPE, "filePath", filePath);
+          return nonNull(it.getFirst());
+        });
+  }
+
+  public static void saveLoadJar(String filePath) {
+    ProjectDatabase database = ProjectDatabase.getInstance();
+    database.execute(
+        txn -> {
+          EntityIterable it = txn.find(ClassIndex.FILE_ENTITY_TYPE, "filePath", filePath);
+          if (nonNull(it.getFirst())) {
+            return false;
+          }
+          Entity entity = txn.newEntity(ClassIndex.FILE_ENTITY_TYPE);
+          entity.setProperty("filePath", filePath);
+          return true;
+        });
+  }
+
+  public static List<ClassIndex> getClassIndexes(String filePath) {
+    ProjectDatabase database = ProjectDatabase.getInstance();
+    return database.find(
+        ClassIndex.ENTITY_TYPE,
+        "filePath",
+        filePath,
+        entity -> {
+          try (InputStream in = entity.getBlob(ProjectDatabase.SERIALIZE_KEY)) {
+            return Serializer.readObject(in, ClassIndex.class);
+          } catch (Exception e) {
+            log.warn(e.getMessage());
+            return null;
+          }
+        });
   }
 
   public static File getClassFile(String fqcn) {
