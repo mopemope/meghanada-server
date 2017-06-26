@@ -115,7 +115,6 @@ public class FileSystemWatcher {
           watchKeys.register(path);
         }
       } else {
-        log.debug("{} {}", watchEvent.kind().name(), path);
         // Dispatch
         FileEvent fe = toEvent(watchEvent, path);
         if (fe != null) {

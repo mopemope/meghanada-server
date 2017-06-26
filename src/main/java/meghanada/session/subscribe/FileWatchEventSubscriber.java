@@ -23,7 +23,6 @@ public class FileWatchEventSubscriber extends AbstractSubscriber {
 
   public FileWatchEventSubscriber(final SessionEventBus sessionEventBus) {
     super(sessionEventBus);
-    log.debug("subscribe file watch");
   }
 
   @Subscribe
@@ -51,7 +50,6 @@ public class FileWatchEventSubscriber extends AbstractSubscriber {
 
   @Subscribe
   public void on(final FileSystemWatcher.ModifyEvent event) {
-    log.debug("modify event {}", event);
     final File file = event.getFile();
 
     final String name = file.getName();

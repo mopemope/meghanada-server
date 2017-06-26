@@ -294,7 +294,7 @@ public class GradleProject extends Project {
     log.debug("test output {}", this.testOutput);
 
     for (final ProjectDependency projectDependency : this.getDependencies()) {
-      log.debug("{}", projectDependency.string());
+      log.debug("{} {}", projectDependency.getScope(), projectDependency.getId());
     }
   }
 
@@ -422,10 +422,13 @@ public class GradleProject extends Project {
         if (isNull(scope)) {
           scope = "COMPILE";
         }
-        final ProjectDependency.Type type = ProjectDependency.getFileType(file);
-        final ProjectDependency projectDependency =
-            new ProjectDependency(id, scope, version, file, type);
-        dependencies.add(projectDependency);
+
+        if (!scope.equals("PROVIDED")) {
+          final ProjectDependency.Type type = ProjectDependency.getFileType(file);
+          final ProjectDependency projectDependency =
+              new ProjectDependency(id, scope, version, file, type);
+          dependencies.add(projectDependency);
+        }
       } else if (dependency instanceof IdeaModuleDependency) {
         final IdeaModuleDependency moduleDependency = (IdeaModuleDependency) dependency;
         final String scope = moduleDependency.getScope().getScope();
