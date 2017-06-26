@@ -5,10 +5,12 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import meghanada.reflect.asm.CachedASMReflector;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.logging.log4j.LogManager;
@@ -47,6 +49,7 @@ public class ClassNameUtils {
       };
 
   private static final Map<String, String> boxMap = new HashMap<>(16);
+  private static final Map<String, Set<String>> implicitTypeCastMap = new HashMap<>(6);
 
   static {
     for (int i = 0; i < primitives.length; i++) {
@@ -65,6 +68,49 @@ public class ClassNameUtils {
     removeWildcardMap = new HashMap<>(2);
     removeWildcardMap.put("? super ", "");
     removeWildcardMap.put("? extends ", "");
+
+    // char -> int, long, floa, double
+    Set<String> c = new HashSet<String>(4);
+    c.add("java.lang.Integer");
+    c.add("java.lang.Long");
+    c.add("java.lang.Float");
+    c.add("java.lang.Double");
+    implicitTypeCastMap.put("java.lang.Character", c);
+
+    // byte -> short, int, long, float, double
+    Set<String> b = new HashSet<String>(5);
+    b.add("java.lang.Short");
+    b.add("java.lang.Integer");
+    b.add("java.lang.Long");
+    b.add("java.lang.Float");
+    b.add("java.lang.Double");
+    implicitTypeCastMap.put("java.lang.Byte", b);
+
+    // short -> int, long, float, double
+    Set<String> s = new HashSet<String>(4);
+    s.add("java.lang.Integer");
+    s.add("java.lang.Long");
+    s.add("java.lang.Float");
+    s.add("java.lang.Double");
+    implicitTypeCastMap.put("java.lang.Short", s);
+
+    // int -> long, float, double
+    Set<String> i = new HashSet<String>(3);
+    i.add("java.lang.Long");
+    i.add("java.lang.Float");
+    i.add("java.lang.Double");
+    implicitTypeCastMap.put("java.lang.Integer", i);
+
+    // long -> float, double
+    Set<String> l = new HashSet<String>(2);
+    l.add("java.lang.Float");
+    l.add("java.lang.Double");
+    implicitTypeCastMap.put("java.lang.Long", i);
+
+    // float -> double
+    Set<String> f = new HashSet<String>(1);
+    f.add("java.lang.Double");
+    implicitTypeCastMap.put("java.lang.Float", f);
   }
 
   private ClassNameUtils() {}
@@ -511,6 +557,12 @@ public class ClassNameUtils {
       if (paramClassName.equals(argClassName)) {
         continue;
       }
+      if (implicitTypeCastMap.containsKey(argClassName)) {
+        Set<String> types = implicitTypeCastMap.get(argClassName);
+        if (types.contains(paramClassName)) {
+          continue;
+        }
+      }
       final boolean result =
           reflector
               .getSuperClassStream(argClassName)
@@ -548,6 +600,14 @@ public class ClassNameUtils {
         if (paramClassName.equals(argClassName)) {
           continue;
         }
+
+        if (implicitTypeCastMap.containsKey(argClassName)) {
+          Set<String> types = implicitTypeCastMap.get(argClassName);
+          if (types.contains(paramClassName)) {
+            continue;
+          }
+        }
+
         final boolean result =
             reflector
                 .getSuperClassStream(argClassName)
