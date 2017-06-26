@@ -22,7 +22,8 @@ public class Declaration {
     return MoreObjects.toStringHelper(this)
         .add("symbol", scopeInfo)
         .add("declaration", signature)
-        .add("declaration", signature)
+        .add("type", type)
+        .add("argumentIndex", argumentIndex)
         .toString();
   }
 

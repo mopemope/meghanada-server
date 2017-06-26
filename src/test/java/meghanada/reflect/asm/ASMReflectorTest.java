@@ -13,9 +13,21 @@ import meghanada.GradleTestBase;
 import meghanada.reflect.ClassIndex;
 import meghanada.reflect.MemberDescriptor;
 import meghanada.reflect.MethodDescriptor;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class ASMReflectorTest extends GradleTestBase {
+
+  @BeforeClass
+  public static void setup() throws Exception {
+    GradleTestBase.setupReflector(false);
+  }
+
+  @AfterClass
+  public static void shutdown() throws Exception {
+    GradleTestBase.shutdown();
+  }
 
   @Test
   public void testGetInstance() throws Exception {

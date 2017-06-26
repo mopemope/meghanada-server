@@ -64,7 +64,7 @@ class FieldAnalyzeVisitor extends FieldVisitor {
     final String fqcn = fieldSignatureVisitor.getResult();
     final FieldDescriptor fd =
         new FieldDescriptor(this.classAnalyzeVisitor.className, this.name, modifier, fqcn);
-    fd.typeParameters = fieldSignatureVisitor.getTypeParameters();
+    fd.setTypeParameters(fieldSignatureVisitor.getTypeParameters());
     this.classAnalyzeVisitor.getMembers().add(fd);
     log.traceExit(m);
   }

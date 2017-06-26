@@ -12,7 +12,9 @@ import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import meghanada.GradleTestBase;
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
@@ -21,6 +23,31 @@ import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.signature.SignatureReader;
 
 public class FieldSignatureVisitorTest extends GradleTestBase {
+  @BeforeClass
+  public static void setup() throws Exception {
+    GradleTestBase.setupReflector(false);
+  }
+
+  @AfterClass
+  public static void shutdown() throws Exception {
+    GradleTestBase.shutdown();
+  }
+
+  private static TestVisitor doAnalyze(File file, String fqcn) throws IOException {
+    // log.debug("class {}", name);
+    try (InputStream in = new FileInputStream(file)) {
+      ClassReader classReader = new ClassReader(in);
+      String className = classReader.getClassName().replace("/", ".");
+
+      if (className.equals(fqcn)) {
+        TestVisitor testVisitor = new TestVisitor(className);
+        classReader.accept(testVisitor, 0);
+        return testVisitor;
+      }
+    }
+    return null;
+  }
+
   @Before
   public void setUp() throws Exception {
     System.setProperty("log-level", "TRACE");
@@ -69,21 +96,6 @@ public class FieldSignatureVisitorTest extends GradleTestBase {
             entry -> {
               System.out.println("" + entry.getKey() + " : " + entry.getValue());
             });
-  }
-
-  private static TestVisitor doAnalyze(File file, String fqcn) throws IOException {
-    // log.debug("class {}", name);
-    try (InputStream in = new FileInputStream(file)) {
-      ClassReader classReader = new ClassReader(in);
-      String className = classReader.getClassName().replace("/", ".");
-
-      if (className.equals(fqcn)) {
-        TestVisitor testVisitor = new TestVisitor(className);
-        classReader.accept(testVisitor, 0);
-        return testVisitor;
-      }
-    }
-    return null;
   }
 
   private FieldSignatureVisitor doAnalyzeJar(File file, String fqcn) throws IOException {

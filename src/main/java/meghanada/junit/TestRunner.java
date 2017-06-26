@@ -125,6 +125,7 @@ public class TestRunner {
               stopwatch.stop()));
       System.out.println("Success");
     }
+
     System.out.println(Strings.repeat("-", 80));
   }
 

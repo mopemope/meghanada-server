@@ -13,17 +13,17 @@ import meghanada.utils.ClassNameUtils;
 
 public abstract class MemberDescriptor implements CandidateUnit, Cloneable, Serializable {
 
-  protected static final Pattern TRIM_RE = Pattern.compile("<[\\w ?,]+>");
+  static final Pattern TRIM_RE = Pattern.compile("<[\\w ?,]+>");
   private static final long serialVersionUID = -6014921331666546814L;
 
   public String declaringClass;
   public String name;
-  public MemberType memberType;
-  public String modifier;
-  public String returnType;
-  public boolean hasDefault;
-  public Set<String> typeParameters;
-  public Map<String, String> typeParameterMap;
+  MemberType memberType;
+  String modifier;
+  String returnType;
+  boolean hasDefault;
+  Set<String> typeParameters;
+  Map<String, String> typeParameterMap;
 
   public abstract List<String> getParameters();
 
@@ -193,5 +193,13 @@ public abstract class MemberDescriptor implements CandidateUnit, Cloneable, Seri
     }
     descriptor.typeParameterMap = new HashMap<>(this.typeParameterMap);
     return descriptor;
+  }
+
+  public void setTypeParameters(Set<String> typeParameters) {
+    this.typeParameters = typeParameters;
+  }
+
+  public MemberType getMemberType() {
+    return memberType;
   }
 }

@@ -15,11 +15,11 @@ public class MethodScope extends BlockScope {
   private static final long serialVersionUID = -6957893688780569397L;
   private static final Logger log = LogManager.getLogger(MethodScope.class);
 
-  public final List<String> parameters = new ArrayList<>(3);
-  public String name;
-  public Range nameRange;
-  public boolean isConstructor;
-  public String returnType;
+  private final List<String> parameters = new ArrayList<>(3);
+  protected String name;
+  protected String returnType;
+  private Range nameRange;
+  private boolean isConstructor;
 
   public MethodScope(
       final String name, @Nullable final Range nameRange, final int pos, final Range range) {
@@ -164,5 +164,13 @@ public class MethodScope extends BlockScope {
         .add("returnType", returnType)
         .add("parameters", parameters)
         .toString();
+  }
+
+  public List<String> getParameters() {
+    return parameters;
+  }
+
+  public boolean isConstructor() {
+    return isConstructor;
   }
 }

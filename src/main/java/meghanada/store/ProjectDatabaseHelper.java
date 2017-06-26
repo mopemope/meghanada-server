@@ -220,6 +220,26 @@ public class ProjectDatabaseHelper {
     database.storeObjects(sources, true);
   }
 
+  public static List<Source> getAllSources() {
+    ProjectDatabase database = ProjectDatabase.getInstance();
+    return database.computeInReadonly(
+        txn -> {
+          EntityIterable iterable = txn.getAll(Source.ENTITY_TYPE);
+          List<Source> result = new ArrayList<>(8);
+          for (Entity entity : iterable) {
+            try (InputStream in = entity.getBlob(ProjectDatabase.SERIALIZE_KEY)) {
+              Source s = Serializer.readObject(in, Source.class);
+              if (nonNull(s)) {
+                result.add(s);
+              }
+            } catch (Exception e) {
+              log.warn(e.getMessage());
+            }
+          }
+          return result;
+        });
+  }
+
   public static Source loadSource(String filePath) throws Exception {
     ProjectDatabase database = ProjectDatabase.getInstance();
     return database.loadObject(Source.ENTITY_TYPE, filePath, Source.class);

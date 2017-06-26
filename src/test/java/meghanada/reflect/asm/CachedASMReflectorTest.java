@@ -14,12 +14,23 @@ import meghanada.reflect.CandidateUnit;
 import meghanada.reflect.MemberDescriptor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
 public class CachedASMReflectorTest extends GradleTestBase {
-
   private static Logger log = LogManager.getLogger(CachedASMReflectorTest.class);
+
+  @BeforeClass
+  public static void setup() throws Exception {
+    GradleTestBase.setupReflector(false);
+  }
+
+  @AfterClass
+  public static void shutdown() throws Exception {
+    GradleTestBase.shutdown();
+  }
 
   @Ignore
   @Test
@@ -246,7 +257,7 @@ public class CachedASMReflectorTest extends GradleTestBase {
       String fqcn = "meghanada.reflect.MemberDescriptor";
       List<MemberDescriptor> memberDescriptors = cachedASMReflector.reflect(fqcn);
       memberDescriptors.forEach(m -> System.out.println(m.getDisplayDeclaration()));
-      assertEquals(45, memberDescriptors.size());
+      assertEquals(47, memberDescriptors.size());
     }
   }
 

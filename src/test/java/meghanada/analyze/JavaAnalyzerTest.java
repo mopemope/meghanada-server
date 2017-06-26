@@ -21,12 +21,24 @@ import meghanada.docs.declaration.DeclarationSearcher;
 import meghanada.utils.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 @SuppressWarnings("CheckReturnValue")
 public class JavaAnalyzerTest extends GradleTestBase {
 
   private static final Logger log = LogManager.getLogger(JavaAnalyzerTest.class);
+
+  @BeforeClass
+  public static void setup() throws Exception {
+    GradleTestBase.setupReflector(false);
+  }
+
+  @AfterClass
+  public static void shutdown() throws Exception {
+    GradleTestBase.shutdown();
+  }
 
   @Test
   public void analyze01() throws Exception {

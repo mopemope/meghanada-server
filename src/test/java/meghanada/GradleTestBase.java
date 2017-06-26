@@ -17,11 +17,8 @@ import meghanada.project.ProjectDependency;
 import meghanada.project.gradle.GradleProject;
 import meghanada.reflect.asm.CachedASMReflector;
 import meghanada.store.ProjectDatabaseHelper;
-import meghanada.utils.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
 
 @SuppressWarnings("CheckReturnValue")
 public class GradleTestBase {
@@ -31,8 +28,12 @@ public class GradleTestBase {
   public static Project project;
 
   @SuppressWarnings("CheckReturnValue")
-  public static void setupProject() throws Exception {
-    System.setProperty("meghanada.source.cache", "false");
+  public static void setupProject(boolean useCache) throws Exception {
+    if (useCache) {
+      System.setProperty("meghanada.source.cache", "true");
+    } else {
+      System.setProperty("meghanada.source.cache", "false");
+    }
 
     if (project == null) {
       // replace tmp
@@ -45,11 +46,16 @@ public class GradleTestBase {
       log.info("create database {}", path);
       project = newProject.parseProject();
     }
-    Config.load();
+    Config config = Config.load();
+    if (useCache) {
+      config.update("source-cache", true);
+    } else {
+      config.update("source-cache", false);
+    }
     log.info("finish setupProject");
   }
 
-  protected static File getJar(String name) {
+  public static File getJar(String name) {
     return project
         .getDependencies()
         .stream()
@@ -66,7 +72,7 @@ public class GradleTestBase {
         .orElse(null);
   }
 
-  protected static File getRTJar() {
+  public static File getRTJar() {
     return new File(Config.load().getJavaHomeDir(), "/lib/rt.jar");
   }
 
@@ -121,9 +127,8 @@ public class GradleTestBase {
     return project.getTestOutput();
   }
 
-  @BeforeClass
-  public static void setupReflector() throws Exception {
-    setupProject();
+  public static void setupReflector(boolean useCache) throws Exception {
+    setupProject(useCache);
     CachedASMReflector cachedASMReflector = CachedASMReflector.getInstance();
     cachedASMReflector.getGlobalClassIndex().clear();
     addClasspath(cachedASMReflector);
@@ -132,8 +137,7 @@ public class GradleTestBase {
     log.info("createClassIndexes elapsed: {}", stopwatch.stop());
   }
 
-  @AfterClass
-  public static void shutdown() throws IOException, InterruptedException {
+  public static void shutdown() throws Exception {
     ProjectDatabaseHelper.shutdown();
     String p = System.getProperty(TEMP_PROJECT_SETTING_DIR);
     File file = new File(p);

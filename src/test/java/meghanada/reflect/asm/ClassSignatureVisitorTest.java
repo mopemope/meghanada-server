@@ -13,14 +13,26 @@ import java.util.jar.JarFile;
 import meghanada.GradleTestBase;
 import meghanada.reflect.ClassIndex;
 import meghanada.utils.ClassNameUtils;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.signature.SignatureReader;
 
 public class ClassSignatureVisitorTest extends GradleTestBase {
+  @BeforeClass
+  public static void setup() throws Exception {
+    GradleTestBase.setupReflector(false);
+  }
 
-  @org.junit.Test
+  @AfterClass
+  public static void shutdown() throws Exception {
+    GradleTestBase.shutdown();
+  }
+
+  @Test
   public void testFormalType1() throws Exception {
     String fqcn = "java.util.Map";
     File jar = getRTJar();

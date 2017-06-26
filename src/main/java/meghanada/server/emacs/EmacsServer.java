@@ -196,6 +196,14 @@ public class EmacsServer implements Server {
                   handler.showDeclaration(id, args.get(0), args.get(1), args.get(2), args.get(3));
                   return true;
                 })
+            .when(headTail(eq("re"), any()))
+            .get(
+                args -> {
+                  // re : References (short)
+                  // usage: re <filepath> <line> <column> <symbol>
+                  handler.reference(id, args.get(0), args.get(1), args.get(2), args.get(3));
+                  return true;
+                })
             .when(headTail(eq("bj"), any()))
             .get(
                 args -> {

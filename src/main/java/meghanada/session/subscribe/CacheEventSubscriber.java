@@ -99,7 +99,7 @@ public class CacheEventSubscriber extends AbstractSubscriber {
         reflector.getGlobalClassIndex().size(),
         stopwatch.stop());
 
-    Config.load().showMemory();
+    Config.showMemory();
 
     log.info("Ready");
   }

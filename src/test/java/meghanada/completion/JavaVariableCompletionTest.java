@@ -9,9 +9,20 @@ import java.util.Optional;
 import meghanada.GradleTestBase;
 import meghanada.analyze.MethodCall;
 import meghanada.analyze.Range;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class JavaVariableCompletionTest extends GradleTestBase {
+  @BeforeClass
+  public static void setup() throws Exception {
+    GradleTestBase.setupReflector(false);
+  }
+
+  @AfterClass
+  public static void shutdown() throws Exception {
+    GradleTestBase.shutdown();
+  }
 
   @Test
   public void localVariable() throws Exception {

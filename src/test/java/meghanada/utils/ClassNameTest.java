@@ -3,9 +3,21 @@ package meghanada.utils;
 import static org.junit.Assert.assertEquals;
 
 import meghanada.GradleTestBase;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class ClassNameTest extends GradleTestBase {
+
+  @BeforeClass
+  public static void setup() throws Exception {
+    GradleTestBase.setupReflector(false);
+  }
+
+  @AfterClass
+  public static void shutdown() throws Exception {
+    GradleTestBase.shutdown();
+  }
 
   @Test
   public void getName1() throws Exception {

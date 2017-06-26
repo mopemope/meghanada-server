@@ -7,6 +7,7 @@ import meghanada.analyze.CompileResult;
 import meghanada.completion.LocalVariable;
 import meghanada.docs.declaration.Declaration;
 import meghanada.location.Location;
+import meghanada.reference.Reference;
 import meghanada.reflect.CandidateUnit;
 
 public interface OutputFormatter {
@@ -44,4 +45,6 @@ public interface OutputFormatter {
   String showDeclaration(long id, Declaration declaration);
 
   String error(long id, Throwable t);
+
+  String references(long id, List<Reference> references);
 }

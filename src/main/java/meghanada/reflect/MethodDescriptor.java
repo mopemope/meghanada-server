@@ -22,8 +22,8 @@ public class MethodDescriptor extends MemberDescriptor {
   private static final long serialVersionUID = -208297849947386075L;
   private static final Logger log = LogManager.getLogger(MethodDescriptor.class);
 
-  public List<MethodParameter> parameters;
-  public String[] exceptions;
+  private List<MethodParameter> parameters;
+  private String[] exceptions;
   public String formalType;
 
   public MethodDescriptor(
@@ -33,7 +33,8 @@ public class MethodDescriptor extends MemberDescriptor {
       final List<MethodParameter> parameters,
       final String[] exceptions,
       final String returnType,
-      final boolean hashDefault) {
+      final boolean hashDefault,
+      final MemberType memberType) {
 
     this.declaringClass = declaringClass;
     this.name = name.trim();
@@ -42,7 +43,7 @@ public class MethodDescriptor extends MemberDescriptor {
     } else {
       this.modifier = modifier.trim();
     }
-    this.memberType = MemberType.METHOD;
+    this.memberType = memberType;
     this.parameters = parameters;
     this.exceptions = exceptions;
     this.returnType = returnType;

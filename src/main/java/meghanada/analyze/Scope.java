@@ -149,7 +149,7 @@ public abstract class Scope implements Serializable {
         return "Class";
       case "MethodScope":
         final MethodScope methodScope = (MethodScope) this;
-        return methodScope.isConstructor ? "Constructor" : "Method";
+        return methodScope.isConstructor() ? "Constructor" : "Method";
       default:
         return "Block";
     }

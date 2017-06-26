@@ -12,14 +12,12 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import javax.annotation.Nullable;
-import jetbrains.exodus.entitystore.Entity;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.message.EntryMessage;
 
 public class ClassScope extends TypeScope {
 
-  public static final String ENTITY_TYPE = "ClassScope";
   private static final long serialVersionUID = -7970631189101348627L;
   private static final Logger log = LogManager.getLogger(ClassScope.class);
   public final List<ClassScope> classScopes = new ArrayList<>(1);
@@ -194,18 +192,6 @@ public class ClassScope extends TypeScope {
     }
 
     return result;
-  }
-
-  void setEntityProps(Entity entity) {
-    Range range = this.range;
-    entity.setProperty("fqcn", this.getFQCN());
-    entity.setProperty("name", this.name);
-    entity.setProperty("isEnum", this.isEnum);
-    entity.setProperty("isInterface", this.isInterface);
-    entity.setProperty("beginLine", range.begin.line);
-    entity.setProperty("beginColumn", range.begin.column);
-    entity.setProperty("endLine", range.end.line);
-    entity.setProperty("endColumn", range.end.column);
   }
 
   public List<ClassScope> getClassScopes() {

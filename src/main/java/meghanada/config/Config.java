@@ -5,6 +5,7 @@ import static java.util.Objects.nonNull;
 
 import com.google.common.base.Stopwatch;
 import com.typesafe.config.ConfigFactory;
+import com.typesafe.config.ConfigValueFactory;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -32,7 +33,7 @@ public class Config {
   private static final Logger log = LogManager.getLogger(Config.class);
   private static Config config;
 
-  private final com.typesafe.config.Config c;
+  private com.typesafe.config.Config c;
   private boolean debug;
   private List<String> includeList;
   private List<String> excludeList;
@@ -167,6 +168,18 @@ public class Config {
       log.catching(e);
       throw new RuntimeException(e);
     }
+  }
+
+  public static void showMemory() {
+    final Runtime runtime = Runtime.getRuntime();
+    final float maxMemory = runtime.maxMemory() / 1024 / 1024;
+    final float totalMemory = runtime.totalMemory() / 1024 / 1024;
+    final float usedMemory = (runtime.totalMemory() - runtime.freeMemory()) / 1024 / 1024;
+    log.info(
+        "memory usage (used/total/max): {}MB / {}MB / {}MB",
+        String.format("%.2f", usedMemory),
+        String.format("%.2f", totalMemory),
+        String.format("%.2f", maxMemory));
   }
 
   public List<String> gradlePrepareCompileTask() {
@@ -329,16 +342,13 @@ public class Config {
     return c.getInt("source-cache-size");
   }
 
-  public void showMemory() {
-    final Runtime runtime = Runtime.getRuntime();
-    final float maxMemory = runtime.maxMemory() / 1024 / 1024;
-    final float totalMemory = runtime.totalMemory() / 1024 / 1024;
-    final float usedMemory = (runtime.totalMemory() - runtime.freeMemory()) / 1024 / 1024;
-    log.info(
-        "memory usage (used/total/max): {}MB / {}MB / {}MB",
-        String.format("%.2f", usedMemory),
-        String.format("%.2f", totalMemory),
-        String.format("%.2f", maxMemory));
+  public void update(String key, Object newVal) {
+    com.typesafe.config.Config newConfig = c.withValue(key, ConfigValueFactory.fromAnyRef(newVal));
+    this.c = newConfig;
+  }
+
+  public boolean useAOSPStyle() {
+    return c.getBoolean("aosp-style");
   }
 
   @FunctionalInterface

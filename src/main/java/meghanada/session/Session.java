@@ -50,6 +50,8 @@ import meghanada.project.ProjectDependency;
 import meghanada.project.gradle.GradleProject;
 import meghanada.project.maven.MavenProject;
 import meghanada.project.meghanada.MeghanadaProject;
+import meghanada.reference.Reference;
+import meghanada.reference.ReferenceSearcher;
 import meghanada.reflect.CandidateUnit;
 import meghanada.reflect.asm.CachedASMReflector;
 import meghanada.utils.FileUtils;
@@ -72,6 +74,7 @@ public class Session {
   private JavaVariableCompletion variableCompletion;
   private LocationSearcher locationSearcher;
   private DeclarationSearcher declarationSearcher;
+  private ReferenceSearcher referenceSearcher;
 
   private boolean started;
 
@@ -716,5 +719,20 @@ public class Session {
   public CompileResult diagnosticString(String sourceFile, String sourceCode) throws IOException {
     boolean b = this.changeProject(sourceFile);
     return currentProject.compileString(sourceFile, sourceCode);
+  }
+
+  private ReferenceSearcher getReferenceSearcher() {
+    if (isNull(this.referenceSearcher)) {
+      this.referenceSearcher = new ReferenceSearcher(currentProject);
+    }
+    return referenceSearcher;
+  }
+
+  public List<Reference> reference(
+      final String path, final int line, final int column, final String symbol)
+      throws IOException, ExecutionException {
+    boolean b = this.changeProject(path);
+    final ReferenceSearcher searcher = this.getReferenceSearcher();
+    return searcher.searchReference(new File(path), line, column, symbol);
   }
 }

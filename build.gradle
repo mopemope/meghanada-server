@@ -127,8 +127,7 @@ dependencies {
 
 
 test {
-  jvmArgs = ["-XX:SoftRefLRUPolicyMSPerMB=50", "-XX:+UseConcMarkSweepGC", "-Xverify:none",  "-Xms256m", "-Xmx2G"]
-
+  jvmArgs = ["-XX:SoftRefLRUPolicyMSPerMB=50", "-XX:+UseConcMarkSweepGC", "-Xverify:none"]
   testLogging {
     events "PASSED", "FAILED", "SKIPPED"
     exceptionFormat "full"

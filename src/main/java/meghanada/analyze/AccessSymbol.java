@@ -5,9 +5,8 @@ import java.io.Serializable;
 
 public abstract class AccessSymbol implements Serializable {
 
-  private static final long serialVersionUID = -1404691982810815085L;
   static final int SCOPE_LIMIT = 32;
-
+  private static final long serialVersionUID = -1404691982810815085L;
   public String declaringClass;
   public String scope = "";
   public String name;

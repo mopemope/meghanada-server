@@ -12,6 +12,7 @@ import java.util.regex.Pattern;
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
+import meghanada.config.Config;
 import org.eclipse.jdt.core.ToolFactory;
 import org.eclipse.jdt.core.formatter.CodeFormatter;
 import org.eclipse.jface.text.BadLocationException;
@@ -22,10 +23,24 @@ import org.eclipse.text.edits.TextEdit;
 public class JavaFormatter {
 
   private static final Pattern NEW_LINE = Pattern.compile("\n");
-  private static final Formatter googleFormatter =
-      new Formatter(JavaFormatterOptions.defaultOptions());
+  private static Formatter googleFormatter = null;
 
   private JavaFormatter() {}
+
+  private static Formatter getGoogleFormatter() {
+    if (googleFormatter != null) {
+      return googleFormatter;
+    }
+
+    if (Config.load().useAOSPStyle()) {
+      googleFormatter =
+          new Formatter(
+              JavaFormatterOptions.builder().style(JavaFormatterOptions.Style.AOSP).build());
+    } else {
+      googleFormatter = new Formatter(JavaFormatterOptions.defaultOptions());
+    }
+    return googleFormatter;
+  }
 
   public static Properties getPropertiesFromXML(File xmlFile) {
     final XMLInputFactory factory = XMLInputFactory.newInstance();
@@ -50,7 +65,7 @@ public class JavaFormatter {
 
   public static String formatGoogleStyle(final String content) {
     try {
-      return googleFormatter.formatSource(content);
+      return getGoogleFormatter().formatSource(content);
     } catch (FormatterException e) {
       return content;
     }

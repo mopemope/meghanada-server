@@ -67,7 +67,7 @@ public class Main {
             new Thread(
                 () -> {
                   log.info("shutdown server");
-                  Config.load().showMemory();
+                  Config.showMemory();
                 }));
 
     System.setProperty("home", Config.getInstalledPath().getParentFile().getCanonicalPath());

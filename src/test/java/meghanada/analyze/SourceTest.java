@@ -12,10 +12,22 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import meghanada.GradleTestBase;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 @SuppressWarnings("CheckReturnValue")
 public class SourceTest extends GradleTestBase {
+
+  @BeforeClass
+  public static void setup() throws Exception {
+    GradleTestBase.setupReflector(false);
+  }
+
+  @AfterClass
+  public static void shutdown() throws Exception {
+    GradleTestBase.shutdown();
+  }
 
   @Test
   public void testOptimizeImports01() throws Exception {

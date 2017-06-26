@@ -20,10 +20,10 @@ import meghanada.analyze.CompileResult;
 import meghanada.completion.LocalVariable;
 import meghanada.docs.declaration.Declaration;
 import meghanada.location.Location;
+import meghanada.reference.Reference;
 import meghanada.reflect.CandidateUnit;
 import meghanada.session.Session;
 import meghanada.utils.ClassNameUtils;
-import meghanada.utils.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -363,6 +363,21 @@ public class CommandHandler {
       }
 
       writer.newLine();
+    } catch (Throwable t) {
+      writeError(id, t);
+    }
+  }
+
+  public void reference(
+      final long id, final String path, final String line, final String col, final String symbol) {
+    final int lineInt = Integer.parseInt(line);
+    final int columnInt = Integer.parseInt(col);
+    try {
+      List<Reference> references = session.reference(path, lineInt, columnInt, symbol);
+      final String out = outputFormatter.references(id, references);
+      writer.write(out);
+      writer.newLine();
+      writer.flush();
     } catch (Throwable t) {
       writeError(id, t);
     }

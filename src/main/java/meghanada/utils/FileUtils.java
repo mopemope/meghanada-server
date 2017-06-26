@@ -1,5 +1,7 @@
 package meghanada.utils;
 
+import static java.util.Objects.isNull;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -35,6 +37,7 @@ import meghanada.config.Config;
 import meghanada.formatter.JavaFormatter;
 import meghanada.project.Project;
 import meghanada.store.ProjectDatabaseHelper;
+import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.message.EntryMessage;
@@ -308,21 +311,20 @@ public final class FileUtils {
     return fileList;
   }
 
-  //  public static void invalidateChecksum(final File projectRoot, final String path)
-  //      throws IOException {
-  //
-  //    final File checksumFile =
-  //        FileUtils.getProjectDataFile(projectRoot, GlobalCache.SOURCE_CHECKSUM_DATA);
-  //    final Config config = Config.load();
-  //    final Map<String, String> map = config.getChecksumMap(checksumFile);
-  //    map.remove(path);
-  //    FileUtils.writeMapSetting(map, checksumFile);
-  //    config.getAllChecksumMap().put(checksumFile, map);
-  //  }
-
   private static String readFile(String path) throws IOException {
     final byte[] encoded = Files.readAllBytes(Paths.get(path));
     return new String(encoded, StandardCharsets.UTF_8);
+  }
+
+  public static List<String> readLines(File file) throws IOException {
+    List<String> lines = null;
+    try (InputStream in = new FileInputStream(file)) {
+      lines = IOUtils.readLines(in);
+    }
+    if (isNull(lines) || lines.isEmpty()) {
+      return Collections.emptyList();
+    }
+    return lines;
   }
 
   public static void formatJavaFile(final Properties properties, final String path)

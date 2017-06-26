@@ -387,7 +387,7 @@ public class LocationSearcher {
                   return false;
                 }
                 final MethodScope methodScope = (MethodScope) bs;
-                final List<String> parameters = methodScope.parameters;
+                final List<String> parameters = methodScope.getParameters();
                 return ClassNameUtils.compareArgumentType(arguments, parameters);
               })
           .map(MethodScope.class::cast)

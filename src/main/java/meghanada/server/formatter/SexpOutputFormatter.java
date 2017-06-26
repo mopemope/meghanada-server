@@ -18,6 +18,7 @@ import meghanada.analyze.CompileResult;
 import meghanada.completion.LocalVariable;
 import meghanada.docs.declaration.Declaration;
 import meghanada.location.Location;
+import meghanada.reference.Reference;
 import meghanada.reflect.CandidateUnit;
 import meghanada.server.OutputFormatter;
 import org.apache.logging.log4j.LogManager;
@@ -129,20 +130,19 @@ public class SexpOutputFormatter implements OutputFormatter {
           sb.append(doubleQuote(k));
           sb.append(LIST_SEP);
           sb.append(LPAREN);
-          v.stream()
-              .forEach(
-                  d -> {
-                    sb.append(LPAREN);
-                    sb.append(
-                        String.join(
-                            LIST_SEP,
-                            Long.toString(d.getLineNumber()),
-                            Long.toString(d.getColumnNumber()),
-                            doubleQuote(d.getKind().toString()),
-                            doubleQuote(d.getMessage(null))));
-                    sb.append(RPAREN);
-                    sb.append(LIST_SEP);
-                  });
+          v.forEach(
+              d -> {
+                sb.append(LPAREN);
+                sb.append(
+                    String.join(
+                        LIST_SEP,
+                        Long.toString(d.getLineNumber()),
+                        Long.toString(d.getColumnNumber()),
+                        doubleQuote(d.getKind().toString()),
+                        doubleQuote(d.getMessage(null))));
+                sb.append(RPAREN);
+                sb.append(LIST_SEP);
+              });
           sb.append(RPAREN);
           sb.append(RPAREN);
         });
@@ -296,5 +296,19 @@ public class SexpOutputFormatter implements OutputFormatter {
   @Override
   public String error(final long id, final Throwable t) {
     return error(t.getMessage());
+  }
+
+  @Override
+  public String references(long id, List<Reference> references) {
+    StringBuilder sb = new StringBuilder(1024);
+    sb.append(LPAREN);
+    references.forEach(
+        r -> {
+          String s = r.getPath() + ':' + r.getLine() + ':' + r.getCode();
+          sb.append(doubleQuote(s));
+          sb.append(LIST_SEP);
+        });
+    sb.append(RPAREN);
+    return success(sb.toString());
   }
 }

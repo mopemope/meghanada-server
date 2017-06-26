@@ -7,10 +7,21 @@ import java.io.File;
 import java.util.Collection;
 import meghanada.GradleTestBase;
 import meghanada.reflect.CandidateUnit;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
 public class JavaCompletionTest extends GradleTestBase {
+  @BeforeClass
+  public static void setup() throws Exception {
+    GradleTestBase.setupReflector(false);
+  }
+
+  @AfterClass
+  public static void shutdown() throws Exception {
+    GradleTestBase.shutdown();
+  }
 
   @Test
   public void testCompletion01() throws Exception {

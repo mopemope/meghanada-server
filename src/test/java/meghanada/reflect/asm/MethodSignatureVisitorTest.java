@@ -10,8 +10,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import meghanada.GradleTestBase;
-import org.junit.After;
-import org.junit.Before;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
@@ -21,11 +21,15 @@ import org.objectweb.asm.signature.SignatureReader;
 
 public class MethodSignatureVisitorTest extends GradleTestBase {
 
-  @Before
-  public void setUp() throws Exception {}
+  @BeforeClass
+  public static void setup() throws Exception {
+    GradleTestBase.setupReflector(false);
+  }
 
-  @After
-  public void tearDown() throws Exception {}
+  @AfterClass
+  public static void shutdown() throws Exception {
+    GradleTestBase.shutdown();
+  }
 
   @Test
   public void testMethod1() throws Exception {

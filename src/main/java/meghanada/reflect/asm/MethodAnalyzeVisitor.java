@@ -366,10 +366,10 @@ class MethodAnalyzeVisitor extends MethodVisitor {
             methodParameters,
             this.exceptions,
             returnFQCN,
-            this.hasDefault);
+            this.hasDefault,
+            memberType);
 
-    descriptor.typeParameters = this.typeParameters;
-    descriptor.memberType = memberType;
+    descriptor.setTypeParameters(this.typeParameters);
     log.trace("formalType={}", this.formalType);
     if (this.formalType != null) {
       descriptor.formalType = this.formalType.toString();

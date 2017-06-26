@@ -1323,7 +1323,7 @@ public class TreeAnalyzer {
     final Range nameRange = Range.create(src, start, end);
 
     final Range range = Range.create(src, preferredPos + 4, endPos);
-    final MethodCall methodCall = new MethodCall(name, preferredPos, nameRange, range);
+    final MethodCall methodCall = new MethodCall(name, preferredPos, nameRange, range, true);
 
     final Type type = identifier.type;
     this.getTypeString(src, type)
