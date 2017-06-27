@@ -1,5 +1,7 @@
 package meghanada.completion;
 
+import static java.util.Objects.nonNull;
+
 import com.google.common.cache.LoadingCache;
 import java.io.File;
 import java.io.IOException;
@@ -291,6 +293,16 @@ public class JavaCompletion {
         result.add(ClassIndex.createClass(v));
       }
     }
+    // static import
+    for (Map.Entry<String, String> e : source.staticImportClass.entrySet()) {
+      String methodName = e.getKey();
+      String clazz = e.getValue();
+      for (MemberDescriptor md : JavaCompletion.reflectWithFQCN(clazz, methodName)) {
+        if (md.getName().equals(methodName)) {
+          result.add(md);
+        }
+      }
+    }
 
     // Add class
     if (Character.isUpperCase(prefix.charAt(0))) {
@@ -331,9 +343,8 @@ public class JavaCompletion {
         .collect(Collectors.toSet());
   }
 
-  private static Collection<MemberDescriptor> reflectWithFQCN(
-      final String fqcn, final String prefix) {
-    final String target = prefix.toLowerCase();
+  private static Collection<MemberDescriptor> reflectWithFQCN(String fqcn, String prefix) {
+    String target = prefix.toLowerCase();
     return doReflect(fqcn)
         .stream()
         .filter(md -> JavaCompletion.publicFilter(md, target))
@@ -364,7 +375,7 @@ public class JavaCompletion {
     {
       // completion static method
       String fqcn = source.getImportedClassFQCN(var, null);
-      if (fqcn != null) {
+      if (nonNull(fqcn)) {
         if (!fqcn.contains(".") && !ownPackage.isEmpty()) {
           fqcn = ownPackage + '.' + fqcn;
         }
@@ -387,7 +398,7 @@ public class JavaCompletion {
     {
       final Map<String, Variable> symbols = source.getDeclaratorMap(line);
       final Variable variable = symbols.get(var);
-      if (variable != null) {
+      if (nonNull(variable)) {
         // get data from reflector
         String fqcn = variable.fqcn;
         if (!fqcn.contains(".")) {
@@ -669,10 +680,10 @@ public class JavaCompletion {
         int startColumn = column;
 
         while (size > 0 && startColumn-- > 0) {
-          for (AccessSymbol accessSymbol : targets) {
-            if (accessSymbol.match(line, startColumn) && accessSymbol.returnType != null) {
+          for (AccessSymbol as : targets) {
+            if (as.match(line, startColumn) && nonNull(as.returnType)) {
               final String fqcn =
-                  ClassNameUtils.replace(accessSymbol.returnType, ClassNameUtils.CAPTURE_OF, "");
+                  ClassNameUtils.replace(as.returnType, ClassNameUtils.CAPTURE_OF, "");
               return reflect(pkg, fqcn, prefix)
                   .stream()
                   .sorted(methodComparing(prefix))
