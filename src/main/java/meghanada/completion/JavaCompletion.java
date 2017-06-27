@@ -35,7 +35,7 @@ import org.apache.logging.log4j.Logger;
 public class JavaCompletion {
 
   private static final Logger log = LogManager.getLogger(JavaCompletion.class);
-
+  private static final String STATIC = "static ";
   private Project project;
 
   public JavaCompletion(final Project project) {
@@ -107,11 +107,11 @@ public class JavaCompletion {
     }
     if (!isStatic) {
       if (withCONSTRUCTOR) {
-        return !declaration.contains("static");
+        return !declaration.contains(STATIC);
       }
-      return !declaration.contains("static") && !cu.getType().equals("CONSTRUCTOR");
+      return !declaration.contains(STATIC) && !cu.getType().equals("CONSTRUCTOR");
     }
-    return declaration.contains("static");
+    return declaration.contains(STATIC);
   }
 
   private static boolean publicFilter(final CandidateUnit cu, final String target) {
@@ -144,11 +144,11 @@ public class JavaCompletion {
     }
     if (!isStatic) {
       if (withCONSTRUCTOR) {
-        return !declaration.contains("static");
+        return !declaration.contains(STATIC);
       }
-      return !declaration.contains("static") && !cu.getType().equals("CONSTRUCTOR");
+      return !declaration.contains(STATIC) && !cu.getType().equals("CONSTRUCTOR");
     }
-    return declaration.contains("static");
+    return declaration.contains(STATIC);
   }
 
   private static boolean privateFilter(
@@ -169,11 +169,11 @@ public class JavaCompletion {
     final String declaration = cu.getDeclaration();
     if (!isStatic) {
       if (withCONSTRUCTOR) {
-        return !declaration.contains("static");
+        return !declaration.contains(STATIC);
       }
-      return !declaration.contains("static") && !cu.getType().equals("CONSTRUCTOR");
+      return !declaration.contains(STATIC) && !cu.getType().equals("CONSTRUCTOR");
     }
-    return declaration.contains("static");
+    return declaration.contains(STATIC);
   }
 
   private static boolean privateFilter(
@@ -230,20 +230,20 @@ public class JavaCompletion {
   }
 
   private static Collection<? extends CandidateUnit> completionSymbols(
-      final Source source, final int line, final String prefix) {
-    final Set<CandidateUnit> result = new HashSet<>(32);
+      Source source, int line, String prefix) {
+    Set<CandidateUnit> result = new HashSet<>(32);
 
     // prefix search
     log.debug("Search variables prefix:{} line:{}", prefix, line);
 
-    final Optional<TypeScope> typeScope = source.getTypeScope(line);
+    Optional<TypeScope> typeScope = source.getTypeScope(line);
     if (!typeScope.isPresent()) {
       return result;
     }
-    final String fqcn = typeScope.get().getFQCN();
+    String fqcn = typeScope.get().getFQCN();
 
     // add this member
-    for (final MemberDescriptor c : JavaCompletion.reflectSelf(fqcn, true, prefix)) {
+    for (MemberDescriptor c : JavaCompletion.reflectSelf(fqcn, true, prefix)) {
       if (c.getName().startsWith(prefix)) {
         result.add(c);
       }
@@ -258,7 +258,7 @@ public class JavaCompletion {
           break;
         }
         parentClass = parentClass.substring(0, i);
-        for (final MemberDescriptor c : JavaCompletion.reflectSelf(parentClass, true, prefix)) {
+        for (MemberDescriptor c : JavaCompletion.reflectSelf(parentClass, true, prefix)) {
           if (c.getName().startsWith(prefix)) {
             result.add(c);
           }
@@ -268,12 +268,12 @@ public class JavaCompletion {
 
     log.debug("self fqcn:{}", fqcn);
 
-    final Map<String, Variable> symbols = source.getDeclaratorMap(line);
+    Map<String, Variable> symbols = source.getDeclaratorMap(line);
     log.debug("search variables size:{} result:{}", symbols.size(), symbols);
 
-    for (final Map.Entry<String, Variable> e : symbols.entrySet()) {
-      final String k = e.getKey();
-      final Variable v = e.getValue();
+    for (Map.Entry<String, Variable> e : symbols.entrySet()) {
+      String k = e.getKey();
+      Variable v = e.getValue();
       log.debug("check variable name:{}", k);
       if (k.startsWith(prefix)) {
         log.debug("match variable name:{}", k);
@@ -283,9 +283,10 @@ public class JavaCompletion {
       }
     }
 
-    for (final Map.Entry<String, String> e : source.getImportedClassMap().entrySet()) {
-      final String k = e.getKey();
-      final String v = e.getValue();
+    // import
+    for (Map.Entry<String, String> e : source.getImportedClassMap().entrySet()) {
+      String k = e.getKey();
+      String v = e.getValue();
       if (k.startsWith(prefix)) {
         result.add(ClassIndex.createClass(v));
       }
@@ -294,8 +295,8 @@ public class JavaCompletion {
     // Add class
     if (Character.isUpperCase(prefix.charAt(0))) {
       // completion
-      final CachedASMReflector reflector = CachedASMReflector.getInstance();
-      final boolean fuzzySearch = Config.load().useClassFuzzySearch();
+      CachedASMReflector reflector = CachedASMReflector.getInstance();
+      boolean fuzzySearch = Config.load().useClassFuzzySearch();
       if (fuzzySearch) {
         result.addAll(reflector.fuzzySearchClasses(prefix.toLowerCase()));
       } else {
@@ -303,7 +304,7 @@ public class JavaCompletion {
       }
     }
 
-    final List<CandidateUnit> list = new ArrayList<>(result);
+    List<CandidateUnit> list = new ArrayList<>(result);
     list.sort(comparing(source, prefix));
     return list;
   }
