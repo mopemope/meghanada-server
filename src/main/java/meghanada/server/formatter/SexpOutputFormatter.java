@@ -21,6 +21,7 @@ import meghanada.location.Location;
 import meghanada.reference.Reference;
 import meghanada.reflect.CandidateUnit;
 import meghanada.server.OutputFormatter;
+import meghanada.typeinfo.TypeInfo;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -308,6 +309,41 @@ public class SexpOutputFormatter implements OutputFormatter {
           sb.append(doubleQuote(s));
           sb.append(LIST_SEP);
         });
+    sb.append(RPAREN);
+    return success(sb.toString());
+  }
+
+  @Override
+  public String typeInfo(long id, TypeInfo typeInfo) {
+    StringBuilder sb = new StringBuilder(1024);
+    sb.append(LPAREN);
+
+    sb.append(doubleQuote(typeInfo.getFqcn()));
+
+    sb.append(LIST_SEP);
+
+    sb.append(LPAREN);
+    typeInfo
+        .getHierarchy()
+        .forEach(
+            c -> {
+              sb.append(doubleQuote(c));
+              sb.append(LIST_SEP);
+            });
+    sb.append(RPAREN);
+
+    sb.append(LIST_SEP);
+
+    sb.append(LPAREN);
+    typeInfo
+        .getInterfaces()
+        .forEach(
+            c -> {
+              sb.append(doubleQuote(c));
+              sb.append(LIST_SEP);
+            });
+    sb.append(RPAREN);
+
     sb.append(RPAREN);
     return success(sb.toString());
   }

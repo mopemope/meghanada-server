@@ -2,8 +2,6 @@ plugins {
   id 'com.gradle.build-scan' version '1.8'
   id 'java'
   id 'maven'
-  id 'jacoco'
-  id 'pmd'
   id 'application'
   id 'com.github.johnrengelman.shadow' version '2.0.0'
   id 'com.github.ben-manes.versions' version '0.15.0'

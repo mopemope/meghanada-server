@@ -23,6 +23,7 @@ import meghanada.location.Location;
 import meghanada.reference.Reference;
 import meghanada.reflect.CandidateUnit;
 import meghanada.session.Session;
+import meghanada.typeinfo.TypeInfo;
 import meghanada.utils.ClassNameUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -376,6 +377,28 @@ public class CommandHandler {
       List<Reference> references = session.reference(path, lineInt, columnInt, symbol);
       final String out = outputFormatter.references(id, references);
       writer.write(out);
+      writer.newLine();
+      writer.flush();
+    } catch (Throwable t) {
+      writeError(id, t);
+    }
+  }
+
+  public void typeInfo(
+      final long id, final String path, final String line, final String col, final String symbol) {
+    final int lineInt = Integer.parseInt(line);
+    final int columnInt = Integer.parseInt(col);
+    try {
+      Optional<TypeInfo> typeInfo = session.typeInfo(path, lineInt, columnInt, symbol);
+      if (typeInfo.isPresent()) {
+        final String out = outputFormatter.typeInfo(id, typeInfo.get());
+        writer.write(out);
+      } else {
+        TypeInfo dummy = new TypeInfo("");
+        final String out = outputFormatter.typeInfo(id, dummy);
+        writer.write(out);
+      }
+
       writer.newLine();
       writer.flush();
     } catch (Throwable t) {

@@ -9,6 +9,7 @@ import meghanada.docs.declaration.Declaration;
 import meghanada.location.Location;
 import meghanada.reference.Reference;
 import meghanada.reflect.CandidateUnit;
+import meghanada.typeinfo.TypeInfo;
 
 public interface OutputFormatter {
 
@@ -47,4 +48,6 @@ public interface OutputFormatter {
   String error(long id, Throwable t);
 
   String references(long id, List<Reference> references);
+
+  String typeInfo(long id, TypeInfo typeInfo);
 }

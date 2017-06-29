@@ -92,7 +92,7 @@ public class ReferenceSearcherTest extends GradleTestBase {
     assertNotNull(result);
     assertEquals(1, result.size());
     Reference reference = result.get(0);
-    assertEquals(658, reference.getLine());
+    assertEquals(661, reference.getLine());
   }
 
   @Test
@@ -117,6 +117,6 @@ public class ReferenceSearcherTest extends GradleTestBase {
     final ReferenceSearcher searcher = getSearcher();
     final List<Reference> result = timeIt(() -> searcher.searchReference(f, 81, 47, "toString"));
     assertNotNull(result);
-    assertEquals(36, result.size());
+    assertEquals(37, result.size());
   }
 }

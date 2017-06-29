@@ -199,9 +199,17 @@ public class EmacsServer implements Server {
             .when(headTail(eq("re"), any()))
             .get(
                 args -> {
-                  // re : References (short)
+                  // re : References
                   // usage: re <filepath> <line> <column> <symbol>
                   handler.reference(id, args.get(0), args.get(1), args.get(2), args.get(3));
+                  return true;
+                })
+            .when(headTail(eq("ti"), any()))
+            .get(
+                args -> {
+                  // ti : TypeInfo (short)
+                  // usage: ti <filepath> <line> <column> <symbol>
+                  handler.typeInfo(id, args.get(0), args.get(1), args.get(2), args.get(3));
                   return true;
                 })
             .when(headTail(eq("bj"), any()))

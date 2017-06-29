@@ -480,28 +480,37 @@ public class CachedASMReflector {
     return this.getSuperClass(className).stream();
   }
 
-  public Collection<String> getSuperClass(final String className) {
+  private Collection<String> getSuperClassInternal(final String className) {
 
     Set<String> result = new LinkedHashSet<>(4);
-    this.containsClassIndex(className)
+    String fqcn = ClassNameUtils.removeTypeParameter(className);
+    this.containsClassIndex(fqcn)
         .ifPresent(
             ci -> {
               List<String> supers = ci.getSupers();
               if (supers.isEmpty()) {
                 return;
               }
-              result.addAll(supers);
+
               if (supers.size() == 1 && supers.get(0).equals(ClassNameUtils.OBJECT_CLASS)) {
                 return;
               }
 
               for (String superClazz : supers) {
                 if (!superClazz.equals(ClassNameUtils.OBJECT_CLASS)) {
-                  result.addAll(getSuperClass(superClazz));
+                  final String clazz = ClassNameUtils.removeTypeMark(superClazz);
+                  result.add(clazz);
+                  result.addAll(getSuperClassInternal(superClazz));
                 }
               }
             });
 
+    return result;
+  }
+
+  public Collection<String> getSuperClass(final String className) {
+    Collection<String> result = getSuperClassInternal(className);
+    result.add(ClassNameUtils.OBJECT_CLASS);
     return result;
   }
 

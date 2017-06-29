@@ -409,8 +409,18 @@ public class CachedASMReflectorTest extends GradleTestBase {
     final CachedASMReflector cachedASMReflector = CachedASMReflector.getInstance();
     Collection<String> superClass =
         cachedASMReflector.getSuperClass("meghanada.analyze.ClassScope");
+    // for (String clazz : superClass) {
+    //   log.info("class {}", clazz);
+    // }
+    assertEquals(6, superClass.size());
+  }
+
+  @Test
+  public void testGetSupers02() throws Exception {
+    final CachedASMReflector cachedASMReflector = CachedASMReflector.getInstance();
+    Collection<String> superClass = cachedASMReflector.getSuperClass("java.util.ArrayList");
     for (String clazz : superClass) {
-      log.info("class {}", clazz);
+      System.out.println(clazz);
     }
   }
 }

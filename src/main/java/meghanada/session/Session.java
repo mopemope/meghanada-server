@@ -54,6 +54,8 @@ import meghanada.reference.Reference;
 import meghanada.reference.ReferenceSearcher;
 import meghanada.reflect.CandidateUnit;
 import meghanada.reflect.asm.CachedASMReflector;
+import meghanada.typeinfo.TypeInfo;
+import meghanada.typeinfo.TypeInfoSearcher;
 import meghanada.utils.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -75,6 +77,7 @@ public class Session {
   private LocationSearcher locationSearcher;
   private DeclarationSearcher declarationSearcher;
   private ReferenceSearcher referenceSearcher;
+  private TypeInfoSearcher typeinfoSearcher;
 
   private boolean started;
 
@@ -734,5 +737,20 @@ public class Session {
     boolean b = this.changeProject(path);
     final ReferenceSearcher searcher = this.getReferenceSearcher();
     return searcher.searchReference(new File(path), line, column, symbol);
+  }
+
+  private TypeInfoSearcher getTypeInfoSearcher() {
+    if (isNull(this.typeinfoSearcher)) {
+      this.typeinfoSearcher = new TypeInfoSearcher(currentProject);
+    }
+    return typeinfoSearcher;
+  }
+
+  public Optional<TypeInfo> typeInfo(
+      final String path, final int line, final int column, final String symbol)
+      throws IOException, ExecutionException {
+    boolean b = this.changeProject(path);
+    final TypeInfoSearcher searcher = this.getTypeInfoSearcher();
+    return searcher.search(new File(path), line, column, symbol);
   }
 }
