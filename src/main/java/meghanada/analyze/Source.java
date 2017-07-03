@@ -12,6 +12,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Serializable;
+import java.io.UncheckedIOException;
 import java.nio.charset.Charset;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -225,7 +226,7 @@ public class Source implements Serializable, Storable {
     return this.lineRange;
   }
 
-  Position getPos(int pos) throws IOException {
+  Position getPos(int pos) {
     if (pos == -1) {
       return new Position(-1, -1);
     }
@@ -236,16 +237,20 @@ public class Source implements Serializable, Storable {
     }
 
     int line = 1;
-    final LinkedList<LineRange> ranges = getRanges(this.getFile());
-    for (final LineRange r : ranges) {
-      if (r.contains(pos)) {
-        return new Position(line, pos + 1);
+    try {
+      final LinkedList<LineRange> ranges = getRanges(this.getFile());
+      for (final LineRange r : ranges) {
+        if (r.contains(pos)) {
+          return new Position(line, pos + 1);
+        }
+        final Integer last = r.getEndPos();
+        pos -= last;
+        line++;
       }
-      final Integer last = r.getEndPos();
-      pos -= last;
-      line++;
+      return new Position(-1, -1);
+    } catch (IOException e) {
+      throw new UncheckedIOException(e);
     }
-    return new Position(-1, -1);
   }
 
   public File getFile() {

@@ -1,7 +1,6 @@
 package meghanada.analyze;
 
 import com.google.common.base.MoreObjects;
-import java.io.IOException;
 import java.io.Serializable;
 
 public class Range implements Serializable {
@@ -20,8 +19,7 @@ public class Range implements Serializable {
     this.end = end;
   }
 
-  public static Range create(final Source src, final int beginPos, final int endPos)
-      throws IOException {
+  public static Range create(final Source src, final int beginPos, final int endPos) {
     final Position begin = src.getPos(beginPos);
     final Position end = src.getPos(endPos);
     return new Range(begin, end);

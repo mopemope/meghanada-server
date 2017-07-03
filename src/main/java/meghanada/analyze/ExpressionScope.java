@@ -14,12 +14,12 @@ public class ExpressionScope extends Scope {
   public boolean isField;
   public Scope parent;
 
-  public ExpressionScope(final int pos, final Range range) {
+  public ExpressionScope(int pos, Range range) {
     super(pos, range);
   }
 
   @Override
-  public void addMethodCall(final MethodCall mcs) {
+  public void addMethodCall(MethodCall mcs) {
     final long endCol = super.range.end.column;
     final long endLine = super.range.end.line;
     final Position mcsEnd = mcs.range.end;
@@ -30,41 +30,52 @@ public class ExpressionScope extends Scope {
   }
 
   @Override
+  public void addFieldAccess(FieldAccess fa) {
+    final long endCol = super.range.end.column;
+    final long endLine = super.range.end.line;
+    final Position mcsEnd = fa.range.end;
+    if (mcsEnd.column + 1 == endCol && mcsEnd.line == endLine) {
+      this.expressionReturn = fa;
+    }
+    super.addFieldAccess(fa);
+  }
+
+  @Override
   public void dumpVariable() {
-    final EntryMessage entryMessage = log.traceEntry("**** {} {}", this.getClassName(), this.range);
+    EntryMessage em = log.traceEntry("**** {} {}", this.getClassName(), this.range);
     super.dumpVariable(log);
-    log.traceExit(entryMessage);
+    log.traceExit(em);
   }
 
   @Override
   public void dumpFieldAccess() {
-    final EntryMessage entryMessage = log.traceEntry("**** {} {}", this.getClassName(), this.range);
+    EntryMessage em = log.traceEntry("**** {} {}", this.getClassName(), this.range);
     super.dumpFieldAccess(log);
-    log.traceExit(entryMessage);
+    log.traceExit(em);
   }
 
   @Override
   public void dump() {
-    final EntryMessage entryMessage = log.traceEntry("**** {} {}", this.getClassName(), this.range);
+    EntryMessage em = log.traceEntry("**** {} {}", this.getClassName(), this.range);
     super.dumpVariable(log);
     super.dumpFieldAccess(log);
-    log.traceExit(entryMessage);
+    log.traceExit(em);
   }
 
   public Optional<AccessSymbol> getExpressionReturn() {
-    log.traceEntry("expressionReturn={}", this.expressionReturn);
-    final Optional<Variable> var = this.variables.stream().filter(Variable::isDecl).findFirst();
+    EntryMessage em = log.traceEntry("expressionReturn={}", this.expressionReturn);
+    Optional<Variable> var = this.variables.stream().filter(Variable::isDecl).findFirst();
 
     if (var.isPresent()) {
-      return log.traceExit(Optional.empty());
+      return log.traceExit(em, Optional.empty());
     }
 
-    final Optional<AccessSymbol> aReturn = Optional.ofNullable(this.expressionReturn);
-    return log.traceExit(aReturn);
+    Optional<AccessSymbol> aReturn = Optional.ofNullable(this.expressionReturn);
+    return log.traceExit(em, aReturn);
   }
 
   @Override
-  public void addVariable(final Variable variable) {
+  public void addVariable(Variable variable) {
     assert variable.fqcn != null;
     if (isField) {
       variable.isField = true;

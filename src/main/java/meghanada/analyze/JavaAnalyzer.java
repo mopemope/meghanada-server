@@ -1,6 +1,7 @@
 package meghanada.analyze;
 
 import static java.util.Objects.nonNull;
+import static meghanada.analyze.TreeAnalyzer.analyze;
 
 import com.sun.source.tree.CompilationUnitTree;
 import com.sun.source.util.JavacTask;
@@ -41,14 +42,14 @@ public class JavaAnalyzer {
   private static final Logger log = LogManager.getLogger(JavaAnalyzer.class);
 
   private static final JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
-  private final TreeAnalyzer treeAnalyzer = new TreeAnalyzer();
-  private final ExecutorService executorService = Executors.newSingleThreadExecutor();
+  private ExecutorService executorService = Executors.newSingleThreadExecutor();
   private String compileSource = "1.8";
   private String compileTarget = "1.8";
 
-  public JavaAnalyzer(final String compileSource, final String compileTarget) {
+  public JavaAnalyzer(String compileSource, String compileTarget) {
     this.compileSource = compileSource;
     this.compileTarget = compileTarget;
+
     log.debug(
         "compiler settings compileSource:{} compileTarget:{}",
         this.compileSource,
@@ -65,17 +66,16 @@ public class JavaAnalyzer {
                 }));
   }
 
-  private static Set<File> getErrorFiles(
-      final List<Diagnostic<? extends JavaFileObject>> diagnostics) {
+  private static Set<File> getErrorFiles(List<Diagnostic<? extends JavaFileObject>> diagnostics) {
 
-    final Set<File> temp =
+    Set<File> temp =
         Collections.newSetFromMap(new ConcurrentHashMap<File, Boolean>(diagnostics.size()));
 
     for (Diagnostic<? extends JavaFileObject> diagnostic : diagnostics) {
-      final Diagnostic.Kind kind = diagnostic.getKind();
-      final JavaFileObject fileObject = diagnostic.getSource();
+      Diagnostic.Kind kind = diagnostic.getKind();
+      JavaFileObject fileObject = diagnostic.getSource();
       if (nonNull(fileObject) && kind.equals(Diagnostic.Kind.ERROR)) {
-        final URI uri = fileObject.toUri();
+        URI uri = fileObject.toUri();
         try {
           temp.add(new File(uri.normalize()).getCanonicalFile());
         } catch (IOException e) {
@@ -88,38 +88,37 @@ public class JavaAnalyzer {
   }
 
   @SuppressWarnings("CheckReturnValue")
-  private static void replaceParser(final JavaCompiler.CompilationTask compilerTask) {
-    final JavacTaskImpl javacTaskImpl = (JavacTaskImpl) compilerTask;
-    final Context context = javacTaskImpl.getContext();
+  private static void replaceParser(JavaCompiler.CompilationTask compilerTask) {
+    JavacTaskImpl javacTaskImpl = (JavacTaskImpl) compilerTask;
+    Context context = javacTaskImpl.getContext();
     FuzzyParserFactory.instance(context);
   }
 
-  public CompileResult analyzeAndCompile(
-      final List<File> files, final String classpath, final String out) throws IOException {
+  public CompileResult analyzeAndCompile(List<File> files, String classpath, String out)
+      throws IOException {
     return analyzeAndCompile(files, classpath, out, true);
   }
 
   public CompileResult analyzeAndCompile(
-      final List<File> files, final String classpath, final String out, final boolean generate)
-      throws IOException {
+      List<File> files, String classpath, String out, boolean generate) throws IOException {
     return analyzeAndCompile(files, classpath, out, generate, null);
   }
 
   public CompileResult analyzeAndCompile(
-      final List<File> files,
-      final String classpath,
-      final String out,
-      final boolean generate,
-      @Nullable final SourceAnalyzedHandler handler)
+      List<File> files,
+      String classpath,
+      String out,
+      boolean generate,
+      @Nullable SourceAnalyzedHandler handler)
       throws IOException {
 
     if (files.isEmpty()) {
-      final Map<File, Source> analyzedMap = new HashMap<>(0);
+      Map<File, Source> analyzedMap = new HashMap<>(0);
       log.debug("compile targets is empty");
       return new CompileResult(true, analyzedMap);
     }
 
-    final File tempOut = new File(out);
+    File tempOut = new File(out);
     if (!tempOut.exists() && !tempOut.mkdirs()) {
       log.warn("fail mkdirs path:{}", tempOut);
     }
@@ -128,22 +127,22 @@ public class JavaAnalyzer {
   }
 
   private CompileResult runAnalyzeAndCompile(
-      final String classpath,
-      final String out,
-      final List<File> compileFiles,
-      final boolean generate,
-      @Nullable final SourceAnalyzedHandler handler)
+      String classpath,
+      String out,
+      List<File> compileFiles,
+      boolean generate,
+      @Nullable SourceAnalyzedHandler handler)
       throws IOException {
 
-    final Config config = Config.load();
+    Config config = Config.load();
 
-    try (final StandardJavaFileManager fileManager =
+    try (StandardJavaFileManager fileManager =
         compiler.getStandardFileManager(null, null, Charset.forName("UTF-8"))) {
 
-      final Iterable<? extends JavaFileObject> compilationUnits =
+      Iterable<? extends JavaFileObject> compilationUnits =
           fileManager.getJavaFileObjectsFromFiles(compileFiles);
-      final DiagnosticCollector<JavaFileObject> diagnosticCollector = new DiagnosticCollector<>();
-      final List<String> compileOptions =
+      DiagnosticCollector<JavaFileObject> diagnosticCollector = new DiagnosticCollector<>();
+      List<String> compileOptions =
           Arrays.asList(
               "-cp",
               classpath,
@@ -158,20 +157,19 @@ public class JavaAnalyzer {
               "-encoding",
               "UTF-8");
 
-      final JavaCompiler.CompilationTask compilerTask =
+      JavaCompiler.CompilationTask compilerTask =
           compiler.getTask(
               null, fileManager, diagnosticCollector, compileOptions, null, compilationUnits);
 
-      final JavacTask javacTask = (JavacTask) compilerTask;
+      JavacTask javacTask = (JavacTask) compilerTask;
 
-      final Iterable<? extends CompilationUnitTree> parsedIter = javacTask.parse();
+      Iterable<? extends CompilationUnitTree> parsedIter = javacTask.parse();
       javacTask.analyze();
 
-      final List<Diagnostic<? extends JavaFileObject>> diagnostics =
-          diagnosticCollector.getDiagnostics();
-      final Set<File> errorFiles = JavaAnalyzer.getErrorFiles(diagnostics);
+      List<Diagnostic<? extends JavaFileObject>> diagnostics = diagnosticCollector.getDiagnostics();
+      Set<File> errorFiles = JavaAnalyzer.getErrorFiles(diagnostics);
 
-      final Map<File, Source> analyzedMap = treeAnalyzer.analyze(parsedIter, errorFiles);
+      Map<File, Source> analyzedMap = analyze(parsedIter, errorFiles);
 
       if (generate && !Config.load().useExternalBuilder()) {
         javacTask.generate();
@@ -193,7 +191,7 @@ public class JavaAnalyzer {
         handler.complete();
       }
 
-      final boolean success = errorFiles.size() == 0;
+      boolean success = errorFiles.size() == 0;
       CompileResult result = new CompileResult(success, analyzedMap, diagnostics, errorFiles);
       // ProjectDatabaseHelper.saveCompileResult(result);
       return result;
@@ -201,25 +199,25 @@ public class JavaAnalyzer {
   }
 
   public CompileResult runAnalyzeAndCompile(
-      final String classpath,
-      final String out,
-      final String sourcePath,
-      final String sourceCode,
-      final boolean generate,
-      @Nullable final SourceAnalyzedHandler handler)
+      String classpath,
+      String out,
+      String sourcePath,
+      String sourceCode,
+      boolean generate,
+      @Nullable SourceAnalyzedHandler handler)
       throws IOException {
 
-    final Config config = Config.load();
+    Config config = Config.load();
 
-    try (final StandardJavaFileManager fileManager =
+    try (StandardJavaFileManager fileManager =
         compiler.getStandardFileManager(null, null, Charset.forName("UTF-8"))) {
 
       File sourceFile = new File(sourcePath);
       JavaFileObject fileObject =
           new JavaSourceFromString(sourceFile.getCanonicalPath(), sourceCode);
       List<? extends JavaFileObject> compilationUnits = Arrays.asList(fileObject);
-      final DiagnosticCollector<JavaFileObject> diagnosticCollector = new DiagnosticCollector<>();
-      final List<String> compileOptions =
+      DiagnosticCollector<JavaFileObject> diagnosticCollector = new DiagnosticCollector<>();
+      List<String> compileOptions =
           Arrays.asList(
               "-cp",
               classpath,
@@ -234,27 +232,25 @@ public class JavaAnalyzer {
               "-encoding",
               "UTF-8");
 
-      final JavaCompiler.CompilationTask compilerTask =
+      JavaCompiler.CompilationTask compilerTask =
           compiler.getTask(
               null, fileManager, diagnosticCollector, compileOptions, null, compilationUnits);
 
-      final JavacTask javacTask = (JavacTask) compilerTask;
+      JavacTask javacTask = (JavacTask) compilerTask;
 
-      final Iterable<? extends CompilationUnitTree> parsedIter = javacTask.parse();
+      Iterable<? extends CompilationUnitTree> parsedIter = javacTask.parse();
       javacTask.analyze();
 
-      final List<Diagnostic<? extends JavaFileObject>> diagnostics =
-          diagnosticCollector.getDiagnostics();
+      List<Diagnostic<? extends JavaFileObject>> diagnostics = diagnosticCollector.getDiagnostics();
 
-      final Set<File> errorFiles = JavaAnalyzer.getErrorFiles(diagnostics);
+      Set<File> errorFiles = JavaAnalyzer.getErrorFiles(diagnostics);
 
       Future<?> future =
           this.getExecutorService()
               .submit(
                   () -> {
                     try {
-                      final Map<File, Source> analyzedMap =
-                          treeAnalyzer.analyze(parsedIter, errorFiles);
+                      Map<File, Source> analyzedMap = analyze(parsedIter, errorFiles);
                       if (generate && !Config.load().useExternalBuilder()) {
                         javacTask.generate();
                         CachedASMReflector.getInstance().updateClassIndexFromDirectory();
@@ -269,7 +265,7 @@ public class JavaAnalyzer {
                       log.catching(e);
                     }
                   });
-      final boolean success = errorFiles.size() == 0;
+      boolean success = errorFiles.size() == 0;
       return new CompileResult(success, new HashMap<>(0), diagnostics, errorFiles);
     }
   }
@@ -288,13 +284,13 @@ public class JavaAnalyzer {
   }
 
   public interface SourceAnalyzedHandler {
-    void analyzed(final Source javaSource) throws IOException;
+    void analyzed(Source javaSource) throws IOException;
 
     void complete() throws IOException;
   }
 
   private static class JavaSourceFromString extends SimpleJavaFileObject {
-    final String code;
+    String code;
 
     JavaSourceFromString(String filePath, String code) {
       super(new File(filePath).toURI(), Kind.SOURCE);
