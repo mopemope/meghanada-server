@@ -1,5 +1,6 @@
 package meghanada.project.gradle;
 
+import static java.util.Objects.isNull;
 import static meghanada.utils.FunctionUtils.wrapIOConsumer;
 
 import com.android.builder.model.AndroidArtifact;
@@ -61,12 +62,11 @@ class AndroidSupport {
 
   static AndroidProject getAndroidProject(
       final File root, final org.gradle.tooling.model.GradleProject gradleProject) {
-    final String path = gradleProject.getPath();
-    final String name = path.substring(1);
-    final File childDir = new File(root, name);
-    final GradleConnector childConnector =
-        GradleConnector.newConnector().forProjectDirectory(childDir);
-    final ProjectConnection childConnection = childConnector.connect();
+    String path = gradleProject.getPath();
+    String name = path.substring(1);
+    File childDir = new File(root, name);
+    GradleConnector childConnector = GradleConnector.newConnector().forProjectDirectory(childDir);
+    ProjectConnection childConnection = childConnector.connect();
     try {
       return childConnection.getModel(AndroidProject.class);
     } catch (Exception e) {
@@ -77,171 +77,126 @@ class AndroidSupport {
   }
 
   private static void setAndroidSources(
-      final String name,
-      final Map<String, Set<File>> sources,
-      final SourceProvider sourceProvider,
-      boolean isTest) {
+      Map<String, Set<File>> sources, SourceProvider sourceProvider, boolean isTest) {
     // java
-    final Collection<File> javaDirectories = sourceProvider.getJavaDirectories();
-    for (final File f : javaDirectories) {
-      if (isTest) {
-        final Set<File> source = sources.getOrDefault(TEST_SOURCES_KEY, new HashSet<>(2));
-        source.add(f);
-        sources.put(TEST_SOURCES_KEY, source);
-      } else {
-        final Set<File> source = sources.getOrDefault(SOURCES_KEY, new HashSet<>(2));
-        source.add(f);
-        sources.put(SOURCES_KEY, source);
-      }
+    Collection<File> javaDirectories = sourceProvider.getJavaDirectories();
+    for (File f : javaDirectories) {
+      addSource(sources, isTest, f);
     }
 
     // aidl
-    final Collection<File> aidlDirectories = sourceProvider.getAidlDirectories();
-    for (final File f : aidlDirectories) {
-      if (isTest) {
-        final Set<File> source = sources.getOrDefault(TEST_SOURCES_KEY, new HashSet<>(2));
-        source.add(f);
-        sources.put(TEST_SOURCES_KEY, source);
-      } else {
-        final Set<File> source = sources.getOrDefault(SOURCES_KEY, new HashSet<>(2));
-        source.add(f);
-        sources.put(SOURCES_KEY, source);
-      }
+    Collection<File> aidlDirectories = sourceProvider.getAidlDirectories();
+    for (File f : aidlDirectories) {
+      addSource(sources, isTest, f);
     }
 
     // renderscript
-    final Collection<File> renderscriptDirectories = sourceProvider.getRenderscriptDirectories();
-    for (final File f : renderscriptDirectories) {
-      if (isTest) {
-        final Set<File> source = sources.getOrDefault(TEST_SOURCES_KEY, new HashSet<>());
-        source.add(f);
-        sources.put(TEST_SOURCES_KEY, source);
-      } else {
-        final Set<File> source = sources.getOrDefault(SOURCES_KEY, new HashSet<>());
-        source.add(f);
-        sources.put(SOURCES_KEY, source);
-      }
+    Collection<File> renderscriptDirectories = sourceProvider.getRenderscriptDirectories();
+    for (File f : renderscriptDirectories) {
+      addSource(sources, isTest, f);
     }
 
     // resource
-    final Collection<File> resourcesDirectories = sourceProvider.getResourcesDirectories();
-    for (final File f : resourcesDirectories) {
-      if (isTest) {
-        final Set<File> source = sources.getOrDefault(TEST_RESOURCES_KEY, new HashSet<>());
-        source.add(f);
-        sources.put(AndroidSupport.TEST_RESOURCES_KEY, source);
-      } else {
-        final Set<File> source = sources.getOrDefault(RESOURCES_KEY, new HashSet<>());
-        source.add(f);
-        sources.put(RESOURCES_KEY, source);
-      }
+    Collection<File> resourcesDirectories = sourceProvider.getResourcesDirectories();
+    for (File f : resourcesDirectories) {
+      addSource(sources, isTest, f);
     }
 
     // res
-    final Collection<File> resDirectories = sourceProvider.getResDirectories();
-    for (final File f : resDirectories) {
-      if (isTest) {
-        final Set<File> source =
-            sources.getOrDefault(AndroidSupport.TEST_RESOURCES_KEY, new HashSet<>());
-        source.add(f);
-        sources.put(AndroidSupport.TEST_RESOURCES_KEY, source);
-      } else {
-        final Set<File> source = sources.getOrDefault(RESOURCES_KEY, new HashSet<>());
-        source.add(f);
-        sources.put(RESOURCES_KEY, source);
-      }
+    Collection<File> resDirectories = sourceProvider.getResDirectories();
+    for (File f : resDirectories) {
+      addSource(sources, isTest, f);
     }
 
     // asset
-    final Collection<File> assetsDirectories = sourceProvider.getAssetsDirectories();
-    for (final File f : assetsDirectories) {
-      if (isTest) {
-        final Set<File> source =
-            sources.getOrDefault(AndroidSupport.TEST_RESOURCES_KEY, new HashSet<>());
-        source.add(f);
-        sources.put(AndroidSupport.TEST_RESOURCES_KEY, source);
-      } else {
-        final Set<File> source = sources.getOrDefault(RESOURCES_KEY, new HashSet<>());
-        source.add(f);
-        sources.put(RESOURCES_KEY, source);
-      }
+    Collection<File> assetsDirectories = sourceProvider.getAssetsDirectories();
+    for (File f : assetsDirectories) {
+      addSource(sources, isTest, f);
     }
 
-    // asset
-    final Collection<File> jniLibsDirectories = sourceProvider.getJniLibsDirectories();
-    for (final File f : jniLibsDirectories) {
-      if (isTest) {
-        final Set<File> source =
-            sources.getOrDefault(AndroidSupport.TEST_RESOURCES_KEY, new HashSet<>());
-        source.add(f);
-        sources.put(AndroidSupport.TEST_RESOURCES_KEY, source);
-      } else {
-        final Set<File> source = sources.getOrDefault(RESOURCES_KEY, new HashSet<>());
-        source.add(f);
-        sources.put(RESOURCES_KEY, source);
-      }
+    // jni
+    Collection<File> jniLibsDirectories = sourceProvider.getJniLibsDirectories();
+    for (File f : jniLibsDirectories) {
+      addSource(sources, isTest, f);
     }
   }
 
-  void parseAndroidProject(final AndroidProject androidProject) throws IOException {
+  private static void addSource(Map<String, Set<File>> sources, boolean isTest, File f) {
+    if (isTest) {
+      Set<File> source = sources.getOrDefault(TEST_SOURCES_KEY, new HashSet<>(2));
+      source.add(f);
+      sources.put(TEST_SOURCES_KEY, source);
+    } else {
+      Set<File> source = sources.getOrDefault(SOURCES_KEY, new HashSet<>(2));
+      source.add(f);
+      sources.put(SOURCES_KEY, source);
+    }
+  }
 
-    final JavaCompileOptions javaCompileOptions = androidProject.getJavaCompileOptions();
+  void parseAndroidProject(AndroidProject androidProject) throws IOException {
+
+    JavaCompileOptions javaCompileOptions = androidProject.getJavaCompileOptions();
     this.project.setCompileSource(javaCompileOptions.getSourceCompatibility());
     this.project.setCompileTarget(javaCompileOptions.getTargetCompatibility());
 
-    final ProductFlavorContainer defaultConfig = androidProject.getDefaultConfig();
+    ProductFlavorContainer defaultConfig = androidProject.getDefaultConfig();
 
-    if (this.project.getOutput() == null) {
-      final File buildDir = androidProject.getBuildFolder().getCanonicalFile();
-      final String build =
+    if (isNull(this.project.getOutput())) {
+      File buildDir = androidProject.getBuildFolder().getCanonicalFile();
+      String build =
           Joiner.on(File.separator).join(buildDir, INTERMEDIATE_DIR, CLASSES_DIR, DEBUG_DIR);
       this.project.setOutput(project.normalize(build));
     }
-    if (this.project.getTestOutput() == null) {
-      final File buildDir = androidProject.getBuildFolder().getCanonicalFile();
-      final String build =
+
+    if (isNull(this.project.getTestOutput())) {
+      File buildDir = androidProject.getBuildFolder().getCanonicalFile();
+      String build =
           Joiner.on(File.separator)
               .join(buildDir, INTERMEDIATE_DIR, CLASSES_DIR, TEST_DIR, DEBUG_DIR);
       this.project.setTestOutput(this.project.normalize(build));
     }
 
-    final Map<String, Set<File>> androidSources = this.getAndroidSources(defaultConfig);
-    final Set<ProjectDependency> dependencies = this.getAndroidDependencies(androidProject);
+    Map<String, Set<File>> androidSources = this.getAndroidSources(defaultConfig);
+    Set<ProjectDependency> dependencies = this.getAndroidDependencies(androidProject);
 
-    this.project.getSources().addAll(androidSources.get(SOURCES_KEY));
-    this.project.getResources().addAll(androidSources.get(RESOURCES_KEY));
-    this.project.getTestSources().addAll(androidSources.get(TEST_SOURCES_KEY));
-    this.project.getTestResources().addAll(androidSources.get(AndroidSupport.TEST_RESOURCES_KEY));
+    this.project.getSources().addAll(androidSources.getOrDefault(SOURCES_KEY, new HashSet<>()));
+    this.project.getResources().addAll(androidSources.getOrDefault(RESOURCES_KEY, new HashSet<>()));
+    this.project
+        .getTestSources()
+        .addAll(androidSources.getOrDefault(TEST_SOURCES_KEY, new HashSet<>()));
+    this.project
+        .getTestResources()
+        .addAll(androidSources.getOrDefault(AndroidSupport.TEST_RESOURCES_KEY, new HashSet<>()));
     this.project.getDependencies().addAll(dependencies);
 
     // merge other project
     if (this.project.getSources().isEmpty()) {
-      final File file =
+      File file =
           new File(Joiner.on(File.separator).join("src", "main", "java")).getCanonicalFile();
       this.project.getSources().add(file);
     }
     if (this.project.getTestSources().isEmpty()) {
-      final File file =
+      File file =
           new File(Joiner.on(File.separator).join("src", "test", "java")).getCanonicalFile();
       this.project.getTestSources().add(file);
     }
 
-    if (this.project.getOutput() == null) {
-      final String buildDir = new File(this.project.getProjectRoot(), BUILD_DIR).getCanonicalPath();
-      final String build =
+    if (isNull(this.project.getOutput())) {
+      String buildDir = new File(this.project.getProjectRoot(), BUILD_DIR).getCanonicalPath();
+      String build =
           Joiner.on(File.separator).join(buildDir, INTERMEDIATE_DIR, CLASSES_DIR, DEBUG_DIR);
       this.project.setOutput(this.project.normalize(build));
     }
-    if (this.project.getTestOutput() == null) {
-      final String buildDir = new File(this.project.getProjectRoot(), BUILD_DIR).getCanonicalPath();
-      final String build =
+    if (isNull(this.project.getTestOutput())) {
+      String buildDir = new File(this.project.getProjectRoot(), BUILD_DIR).getCanonicalPath();
+      String build =
           Joiner.on(File.separator)
               .join(buildDir, INTERMEDIATE_DIR, CLASSES_DIR, TEST_DIR, DEBUG_DIR);
       this.project.setTestOutput(this.project.normalize(build));
     }
 
     // load exists aar
-    final String aar =
+    String aar =
         Joiner.on(File.separator)
             .join(this.project.getProjectRoot(), BUILD_DIR, INTERMEDIATE_DIR, EXPLODED_DIR);
     FileUtils.collectFiles(new File(aar), EXT_JAR).forEach(wrapIOConsumer(this::addAAR));
@@ -253,175 +208,164 @@ class AndroidSupport {
     log.debug("test resources {}", this.project.getTestResources());
     log.debug("test output {}", this.project.getTestOutput());
 
-    for (final ProjectDependency projectDependency : this.project.getDependencies()) {
+    for (ProjectDependency projectDependency : this.project.getDependencies()) {
       log.debug("dependency {}", projectDependency);
     }
   }
 
-  private void addAAR(final File jar) {
-    final String pkg =
-        jar.getParentFile().getParentFile().getParentFile().getParentFile().getName();
-    final String name = jar.getParentFile().getParentFile().getParentFile().getName();
-    final String id = pkg + '.' + name;
-    final String version = jar.getParentFile().getParentFile().getName();
-    final ProjectDependency projectDependency =
+  private void addAAR(File jar) {
+    String pkg = jar.getParentFile().getParentFile().getParentFile().getParentFile().getName();
+    String name = jar.getParentFile().getParentFile().getParentFile().getName();
+    String id = pkg + '.' + name;
+    String version = jar.getParentFile().getParentFile().getName();
+    ProjectDependency projectDependency =
         new ProjectDependency(id, DEFAULT_SCOPE, version, jar, ProjectDependency.Type.JAR);
     this.project.getDependencies().add(projectDependency);
   }
 
-  private Set<ProjectDependency> getAndroidDependencies(final AndroidProject androidProject) {
-    final Set<ProjectDependency> dependencies = new HashSet<>(16);
-    final Collection<String> bootClasspath = androidProject.getBootClasspath();
-    for (final String cp : bootClasspath) {
-      final File file = new File(cp);
-      final String id = file.getName();
-      final String version = DEFAULT_VERSION;
-      final String scope = DEFAULT_SCOPE;
-      final ProjectDependency projectDependency =
-          new ProjectDependency(id, scope, version, file, ProjectDependency.Type.JAR);
-      dependencies.add(projectDependency);
+  private Set<ProjectDependency> getAndroidDependencies(AndroidProject androidProject) {
+    Set<ProjectDependency> dependencies = new HashSet<>(16);
+
+    Collection<String> bootClasspath = androidProject.getBootClasspath();
+    for (String cp : bootClasspath) {
+      File file = new File(cp);
+      addDependencies(dependencies, file);
     }
 
-    final Collection<Variant> variants = androidProject.getVariants();
-    for (final Variant variant : variants) {
+    Collection<Variant> variants = androidProject.getVariants();
+    for (Variant variant : variants) {
 
-      final AndroidArtifact mainArtifact = variant.getMainArtifact();
-      for (final File src : mainArtifact.getGeneratedSourceFolders()) {
-        this.project.getSources().add(src);
-      }
-      for (final File src : mainArtifact.getGeneratedResourceFolders()) {
-        this.project.getResources().add(src);
-      }
+      String buildType = variant.getBuildType();
+      boolean releaseBuild = buildType.equals("release");
+      AndroidArtifact mainArtifact = variant.getMainArtifact();
 
-      final Collection<AndroidArtifact> extraAndroidArtifacts = variant.getExtraAndroidArtifacts();
-      for (final AndroidArtifact androidArtifact : extraAndroidArtifacts) {
-        final Collection<File> generatedSourceFolders = androidArtifact.getGeneratedSourceFolders();
-        for (final File src : generatedSourceFolders) {
+      if (!releaseBuild) {
+        Collection<File> generatedSourceFolders = mainArtifact.getGeneratedSourceFolders();
+        for (File src : generatedSourceFolders) {
           this.project.getSources().add(src);
         }
-        final Collection<File> generatedResourceFolders =
-            androidArtifact.getGeneratedResourceFolders();
-        for (final File src : generatedResourceFolders) {
+
+        Collection<File> generatedResourceFolders = mainArtifact.getGeneratedResourceFolders();
+        for (File src : generatedResourceFolders) {
           this.project.getResources().add(src);
         }
-
-        final Dependencies compileDependencies = androidArtifact.getCompileDependencies();
-        // getLibraries
-        final Collection<AndroidLibrary> libraries = compileDependencies.getLibraries();
-        for (final AndroidLibrary androidLibrary : libraries) {
-          final String name = androidLibrary.getName();
-          final Collection<File> localJars = androidLibrary.getLocalJars();
-          if (localJars.isEmpty()) {
-            final File jar = androidLibrary.getJarFile();
-            final String id = jar.getName();
-            final String version = DEFAULT_VERSION;
-            final String scope = DEFAULT_SCOPE;
-            final ProjectDependency projectDependency =
-                new ProjectDependency(id, scope, version, jar, ProjectDependency.Type.JAR);
-            dependencies.add(projectDependency);
-          } else {
-            for (final File jar : localJars) {
-              final String id = jar.getName();
-              final String version = DEFAULT_VERSION;
-              final String scope = DEFAULT_SCOPE;
-              final ProjectDependency projectDependency =
-                  new ProjectDependency(id, scope, version, jar, ProjectDependency.Type.JAR);
-              dependencies.add(projectDependency);
-            }
-          }
-        }
-        // getJavaLibraries
-        final Collection<JavaLibrary> javaLibraries = compileDependencies.getJavaLibraries();
-        for (final JavaLibrary javaLibrary : javaLibraries) {
-          final File file = javaLibrary.getJarFile();
-          final String id = file.getName();
-          final String version = DEFAULT_VERSION;
-          final String scope = DEFAULT_SCOPE;
-          final ProjectDependency projectDependency =
-              new ProjectDependency(id, scope, version, file, ProjectDependency.Type.JAR);
-          dependencies.add(projectDependency);
-        }
       }
 
-      final Collection<JavaArtifact> extraJavaArtifacts = variant.getExtraJavaArtifacts();
-      for (final JavaArtifact javaArtifact : extraJavaArtifacts) {
-        final Collection<File> generatedSourceFolders = javaArtifact.getGeneratedSourceFolders();
-        for (final File src : generatedSourceFolders) {
-          this.project.getSources().add(src);
-        }
-        final Dependencies packageDependencies = javaArtifact.getPackageDependencies();
-        final Collection<JavaLibrary> javaLibraries1 = packageDependencies.getJavaLibraries();
-        final Collection<AndroidLibrary> libraries1 = packageDependencies.getLibraries();
-
-        final Dependencies compileDependencies = javaArtifact.getCompileDependencies();
-        final Collection<AndroidLibrary> libraries = compileDependencies.getLibraries();
-        for (final AndroidLibrary androidLibrary : libraries) {
-          final Collection<File> localJars = androidLibrary.getLocalJars();
-          for (final File jar : localJars) {
-            final String id = jar.getName();
-            final String version = DEFAULT_VERSION;
-            final String scope = DEFAULT_SCOPE;
-            final ProjectDependency projectDependency =
-                new ProjectDependency(id, scope, version, jar, ProjectDependency.Type.JAR);
-            dependencies.add(projectDependency);
-          }
-        }
-        final Collection<JavaLibrary> javaLibraries = compileDependencies.getJavaLibraries();
-        for (final JavaLibrary javaLibrary : javaLibraries) {
-          final File file = javaLibrary.getJarFile();
-          final String id = file.getName();
-          final String version = DEFAULT_VERSION;
-          final String scope = DEFAULT_SCOPE;
-          final ProjectDependency projectDependency =
-              new ProjectDependency(id, scope, version, file, ProjectDependency.Type.JAR);
-          dependencies.add(projectDependency);
-        }
-      }
+      parseExtraAndroidArtifacts(dependencies, variant);
+      parseExtraJavaArtifacts(dependencies, variant);
     }
     return dependencies;
   }
 
-  private Map<String, Set<File>> getAndroidSources(final ProductFlavorContainer defaultConfig) {
+  private void parseExtraJavaArtifacts(Set<ProjectDependency> dependencies, Variant variant) {
+    Collection<JavaArtifact> extraJavaArtifacts = variant.getExtraJavaArtifacts();
+    for (JavaArtifact javaArtifact : extraJavaArtifacts) {
+      Collection<File> generatedSourceFolders = javaArtifact.getGeneratedSourceFolders();
+      for (File src : generatedSourceFolders) {
+        this.project.getSources().add(src);
+      }
 
-    final Map<String, Set<File>> sources = new HashMap<>();
-    final ProductFlavor productFlavor = defaultConfig.getProductFlavor();
-    final String name = productFlavor.getName();
+      Dependencies compileDependencies = javaArtifact.getCompileDependencies();
+      Collection<AndroidLibrary> libraries = compileDependencies.getLibraries();
+      for (AndroidLibrary androidLibrary : libraries) {
+        Collection<File> localJars = androidLibrary.getLocalJars();
+        for (File jar : localJars) {
+          addDependencies(dependencies, jar);
+        }
+      }
+      Collection<JavaLibrary> javaLibraries = compileDependencies.getJavaLibraries();
+      for (JavaLibrary javaLibrary : javaLibraries) {
+        File file = javaLibrary.getJarFile();
+        addDependencies(dependencies, file);
+      }
+    }
+  }
 
-    final SourceProvider sourceProvider = defaultConfig.getSourceProvider();
-    AndroidSupport.setAndroidSources(name, sources, sourceProvider, false);
+  private void parseExtraAndroidArtifacts(Set<ProjectDependency> dependencies, Variant variant) {
+    Collection<AndroidArtifact> extraAndroidArtifacts = variant.getExtraAndroidArtifacts();
+    for (AndroidArtifact androidArtifact : extraAndroidArtifacts) {
+      Collection<File> generatedSourceFolders = androidArtifact.getGeneratedSourceFolders();
+      for (File src : generatedSourceFolders) {
+        this.project.getSources().add(src);
+      }
+      Collection<File> generatedResourceFolders = androidArtifact.getGeneratedResourceFolders();
+      for (File src : generatedResourceFolders) {
+        this.project.getResources().add(src);
+      }
+
+      Dependencies compileDependencies = androidArtifact.getCompileDependencies();
+      // getLibraries
+      Collection<AndroidLibrary> libraries = compileDependencies.getLibraries();
+      for (AndroidLibrary androidLibrary : libraries) {
+        Collection<File> localJars = androidLibrary.getLocalJars();
+        if (localJars.isEmpty()) {
+          File jar = androidLibrary.getJarFile();
+          addDependencies(dependencies, jar);
+        } else {
+          for (File jar : localJars) {
+            addDependencies(dependencies, jar);
+          }
+        }
+      }
+      // getJavaLibraries
+      Collection<JavaLibrary> javaLibraries = compileDependencies.getJavaLibraries();
+      for (JavaLibrary javaLibrary : javaLibraries) {
+        File file = javaLibrary.getJarFile();
+        addDependencies(dependencies, file);
+      }
+    }
+  }
+
+  private void addDependencies(Set<ProjectDependency> dependencies, File jar) {
+    String id = jar.getName();
+    String version = DEFAULT_VERSION;
+    String scope = DEFAULT_SCOPE;
+    ProjectDependency projectDependency =
+        new ProjectDependency(id, scope, version, jar, ProjectDependency.Type.JAR);
+    dependencies.add(projectDependency);
+  }
+
+  private Map<String, Set<File>> getAndroidSources(ProductFlavorContainer defaultConfig) {
+
+    Map<String, Set<File>> sources = new HashMap<>();
+    ProductFlavor productFlavor = defaultConfig.getProductFlavor();
+    String name = productFlavor.getName();
+
+    SourceProvider sourceProvider = defaultConfig.getSourceProvider();
+    AndroidSupport.setAndroidSources(sources, sourceProvider, false);
 
     // extra
-    final Collection<SourceProviderContainer> extraSourceProviders =
+    Collection<SourceProviderContainer> extraSourceProviders =
         defaultConfig.getExtraSourceProviders();
     extraSourceProviders.forEach(
         sourceProviderContainer -> {
-          final String artifactName = sourceProviderContainer.getArtifactName();
-          final SourceProvider provider = sourceProviderContainer.getSourceProvider();
-          final boolean isTest = artifactName.contains("_test_");
-          AndroidSupport.setAndroidSources(artifactName, sources, provider, isTest);
+          String artifactName = sourceProviderContainer.getArtifactName();
+          SourceProvider provider = sourceProviderContainer.getSourceProvider();
+          boolean isTest = artifactName.contains("_test_");
+          AndroidSupport.setAndroidSources(sources, provider, isTest);
         });
 
     return sources;
   }
 
   void prepareCompileAndroidJava() {
-    final ProjectConnection connection = this.project.getProjectConnection();
+    ProjectConnection connection = this.project.getProjectConnection();
     try {
-      final BuildLauncher buildLauncher = connection.newBuild();
-      final String genTask = this.project.getName() + this.genSourceTaskName;
+      BuildLauncher buildLauncher = connection.newBuild();
+      String genTask = this.project.getName() + this.genSourceTaskName;
       buildLauncher.forTasks(genTask).run();
 
-      final int size = this.project.getDependencies().size();
+      int size = this.project.getDependencies().size();
 
-      final String aar =
+      String aar =
           Joiner.on(File.separator)
               .join(this.project.getProjectRoot(), BUILD_DIR, INTERMEDIATE_DIR, EXPLODED_DIR);
-      final List<File> jars = FileUtils.collectFiles(new File(aar), EXT_JAR);
-      for (final File jar : jars) {
+      List<File> jars = FileUtils.collectFiles(new File(aar), EXT_JAR);
+      for (File jar : jars) {
         addAAR(jar);
       }
 
-      final int after = this.project.getDependencies().size();
+      int after = this.project.getDependencies().size();
       if (size != after) {
         CachedASMReflector.getInstance().createClassIndexes(jars);
         this.project.resetCachedClasspath();
@@ -432,25 +376,25 @@ class AndroidSupport {
   }
 
   void prepareCompileAndroidTestJava() {
-    final ProjectConnection connection = this.project.getProjectConnection();
+    ProjectConnection connection = this.project.getProjectConnection();
     try {
-      final BuildLauncher buildLauncher = connection.newBuild();
-      final String genTestTask = this.project.getName() + genUnitTestTaskName;
-      final String genAndroidTestTask = this.project.getName() + genAndroidTestTaskName;
+      BuildLauncher buildLauncher = connection.newBuild();
+      String genTestTask = this.project.getName() + genUnitTestTaskName;
+      String genAndroidTestTask = this.project.getName() + genAndroidTestTaskName;
 
       buildLauncher.forTasks(genTestTask, genAndroidTestTask).run();
 
-      final int size = this.project.getDependencies().size();
+      int size = this.project.getDependencies().size();
 
-      final String aar =
+      String aar =
           Joiner.on(File.separator)
               .join(this.project.getProjectRoot(), BUILD_DIR, INTERMEDIATE_DIR, EXPLODED_DIR);
-      final List<File> jars = FileUtils.collectFiles(new File(aar), EXT_JAR);
-      for (final File jar : jars) {
+      List<File> jars = FileUtils.collectFiles(new File(aar), EXT_JAR);
+      for (File jar : jars) {
         addAAR(jar);
       }
 
-      final int after = this.project.getDependencies().size();
+      int after = this.project.getDependencies().size();
       if (size != after) {
         CachedASMReflector.getInstance().createClassIndexes(jars);
         this.project.resetCachedClasspath();
