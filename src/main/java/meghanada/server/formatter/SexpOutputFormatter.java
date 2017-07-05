@@ -108,8 +108,9 @@ public class SexpOutputFormatter implements OutputFormatter {
             d -> {
               final JavaFileObject fileObject = d.getSource();
               String key = path;
-              if (fileObject != null) {
+              if (fileObject != null && fileObject.getKind().equals(JavaFileObject.Kind.SOURCE)) {
                 final URI uri = fileObject.toUri();
+                log.info("URI {}", uri);
                 final File file = new File(uri);
                 key = file.getCanonicalPath();
               }

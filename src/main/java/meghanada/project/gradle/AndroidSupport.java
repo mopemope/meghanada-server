@@ -40,7 +40,11 @@ class AndroidSupport {
   private static final String CLASSES_DIR = "classes";
   private static final String DEBUG_DIR = "debug";
   private static final String DEFAULT_SCOPE = "COMPILE";
+  private static final String SRC_DIR = "src";
+  private static final String MAIN_DIR = "main";
   private static final String TEST_DIR = "test";
+  private static final String JAVA_DIR = "java";
+  private static final String RELEASE_BUILD = "release";
   private static final String DEFAULT_VERSION = "1.0.0";
   private static final String BUILD_DIR = "build";
   private static final String TEST_SOURCES_KEY = "testSources";
@@ -49,6 +53,7 @@ class AndroidSupport {
   private static final String RESOURCES_KEY = "resources";
   private static final String EXPLODED_DIR = "exploded-aar";
   private static final String EXT_JAR = ".jar";
+  private static final String TEST_SUFFIX = "_test_";
 
   private final GradleProject project;
 
@@ -172,12 +177,12 @@ class AndroidSupport {
     // merge other project
     if (this.project.getSources().isEmpty()) {
       File file =
-          new File(Joiner.on(File.separator).join("src", "main", "java")).getCanonicalFile();
+          new File(Joiner.on(File.separator).join(SRC_DIR, MAIN_DIR, JAVA_DIR)).getCanonicalFile();
       this.project.getSources().add(file);
     }
     if (this.project.getTestSources().isEmpty()) {
       File file =
-          new File(Joiner.on(File.separator).join("src", "test", "java")).getCanonicalFile();
+          new File(Joiner.on(File.separator).join(SRC_DIR, TEST_DIR, JAVA_DIR)).getCanonicalFile();
       this.project.getTestSources().add(file);
     }
 
@@ -236,7 +241,7 @@ class AndroidSupport {
     for (Variant variant : variants) {
 
       String buildType = variant.getBuildType();
-      boolean releaseBuild = buildType.equals("release");
+      boolean releaseBuild = buildType.equals(RELEASE_BUILD);
       AndroidArtifact mainArtifact = variant.getMainArtifact();
 
       if (!releaseBuild) {
@@ -258,11 +263,16 @@ class AndroidSupport {
   }
 
   private void parseExtraJavaArtifacts(Set<ProjectDependency> dependencies, Variant variant) {
+    String buildType = variant.getBuildType();
+    boolean releaseBuild = buildType.equals(RELEASE_BUILD);
+
     Collection<JavaArtifact> extraJavaArtifacts = variant.getExtraJavaArtifacts();
     for (JavaArtifact javaArtifact : extraJavaArtifacts) {
-      Collection<File> generatedSourceFolders = javaArtifact.getGeneratedSourceFolders();
-      for (File src : generatedSourceFolders) {
-        this.project.getSources().add(src);
+      if (!releaseBuild) {
+        Collection<File> generatedSourceFolders = javaArtifact.getGeneratedSourceFolders();
+        for (File src : generatedSourceFolders) {
+          this.project.getSources().add(src);
+        }
       }
 
       Dependencies compileDependencies = javaArtifact.getCompileDependencies();
@@ -282,15 +292,32 @@ class AndroidSupport {
   }
 
   private void parseExtraAndroidArtifacts(Set<ProjectDependency> dependencies, Variant variant) {
+
+    String buildType = variant.getBuildType();
+    boolean releaseBuild = buildType.equals(RELEASE_BUILD);
+
     Collection<AndroidArtifact> extraAndroidArtifacts = variant.getExtraAndroidArtifacts();
     for (AndroidArtifact androidArtifact : extraAndroidArtifacts) {
-      Collection<File> generatedSourceFolders = androidArtifact.getGeneratedSourceFolders();
-      for (File src : generatedSourceFolders) {
-        this.project.getSources().add(src);
-      }
-      Collection<File> generatedResourceFolders = androidArtifact.getGeneratedResourceFolders();
-      for (File src : generatedResourceFolders) {
-        this.project.getResources().add(src);
+      String name = androidArtifact.getName();
+      boolean isTest = name.contains(TEST_SUFFIX);
+
+      if (!releaseBuild) {
+        Collection<File> generatedSourceFolders = androidArtifact.getGeneratedSourceFolders();
+        for (File src : generatedSourceFolders) {
+          if (isTest) {
+            this.project.getTestSources().add(src);
+          } else {
+            this.project.getSources().add(src);
+          }
+        }
+        Collection<File> generatedResourceFolders = androidArtifact.getGeneratedResourceFolders();
+        for (File src : generatedResourceFolders) {
+          if (isTest) {
+            this.project.getTestResources().add(src);
+          } else {
+            this.project.getResources().add(src);
+          }
+        }
       }
 
       Dependencies compileDependencies = androidArtifact.getCompileDependencies();
@@ -341,7 +368,7 @@ class AndroidSupport {
         sourceProviderContainer -> {
           String artifactName = sourceProviderContainer.getArtifactName();
           SourceProvider provider = sourceProviderContainer.getSourceProvider();
-          boolean isTest = artifactName.contains("_test_");
+          boolean isTest = artifactName.contains(TEST_SUFFIX);
           AndroidSupport.setAndroidSources(sources, provider, isTest);
         });
 
