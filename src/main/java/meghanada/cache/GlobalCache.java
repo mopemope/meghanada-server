@@ -50,10 +50,6 @@ public class GlobalCache {
     return globalCache;
   }
 
-  public void setMemberCache(final LoadingCache<String, List<MemberDescriptor>> memberCache) {
-    this.memberCache = memberCache;
-  }
-
   public void setupMemberCache() {
     if (this.memberCache != null) {
       return;

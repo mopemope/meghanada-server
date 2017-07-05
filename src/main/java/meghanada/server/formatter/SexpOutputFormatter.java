@@ -1,5 +1,7 @@
 package meghanada.server.formatter;
 
+import static java.util.Objects.isNull;
+import static java.util.Objects.nonNull;
 import static meghanada.utils.FunctionUtils.wrapIOConsumer;
 
 import java.io.File;
@@ -37,21 +39,21 @@ public class SexpOutputFormatter implements OutputFormatter {
   private static final String ERROR = "error";
 
   private static String doubleQuote(final String s) {
-    if (s == null) {
+    if (isNull(s)) {
       return QUOTE + QUOTE;
     }
     return QUOTE + s + QUOTE;
   }
 
   private static String success(final String s) {
-    if (s == null) {
+    if (isNull(s)) {
       return LPAREN + SUCCESS + RPAREN;
     }
     return LPAREN + SUCCESS + LIST_SEP + s + RPAREN;
   }
 
   private static String error(final String s) {
-    if (s == null) {
+    if (isNull(s)) {
       return LPAREN + ERROR + RPAREN;
     }
     return LPAREN + ERROR + LIST_SEP + s + RPAREN;
@@ -108,9 +110,8 @@ public class SexpOutputFormatter implements OutputFormatter {
             d -> {
               final JavaFileObject fileObject = d.getSource();
               String key = path;
-              if (fileObject != null && fileObject.getKind().equals(JavaFileObject.Kind.SOURCE)) {
+              if (nonNull(fileObject) && fileObject.getKind().equals(JavaFileObject.Kind.SOURCE)) {
                 final URI uri = fileObject.toUri();
-                log.info("URI {}", uri);
                 final File file = new File(uri);
                 key = file.getCanonicalPath();
               }
@@ -207,7 +208,7 @@ public class SexpOutputFormatter implements OutputFormatter {
         result
             .values()
             .stream()
-            .filter(strings -> strings != null && strings.size() > 0)
+            .filter(strings -> nonNull(strings) && strings.size() > 0)
             .map(
                 strings ->
                     LPAREN

@@ -95,38 +95,51 @@ class MemberCacheLoader extends CacheLoader<String, List<MemberDescriptor>>
       }
     }
 
+    String classFilePath = classFile.getPath();
+    boolean isMyProject = classFilePath.startsWith(projectRoot);
+
+    if (!isMyProject) {
+      final Stopwatch stopwatch = Stopwatch.createStarted();
+      final List<MemberDescriptor> members = loadFromReflector(fqcn);
+      log.trace("load fqcn:{} elapsed:{}", fqcn, stopwatch.stop());
+      if (!members.isEmpty()) {
+        storeMembers(fqcn, members);
+        return members;
+      }
+    }
+
     @SuppressWarnings("unchecked")
     final List<MemberDescriptor> cachedResult = MemberCacheLoader.getCachedMemberDescriptors(fqcn);
     if (nonNull(cachedResult)) {
       return cachedResult;
     }
-    final String initName = ClassNameUtils.getSimpleName(fqcn);
 
     final Stopwatch stopwatch = Stopwatch.createStarted();
+    final List<MemberDescriptor> members = loadFromReflector(fqcn);
+    log.trace("load fqcn:{} elapsed:{}", fqcn, stopwatch.stop());
+    storeMembers(fqcn, members);
+    return members;
+  }
 
+  private List<MemberDescriptor> loadFromReflector(String fqcn) {
+    final String initName = ClassNameUtils.getSimpleName(fqcn);
     final ASMReflector asmReflector = ASMReflector.getInstance();
     Map<String, ClassIndex> index = CachedASMReflector.getInstance().getGlobalClassIndex();
 
     final InheritanceInfo info = asmReflector.getReflectInfo(index, fqcn);
     final List<MemberDescriptor> result = asmReflector.reflectAll(info);
 
-    final List<MemberDescriptor> members =
-        result
-            .stream()
-            .filter(
-                md -> {
-                  if (md.matchType(CandidateUnit.MemberType.CONSTRUCTOR)) {
-                    final String name = ClassNameUtils.getSimpleName(md.getName());
-                    return name.equals(initName);
-                  }
-                  return true;
-                })
-            .collect(Collectors.toList());
-
-    log.trace("load fqcn:{} elapsed:{}", fqcn, stopwatch.stop());
-
-    storeMembers(fqcn, members);
-    return members;
+    return result
+        .stream()
+        .filter(
+            md -> {
+              if (md.matchType(CandidateUnit.MemberType.CONSTRUCTOR)) {
+                final String name = ClassNameUtils.getSimpleName(md.getName());
+                return name.equals(initName);
+              }
+              return true;
+            })
+        .collect(Collectors.toList());
   }
 
   @Override
