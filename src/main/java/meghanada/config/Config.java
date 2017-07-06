@@ -13,7 +13,6 @@ import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import meghanada.project.Project;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
@@ -29,6 +28,7 @@ public class Config {
   public static final String GRADLE_PREPARE_TEST_COMPILE_TASK = "gradle-prepare-test-compile-task";
   public static final String MEGHANADA_DIR = ".meghanada";
   public static final String DEFAULT_JAVAC_ARG = "-Xlint:all";
+  public static final String PROJECT_ROOT_KEY = "project.root";
 
   private static final Logger log = LogManager.getLogger(Config.class);
   private static Config config;
@@ -182,6 +182,14 @@ public class Config {
         String.format("%.2f", maxMemory));
   }
 
+  public static String getProjectRoot() {
+    return System.getProperty(PROJECT_ROOT_KEY);
+  }
+
+  public static void setProjectRoot(String path) {
+    System.setProperty(PROJECT_ROOT_KEY, path);
+  }
+
   public List<String> gradlePrepareCompileTask() {
     final String tasks = c.getString(GRADLE_PREPARE_COMPILE_TASK);
     final String[] split = StringUtils.split(tasks, ",");
@@ -240,7 +248,7 @@ public class Config {
       return useTemp;
     }
 
-    final String root = System.getProperty(Project.PROJECT_ROOT_KEY);
+    final String root = System.getProperty(PROJECT_ROOT_KEY);
     try {
       if (nonNull(root) && !root.isEmpty()) {
         return new File(root, MEGHANADA_DIR).getCanonicalPath();

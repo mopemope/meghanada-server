@@ -17,7 +17,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import meghanada.project.Project;
+import meghanada.config.Config;
 import meghanada.reflect.CandidateUnit;
 import meghanada.reflect.ClassIndex;
 import meghanada.reflect.MemberDescriptor;
@@ -84,7 +84,7 @@ class MemberCacheLoader extends CacheLoader<String, List<MemberDescriptor>>
     final ClassName cn = new ClassName(className);
     final String fqcn = cn.getName();
 
-    final String projectRoot = System.getProperty(Project.PROJECT_ROOT_KEY);
+    final String projectRoot = Config.getProjectRoot();
     File classFile = MemberCacheLoader.getClassFile(fqcn);
     if (isNull(classFile)) {
       // try inner class

@@ -139,7 +139,7 @@ public class Session {
         log.traceEntry("projectRoot={} targetFile={}", projectRoot, targetFile);
 
     final String projectRootPath = projectRoot.getCanonicalPath();
-    System.setProperty(Project.PROJECT_ROOT_KEY, projectRootPath);
+    Config.setProjectRoot(projectRootPath);
 
     try {
       final Config config = Config.load();
@@ -149,7 +149,7 @@ public class Session {
         // loaded skip
         final Project project = Project.loadedProject.get(id);
         log.traceExit(entryMessage);
-        System.setProperty(Project.PROJECT_ROOT_KEY, projectRootPath);
+        Config.setProjectRoot(projectRootPath);
         return Optional.of(project);
       }
 
@@ -194,7 +194,7 @@ public class Session {
       log.traceExit(entryMessage);
       return Optional.of(parsed.mergeFromProjectConfig());
     } finally {
-      System.setProperty(Project.PROJECT_ROOT_KEY, projectRootPath);
+      Config.setProjectRoot(projectRootPath);
     }
   }
 
@@ -265,7 +265,7 @@ public class Session {
       this.currentProject = this.projects.get(projectRoot);
       log.info("change project {}", this.currentProject.getName());
       String projectRootPath = this.currentProject.getProjectRootPath();
-      System.setProperty(Project.PROJECT_ROOT_KEY, projectRootPath);
+      Config.setProjectRoot(projectRootPath);
       this.getLocationSearcher().setProject(currentProject);
       this.getDeclarationSearcher().setProject(this.currentProject);
       this.getVariableCompletion().setProject(this.currentProject);
@@ -291,7 +291,7 @@ public class Session {
     this.currentProject = project;
     log.info("change project {}", this.currentProject.getName());
     String projectRootPath = this.currentProject.getProjectRootPath();
-    System.setProperty(Project.PROJECT_ROOT_KEY, projectRootPath);
+    Config.setProjectRoot(projectRootPath);
     this.projects.put(projectRoot, this.currentProject);
     this.getLocationSearcher().setProject(currentProject);
     this.getDeclarationSearcher().setProject(this.currentProject);

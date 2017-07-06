@@ -128,12 +128,12 @@ public class ProjectDependency implements Serializable {
             return this.dependencyFilePath;
           }
 
-          String root = System.getProperty(Project.PROJECT_ROOT_KEY);
+          String root = Config.getProjectRoot();
           try {
             final File output = getProjectOutput();
             this.dependencyFilePath = output.getCanonicalPath();
           } finally {
-            System.setProperty(Project.PROJECT_ROOT_KEY, root);
+            Config.setProjectRoot(root);
           }
         }
         return this.dependencyFilePath;
@@ -172,7 +172,7 @@ public class ProjectDependency implements Serializable {
   }
 
   public Set<File> getProjectSources() {
-    String root = System.getProperty(Project.PROJECT_ROOT_KEY);
+    String root = Config.getProjectRoot();
     try {
       if (type.equals(Type.PROJECT)) {
         if (nonNull(cachedSrc)) {
@@ -188,7 +188,7 @@ public class ProjectDependency implements Serializable {
     } catch (IOException e) {
       throw new UncheckedIOException(e);
     } finally {
-      System.setProperty(Project.PROJECT_ROOT_KEY, root);
+      Config.setProjectRoot(root);
     }
   }
 

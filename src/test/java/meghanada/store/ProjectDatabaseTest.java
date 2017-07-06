@@ -11,7 +11,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import meghanada.project.Project;
+import meghanada.config.Config;
 import meghanada.reflect.ClassIndex;
 import org.junit.After;
 import org.junit.Before;
@@ -32,7 +32,7 @@ public class ProjectDatabaseTest {
     System.setProperty(TEMP_PROJECT_SETTING_DIR, path);
     org.apache.commons.io.FileUtils.deleteDirectory(new File(path));
     String projectRoot = new File(".").getCanonicalPath();
-    System.setProperty(Project.PROJECT_ROOT_KEY, projectRoot);
+    Config.setProjectRoot(projectRoot);
 
     database = ProjectDatabase.getInstance();
   }

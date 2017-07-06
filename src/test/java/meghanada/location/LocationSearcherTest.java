@@ -66,9 +66,9 @@ public class LocationSearcherTest extends GradleTestBase {
 
     final LocationSearcher searcher = getSearcher();
     final Location result =
-        timeIt(() -> searcher.searchDeclarationLocation(f, 1049, 7, "source")).orElse(null);
+        timeIt(() -> searcher.searchDeclarationLocation(f, 1053, 7, "source")).orElse(null);
     assertNotNull(result);
-    assertEquals(1023, result.getLine());
+    assertEquals(1027, result.getLine());
     assertEquals(39, result.getColumn());
   }
 
@@ -230,7 +230,7 @@ public class LocationSearcherTest extends GradleTestBase {
         timeIt(() -> searcher.searchDeclarationLocation(f, 62, 19, "getAllowClass")).orElse(null);
     assertNotNull(result);
     assertTrue(result.getPath().contains("Config.java"));
-    assertEquals(325, result.getLine());
+    assertEquals(333, result.getLine());
     assertEquals(23, result.getColumn());
   }
 

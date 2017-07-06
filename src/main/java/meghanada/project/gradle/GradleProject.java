@@ -355,7 +355,7 @@ public class GradleProject extends Project {
       build.run(handler);
       return inputStream;
     } finally {
-      System.setProperty(PROJECT_ROOT_KEY, this.projectRoot.getCanonicalPath());
+      Config.setProjectRoot(this.projectRoot.getCanonicalPath());
     }
   }
 

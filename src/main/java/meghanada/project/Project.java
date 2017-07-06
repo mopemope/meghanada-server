@@ -1,5 +1,7 @@
 package meghanada.project;
 
+import static java.util.Objects.nonNull;
+
 import com.google.common.base.Joiner;
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Objects;
@@ -48,7 +50,9 @@ public abstract class Project implements Serializable, Storable {
 
   public static final String GRADLE_PROJECT_FILE = "build.gradle";
   public static final String MVN_PROJECT_FILE = "pom.xml";
-  public static final String PROJECT_ROOT_KEY = "project.root";
+
+  // public static final String PROJECT_ROOT_KEY = "project.root";
+
   public static final Map<String, Project> loadedProject = new HashMap<>(4);
   public static final String ENTITY_TYPE = "Project";
 
@@ -132,7 +136,7 @@ public abstract class Project implements Serializable, Storable {
   }
 
   protected void initialize() throws IOException {
-    System.setProperty(PROJECT_ROOT_KEY, this.projectRootPath);
+    Config.setProjectRoot(this.projectRootPath);
     final File file = new File(projectRoot, FORMATTER_FILE);
     if (file.exists()) {
       System.setProperty(FORMATTER_FILE_KEY, file.getCanonicalPath());
@@ -254,12 +258,12 @@ public abstract class Project implements Serializable, Storable {
 
   public CompileResult compileJava(boolean force) throws IOException {
 
-    final String origin = System.getProperty(PROJECT_ROOT_KEY);
+    final String origin = Config.getProjectRoot();
     try {
-      System.setProperty(PROJECT_ROOT_KEY, projectRootPath);
+      Config.setProjectRoot(projectRootPath);
 
       List<File> files = Project.collectJavaFiles(sources);
-      if (files != null && !files.isEmpty()) {
+      if (nonNull(files) && !files.isEmpty()) {
 
         if (this.callerMap.size() == 0) {
           force = true;
@@ -296,7 +300,7 @@ public abstract class Project implements Serializable, Storable {
             compileResult.getDiagnostics().size(),
             stopwatch.stop());
 
-        System.setProperty(PROJECT_ROOT_KEY, projectRootPath);
+        Config.setProjectRoot(projectRootPath);
         return compileResult;
       }
       return new CompileResult(true);
@@ -310,7 +314,7 @@ public abstract class Project implements Serializable, Storable {
       }
       return result;
     } finally {
-      System.setProperty(PROJECT_ROOT_KEY, origin);
+      Config.setProjectRoot(origin);
     }
   }
 
@@ -320,9 +324,9 @@ public abstract class Project implements Serializable, Storable {
 
   public CompileResult compileTestJava(boolean force) throws IOException {
 
-    final String origin = System.getProperty(PROJECT_ROOT_KEY);
+    final String origin = Config.getProjectRoot();
     try {
-      System.setProperty(PROJECT_ROOT_KEY, projectRootPath);
+      Config.setProjectRoot(projectRootPath);
 
       List<File> files = Project.collectJavaFiles(testSources);
       if (files != null && !files.isEmpty()) {
@@ -362,7 +366,7 @@ public abstract class Project implements Serializable, Storable {
             compileResult.getDiagnostics().size(),
             stopwatch.stop());
 
-        System.setProperty(PROJECT_ROOT_KEY, projectRootPath);
+        Config.setProjectRoot(projectRootPath);
         return compileResult;
       }
       return new CompileResult(true);
@@ -376,7 +380,7 @@ public abstract class Project implements Serializable, Storable {
       }
       return result;
     } finally {
-      System.setProperty(PROJECT_ROOT_KEY, origin);
+      Config.setProjectRoot(origin);
     }
   }
 
@@ -566,7 +570,7 @@ public abstract class Project implements Serializable, Storable {
     try {
       return runUnitTest(test);
     } finally {
-      System.setProperty(PROJECT_ROOT_KEY, this.projectRootPath);
+      Config.setProjectRoot(this.projectRootPath);
     }
   }
 
@@ -837,7 +841,7 @@ public abstract class Project implements Serializable, Storable {
 
   public void clearCache() throws IOException {
     ProjectDatabaseHelper.shutdown();
-    System.setProperty(PROJECT_ROOT_KEY, this.projectRootPath);
+    Config.setProjectRoot(this.projectRootPath);
     final File projectSettingDir = new File(Config.load().getProjectSettingDir());
     log.info("clear cache {}", projectSettingDir);
     org.apache.commons.io.FileUtils.deleteDirectory(projectSettingDir);

@@ -1,8 +1,6 @@
 package meghanada.store;
 
-import static java.util.Objects.isNull;
-import static java.util.Objects.nonNull;
-import static java.util.Objects.requireNonNull;
+import static java.util.Objects.*;
 
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Stopwatch;
@@ -44,7 +42,6 @@ import jetbrains.exodus.env.EnvironmentImpl;
 import jetbrains.exodus.env.Environments;
 import meghanada.Main;
 import meghanada.config.Config;
-import meghanada.project.Project;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -106,7 +103,7 @@ class ProjectDatabase {
       return;
     }
 
-    String currentProject = System.getProperty(Project.PROJECT_ROOT_KEY);
+    String currentProject = Config.getProjectRoot();
     String projectRoot = projectDatabase.projectRoot;
     if (!currentProject.equals(projectRoot)) {
       projectDatabase.shutdown();
@@ -314,7 +311,7 @@ class ProjectDatabase {
           log.warn("{} mkdirs fail", root);
         }
 
-        String rootDir = System.getProperty(Project.PROJECT_ROOT_KEY);
+        String rootDir = Config.getProjectRoot();
         String name = new File(rootDir).getName();
 
         String hash =
@@ -343,7 +340,7 @@ class ProjectDatabase {
         }
         this.entityStore = PersistentEntityStores.newInstance(environment, STORE_NAME);
         String location = this.environment.getLocation();
-        String projectRoot = System.getProperty(Project.PROJECT_ROOT_KEY);
+        String projectRoot = Config.getProjectRoot();
         this.projectRoot = projectRoot;
         log.debug("open project database {}", location);
       }
