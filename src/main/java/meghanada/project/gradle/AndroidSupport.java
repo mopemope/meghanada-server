@@ -1,6 +1,7 @@
 package meghanada.project.gradle;
 
 import static java.util.Objects.isNull;
+import static java.util.Objects.nonNull;
 import static meghanada.utils.FunctionUtils.wrapIOConsumer;
 
 import com.android.builder.model.AndroidArtifact;
@@ -256,6 +257,33 @@ class AndroidSupport {
         }
       }
 
+      Dependencies compileDependencies = mainArtifact.getCompileDependencies();
+      Collection<AndroidLibrary> libraries = compileDependencies.getLibraries();
+      for (AndroidLibrary androidLibrary : libraries) {
+        String project = androidLibrary.getProject();
+        if (nonNull(project)) {
+          if (project.startsWith(":")) {
+            project = project.substring(1);
+          }
+          if (this.project.allModules.containsKey(project)) {
+            File root = this.project.allModules.get(project);
+            final ProjectDependency projectDependency =
+                new ProjectDependency(
+                    project, "COMPILE", "1.0.0", root, ProjectDependency.Type.PROJECT);
+            dependencies.add(projectDependency);
+          }
+        }
+        Collection<File> localJars = androidLibrary.getLocalJars();
+        for (File jar : localJars) {
+          addDependencies(dependencies, jar);
+        }
+      }
+      Collection<JavaLibrary> javaLibraries = compileDependencies.getJavaLibraries();
+      for (JavaLibrary javaLibrary : javaLibraries) {
+        File file = javaLibrary.getJarFile();
+        addDependencies(dependencies, file);
+      }
+
       parseExtraAndroidArtifacts(dependencies, variant);
       parseExtraJavaArtifacts(dependencies, variant);
     }
@@ -265,7 +293,6 @@ class AndroidSupport {
   private void parseExtraJavaArtifacts(Set<ProjectDependency> dependencies, Variant variant) {
     String buildType = variant.getBuildType();
     boolean releaseBuild = buildType.equals(RELEASE_BUILD);
-
     Collection<JavaArtifact> extraJavaArtifacts = variant.getExtraJavaArtifacts();
     for (JavaArtifact javaArtifact : extraJavaArtifacts) {
       if (!releaseBuild) {

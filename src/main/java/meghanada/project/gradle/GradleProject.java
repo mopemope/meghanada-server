@@ -61,7 +61,7 @@ public class GradleProject extends Project {
   private static String tempPath;
 
   private File rootProject;
-  private transient Map<String, File> allModules;
+  transient Map<String, File> allModules;
   private transient List<String> prepareCompileTask;
   private transient List<String> prepareTestCompileTask;
   private transient ComparableVersion gradleVersion = null;
