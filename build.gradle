@@ -3,7 +3,7 @@ plugins {
   id 'java'
   id 'maven'
   id 'application'
-  id 'com.github.johnrengelman.shadow' version '2.0.0'
+  id 'com.github.johnrengelman.shadow' version '2.0.1'
   id 'com.github.ben-manes.versions' version '0.15.0'
   id 'com.jfrog.bintray' version '1.7.3'
   id 'org.ajoberstar.grgit' version '1.7.2'
@@ -95,7 +95,7 @@ dependencies {
   compile 'org.apache.maven:maven-model-builder:3.5.0'
   compile 'com.leacox.motif:motif:0.1'
   compile 'com.leacox.motif:motif-hamcrest:0.1'
-  compile 'com.github.javaparser:javaparser-core:3.2.8'
+  compile 'com.github.javaparser:javaparser-core:3.2.10'
   compile "org.apache.logging.log4j:log4j-core:$log4jVersion"
   compile "org.apache.logging.log4j:log4j-api:$log4jVersion"
   compile "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
@@ -112,7 +112,7 @@ dependencies {
   compile 'org.jboss.windup.decompiler:decompiler-fernflower:3.0.0.Final'
   compile 'com.google.code.findbugs:jsr305:3.0.2'
   compile 'org.eclipse.jdt:org.eclipse.jdt.core:3.12.3'
-  compile 'de.ruedigermoeller:fst:2.50'
+  compile 'de.ruedigermoeller:fst:2.51'
   compile "org.jetbrains.xodus:xodus-query:$xodusVersion"
   compile "org.jetbrains.xodus:xodus-openAPI:$xodusVersion"
   compile "org.jetbrains.xodus:xodus-vfs:$xodusVersion"
