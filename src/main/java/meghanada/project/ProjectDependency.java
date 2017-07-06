@@ -1,5 +1,6 @@
 package meghanada.project;
 
+import static java.util.Objects.nonNull;
 import static meghanada.utils.FunctionUtils.wrapIO;
 
 import com.google.common.base.MoreObjects;
@@ -12,6 +13,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import javax.annotation.Nonnull;
 import meghanada.analyze.CompileResult;
 import meghanada.config.Config;
 import meghanada.reflect.asm.CachedASMReflector;
@@ -29,8 +31,9 @@ public class ProjectDependency implements Serializable {
   private final String version;
   private final File file;
   private final Type type;
-  private String dependencyFilePath;
-  private Set<File> cachedSrc;
+
+  private transient String dependencyFilePath;
+  private transient Set<File> cachedSrc;
 
   public ProjectDependency(
       final String id, final String scope, final String version, final File file, final Type type) {
@@ -105,7 +108,7 @@ public class ProjectDependency implements Serializable {
   public String getDependencyFilePath() {
     try {
       if (type.equals(Type.PROJECT)) {
-        if (this.dependencyFilePath != null) {
+        if (nonNull(this.dependencyFilePath)) {
           return this.dependencyFilePath;
         }
 
@@ -121,35 +124,17 @@ public class ProjectDependency implements Serializable {
           reflector.createClassIndexes(temp);
           this.dependencyFilePath = projectArchive.getCanonicalPath();
         } else {
-          if (this.dependencyFilePath != null) {
+          if (nonNull(this.dependencyFilePath)) {
             return this.dependencyFilePath;
           }
 
-          final File output =
-              Session.findProject(this.file)
-                  .map(
-                      project -> {
-                        // cache build result
-                        try {
-                          project.setSubProject(true);
-                          if (Config.load().isSkipBuildSubProjects()) {
-                            log.info("skip build project {}", project.getName());
-                            return project.getOutput();
-                          }
-                          CompileResult compileResult = project.compileJava();
-                          if (!compileResult.isSuccess()) {
-                            log.warn("Compile Error : {}", compileResult.getDiagnosticsSummary());
-                          }
-                          return project.getOutput();
-                        } catch (IOException e) {
-                          throw new UncheckedIOException(e);
-                        } finally {
-                          project.setSubProject(false);
-                        }
-                      })
-                  .orElse(this.file);
-
-          this.dependencyFilePath = output.getCanonicalPath();
+          String root = System.getProperty(Project.PROJECT_ROOT_KEY);
+          try {
+            final File output = getProjectOutput();
+            this.dependencyFilePath = output.getCanonicalPath();
+          } finally {
+            System.setProperty(Project.PROJECT_ROOT_KEY, root);
+          }
         }
         return this.dependencyFilePath;
       } else {
@@ -160,10 +145,37 @@ public class ProjectDependency implements Serializable {
     }
   }
 
+  @Nonnull
+  private File getProjectOutput() throws IOException {
+    return Session.findProject(this.file)
+        .map(
+            project -> {
+              // cache build result
+              try {
+                project.setSubProject(true);
+                if (Config.load().isSkipBuildSubProjects()) {
+                  log.info("skip build project {}", project.getName());
+                  return project.getOutput();
+                }
+                CompileResult compileResult = project.compileJava();
+                if (!compileResult.isSuccess()) {
+                  log.warn("Compile Error : {}", compileResult.getDiagnosticsSummary());
+                }
+                return project.getOutput();
+              } catch (IOException e) {
+                throw new UncheckedIOException(e);
+              } finally {
+                project.setSubProject(false);
+              }
+            })
+        .orElse(this.file);
+  }
+
   public Set<File> getProjectSources() {
+    String root = System.getProperty(Project.PROJECT_ROOT_KEY);
     try {
       if (type.equals(Type.PROJECT)) {
-        if (cachedSrc != null) {
+        if (nonNull(cachedSrc)) {
           return cachedSrc;
         }
         this.cachedSrc =
@@ -175,6 +187,8 @@ public class ProjectDependency implements Serializable {
       return Collections.emptySet();
     } catch (IOException e) {
       throw new UncheckedIOException(e);
+    } finally {
+      System.setProperty(Project.PROJECT_ROOT_KEY, root);
     }
   }
 

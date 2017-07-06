@@ -290,6 +290,8 @@ public class Session {
   private boolean setProject(final File projectRoot, final Project project) {
     this.currentProject = project;
     log.info("change project {}", this.currentProject.getName());
+    String projectRootPath = this.currentProject.getProjectRootPath();
+    System.setProperty(Project.PROJECT_ROOT_KEY, projectRootPath);
     this.projects.put(projectRoot, this.currentProject);
     this.getLocationSearcher().setProject(currentProject);
     this.getDeclarationSearcher().setProject(this.currentProject);
@@ -551,6 +553,7 @@ public class Session {
     return currentProject
         .getDependencies()
         .stream()
+        .filter(pd -> !pd.getType().equals(ProjectDependency.Type.PROJECT))
         .map(ProjectDependency::getFile)
         .collect(Collectors.toList());
   }
