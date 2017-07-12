@@ -45,7 +45,7 @@ class AndroidSupport {
   private static final String MAIN_DIR = "main";
   private static final String TEST_DIR = "test";
   private static final String JAVA_DIR = "java";
-  private static final String RELEASE_BUILD = "release";
+  private static final String DEBUG_BUILD = "debug";
   private static final String DEFAULT_VERSION = "1.0.0";
   private static final String BUILD_DIR = "build";
   private static final String TEST_SOURCES_KEY = "testSources";
@@ -242,10 +242,10 @@ class AndroidSupport {
     for (Variant variant : variants) {
 
       String buildType = variant.getBuildType();
-      boolean releaseBuild = buildType.equals(RELEASE_BUILD);
+      boolean debugBuild = buildType.equals(DEBUG_BUILD);
       AndroidArtifact mainArtifact = variant.getMainArtifact();
 
-      if (!releaseBuild) {
+      if (debugBuild) {
         Collection<File> generatedSourceFolders = mainArtifact.getGeneratedSourceFolders();
         for (File src : generatedSourceFolders) {
           this.project.getSources().add(src);
@@ -292,10 +292,10 @@ class AndroidSupport {
 
   private void parseExtraJavaArtifacts(Set<ProjectDependency> dependencies, Variant variant) {
     String buildType = variant.getBuildType();
-    boolean releaseBuild = buildType.equals(RELEASE_BUILD);
+    boolean debugBuild = buildType.equals(DEBUG_BUILD);
     Collection<JavaArtifact> extraJavaArtifacts = variant.getExtraJavaArtifacts();
     for (JavaArtifact javaArtifact : extraJavaArtifacts) {
-      if (!releaseBuild) {
+      if (debugBuild) {
         Collection<File> generatedSourceFolders = javaArtifact.getGeneratedSourceFolders();
         for (File src : generatedSourceFolders) {
           this.project.getSources().add(src);
@@ -321,14 +321,14 @@ class AndroidSupport {
   private void parseExtraAndroidArtifacts(Set<ProjectDependency> dependencies, Variant variant) {
 
     String buildType = variant.getBuildType();
-    boolean releaseBuild = buildType.equals(RELEASE_BUILD);
+    boolean debugBuild = buildType.equals(DEBUG_BUILD);
 
     Collection<AndroidArtifact> extraAndroidArtifacts = variant.getExtraAndroidArtifacts();
     for (AndroidArtifact androidArtifact : extraAndroidArtifacts) {
       String name = androidArtifact.getName();
       boolean isTest = name.contains(TEST_SUFFIX);
 
-      if (!releaseBuild) {
+      if (debugBuild) {
         Collection<File> generatedSourceFolders = androidArtifact.getGeneratedSourceFolders();
         for (File src : generatedSourceFolders) {
           if (isTest) {
