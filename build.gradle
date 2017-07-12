@@ -24,7 +24,7 @@ ext {
   date = new Date().format("yyyy-MM-dd'T'HH:mm:ssZ")
   sourceCompatibility = 1.8
 
-  gradleVersion = '4.0'
+  gradleVersion = '4.0.1'
   log4jVersion = '2.8.2'
   xodusVersion = '1.0.6'
 }
