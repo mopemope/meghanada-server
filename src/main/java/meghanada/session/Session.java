@@ -566,9 +566,9 @@ public class Session {
     return file;
   }
 
-  public InputStream runJUnit(String path, String test) throws IOException {
+  public InputStream runJUnit(String path, String test, boolean debug) throws IOException {
     boolean b = this.changeProject(path);
-    return currentProject.runJUnit(test);
+    return currentProject.runJUnit(debug, test);
   }
 
   public Optional<String> switchTest(final String path) throws IOException {
@@ -706,7 +706,7 @@ public class Session {
     return declarationSearcher;
   }
 
-  public InputStream execMain(String path) throws Exception {
+  public InputStream execMain(String path, boolean debug) throws Exception {
     boolean b = this.changeProject(path);
     Optional<Source> source = this.parseJavaSource(new File(path));
     return source
@@ -714,7 +714,7 @@ public class Session {
             src -> {
               try {
                 String clazz = src.getFQCN();
-                return currentProject.execMainClass(clazz);
+                return currentProject.execMainClass(clazz, debug);
               } catch (IOException e) {
                 throw new UncheckedIOException(e);
               }
@@ -755,5 +755,9 @@ public class Session {
     boolean b = this.changeProject(path);
     final TypeInfoSearcher searcher = this.getTypeInfoSearcher();
     return searcher.search(new File(path), line, column, symbol);
+  }
+
+  public void killRunningProcess() {
+    getCurrentProject().killRunningProcess();
   }
 }

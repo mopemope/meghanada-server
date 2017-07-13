@@ -13,6 +13,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.Serializable;
 import java.io.UncheckedIOException;
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -98,6 +99,7 @@ public abstract class Project implements Serializable, Storable {
   private String[] prevTest;
   private transient Properties formatProperties;
   private boolean subProject;
+  private transient Process runningProcess;
 
   public Project(final File projectRoot) throws IOException {
     this.projectRoot = projectRoot;
@@ -553,6 +555,13 @@ public abstract class Project implements Serializable, Storable {
   }
 
   protected InputStream runProcess(List<String> cmd) throws IOException {
+    if (nonNull(this.runningProcess)) {
+      if (this.runningProcess.isAlive()) {
+        this.runningProcess.destroy();
+      }
+      this.runningProcess = null;
+    }
+
     final ProcessBuilder processBuilder = new ProcessBuilder(cmd);
     processBuilder.directory(this.projectRoot);
     final String cmdString = String.join(" ", cmd);
@@ -561,20 +570,38 @@ public abstract class Project implements Serializable, Storable {
 
     processBuilder.redirectErrorStream(true);
     final Process process = processBuilder.start();
+
+    long pid = getPID(process);
+    this.runningProcess = process;
     return process.getInputStream();
+  }
+
+  private long getPID(Process process) {
+    long pid = -1;
+    try {
+      if (process.getClass().getName().equals("java.lang.UNIXProcess")) {
+        Field field = process.getClass().getDeclaredField("pid");
+        field.setAccessible(true);
+        pid = field.getLong(process);
+        field.setAccessible(false);
+      }
+    } catch (Exception e) {
+      log.catching(e);
+    }
+    return pid;
   }
 
   public abstract InputStream runTask(List<String> args) throws IOException;
 
-  public InputStream runJUnit(String test) throws IOException {
+  public InputStream runJUnit(boolean debug, String test) throws IOException {
     try {
-      return runUnitTest(test);
+      return runUnitTest(debug, test);
     } finally {
       Config.setProjectRoot(this.projectRootPath);
     }
   }
 
-  private InputStream runUnitTest(String... tests) throws IOException {
+  private InputStream runUnitTest(boolean debug, String... tests) throws IOException {
     if (tests[0].isEmpty()) {
       tests = this.prevTest;
     }
@@ -601,6 +628,13 @@ public abstract class Project implements Serializable, Storable {
     cmd.add("-Dsun.io.useCanonCaches=false");
     cmd.add("-Xms128m");
     cmd.add("-Xmx750m");
+    if (debug) {
+      cmd.add("-Xdebug");
+      cmd.add(
+          "-Xrunjdwp:transport=dt_socket,address="
+              + config.getDebuggerPort()
+              + ",server=y,suspend=y");
+    }
     cmd.add("-cp");
     cmd.add(cp);
     cmd.add(String.format("-Dproject.root=%s", this.projectRootPath));
@@ -931,7 +965,7 @@ public abstract class Project implements Serializable, Storable {
     this.subProject = subProject;
   }
 
-  public InputStream execMainClass(String mainClazz) throws IOException {
+  public InputStream execMainClass(String mainClazz, boolean debug) throws IOException {
     log.debug("exec file:{}", mainClazz);
 
     final Config config = Config.load();
@@ -955,6 +989,13 @@ public abstract class Project implements Serializable, Storable {
     cmd.add("-Dsun.io.useCanonCaches=false");
     cmd.add("-Xms128m");
     cmd.add("-Xmx750m");
+    if (debug) {
+      cmd.add("-Xdebug");
+      cmd.add(
+          "-Xrunjdwp:transport=dt_socket,address="
+              + config.getDebuggerPort()
+              + ",server=y,suspend=y");
+    }
     cmd.add("-cp");
     cmd.add(cp);
     cmd.add(String.format("-Dproject.root=%s", this.projectRootPath));
@@ -964,6 +1005,15 @@ public abstract class Project implements Serializable, Storable {
 
     log.debug("run cmd {}", Joiner.on(" ").join(cmd));
     return this.runProcess(cmd);
+  }
+
+  public void killRunningProcess() {
+    if (nonNull(this.runningProcess)) {
+      if (this.runningProcess.isAlive()) {
+        this.runningProcess.destroy();
+      }
+      this.runningProcess = null;
+    }
   }
 
   public CompileResult compileString(final String sourceFile, final String sourceCode)

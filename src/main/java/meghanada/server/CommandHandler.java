@@ -140,11 +140,12 @@ public class CommandHandler {
     }
   }
 
-  public void runJUnit(final long id, String path, final String test) {
+  public void runJUnit(final long id, String path, final String test, boolean debug) {
 
     try (final BufferedReader reader =
         new BufferedReader(
-            new InputStreamReader(this.session.runJUnit(path, test), StandardCharsets.UTF_8))) {
+            new InputStreamReader(
+                this.session.runJUnit(path, test, debug), StandardCharsets.UTF_8))) {
 
       String s;
       while ((s = reader.readLine()) != null) {
@@ -336,10 +337,10 @@ public class CommandHandler {
     }
   }
 
-  public void execMain(final long id, String path) {
+  public void execMain(final long id, String path, boolean debug) {
     InputStream in = null;
     try {
-      in = this.session.execMain(path);
+      in = this.session.execMain(path, debug);
       if (isNull(in)) {
         writer.write("missing main function");
         writer.newLine();
@@ -399,6 +400,18 @@ public class CommandHandler {
         writer.write(out);
       }
 
+      writer.newLine();
+      writer.flush();
+    } catch (Throwable t) {
+      writeError(id, t);
+    }
+  }
+
+  public void killRunningProcess(final long id) {
+    try {
+      session.killRunningProcess();
+      final String out = outputFormatter.killRunningProcess(id);
+      writer.write(out);
       writer.newLine();
       writer.flush();
     } catch (Throwable t) {

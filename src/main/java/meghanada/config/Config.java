@@ -350,6 +350,10 @@ public class Config {
     return c.getInt("source-cache-size");
   }
 
+  public int getDebuggerPort() {
+    return c.getInt("debugger-port");
+  }
+
   public void update(String key, Object newVal) {
     com.typesafe.config.Config newConfig = c.withValue(key, ConfigValueFactory.fromAnyRef(newVal));
     this.c = newConfig;

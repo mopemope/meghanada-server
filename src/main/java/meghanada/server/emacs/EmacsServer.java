@@ -134,9 +134,21 @@ public class EmacsServer implements Server {
                   // rj : Run JUnit Test
                   // usage: rj <path>, <testName>
                   if (args.size() == 1) {
-                    handler.runJUnit(id, args.get(0), "");
+                    handler.runJUnit(id, args.get(0), "", false);
                   } else {
-                    handler.runJUnit(id, args.get(0), args.get(1));
+                    handler.runJUnit(id, args.get(0), args.get(1), false);
+                  }
+                  return true;
+                })
+            .when(headTail(eq("dj"), any()))
+            .get(
+                args -> {
+                  // dj : Debug JUnit Test
+                  // usage: dj <path>, <testName>
+                  if (args.size() == 1) {
+                    handler.runJUnit(id, args.get(0), "", true);
+                  } else {
+                    handler.runJUnit(id, args.get(0), args.get(1), true);
                   }
                   return true;
                 })
@@ -244,12 +256,28 @@ public class EmacsServer implements Server {
                   handler.ping(id);
                   return true;
                 })
+            .when(headTail(eq("kp"), any()))
+            .get(
+                args -> {
+                  // kp : Kill running process
+                  // usage: kp
+                  handler.killRunningProcess(id);
+                  return true;
+                })
             .when(headTail(eq("em"), any()))
             .get(
                 args -> {
                   // em : Exec main
                   // usage: em <path>
-                  handler.execMain(id, args.get(0));
+                  handler.execMain(id, args.get(0), false);
+                  return true;
+                })
+            .when(headTail(eq("dm"), any()))
+            .get(
+                args -> {
+                  // dm : Debug main
+                  // usage: dm <path>
+                  handler.execMain(id, args.get(0), true);
                   return true;
                 })
             .when(headNil(eq("q")))

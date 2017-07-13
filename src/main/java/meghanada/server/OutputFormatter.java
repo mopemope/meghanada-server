@@ -50,4 +50,6 @@ public interface OutputFormatter {
   String references(long id, List<Reference> references);
 
   String typeInfo(long id, TypeInfo typeInfo);
+
+  String killRunningProcess(long id);
 }

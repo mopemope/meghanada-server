@@ -14,6 +14,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+import javax.annotation.Nullable;
 import javax.tools.Diagnostic;
 import javax.tools.JavaFileObject;
 import meghanada.analyze.CompileResult;
@@ -38,29 +39,29 @@ public class SexpOutputFormatter implements OutputFormatter {
   private static final String SUCCESS = "success";
   private static final String ERROR = "error";
 
-  private static String doubleQuote(final String s) {
+  private static String doubleQuote(@Nullable String s) {
     if (isNull(s)) {
       return QUOTE + QUOTE;
     }
     return QUOTE + s + QUOTE;
   }
 
-  private static String success(final String s) {
+  private static String success(@Nullable String s) {
     if (isNull(s)) {
       return LPAREN + SUCCESS + RPAREN;
     }
     return LPAREN + SUCCESS + LIST_SEP + s + RPAREN;
   }
 
-  private static String error(final String s) {
+  private static String error(@Nullable String s) {
     if (isNull(s)) {
       return LPAREN + ERROR + RPAREN;
     }
     return LPAREN + ERROR + LIST_SEP + s + RPAREN;
   }
 
-  private static String toSimpleName(final String name) {
-    final int i = name.lastIndexOf('$');
+  private static String toSimpleName(String name) {
+    int i = name.lastIndexOf('$');
     if (i > 0) {
       return name.substring(i + 1);
     }
@@ -348,5 +349,10 @@ public class SexpOutputFormatter implements OutputFormatter {
 
     sb.append(RPAREN);
     return success(sb.toString());
+  }
+
+  @Override
+  public String killRunningProcess(long id) {
+    return success(LPAREN + "success" + RPAREN);
   }
 }
