@@ -19,6 +19,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import meghanada.analyze.AccessSymbol;
 import meghanada.analyze.ClassScope;
+import meghanada.analyze.MethodCall;
 import meghanada.analyze.Source;
 import meghanada.analyze.TypeScope;
 import meghanada.analyze.Variable;
@@ -209,7 +210,7 @@ public class JavaCompletion {
         .collect(Collectors.toSet());
   }
 
-  private static Collection<? extends CandidateUnit> completionConstructors(final Source source) {
+  private static Collection<? extends CandidateUnit> completionNewKeyword(final Source source) {
     return source
         .importClasses
         .parallelStream()
@@ -444,9 +445,31 @@ public class JavaCompletion {
       final Collection<? extends CandidateUnit> reflectResults =
           JavaCompletion.reflect(ownPackage, fqcn, true, false, target);
       res.addAll(reflectResults);
+
       final CachedASMReflector reflector = CachedASMReflector.getInstance();
-      final Collection<? extends CandidateUnit> inners = reflector.searchInnerClasses(fqcn);
-      res.addAll(inners);
+      if (reflector.containsFQCN(fqcn)) {
+        final Collection<? extends CandidateUnit> inners = reflector.searchInnerClasses(fqcn);
+        res.addAll(inners);
+      }
+    }
+
+    if (line > 0 && res.isEmpty()) {
+      List<MethodCall> calls = source.getMethodCall(line - 1);
+
+      long lastCol = 0;
+      String lastFQCN = null;
+      for (MethodCall call : calls) {
+        long col = call.nameRange.begin.column;
+        String name = ClassNameUtils.getSimpleName(call.name);
+        if (name.equals(var) && col > lastCol) {
+          lastFQCN = call.returnType;
+          lastCol = col;
+        }
+      }
+
+      if (nonNull(lastFQCN)) {
+        res.addAll(reflectWithFQCN(lastFQCN, ""));
+      }
     }
     return res;
   }
@@ -599,6 +622,7 @@ public class JavaCompletion {
       }
       // search symbol
       return JavaCompletion.completionSymbols(source, line, prefix);
+
     } catch (Throwable t) {
       log.catching(t);
       return Collections.emptyList();
@@ -609,8 +633,6 @@ public class JavaCompletion {
       final Source source, final int line, final int column, final String searchWord) {
 
     // special command
-    final Config config = Config.load();
-    final boolean useFuzzySearch = config.useClassFuzzySearch();
 
     if (searchWord.startsWith("*import")) {
 
@@ -618,82 +640,12 @@ public class JavaCompletion {
 
     } else if (searchWord.startsWith("*new")) {
 
-      // list all classes
-      final int idx = searchWord.lastIndexOf(':');
-      if (idx > 0) {
-        final List<ClassIndex> result;
-        final String classPrefix = searchWord.substring(idx + 1, searchWord.length());
-        if (useFuzzySearch) {
-          result = CachedASMReflector.getInstance().fuzzySearchClasses(classPrefix.toLowerCase());
-        } else {
-          result = CachedASMReflector.getInstance().searchClasses(classPrefix.toLowerCase());
-        }
-        result.sort(comparing(source, classPrefix));
-        return result;
-      }
-
-      return JavaCompletion.completionConstructors(source)
-          .stream()
-          .sorted(comparing(source, ""))
-          .collect(Collectors.toList());
+      return completionNewKeyword(source, searchWord);
 
     } else if (searchWord.startsWith("*method")) {
 
-      final int prefixIdx = searchWord.lastIndexOf('#');
-      final int classIdx = searchWord.lastIndexOf(':');
-      final String pkg = source.getPackageName();
+      return completionMethods(source, line, column, searchWord);
 
-      if (classIdx > 0 && prefixIdx > 0) {
-        final String prefix = searchWord.substring(prefixIdx + 1);
-        // return methods of prefix class
-        String fqcn = searchWord.substring(classIdx + 1, prefixIdx);
-        fqcn = ClassNameUtils.replace(fqcn, ClassNameUtils.CAPTURE_OF, "");
-        return reflectWithFQCN(fqcn, prefix)
-            .stream()
-            .sorted(methodComparing(prefix))
-            .collect(Collectors.toList());
-      }
-
-      // chained method completion
-      if (classIdx > 0) {
-        // return methods of prefix class
-        String fqcn = searchWord.substring(classIdx + 1, searchWord.length());
-        fqcn = ClassNameUtils.replace(fqcn, ClassNameUtils.CAPTURE_OF, "");
-        return reflect(pkg, fqcn, "")
-            .stream()
-            .sorted(defaultComparing())
-            .collect(Collectors.toList());
-
-      } else {
-        String prefix = "";
-        if (prefixIdx > 0) {
-          prefix = searchWord.substring(prefixIdx + 1);
-        }
-
-        // search near method call and return methods of prefix class
-        final List<AccessSymbol> targets = new ArrayList<>(8);
-        targets.addAll(source.getMethodCall(line));
-        targets.addAll(source.getFieldAccess(line));
-        log.debug("targets:{}", targets);
-
-        int size = targets.size();
-        int startColumn = column;
-
-        while (size > 0 && startColumn-- > 0) {
-          for (AccessSymbol as : targets) {
-            if (as.match(line, startColumn) && nonNull(as.returnType)) {
-              final String fqcn =
-                  ClassNameUtils.replace(as.returnType, ClassNameUtils.CAPTURE_OF, "");
-              return reflect(pkg, fqcn, prefix)
-                  .stream()
-                  .sorted(methodComparing(prefix))
-                  .collect(Collectors.toList());
-            }
-          }
-        }
-
-        return Collections.emptyList();
-      }
     } else if (searchWord.startsWith("*package")) {
       // completion projects package
       return this.completionPackage()
@@ -701,6 +653,7 @@ public class JavaCompletion {
           .sorted(Comparator.comparing(CandidateUnit::getName))
           .collect(Collectors.toList());
     }
+
     // search fields or methods
     final int idx = searchWord.lastIndexOf('#');
     if (idx > 0) {
@@ -715,6 +668,89 @@ public class JavaCompletion {
     return JavaCompletion.completionFieldsOrMethods(source, line, searchWord.substring(1), "")
         .stream()
         .sorted(defaultComparing())
+        .collect(Collectors.toList());
+  }
+
+  private Collection<? extends CandidateUnit> completionMethods(
+      Source source, int line, int column, String searchWord) {
+    final int prefixIdx = searchWord.lastIndexOf('#');
+    final int classIdx = searchWord.lastIndexOf(':');
+    final String pkg = source.getPackageName();
+
+    if (classIdx > 0 && prefixIdx > 0) {
+      final String prefix = searchWord.substring(prefixIdx + 1);
+      // return methods of prefix class
+      String fqcn = searchWord.substring(classIdx + 1, prefixIdx);
+      fqcn = ClassNameUtils.replace(fqcn, ClassNameUtils.CAPTURE_OF, "");
+      return reflectWithFQCN(fqcn, prefix)
+          .stream()
+          .sorted(methodComparing(prefix))
+          .collect(Collectors.toList());
+    }
+
+    // chained method completion
+    if (classIdx > 0) {
+      // return methods of prefix class
+      String fqcn = searchWord.substring(classIdx + 1, searchWord.length());
+      fqcn = ClassNameUtils.replace(fqcn, ClassNameUtils.CAPTURE_OF, "");
+      return reflect(pkg, fqcn, "")
+          .stream()
+          .sorted(defaultComparing())
+          .collect(Collectors.toList());
+
+    } else {
+      String prefix = "";
+      if (prefixIdx > 0) {
+        prefix = searchWord.substring(prefixIdx + 1);
+      }
+
+      // search near method call and return methods of prefix class
+      final List<AccessSymbol> targets = new ArrayList<>(8);
+      targets.addAll(source.getMethodCall(line));
+      targets.addAll(source.getFieldAccess(line));
+      log.debug("targets:{}", targets);
+
+      int size = targets.size();
+      int startColumn = column;
+
+      while (size > 0 && startColumn-- > 0) {
+        for (AccessSymbol as : targets) {
+          if (as.match(line, startColumn) && nonNull(as.returnType)) {
+            final String fqcn =
+                ClassNameUtils.replace(as.returnType, ClassNameUtils.CAPTURE_OF, "");
+            return reflect(pkg, fqcn, prefix)
+                .stream()
+                .sorted(methodComparing(prefix))
+                .collect(Collectors.toList());
+          }
+        }
+      }
+
+      return Collections.emptyList();
+    }
+  }
+
+  private Collection<? extends CandidateUnit> completionNewKeyword(
+      Source source, String searchWord) {
+    final boolean useFuzzySearch = Config.load().useClassFuzzySearch();
+    // list all classes
+    final int idx = searchWord.lastIndexOf(':');
+    if (idx > 0) {
+      final List<ClassIndex> result;
+      final String classPrefix = searchWord.substring(idx + 1, searchWord.length());
+      CachedASMReflector reflector = CachedASMReflector.getInstance();
+      if (useFuzzySearch) {
+        result = reflector.fuzzySearchClasses(classPrefix.toLowerCase());
+      } else {
+        result = reflector.searchClasses(classPrefix.toLowerCase());
+      }
+      result.sort(comparing(source, classPrefix));
+      return result;
+    }
+
+    return JavaCompletion.completionNewKeyword(source)
+        .stream()
+        .sorted(comparing(source, ""))
         .collect(Collectors.toList());
   }
 

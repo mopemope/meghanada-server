@@ -61,16 +61,15 @@ public class CachedASMReflector {
     return cachedASMReflector;
   }
 
-  private static boolean containsKeyword(
-      final String keyword, final boolean partial, final ClassIndex index) {
+  private static boolean containsKeyword(String keyword, boolean partial, ClassIndex index) {
 
-    final String name = index.getName();
+    String name = index.getName();
     if (ClassNameUtils.isAnonymousClass(name)) {
       return false;
     }
     if (partial) {
-      final String lowerKeyword = keyword.toLowerCase();
-      final String className = name.toLowerCase();
+      String lowerKeyword = keyword.toLowerCase();
+      String className = name.toLowerCase();
       return className.contains(lowerKeyword);
     } else {
       return name.equals(keyword)
@@ -80,27 +79,27 @@ public class CachedASMReflector {
   }
 
   private static List<MemberDescriptor> replaceTypeParameters(
-      final String className, final String classWithTP, final List<MemberDescriptor> members) {
-    final int idx1 = classWithTP.indexOf('<');
-    if (idx1 >= 0) {
-      final List<String> types = ClassNameUtils.parseTypeParameter(classWithTP);
-      final List<String> realTypes = ClassNameUtils.parseTypeParameter(className);
-      // log.warn("className {} types {} realTypes {}", className, types, realTypes);
-      for (final MemberDescriptor md : members) {
+      String className, String classWithTP, List<MemberDescriptor> members) {
+
+    int idx = classWithTP.indexOf('<');
+    if (idx >= 0) {
+      List<String> types = ClassNameUtils.parseTypeParameter(classWithTP);
+      List<String> realTypes = ClassNameUtils.parseTypeParameter(className);
+
+      for (MemberDescriptor md : members) {
         if (md.hasTypeParameters()) {
           md.clearTypeParameterMap();
           int realSize = realTypes.size();
           for (int i = 0; i < types.size(); i++) {
-            final String t = types.get(i);
+            String t = types.get(i);
             if (realSize > i) {
-              final String real = realTypes.get(i);
+              String real = realTypes.get(i);
               md.putTypeParameter(t, real);
-              // log.debug("put t:{}, real:{}", t, real);
             }
           }
         }
 
-        final String declaringClass = ClassNameUtils.removeTypeParameter(md.getDeclaringClass());
+        String declaringClass = ClassNameUtils.removeTypeParameter(md.getDeclaringClass());
         if (className.startsWith(declaringClass)) {
           md.setDeclaringClass(className);
         }
@@ -306,7 +305,7 @@ public class CachedASMReflector {
       final String name = c.getName();
       final int score = StringUtils.getFuzzyDistance(name, keyword, Locale.ENGLISH);
       if (score >= length) {
-        result.add(c.clone());
+        result.add(cloneClassIndex(c));
       }
     }
     return result;
@@ -326,7 +325,7 @@ public class CachedASMReflector {
               final int score = StringUtils.getFuzzyDistance(name, keyword, Locale.ENGLISH);
               return score >= length;
             })
-        .map(ClassIndex::clone);
+        .map(this::cloneClassIndex);
   }
 
   public List<ClassIndex> searchInnerClasses(final String parent) {
@@ -334,17 +333,17 @@ public class CachedASMReflector {
         .values()
         .parallelStream()
         .filter(classIndex -> classIndex.getReturnType().startsWith(parent + '$'))
-        .map(ClassIndex::clone)
+        .map(this::cloneClassIndex)
         .collect(Collectors.toList());
   }
 
-  public List<ClassIndex> searchInnerClasses(final Set<String> parents) {
-    final List<ClassIndex> result = new ArrayList<>(16);
-    for (final ClassIndex ci : this.globalClassIndex.values()) {
-      final String returnType = ci.getReturnType();
-      for (final String parent : parents) {
+  public List<ClassIndex> searchInnerClasses(Set<String> parents) {
+    List<ClassIndex> result = new ArrayList<>(16);
+    for (ClassIndex ci : this.globalClassIndex.values()) {
+      String returnType = ci.getReturnType();
+      for (String parent : parents) {
         if (returnType.startsWith(parent + '$')) {
-          result.add(ci.clone());
+          result.add(cloneClassIndex(ci));
         }
       }
     }
@@ -359,17 +358,28 @@ public class CachedASMReflector {
     return this.searchClasses(keyword, true, true);
   }
 
-  public List<ClassIndex> searchClasses(
-      final String keyword, final boolean partial, final boolean anno) {
+  private ClassIndex cloneClassIndex(ClassIndex c) {
+    ClassIndex ci = c.clone();
+    if (ci.isInnerClass()) {
+      String p = ci.getPackage();
+      if (!p.isEmpty()) {
+        String declaration = ci.getDisplayDeclaration();
+        String clazzName = declaration.substring(p.length() + 1);
+        ci.setName(clazzName);
+      }
+    }
+    return ci;
+  }
 
-    final List<ClassIndex> result = new ArrayList<>(64);
-    for (final ClassIndex c : this.globalClassIndex.values()) {
+  public List<ClassIndex> searchClasses(String keyword, boolean partial, boolean anno) {
+    List<ClassIndex> result = new ArrayList<>(64);
+    for (ClassIndex c : this.globalClassIndex.values()) {
       if (keyword.isEmpty()) {
-        result.add(c.clone());
+        result.add(cloneClassIndex(c));
       } else {
         if (!(anno && !c.isAnnotation())
             && CachedASMReflector.containsKeyword(keyword, partial, c)) {
-          result.add(c.clone());
+          result.add(cloneClassIndex(c));
         }
       }
     }
@@ -390,7 +400,7 @@ public class CachedASMReflector {
               return !(anno && !classIndex.isAnnotation())
                   && CachedASMReflector.containsKeyword(keyword, partial, classIndex);
             })
-        .map(ClassIndex::clone);
+        .map(this::cloneClassIndex);
   }
 
   public Stream<ClassIndex> allClassStream() {

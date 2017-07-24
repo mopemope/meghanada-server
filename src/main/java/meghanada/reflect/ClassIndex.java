@@ -245,4 +245,8 @@ public class ClassIndex implements CandidateUnit, Cloneable, Serializable, Stora
   public void setEntityID(EntityId entityID) {
     this.entityID = entityID;
   }
+
+  public boolean isInnerClass() {
+    return this.declaration.contains(ClassNameUtils.INNER_MARK);
+  }
 }
