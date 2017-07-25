@@ -25,7 +25,7 @@ import org.apache.logging.log4j.core.layout.PatternLayout;
 
 public class Main {
 
-  public static final String VERSION = "0.8.3";
+  public static final String VERSION = "0.8.4";
 
   private static final Logger log = LogManager.getLogger(Main.class);
   private static String version;
