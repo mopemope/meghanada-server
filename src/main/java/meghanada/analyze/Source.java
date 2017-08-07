@@ -479,7 +479,8 @@ public class Source implements Serializable, Storable {
 
         final CandidateUnit[] candidateUnits = findUnits.toArray(new CandidateUnit[1]);
         final String declaration = candidateUnits[0].getDeclaration();
-        if (declaration.startsWith("java.lang")) {
+        // Only ignore "java.lang" package, not include subpackages.
+        if (declaration.startsWith("java.lang") && declaration.split("\\.").length <= 3) {
           continue;
         }
         final String pa = ClassNameUtils.getPackage(declaration);
@@ -540,7 +541,8 @@ public class Source implements Serializable, Storable {
         .forEach(
             fqcn -> {
               final String packageName = ClassNameUtils.getPackage(fqcn);
-              if (packageName.startsWith("java.lang")) {
+              // Only ignore "java.lang" package, not include subpackages.
+              if (packageName.startsWith("java.lang") && packageName.split("\\.").length <= 2) {
                 return;
               }
               if (optimizeMap.containsKey(packageName)) {
