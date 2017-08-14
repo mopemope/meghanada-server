@@ -2,7 +2,6 @@ package meghanada.server;
 
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
-import org.apache.commons.lang3.time.StopWatch;
 
 import com.google.common.base.Joiner;
 import java.io.BufferedReader;
@@ -26,6 +25,7 @@ import meghanada.reflect.CandidateUnit;
 import meghanada.session.Session;
 import meghanada.typeinfo.TypeInfo;
 import meghanada.utils.ClassNameUtils;
+import org.apache.commons.lang3.time.StopWatch;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 

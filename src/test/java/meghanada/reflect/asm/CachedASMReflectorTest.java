@@ -20,6 +20,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 public class CachedASMReflectorTest extends GradleTestBase {
+
   private static Logger log = LogManager.getLogger(CachedASMReflectorTest.class);
 
   @BeforeClass
@@ -144,7 +145,7 @@ public class CachedASMReflectorTest extends GradleTestBase {
       String fqcn = "com.google.common.collect.FluentIterable<String>";
       List<MemberDescriptor> memberDescriptors = cachedASMReflector.reflect(fqcn);
       memberDescriptors.forEach(md -> System.out.println(md.getDisplayDeclaration()));
-      assertEquals(57, memberDescriptors.size());
+      assertEquals(56, memberDescriptors.size());
     }
   }
 
@@ -183,7 +184,7 @@ public class CachedASMReflectorTest extends GradleTestBase {
       // System.out.println(md);
       // }
       memberDescriptors.forEach(md -> System.out.println(md.getDisplayDeclaration()));
-      assertEquals(119, memberDescriptors.size());
+      assertEquals(120, memberDescriptors.size());
     }
   }
 
