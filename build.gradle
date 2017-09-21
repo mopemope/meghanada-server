@@ -24,7 +24,7 @@ ext {
   date = new Date().format("yyyy-MM-dd'T'HH:mm:ssZ")
   sourceCompatibility = 1.8
 
-  gradleVersion = '4.1'
+  gradleVersion = '4.2'
   log4jVersion = '2.8.2'
   xodusVersion = '1.0.6'
 }
@@ -91,11 +91,11 @@ bintray {
 dependencies {
 
   compile files("${System.properties['java.home']}/../lib/tools.jar")
-  compile 'com.google.googlejavaformat:google-java-format:1.3'
+  compile 'com.google.googlejavaformat:google-java-format:1.4'
   compile 'org.apache.maven:maven-model-builder:3.5.0'
   compile 'com.leacox.motif:motif:0.1'
   compile 'com.leacox.motif:motif-hamcrest:0.1'
-  compile 'com.github.javaparser:javaparser-core:3.3.3'
+  compile 'com.github.javaparser:javaparser-core:3.4.0'
   compile "org.apache.logging.log4j:log4j-core:$log4jVersion"
   compile "org.apache.logging.log4j:log4j-api:$log4jVersion"
   compile "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
@@ -112,7 +112,7 @@ dependencies {
   compile 'org.jboss.windup.decompiler:decompiler-fernflower:3.0.0.Final'
   compile 'com.google.code.findbugs:jsr305:3.0.2'
   compile 'org.eclipse.jdt:org.eclipse.jdt.core:3.12.3'
-  compile 'de.ruedigermoeller:fst:2.52'
+  compile 'de.ruedigermoeller:fst:2.53'
   compile "org.jetbrains.xodus:xodus-query:$xodusVersion"
   compile "org.jetbrains.xodus:xodus-openAPI:$xodusVersion"
   compile "org.jetbrains.xodus:xodus-vfs:$xodusVersion"
