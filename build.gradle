@@ -169,3 +169,7 @@ task('createPom') {
 googleJavaFormat {
   exclude 'src/test/resources/*'
 }
+
+clean.doLast {
+    file('.meghanada').deleteDir()
+}
