@@ -23,7 +23,6 @@ import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -73,7 +72,7 @@ public class Source implements Serializable, Storable {
   private String packageName = "";
   private long classStartLine;
   private Map<String, String> importMap;
-  private transient LinkedList<LineRange> lineRange;
+  private transient List<LineRange> lineRange;
   private transient LineMap lineMap;
 
   public Source(String filePath) {
@@ -204,14 +203,14 @@ public class Source implements Serializable, Storable {
     this.classScopes.add(classScope);
   }
 
-  private LinkedList<LineRange> getRanges(final File file) throws IOException {
+  private List<LineRange> getRanges(final File file) throws IOException {
 
     if (nonNull(this.lineRange)) {
       return this.lineRange;
     }
 
     int last = 1;
-    final LinkedList<LineRange> list = new LinkedList<>();
+    final List<LineRange> list = new ArrayList<>();
     try (final BufferedReader br =
         new BufferedReader(
             new InputStreamReader(new FileInputStream(file), Charset.forName("UTF-8")))) {
@@ -238,7 +237,7 @@ public class Source implements Serializable, Storable {
 
     int line = 1;
     try {
-      final LinkedList<LineRange> ranges = getRanges(this.getFile());
+      final List<LineRange> ranges = getRanges(this.getFile());
       for (final LineRange r : ranges) {
         if (r.contains(pos)) {
           return new Position(line, pos + 1);

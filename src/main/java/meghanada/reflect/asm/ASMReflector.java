@@ -722,6 +722,9 @@ public class ASMReflector {
     final List<String> supers = ASMReflector.replaceSuperClassTypeParameters(name, classIndex);
 
     Collections.reverse(supers);
-    supers.forEach(superClass -> this.searchReflectInfo(index, superClass, info));
+    supers.forEach(
+        superClass -> {
+          InheritanceInfo ignore = this.searchReflectInfo(index, superClass, info);
+        });
   }
 }

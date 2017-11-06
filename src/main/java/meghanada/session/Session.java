@@ -671,13 +671,22 @@ public class Session {
     this.projects.clear();
     if (currentProject instanceof GradleProject) {
       loadProject(projectRoot, Project.GRADLE_PROJECT_FILE)
-          .ifPresent(project -> setProject(projectRoot, project));
+          .ifPresent(
+              project -> {
+                boolean ret = setProject(projectRoot, project);
+              });
     } else if (currentProject instanceof MavenProject) {
       loadProject(projectRoot, Project.MVN_PROJECT_FILE)
-          .ifPresent(project -> setProject(projectRoot, project));
+          .ifPresent(
+              project -> {
+                boolean ret = setProject(projectRoot, project);
+              });
     } else {
       loadProject(projectRoot, Config.MEGHANADA_CONF_FILE)
-          .ifPresent(project -> setProject(projectRoot, project));
+          .ifPresent(
+              project -> {
+                boolean ret = setProject(projectRoot, project);
+              });
     }
 
     final Set<File> temp = new HashSet<>(this.currentProject.getSources());

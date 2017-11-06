@@ -109,7 +109,11 @@ public class TreeAnalyzer {
         if (nonNull(typeArguments)) {
           java.util.List<String> temp = new ArrayList<>(typeArguments.length());
           for (JCTree.JCExpression e : typeArguments) {
-            getExpressionType(src, e).ifPresent(fqcn -> markFQCN(src, fqcn));
+            getExpressionType(src, e)
+                .ifPresent(
+                    fqcn -> {
+                      String ignore = TreeAnalyzer.markFQCN(src, fqcn);
+                    });
           }
         }
 
@@ -1308,7 +1312,11 @@ public class TreeAnalyzer {
     } else if (kind.equals(ElementKind.ENUM)) {
 
       if (nonNull(sym.type)) {
-        getTypeString(src, sym.type).ifPresent(fqcn -> TreeAnalyzer.markFQCN(src, fqcn));
+        getTypeString(src, sym.type)
+            .ifPresent(
+                fqcn -> {
+                  String ignore = TreeAnalyzer.markFQCN(src, fqcn);
+                });
       }
 
     } else if (kind.equals(ElementKind.ENUM_CONSTANT)) {
@@ -1330,15 +1338,27 @@ public class TreeAnalyzer {
       // skip
     } else if (kind.equals(ElementKind.CLASS)) {
       if (nonNull(sym.type)) {
-        getTypeString(src, sym.type).ifPresent(fqcn -> TreeAnalyzer.markFQCN(src, fqcn));
+        getTypeString(src, sym.type)
+            .ifPresent(
+                fqcn -> {
+                  String ignore = TreeAnalyzer.markFQCN(src, fqcn);
+                });
       }
     } else if (kind.equals(ElementKind.INTERFACE)) {
       if (nonNull(sym.type)) {
-        getTypeString(src, sym.type).ifPresent(fqcn -> TreeAnalyzer.markFQCN(src, fqcn));
+        getTypeString(src, sym.type)
+            .ifPresent(
+                fqcn -> {
+                  String ignore = TreeAnalyzer.markFQCN(src, fqcn);
+                });
       }
     } else if (kind.equals(ElementKind.ANNOTATION_TYPE)) {
       if (nonNull(sym.type)) {
-        getTypeString(src, sym.type).ifPresent(fqcn -> TreeAnalyzer.markFQCN(src, fqcn));
+        getTypeString(src, sym.type)
+            .ifPresent(
+                fqcn -> {
+                  String ignore = TreeAnalyzer.markFQCN(src, fqcn);
+                });
       }
     } else {
       log.warn("other kind:{}", kind);

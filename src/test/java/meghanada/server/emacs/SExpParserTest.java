@@ -12,7 +12,7 @@ public class SExpParserTest {
     final SExprParser sexpParser = new SExprParser();
     final SExprParser.SExpr sexpr = sexpParser.parse("10");
     int i = sexpr.value();
-    assertEquals(sexpr.isAtom(), true);
+    assertEquals(true, sexpr.isAtom());
     assertEquals(10, i);
   }
 
@@ -21,7 +21,7 @@ public class SExpParserTest {
     final SExprParser sexpParser = new SExprParser();
     final SExprParser.SExpr sexpr = sexpParser.parse("-10");
     int i = sexpr.value();
-    assertEquals(sexpr.isAtom(), true);
+    assertEquals(true, sexpr.isAtom());
     assertEquals(-10, i);
   }
 
@@ -30,7 +30,7 @@ public class SExpParserTest {
     final SExprParser sexpParser = new SExprParser();
     final SExprParser.SExpr sexpr = sexpParser.parse("10.1");
     float i = sexpr.value();
-    assertEquals(sexpr.isAtom(), true);
+    assertEquals(true, sexpr.isAtom());
     assertEquals(10.1, i, 0.1);
   }
 
@@ -39,7 +39,7 @@ public class SExpParserTest {
     final SExprParser sexpParser = new SExprParser();
     final SExprParser.SExpr sexpr = sexpParser.parse("-10.102");
     float i = sexpr.value();
-    assertEquals(sexpr.isAtom(), true);
+    assertEquals(true, sexpr.isAtom());
     assertEquals(-10.102, i, 0.001);
   }
 
@@ -48,7 +48,7 @@ public class SExpParserTest {
     final SExprParser sexpParser = new SExprParser();
     final SExprParser.SExpr sexpr = sexpParser.parse("\"TEST\"");
     String s = sexpr.value();
-    assertEquals(sexpr.isAtom(), true);
+    assertEquals(true, sexpr.isAtom());
     assertEquals("TEST", s);
   }
 
@@ -57,7 +57,7 @@ public class SExpParserTest {
     final SExprParser sexpParser = new SExprParser();
     final SExprParser.SExpr sexpr = sexpParser.parse("\"TES T \\\"A\"");
     String s = sexpr.value();
-    assertEquals(sexpr.isAtom(), true);
+    assertEquals(true, sexpr.isAtom());
     assertEquals("TES T \\\"A", s);
   }
 

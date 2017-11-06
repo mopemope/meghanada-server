@@ -37,7 +37,7 @@ public class DeclarationSearcherTest extends GradleTestBase {
   @Test
   public void testFieldDeclaration01() throws Exception {
     File f = new File("./src/main/java/meghanada/server/emacs/EmacsServer.java").getCanonicalFile();
-    assert f.exists();
+    assertTrue(f.exists());
 
     final DeclarationSearcher searcher = getSearcher();
     final Optional<Declaration> result =
@@ -54,7 +54,7 @@ public class DeclarationSearcherTest extends GradleTestBase {
   @Test
   public void testMethodDeclaration01() throws Exception {
     File f = new File("./src/main/java/meghanada/server/emacs/EmacsServer.java").getCanonicalFile();
-    assert f.exists();
+    assertTrue(f.exists());
     final DeclarationSearcher searcher = getSearcher();
     final Optional<Declaration> result =
         debugIt(() -> searcher.searchDeclaration(f, 53, 45, "getByName"));
@@ -72,7 +72,7 @@ public class DeclarationSearcherTest extends GradleTestBase {
   @Test
   public void testMethodDeclaration02() throws Exception {
     File f = new File("./src/main/java/meghanada/server/emacs/EmacsServer.java").getCanonicalFile();
-    assert f.exists();
+    assertTrue(f.exists());
     final DeclarationSearcher searcher = getSearcher();
     final Optional<Declaration> result =
         debugIt(() -> searcher.searchDeclaration(f, 347, 33, "submit"));
@@ -88,7 +88,7 @@ public class DeclarationSearcherTest extends GradleTestBase {
   @Test
   public void testMethodDeclaration03() throws Exception {
     File f = new File("./src/main/java/meghanada/server/emacs/EmacsServer.java").getCanonicalFile();
-    assert f.exists();
+    assertTrue(f.exists());
     final DeclarationSearcher searcher = getSearcher();
     final Optional<Declaration> result =
         debugIt(() -> searcher.searchDeclaration(f, 350, 24, "BufferedReader"));
@@ -104,7 +104,7 @@ public class DeclarationSearcherTest extends GradleTestBase {
   @Test
   public void testMethodDeclaration04() throws Exception {
     File f = new File("./src/main/java/meghanada/server/emacs/EmacsServer.java").getCanonicalFile();
-    assert f.exists();
+    assertTrue(f.exists());
     final DeclarationSearcher searcher = getSearcher();
     final Optional<Declaration> result =
         debugIt(() -> searcher.searchDeclaration(f, 355, 53, "getOutputFormatter"));
@@ -121,7 +121,7 @@ public class DeclarationSearcherTest extends GradleTestBase {
   @Test
   public void testClassDeclaration01() throws Exception {
     File f = new File("./src/main/java/meghanada/server/emacs/EmacsServer.java").getCanonicalFile();
-    assert f.exists();
+    assertTrue(f.exists());
     final DeclarationSearcher searcher = getSearcher();
     final Optional<Declaration> result =
         debugIt(
@@ -140,7 +140,7 @@ public class DeclarationSearcherTest extends GradleTestBase {
   @Test
   public void testClassDeclaration03() throws Exception {
     File f = new File("./src/main/java/meghanada/server/emacs/EmacsServer.java").getCanonicalFile();
-    assert f.exists();
+    assertTrue(f.exists());
     final DeclarationSearcher searcher = getSearcher();
     final Optional<Declaration> result =
         timeIt(
@@ -159,7 +159,7 @@ public class DeclarationSearcherTest extends GradleTestBase {
   @Test
   public void testClassDeclaration02() throws Exception {
     File f = new File("./src/main/java/meghanada/server/emacs/EmacsServer.java").getCanonicalFile();
-    assert f.exists();
+    assertTrue(f.exists());
     final DeclarationSearcher searcher = getSearcher();
     final Optional<Declaration> result =
         timeIt(() -> searcher.searchDeclaration(f, 58, 32, "SEXP"));
@@ -175,7 +175,7 @@ public class DeclarationSearcherTest extends GradleTestBase {
   @Test
   public void testVar01() throws Exception {
     File f = new File("./src/main/java/meghanada/server/emacs/EmacsServer.java").getCanonicalFile();
-    assert f.exists();
+    assertTrue(f.exists());
 
     final DeclarationSearcher searcher = getSearcher();
     final Optional<Declaration> result =
@@ -193,7 +193,7 @@ public class DeclarationSearcherTest extends GradleTestBase {
   @Test
   public void testVar02() throws Exception {
     File f = new File("./src/main/java/meghanada/server/emacs/EmacsServer.java").getCanonicalFile();
-    assert f.exists();
+    assertTrue(f.exists());
 
     final DeclarationSearcher searcher = getSearcher();
     final Optional<Declaration> result = timeIt(() -> searcher.searchDeclaration(f, 56, 48, "0"));
@@ -210,7 +210,7 @@ public class DeclarationSearcherTest extends GradleTestBase {
   @Test
   public void testVar03() throws Exception {
     File f = new File("./src/main/java/meghanada/server/emacs/EmacsServer.java").getCanonicalFile();
-    assert f.exists();
+    assertTrue(f.exists());
 
     final DeclarationSearcher searcher = getSearcher();
     final Optional<Declaration> result =
@@ -228,7 +228,7 @@ public class DeclarationSearcherTest extends GradleTestBase {
   @Test
   public void testVar04() throws Exception {
     File f = new File("./src/main/java/meghanada/project/Project.java").getCanonicalFile();
-    assert f.exists();
+    assertTrue(f.exists());
 
     final DeclarationSearcher searcher = getSearcher();
     final Optional<Declaration> result =
@@ -246,7 +246,7 @@ public class DeclarationSearcherTest extends GradleTestBase {
   @Test
   public void testVar05() throws Exception {
     File f = new File("./src/main/java/meghanada/project/Project.java").getCanonicalFile();
-    assert f.exists();
+    assertTrue(f.exists());
 
     final DeclarationSearcher searcher = getSearcher();
     final Optional<Declaration> result =

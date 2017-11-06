@@ -3,6 +3,7 @@ package meghanada.analyze;
 import static meghanada.config.Config.timeIt;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.io.IOException;
@@ -36,7 +37,7 @@ public class SourceTest extends GradleTestBase {
 
     List<File> files = new ArrayList<>();
     final File file = new File("./src/test/java/meghanada/Opt.java").getCanonicalFile();
-    assert file.exists();
+    assertTrue(file.exists());
     files.add(file);
 
     final String tmp = System.getProperty("java.io.tmpdir");
@@ -61,7 +62,7 @@ public class SourceTest extends GradleTestBase {
     List<File> files = new ArrayList<>();
     final File file =
         new File("./src/main/java/meghanada/server/emacs/EmacsServer.java").getCanonicalFile();
-    assert file.exists();
+    assertTrue(file.exists());
     files.add(file);
 
     final String tmp = System.getProperty("java.io.tmpdir");
@@ -86,7 +87,7 @@ public class SourceTest extends GradleTestBase {
 
     List<File> files = new ArrayList<>();
     final File file = new File("./src/test/java/meghanada/Opt2.java").getCanonicalFile();
-    assert file.exists();
+    assertTrue(file.exists());
     files.add(file);
 
     final String tmp = System.getProperty("java.io.tmpdir");
@@ -110,7 +111,7 @@ public class SourceTest extends GradleTestBase {
 
     List<File> files = new ArrayList<>();
     final File file = new File("./src/test/resources/meghanada/AnnoTest1.java").getCanonicalFile();
-    assert file.exists();
+    assertTrue(file.exists());
     files.add(file);
 
     final String tmp = System.getProperty("java.io.tmpdir");
@@ -134,7 +135,7 @@ public class SourceTest extends GradleTestBase {
 
     List<File> files = new ArrayList<>();
     final File file = new File("./src/test/resources/meghanada/AnnoTest2.java").getCanonicalFile();
-    assert file.exists();
+    assertTrue(file.exists());
     files.add(file);
 
     final String tmp = System.getProperty("java.io.tmpdir");
@@ -162,7 +163,7 @@ public class SourceTest extends GradleTestBase {
 
     List<File> files = new ArrayList<>();
     final File file = new File("./src/test/resources/MissingImport3.java").getCanonicalFile();
-    assert file.exists();
+    assertTrue(file.exists());
     files.add(file);
 
     final String tmp = System.getProperty("java.io.tmpdir");
@@ -190,7 +191,7 @@ public class SourceTest extends GradleTestBase {
 
     List<File> files = new ArrayList<>();
     final File file = new File("./src/test/resources/MissingImport4.java").getCanonicalFile();
-    assert file.exists();
+    assertTrue(file.exists());
     files.add(file);
 
     final String tmp = System.getProperty("java.io.tmpdir");
@@ -219,7 +220,7 @@ public class SourceTest extends GradleTestBase {
     List<File> files = new ArrayList<>();
     final File file =
         new File("./src/main/java/meghanada/analyze/ClassScope.java").getCanonicalFile();
-    assert file.exists();
+    assertTrue(file.exists());
     files.add(file);
 
     final String tmp = System.getProperty("java.io.tmpdir");

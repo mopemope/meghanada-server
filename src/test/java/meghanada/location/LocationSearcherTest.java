@@ -36,7 +36,7 @@ public class LocationSearcherTest extends GradleTestBase {
   @Test
   public void testJumpVariable01() throws Exception {
     File f = new File("./src/main/java/meghanada/session/Session.java").getCanonicalFile();
-    assert f.exists();
+    assertTrue(f.exists());
 
     LocationSearcher searcher = getSearcher();
     Location result =
@@ -49,7 +49,7 @@ public class LocationSearcherTest extends GradleTestBase {
   @Test
   public void testJumpParamVariable01() throws Exception {
     final File f = new File("./src/main/java/meghanada/session/Session.java").getCanonicalFile();
-    assert f.exists();
+    assertTrue(f.exists());
 
     final LocationSearcher searcher = getSearcher();
     final Location result =
@@ -62,7 +62,7 @@ public class LocationSearcherTest extends GradleTestBase {
   @Test
   public void testJumpParamVariable02() throws Exception {
     File f = new File("./src/main/java/meghanada/project/Project.java").getCanonicalFile();
-    assert f.exists();
+    assertTrue(f.exists());
 
     final LocationSearcher searcher = getSearcher();
     final Location result =
@@ -75,7 +75,7 @@ public class LocationSearcherTest extends GradleTestBase {
   @Test
   public void testJumpField01() throws Exception {
     File f = new File("./src/main/java/meghanada/session/Session.java").getCanonicalFile();
-    assert f.exists();
+    assertTrue(f.exists());
 
     LocationSearcher searcher = getSearcher();
     Location result =
@@ -88,7 +88,7 @@ public class LocationSearcherTest extends GradleTestBase {
   @Test
   public void testJumpField02() throws Exception {
     File f = new File("./src/test/java/meghanada/Jump1.java").getCanonicalFile();
-    assert f.exists();
+    assertTrue(f.exists());
     LocationSearcher searcher = getSearcher();
     // Set<File> sources = this.currentProject.getSourceDirectories();
     Location result =
@@ -102,7 +102,8 @@ public class LocationSearcherTest extends GradleTestBase {
   @Test
   public void testJumpField03() throws Exception {
     File f = new File("./src/test/java/meghanada/Jump2.java").getCanonicalFile();
-    assert f.exists();
+    assertTrue(f.exists());
+
     LocationSearcher searcher = getSearcher();
     Location result =
         timeIt(() -> searcher.searchDeclarationLocation(f, 10, 12, "jumpTarget")).orElse(null);
@@ -114,7 +115,7 @@ public class LocationSearcherTest extends GradleTestBase {
   @Test
   public void testJumpMethod01() throws Exception {
     File f = new File("./src/main/java/meghanada/session/Session.java").getCanonicalFile();
-    assert f.exists();
+    assertTrue(f.exists());
 
     LocationSearcher searcher = getSearcher();
     Location result =
@@ -128,7 +129,7 @@ public class LocationSearcherTest extends GradleTestBase {
   @Test
   public void testJumpMethod02() throws Exception {
     File f = new File("./src/main/java/meghanada/session/Session.java").getCanonicalFile();
-    assert f.exists();
+    assertTrue(f.exists());
 
     LocationSearcher searcher = getSearcher();
     // return source.searchMissingImport();
@@ -136,14 +137,14 @@ public class LocationSearcherTest extends GradleTestBase {
         searcher.searchDeclarationLocation(f, 498, 46, "searchMissingImport").orElse(null);
     assertNotNull(result);
     assertTrue(result.getPath().contains("Source.java"));
-    assertEquals(443, result.getLine());
+    assertEquals(442, result.getLine());
     assertEquals(36, result.getColumn());
   }
 
   @Test
   public void testJumpMethod03() throws Exception {
     File f = new File("./src/test/java/meghanada/Overload1.java").getCanonicalFile();
-    assert f.exists();
+    assertTrue(f.exists());
     LocationSearcher searcher = getSearcher();
     {
       GlobalCache.getInstance().invalidateSource(project, f);
@@ -174,7 +175,7 @@ public class LocationSearcherTest extends GradleTestBase {
   @Test
   public void testJumpMethod04() throws Exception {
     File f = new File("./src/test/java/meghanada/Jump1.java").getCanonicalFile();
-    assert f.exists();
+    assertTrue(f.exists());
 
     LocationSearcher searcher = getSearcher();
     Location result = searcher.searchDeclarationLocation(f, 9, 16, "thenComparing").orElse(null);
@@ -188,7 +189,7 @@ public class LocationSearcherTest extends GradleTestBase {
   public void testJumpMethod05() throws Exception {
     File f =
         new File("./src/main/java/meghanada/location/LocationSearcher.java").getCanonicalFile();
-    assert f.exists();
+    assertTrue(f.exists());
 
     LocationSearcher searcher = getSearcher();
     Location result =
@@ -204,7 +205,7 @@ public class LocationSearcherTest extends GradleTestBase {
   public void testJumpMethod06() throws Exception {
     File f =
         new File("./src/main/java/meghanada/location/LocationSearcher.java").getCanonicalFile();
-    assert f.exists();
+    assertTrue(f.exists());
 
     LocationSearcher searcher = getSearcher();
     Location result =
@@ -223,7 +224,7 @@ public class LocationSearcherTest extends GradleTestBase {
   @Test
   public void testJumpMethod07() throws Exception {
     File f = new File("./src/main/java/meghanada/reflect/asm/ASMReflector.java").getCanonicalFile();
-    assert f.exists();
+    assertTrue(f.exists());
 
     LocationSearcher searcher = getSearcher();
     Location result =
@@ -237,7 +238,7 @@ public class LocationSearcherTest extends GradleTestBase {
   @Test
   public void testJumpMethod09() throws Exception {
     File f = new File("./src/test/java/meghanada/JumpWithNull.java").getCanonicalFile();
-    assert f.exists();
+    assertTrue(f.exists());
     LocationSearcher searcher = getSearcher();
     {
       GlobalCache.getInstance().invalidateSource(project, f);
@@ -252,7 +253,7 @@ public class LocationSearcherTest extends GradleTestBase {
   @Test
   public void testJumpMethod10() throws Exception {
     File f = new File("./src/main/java/meghanada/analyze/TreeAnalyzer.java").getCanonicalFile();
-    assert f.exists();
+    assertTrue(f.exists());
     LocationSearcher searcher = getSearcher();
     {
       GlobalCache.getInstance().invalidateSource(project, f);
@@ -260,11 +261,11 @@ public class LocationSearcherTest extends GradleTestBase {
           timeIt(
               () ->
                   searcher
-                      .searchDeclarationLocation(f, 589, 12, "analyzeVariableDecl")
+                      .searchDeclarationLocation(f, 593, 12, "analyzeVariableDecl")
                       .orElse(null));
       assertNotNull(result);
       assertTrue(result.getPath().contains("TreeAnalyzer.java"));
-      assertEquals(921, result.getLine());
+      assertEquals(925, result.getLine());
       assertEquals(23, result.getColumn());
     }
   }
@@ -272,7 +273,8 @@ public class LocationSearcherTest extends GradleTestBase {
   @Test
   public void testJumpMethod08() throws Exception {
     File f = new File("./src/test/java/meghanada/ArrayOverload.java").getCanonicalFile();
-    assert f.exists();
+    assertTrue(f.exists());
+
     LocationSearcher searcher = getSearcher();
     {
       GlobalCache.getInstance().invalidateSource(project, f);
@@ -287,21 +289,21 @@ public class LocationSearcherTest extends GradleTestBase {
   @Test
   public void testJumpClass01() throws Exception {
     File f = new File("./src/main/java/meghanada/session/Session.java").getCanonicalFile();
-    assert f.exists();
+    assertTrue(f.exists());
 
     LocationSearcher searcher = getSearcher();
     Location result =
         timeIt(() -> searcher.searchDeclarationLocation(f, 510, 14, "Source")).orElse(null);
     assertNotNull(result);
     assertTrue(result.getPath().contains("Source.java"));
-    assertEquals(48, result.getLine());
+    assertEquals(47, result.getLine());
     assertEquals(14, result.getColumn());
   }
 
   @Test
   public void testJumpClass02() throws Exception {
     File f = new File("./src/main/java/meghanada/reflect/asm/ASMReflector.java").getCanonicalFile();
-    assert f.exists();
+    assertTrue(f.exists());
 
     LocationSearcher locationSearcher = getSearcher();
     Location result =
@@ -315,7 +317,7 @@ public class LocationSearcherTest extends GradleTestBase {
   @Test
   public void testJumpClass03() throws Exception {
     File f = new File("./src/main/java/meghanada/reflect/asm/ASMReflector.java").getCanonicalFile();
-    assert f.exists();
+    assertTrue(f.exists());
 
     LocationSearcher locationSearcher = getSearcher();
     Location result = locationSearcher.searchDeclarationLocation(f, 32, 56, "String").orElse(null);
@@ -328,7 +330,7 @@ public class LocationSearcherTest extends GradleTestBase {
   @Test
   public void testJumpClass04() throws Exception {
     File f = new File("./src/main/java/meghanada/reflect/asm/ASMReflector.java").getCanonicalFile();
-    assert f.exists();
+    assertTrue(f.exists());
 
     LocationSearcher searcher = getSearcher();
     System.setProperty("disable-source-jar", "true");
@@ -342,7 +344,7 @@ public class LocationSearcherTest extends GradleTestBase {
   @Test
   public void testJumpAnnotation01() throws Exception {
     File f = new File("./src/main/java/meghanada/analyze/FieldAccess.java").getCanonicalFile();
-    assert f.exists();
+    assertTrue(f.exists());
 
     final LocationSearcher searcher = getSearcher();
     final Location result =
@@ -355,7 +357,7 @@ public class LocationSearcherTest extends GradleTestBase {
   @Test
   public void testJumpEnum01() throws Exception {
     final File f = new File("./src/test/java/meghanada/Enum2.java").getCanonicalFile();
-    assert f.exists();
+    assertTrue(f.exists());
 
     final LocationSearcher searcher = getSearcher();
     final Location l1 =
@@ -368,7 +370,7 @@ public class LocationSearcherTest extends GradleTestBase {
   @Test
   public void testJumpEnum02() throws Exception {
     final File f = new File("./src/test/java/meghanada/Enum2.java").getCanonicalFile();
-    assert f.exists();
+    assertTrue(f.exists());
 
     final LocationSearcher searcher = getSearcher();
     final Location l1 =
@@ -387,7 +389,7 @@ public class LocationSearcherTest extends GradleTestBase {
   @Test
   public void testJumpEnum03() throws Exception {
     final File f = new File("./src/test/java/meghanada/Enum3.java").getCanonicalFile();
-    assert f.exists();
+    assertTrue(f.exists());
 
     final LocationSearcher searcher = getSearcher();
     final Location l1 =

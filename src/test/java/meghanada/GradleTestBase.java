@@ -142,7 +142,6 @@ public class GradleTestBase {
     String p = System.getProperty(TEMP_PROJECT_SETTING_DIR);
     File file = new File(p);
     org.apache.commons.io.FileUtils.deleteDirectory(file);
-    assert !file.exists();
     String tempPath = GradleProject.getTempPath();
     if (nonNull(tempPath)) {
       org.apache.commons.io.FileUtils.deleteDirectory(new File(tempPath));
