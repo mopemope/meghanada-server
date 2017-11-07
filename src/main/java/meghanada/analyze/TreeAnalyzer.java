@@ -1560,13 +1560,16 @@ public class TreeAnalyzer {
       }
 
       for (ClassScope classScope : src.classScopes) {
-        String className = currentClass.get().name;
-        if (ClassNameUtils.getSimpleName(className).equals(nm)) {
-          variable.fqcn = TreeAnalyzer.markFQCN(src, className);
-          variable.argumentIndex = context.getArgumentIndex();
-          context.setArgumentFQCN(variable.fqcn);
-          src.getCurrentScope().ifPresent(scope -> scope.addVariable(variable));
-        }
+        currentClass.ifPresent(
+            cs -> {
+              String className = cs.name;
+              if (ClassNameUtils.getSimpleName(className).equals(nm)) {
+                variable.fqcn = TreeAnalyzer.markFQCN(src, className);
+                variable.argumentIndex = context.getArgumentIndex();
+                context.setArgumentFQCN(variable.fqcn);
+                src.getCurrentScope().ifPresent(scope -> scope.addVariable(variable));
+              }
+            });
       }
 
       // mark unknown
