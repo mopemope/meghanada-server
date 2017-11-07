@@ -105,6 +105,31 @@ public class SourceTest extends GradleTestBase {
   }
 
   @Test
+  public void testOptimizeImports04() throws Exception {
+
+    final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8");
+    final String cp = getClasspath();
+
+    List<File> files = new ArrayList<>();
+    final File file = new File("./src/test/java/meghanada/Opt3.java").getCanonicalFile();
+    assertTrue(file.exists());
+    files.add(file);
+
+    final String tmp = System.getProperty("java.io.tmpdir");
+
+    final Source source =
+        timeIt(
+            () -> {
+              final CompileResult compileResult = analyzer.analyzeAndCompile(files, cp, tmp, false);
+              return compileResult.getSources().get(file);
+            });
+
+    List<String> optimizeImports = timeIt(source::optimizeImports);
+    optimizeImports.forEach(System.out::println);
+    assertEquals(2, optimizeImports.size());
+  }
+
+  @Test
   public void testMissingImports1() throws Exception {
     final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8");
     final String cp = getClasspath();
