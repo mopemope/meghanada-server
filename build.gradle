@@ -26,7 +26,7 @@ ext {
 
   gradleVersion = '4.2.1'
   log4jVersion = '2.9.1'
-  xodusVersion = '1.0.6'
+  xodusVersion = '1.1.0'
 }
 
 mainClassName = "meghanada.Main"
