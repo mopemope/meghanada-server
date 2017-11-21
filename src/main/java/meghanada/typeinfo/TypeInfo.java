@@ -10,6 +10,7 @@ public class TypeInfo {
   private final String fqcn;
   private final List<String> hierarchy;
   private final List<String> interfaces;
+  private final List<String> members = new ArrayList<>(1);
 
   public TypeInfo(String fqcn, List<String> hierarchy, List<String> interfaces) {
     this.fqcn = fqcn;
@@ -44,5 +45,13 @@ public class TypeInfo {
 
   public List<String> getInterfaces() {
     return this.interfaces;
+  }
+
+  public List<String> getMembers() {
+    return this.members;
+  }
+
+  public void addMember(String member) {
+    this.members.add(member);
   }
 }

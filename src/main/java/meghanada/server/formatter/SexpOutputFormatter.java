@@ -347,6 +347,18 @@ public class SexpOutputFormatter implements OutputFormatter {
             });
     sb.append(RPAREN);
 
+    sb.append(LIST_SEP);
+
+    sb.append(LPAREN);
+    typeInfo
+        .getMembers()
+        .forEach(
+            c -> {
+              sb.append(doubleQuote(c));
+              sb.append(LIST_SEP);
+            });
+    sb.append(RPAREN);
+
     sb.append(RPAREN);
     return success(sb.toString());
   }

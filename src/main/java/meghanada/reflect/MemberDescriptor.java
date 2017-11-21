@@ -11,7 +11,8 @@ import java.util.Set;
 import java.util.regex.Pattern;
 import meghanada.utils.ClassNameUtils;
 
-public abstract class MemberDescriptor implements CandidateUnit, Cloneable, Serializable {
+public abstract class MemberDescriptor
+    implements CandidateUnit, Cloneable, Comparable<MemberDescriptor>, Serializable {
 
   static final Pattern TRIM_RE = Pattern.compile("<[\\w ?,]+>");
   private static final long serialVersionUID = -6014921331666546814L;
@@ -131,6 +132,10 @@ public abstract class MemberDescriptor implements CandidateUnit, Cloneable, Seri
     return this.modifier.contains("private");
   }
 
+  public boolean isPublic() {
+    return this.modifier.contains("public");
+  }
+
   public boolean fixedReturnType() {
     String temp = this.returnType;
     if (this.typeParameterMap.size() > 0) {
@@ -201,5 +206,60 @@ public abstract class MemberDescriptor implements CandidateUnit, Cloneable, Seri
 
   public MemberType getMemberType() {
     return memberType;
+  }
+
+  @Override
+  public int compareTo(MemberDescriptor other) {
+
+    if (this.isStatic() && other.isStatic()) {
+      return this.compareType(other, true);
+    }
+    if (this.isStatic()) {
+      return -1;
+    }
+    if (other.isStatic()) {
+      return 1;
+    }
+    return this.compareType(other, false);
+  }
+
+  private int compareType(MemberDescriptor other, boolean isStatic) {
+
+    if (this.getMemberType() == other.getMemberType()) {
+      if (this.getMemberType() == CandidateUnit.MemberType.FIELD) {
+        if (this.isPublic()) {
+          return -1;
+        }
+        if (other.isPublic()) {
+          return 1;
+        }
+      }
+      if (isStatic && this.getMemberType() == CandidateUnit.MemberType.METHOD) {
+        if (this.isPublic()) {
+          return -1;
+        }
+        if (other.isPublic()) {
+          return 1;
+        }
+      }
+
+      return this.getName().compareTo(other.getName());
+    }
+
+    if (this.getMemberType() == CandidateUnit.MemberType.FIELD) {
+      return -1;
+    }
+    if (other.getMemberType() == CandidateUnit.MemberType.FIELD) {
+      return 1;
+    }
+
+    if (this.getMemberType() == CandidateUnit.MemberType.CONSTRUCTOR) {
+      return -1;
+    }
+    if (other.getMemberType() == CandidateUnit.MemberType.CONSTRUCTOR) {
+      return 1;
+    }
+
+    return this.getName().compareTo(other.getName());
   }
 }
