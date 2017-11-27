@@ -1,5 +1,5 @@
 plugins {
-  id 'com.gradle.build-scan' version '1.10.1'
+  id 'com.gradle.build-scan' version '1.10.3'
   id 'java'
   id 'maven'
   id 'application'
@@ -25,7 +25,7 @@ ext {
   sourceCompatibility = 1.8
 
   gradleVersion = '4.2.1'
-  log4jVersion = '2.9.1'
+  log4jVersion = '2.10.0'
   xodusVersion = '1.1.0'
 }
 
@@ -95,13 +95,13 @@ dependencies {
   compile 'org.apache.maven:maven-model-builder:3.5.2'
   compile 'com.leacox.motif:motif:0.1'
   compile 'com.leacox.motif:motif-hamcrest:0.1'
-  compile 'com.github.javaparser:javaparser-core:3.5.3'
+  compile 'com.github.javaparser:javaparser-core:3.5.4'
   compile "org.apache.logging.log4j:log4j-core:$log4jVersion"
   compile "org.apache.logging.log4j:log4j-api:$log4jVersion"
   compile "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
   compile 'commons-cli:commons-cli:1.4'
   compile "org.gradle:gradle-tooling-api:$gradleVersion"
-  compile 'com.google.guava:guava:23.4-jre'
+  compile 'com.google.guava:guava:23.5-jre'
   compile 'org.ow2.asm:asm:6.0'
   compile 'com.typesafe:config:1.3.2'
   compile 'org.atteo:evo-inflector:1.2.2'
@@ -111,7 +111,7 @@ dependencies {
   compile 'org.jboss.windup.decompiler:decompiler-api:3.0.0.Final'
   compile 'org.jboss.windup.decompiler:decompiler-fernflower:3.0.0.Final'
   compile 'com.google.code.findbugs:jsr305:3.0.2'
-  compile 'org.eclipse.jdt:org.eclipse.jdt.core:3.13.0'
+  compile 'org.eclipse.jdt:org.eclipse.jdt.core:3.13.50'
   compile 'de.ruedigermoeller:fst:2.54'
   compile "org.jetbrains.xodus:xodus-query:$xodusVersion"
   compile "org.jetbrains.xodus:xodus-openAPI:$xodusVersion"
