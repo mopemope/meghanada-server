@@ -32,7 +32,7 @@ public class JavaVariableCompletionTest extends GradleTestBase {
     Optional<LocalVariable> olv =
         timeIt(
             () -> {
-              return completion.localVariable(file, 20);
+              return completion.localVariable(file, 24);
             });
     LocalVariable lv = olv.get();
     System.out.println(lv);

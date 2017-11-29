@@ -434,8 +434,24 @@ public class Session {
               final List<String> optimized = source.optimizeImports();
               boolean addLine = false;
               final StringBuilder sb = new StringBuilder(1024 * 4);
+
               if (!source.getPackageName().isEmpty()) {
-                sb.append("package ").append(source.getPackageName()).append(";\n");
+                try {
+                  long end = source.getPackageStartLine();
+                  if (end > 0) {
+                    end = end - 1;
+                    FileUtils.readRangeLines(
+                        file,
+                        0,
+                        end,
+                        s -> {
+                          sb.append(s).append("\n");
+                        });
+                  }
+                  sb.append("package ").append(source.getPackageName()).append(";\n");
+                } catch (IOException e) {
+                  throw new UncheckedIOException(e);
+                }
               }
 
               if (source.staticImportClass.size() > 0) {

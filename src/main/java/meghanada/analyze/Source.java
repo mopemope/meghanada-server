@@ -71,6 +71,7 @@ public class Source implements Serializable, Storable {
   public boolean hasCompileError;
   private String packageName = "";
   private long classStartLine;
+  private long pkgStartLine;
   private Map<String, String> importMap;
   private transient List<LineRange> lineRange;
   private transient LineMap lineMap;
@@ -773,7 +774,15 @@ public class Source implements Serializable, Storable {
     return classStartLine;
   }
 
-  public void setClassStartLine(long classStartLine) {
-    this.classStartLine = classStartLine;
+  public void setClassStartLine(long line) {
+    this.classStartLine = line;
+  }
+
+  public long getPackageStartLine() {
+    return pkgStartLine;
+  }
+
+  public void setPackageStartLine(long line) {
+    this.pkgStartLine = line;
   }
 }

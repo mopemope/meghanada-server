@@ -15,6 +15,7 @@ import com.sun.tools.javac.code.Symbol.VarSymbol;
 import com.sun.tools.javac.code.Type;
 import com.sun.tools.javac.tree.EndPosTable;
 import com.sun.tools.javac.tree.JCTree;
+import com.sun.tools.javac.tree.JCTree.JCIdent;
 import com.sun.tools.javac.util.JCDiagnostic;
 import com.sun.tools.javac.util.List;
 import java.io.File;
@@ -405,13 +406,21 @@ public class TreeAnalyzer {
     src.setClassStartLine(firstLine);
   }
 
-  private static void analyzePackageName(CompilationUnitTree cut, Source src) {
+  private static void analyzePackageName(
+      CompilationUnitTree cut, Source src, EndPosTable endPosTable) {
     ExpressionTree packageExpr = cut.getPackageName();
-
     if (isNull(packageExpr)) {
       src.setPackageName("");
     } else {
       src.setPackageName(packageExpr.toString());
+    }
+    if (packageExpr instanceof JCTree.JCIdent) {
+      JCTree.JCIdent ident = (JCTree.JCIdent) packageExpr;
+      int startPos = ident.getPreferredPosition();
+      int endPos = ident.getEndPosition(endPosTable);
+      Range range = Range.create(src, startPos + 1, endPos);
+      long pkgLine = range.begin.line;
+      src.setPackageStartLine(pkgLine);
     }
   }
 
@@ -422,7 +431,7 @@ public class TreeAnalyzer {
     EndPosTable endPosTable = ((JCTree.JCCompilationUnit) cut).endPositions;
     context.setEndPosTable(endPosTable);
 
-    analyzePackageName(cut, src);
+    analyzePackageName(cut, src, endPosTable);
 
     analyzeImports(cut, src, endPosTable);
 
