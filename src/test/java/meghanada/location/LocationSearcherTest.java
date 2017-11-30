@@ -8,6 +8,7 @@ import static org.junit.Assert.assertTrue;
 import java.io.File;
 import meghanada.GradleTestBase;
 import meghanada.cache.GlobalCache;
+import meghanada.config.Config;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -42,7 +43,7 @@ public class LocationSearcherTest extends GradleTestBase {
     Location result =
         timeIt(() -> searcher.searchDeclarationLocation(f, 98, 12, "result")).orElse(null);
     assertNotNull(result);
-    assertEquals(97, result.getLine());
+    assertEquals(98, result.getLine());
     assertEquals(29, result.getColumn());
   }
 
@@ -55,7 +56,7 @@ public class LocationSearcherTest extends GradleTestBase {
     final Location result =
         timeIt(() -> searcher.searchDeclarationLocation(f, 118, 28, "base")).orElse(null);
     assertNotNull(result);
-    assertEquals(103, result.getLine());
+    assertEquals(104, result.getLine());
     assertEquals(52, result.getColumn());
   }
 
@@ -66,9 +67,9 @@ public class LocationSearcherTest extends GradleTestBase {
 
     final LocationSearcher searcher = getSearcher();
     final Location result =
-        timeIt(() -> searcher.searchDeclarationLocation(f, 1103, 7, "source")).orElse(null);
+        timeIt(() -> searcher.searchDeclarationLocation(f, 1114, 7, "source")).orElse(null);
     assertNotNull(result);
-    assertEquals(1077, result.getLine());
+    assertEquals(1088, result.getLine());
     assertEquals(39, result.getColumn());
   }
 
@@ -81,7 +82,7 @@ public class LocationSearcherTest extends GradleTestBase {
     Location result =
         timeIt(() -> searcher.searchDeclarationLocation(f, 265, 12, "currentProject")).orElse(null);
     assertNotNull(result);
-    assertEquals(74, result.getLine());
+    assertEquals(75, result.getLine());
     assertEquals(19, result.getColumn());
   }
 
@@ -95,8 +96,15 @@ public class LocationSearcherTest extends GradleTestBase {
         timeIt(() -> searcher.searchDeclarationLocation(f, 8, 50, "CASE_INSENSITIVE_ORDER"))
             .orElse(null);
     assertNotNull(result);
-    assertEquals(1184, result.getLine());
-    assertEquals(44, result.getColumn());
+    Config config = Config.load();
+
+    if (config.isJava8()) {
+      assertEquals(1184, result.getLine());
+      assertEquals(44, result.getColumn());
+    } else {
+      assertEquals(1227, result.getLine());
+      assertEquals(44, result.getColumn());
+    }
   }
 
   @Test
@@ -119,10 +127,10 @@ public class LocationSearcherTest extends GradleTestBase {
 
     LocationSearcher searcher = getSearcher();
     Location result =
-        timeIt(() -> searcher.searchDeclarationLocation(f, 431, 5, "parseJavaSource")).orElse(null);
+        timeIt(() -> searcher.searchDeclarationLocation(f, 443, 5, "parseJavaSource")).orElse(null);
 
     assertNotNull(result);
-    assertEquals(517, result.getLine());
+    assertEquals(529, result.getLine());
     assertEquals(28, result.getColumn());
   }
 
@@ -134,7 +142,7 @@ public class LocationSearcherTest extends GradleTestBase {
     LocationSearcher searcher = getSearcher();
     // return source.searchMissingImport();
     Location result =
-        searcher.searchDeclarationLocation(f, 514, 46, "searchMissingImport").orElse(null);
+        searcher.searchDeclarationLocation(f, 526, 46, "searchMissingImport").orElse(null);
     assertNotNull(result);
     assertTrue(result.getPath().contains("Source.java"));
     assertEquals(443, result.getLine());
@@ -193,11 +201,11 @@ public class LocationSearcherTest extends GradleTestBase {
 
     LocationSearcher searcher = getSearcher();
     Location result =
-        timeIt(() -> searcher.searchDeclarationLocation(f, 321, 20, "searchFieldAccess"))
+        timeIt(() -> searcher.searchDeclarationLocation(f, 323, 20, "searchFieldAccess"))
             .orElse(null);
     assertNotNull(result);
     assertTrue(result.getPath().contains("LocationSearcher.java"));
-    assertEquals(683, result.getLine());
+    assertEquals(712, result.getLine());
     assertEquals(30, result.getColumn());
   }
 
@@ -212,7 +220,7 @@ public class LocationSearcherTest extends GradleTestBase {
         timeIt(
                 () -> {
                   System.setProperty("disable-source-jar", "true");
-                  return searcher.searchDeclarationLocation(f, 585, 22, "decompileArchive");
+                  return searcher.searchDeclarationLocation(f, 600, 22, "decompileArchive");
                 })
             .orElse(null);
     assertNotNull(result);
@@ -228,10 +236,10 @@ public class LocationSearcherTest extends GradleTestBase {
 
     LocationSearcher searcher = getSearcher();
     Location result =
-        timeIt(() -> searcher.searchDeclarationLocation(f, 62, 19, "getAllowClass")).orElse(null);
+        timeIt(() -> searcher.searchDeclarationLocation(f, 63, 19, "getAllowClass")).orElse(null);
     assertNotNull(result);
     assertTrue(result.getPath().contains("Config.java"));
-    assertEquals(333, result.getLine());
+    assertEquals(335, result.getLine());
     assertEquals(23, result.getColumn());
   }
 
@@ -261,11 +269,11 @@ public class LocationSearcherTest extends GradleTestBase {
           timeIt(
               () ->
                   searcher
-                      .searchDeclarationLocation(f, 602, 12, "analyzeVariableDecl")
+                      .searchDeclarationLocation(f, 601, 12, "analyzeVariableDecl")
                       .orElse(null));
       assertNotNull(result);
       assertTrue(result.getPath().contains("TreeAnalyzer.java"));
-      assertEquals(934, result.getLine());
+      assertEquals(933, result.getLine());
       assertEquals(23, result.getColumn());
     }
   }
@@ -348,10 +356,15 @@ public class LocationSearcherTest extends GradleTestBase {
 
     final LocationSearcher searcher = getSearcher();
     final Location result =
-        timeIt(() -> searcher.searchDeclarationLocation(f, 15, 16, "@Override")).orElse(null);
+        timeIt(() -> searcher.searchDeclarationLocation(f, 12, 3, "@Override")).orElse(null);
     assertNotNull(result);
-    assertEquals(51, result.getLine());
-    assertEquals(19, result.getColumn());
+    if (Config.load().isJava8()) {
+      assertEquals(51, result.getLine());
+      assertEquals(19, result.getColumn());
+    } else {
+      assertEquals(53, result.getLine());
+      assertEquals(19, result.getColumn());
+    }
   }
 
   @Test

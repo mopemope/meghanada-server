@@ -7,6 +7,7 @@ import static org.junit.Assert.assertTrue;
 import java.io.File;
 import java.util.Collection;
 import meghanada.GradleTestBase;
+import meghanada.config.Config;
 import meghanada.reflect.CandidateUnit;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -108,8 +109,13 @@ public class JavaCompletionTest extends GradleTestBase {
 
     final Collection<? extends CandidateUnit> logMethod =
         timeIt(() -> completion.completionAt(file, 17, 4, "*method:java.lang.System#"));
-    logMethod.forEach(a -> System.out.println(a.getDeclaration()));
-    assertEquals(39, logMethod.size());
+    // logMethod.forEach(a -> System.out.println(a.getDeclaration()));
+    Config config = Config.load();
+    if (config.isJava8()) {
+      assertEquals(39, logMethod.size());
+    } else {
+      assertEquals(41, logMethod.size());
+    }
   }
 
   @Test
@@ -149,8 +155,13 @@ public class JavaCompletionTest extends GradleTestBase {
                     79,
                     35,
                     "*method:capture of ? extends com.sun.source.tree.CompilationUnitTree#"));
-    units.forEach(a -> System.out.println(a.getDisplayDeclaration()));
-    assertEquals(17, units.size());
+    // units.forEach(a -> System.out.println(a.getDisplayDeclaration()));
+    Config config = Config.load();
+    if (config.isJava8()) {
+      assertEquals(17, units.size());
+    } else {
+      assertEquals(18, units.size());
+    }
   }
 
   @Ignore

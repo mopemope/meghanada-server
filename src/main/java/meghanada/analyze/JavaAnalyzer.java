@@ -5,9 +5,6 @@ import static meghanada.analyze.TreeAnalyzer.analyze;
 
 import com.sun.source.tree.CompilationUnitTree;
 import com.sun.source.util.JavacTask;
-import com.sun.tools.javac.api.JavacTaskImpl;
-import com.sun.tools.javac.parser.FuzzyParserFactory;
-import com.sun.tools.javac.util.Context;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -43,8 +40,9 @@ public class JavaAnalyzer {
 
   private static final JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
   private ExecutorService executorService = Executors.newSingleThreadExecutor();
-  private String compileSource = "1.8";
-  private String compileTarget = "1.8";
+
+  private final String compileSource;
+  private final String compileTarget;
 
   public JavaAnalyzer(String compileSource, String compileTarget) {
     this.compileSource = compileSource;
@@ -85,13 +83,6 @@ public class JavaAnalyzer {
     }
 
     return temp;
-  }
-
-  @SuppressWarnings("CheckReturnValue")
-  private static void replaceParser(JavaCompiler.CompilationTask compilerTask) {
-    JavacTaskImpl javacTaskImpl = (JavacTaskImpl) compilerTask;
-    Context context = javacTaskImpl.getContext();
-    FuzzyParserFactory.instance(context);
   }
 
   public CompileResult analyzeAndCompile(List<File> files, String classpath, String out)
@@ -142,7 +133,7 @@ public class JavaAnalyzer {
       Iterable<? extends JavaFileObject> compilationUnits =
           fileManager.getJavaFileObjectsFromFiles(compileFiles);
       DiagnosticCollector<JavaFileObject> diagnosticCollector = new DiagnosticCollector<>();
-      List<String> compileOptions =
+      List<String> opts =
           Arrays.asList(
               "-cp",
               classpath,
@@ -157,6 +148,8 @@ public class JavaAnalyzer {
               "-encoding",
               "UTF-8");
 
+      List<String> compileOptions = config.getExtraJavacArgs();
+      compileOptions.addAll(opts);
       JavaCompiler.CompilationTask compilerTask =
           compiler.getTask(
               null, fileManager, diagnosticCollector, compileOptions, null, compilationUnits);

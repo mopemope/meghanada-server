@@ -10,6 +10,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URISyntaxException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -37,6 +38,7 @@ public class Config {
   private boolean debug;
   private List<String> includeList;
   private List<String> excludeList;
+  private List<String> extraJavacArgs = new ArrayList<>(8);
   private boolean buildWithDependency = true;
 
   private Config() {
@@ -260,7 +262,7 @@ public class Config {
     }
   }
 
-  private String getJavaVersion() {
+  public String getJavaVersion() {
     return c.getString("java-version");
   }
 
@@ -359,8 +361,24 @@ public class Config {
     this.c = newConfig;
   }
 
+  public boolean isJava8() {
+    return getJavaVersion().equals("1.8");
+  }
+
+  public boolean isJava9() {
+    return getJavaVersion().equals("9");
+  }
+
   public boolean useAOSPStyle() {
     return c.getBoolean("aosp-style");
+  }
+
+  public void setExtraJavacArgs(List<String> lst) {
+    this.extraJavacArgs = lst;
+  }
+
+  public List<String> getExtraJavacArgs() {
+    return this.extraJavacArgs;
   }
 
   @FunctionalInterface

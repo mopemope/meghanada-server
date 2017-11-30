@@ -145,7 +145,7 @@ public class ProjectDatabaseHelper {
             return false;
           }
 
-          //txn.saveEntity(entity);
+          // txn.saveEntity(entity);
           return true;
         });
   }
@@ -187,7 +187,7 @@ public class ProjectDatabaseHelper {
             return false;
           }
           boolean result = entity.deleteBlob(BLOB_PROP_MEMBERS);
-          //txn.saveEntity(entity);
+          // txn.saveEntity(entity);
           return result;
         });
   }
@@ -293,7 +293,7 @@ public class ProjectDatabaseHelper {
             txn.abort();
             return false;
           }
-          //txn.saveEntity(entity);
+          // txn.saveEntity(entity);
           return true;
         });
   }
@@ -342,7 +342,7 @@ public class ProjectDatabaseHelper {
             txn.abort();
             return false;
           }
-          //txn.saveEntity(entity);
+          // txn.saveEntity(entity);
           return true;
         });
   }

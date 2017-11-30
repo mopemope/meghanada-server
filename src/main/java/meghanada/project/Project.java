@@ -74,6 +74,8 @@ public abstract class Project implements Serializable, Storable {
   private static final String TEST_OUTPUT = "test-output";
   private static final String INCLUDE_FILE = "include-file";
   private static final String EXCLUDE_FILE = "exclude-file";
+  private static final String JAVA8_JAVAC_ARGS = "java8-javac-args";
+  private static final String JAVA9_JAVAC_ARGS = "java9-javac-args";
   private static final String FORMATTER_FILE = "meghanadaFormatter.properties";
   private static final String FORMATTER_FILE_XML = "meghanadaFormatter.xml";
   private static final Pattern SEP_COMPILE = Pattern.compile("/", Pattern.LITERAL);
@@ -756,6 +758,15 @@ public abstract class Project implements Serializable, Storable {
       if (config.hasPath(EXCLUDE_FILE)) {
         final List<String> list = config.getStringList(INCLUDE_FILE);
         mainConfig.setExcludeList(list);
+      }
+
+      if (config.hasPath(JAVA8_JAVAC_ARGS) && mainConfig.isJava8()) {
+        final List<String> list = config.getStringList(JAVA8_JAVAC_ARGS);
+        mainConfig.setExtraJavacArgs(list);
+      }
+      if (config.hasPath(JAVA9_JAVAC_ARGS) && mainConfig.isJava9()) {
+        final List<String> list = config.getStringList(JAVA9_JAVAC_ARGS);
+        mainConfig.setExtraJavacArgs(list);
       }
     }
 

@@ -1,7 +1,6 @@
 package meghanada;
 
 import com.sun.tools.javac.tree.JCTree;
-import com.sun.tools.javac.tree.JCTree.JCErroneous;
 
 public class Opt2 {
 

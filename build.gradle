@@ -3,7 +3,7 @@ plugins {
   id 'java'
   id 'maven'
   id 'application'
-  id 'com.github.johnrengelman.shadow' version '2.0.1'
+  id 'com.github.johnrengelman.shadow' version '2.0.2'
   id 'com.github.ben-manes.versions' version '0.17.0'
   id 'com.jfrog.bintray' version '1.8.0'
   id 'org.ajoberstar.grgit' version '1.7.2'
@@ -24,13 +24,31 @@ ext {
   date = new Date().format("yyyy-MM-dd'T'HH:mm:ssZ")
   sourceCompatibility = 1.8
 
-  gradleVersion = '4.2.1'
+  gradleVersion = '4.4'
   log4jVersion = '2.10.0'
   xodusVersion = '1.1.0'
 }
 
 mainClassName = "meghanada.Main"
 applicationName = 'meghanada'
+
+// compileJava {
+//   options.compilerArgs += ["--add-exports", "jdk.compiler/com.sun.tools.javac.code=ALL-UNNAMED",
+//                            "--add-exports", "jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED",
+//                            "--add-exports", "jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED",
+//                            "--add-exports", "jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED"]
+// }
+
+// compileTestJava {
+//   options.compilerArgs += ["--add-exports", "jdk.compiler/com.sun.tools.javac.code=ALL-UNNAMED",
+//                            "--add-exports", "jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED",
+//                            "--add-exports", "jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED",
+//                            "--add-exports", "jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED"]
+// }
+
+googleJavaFormat {
+  toolVersion = '1.5'
+}
 
 tasks.withType(JavaCompile) {
   options.incremental = true
@@ -95,7 +113,7 @@ dependencies {
   compile 'org.apache.maven:maven-model-builder:3.5.2'
   compile 'com.leacox.motif:motif:0.1'
   compile 'com.leacox.motif:motif-hamcrest:0.1'
-  compile 'com.github.javaparser:javaparser-core:3.5.4'
+  compile 'com.github.javaparser:javaparser-core:3.5.7'
   compile "org.apache.logging.log4j:log4j-core:$log4jVersion"
   compile "org.apache.logging.log4j:log4j-api:$log4jVersion"
   compile "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
@@ -168,6 +186,7 @@ task('createPom') {
 
 googleJavaFormat {
   exclude 'src/test/resources/*'
+  exclude 'out/*'
 }
 
 clean.doLast {

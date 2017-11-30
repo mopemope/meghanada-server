@@ -49,6 +49,7 @@ class MemberCacheLoader extends CacheLoader<String, List<MemberDescriptor>>
     if (nonNull(classIndex)) {
       String filePath = classIndex.getFilePath();
       if (nonNull(filePath)) {
+
         return new File(filePath);
       }
     }

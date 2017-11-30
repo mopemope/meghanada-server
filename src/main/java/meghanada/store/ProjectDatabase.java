@@ -318,6 +318,7 @@ class ProjectDatabase {
             Hashing.sha256()
                 .newHasher()
                 .putString(Main.getVersion(), StandardCharsets.UTF_8)
+                .putString(config.getJavaVersion(), StandardCharsets.UTF_8)
                 .hash()
                 .toString();
         File base = new File(root, name + '_' + hash.substring(0, 8));

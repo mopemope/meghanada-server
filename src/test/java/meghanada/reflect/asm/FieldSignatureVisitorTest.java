@@ -70,7 +70,7 @@ public class FieldSignatureVisitorTest extends GradleTestBase {
     String fqcn = "meghanada.reflect.asm.MethodAnalyzeVisitor";
     TestVisitor visitor = doAnalyze(f, fqcn);
     System.out.println(visitor.result.get("lvtSlotIndex"));
-    //System.out.println(visitor.classFileMap);
+    // System.out.println(visitor.classFileMap);
     visitor
         .result
         .entrySet()

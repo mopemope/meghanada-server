@@ -45,6 +45,7 @@ import meghanada.docs.declaration.Declaration;
 import meghanada.docs.declaration.DeclarationSearcher;
 import meghanada.location.Location;
 import meghanada.location.LocationSearcher;
+import meghanada.module.ModuleHelper;
 import meghanada.project.Project;
 import meghanada.project.ProjectDependency;
 import meghanada.project.gradle.GradleProject;
@@ -199,19 +200,30 @@ public class Session {
   }
 
   private static List<File> getSystemJars() throws IOException {
-    final String javaHome = Config.load().getJavaHomeDir();
-    final File jvmDir = new File(javaHome);
-    final String toolsJarPath = Joiner.on(File.separator).join("..", "lib", "tools.jar");
-    final File toolsJar = new File(jvmDir, toolsJarPath);
+    Config config = Config.load();
 
-    try (final Stream<Path> stream = Files.walk(jvmDir.toPath())) {
-      final List<File> files =
-          stream
-              .map(Path::toFile)
-              .filter(f -> f.getName().endsWith(".jar") && !f.getName().endsWith("policy.jar"))
-              .collect(Collectors.toList());
-      files.add(toolsJar.getCanonicalFile());
-      return files;
+    if (config.isJava8()) {
+      final String javaHome = Config.load().getJavaHomeDir();
+      final File jvmDir = new File(javaHome);
+      final String toolsJarPath = Joiner.on(File.separator).join("..", "lib", "tools.jar");
+      final File toolsJar = new File(jvmDir, toolsJarPath);
+
+      try (final Stream<Path> stream = Files.walk(jvmDir.toPath())) {
+        final List<File> files =
+            stream
+                .map(Path::toFile)
+                .filter(
+                    f ->
+                        f.getName().endsWith(FileUtils.JAR_EXT)
+                            && !f.getName().endsWith("policy.jar"))
+                .collect(Collectors.toList());
+        files.add(toolsJar.getCanonicalFile());
+        return files;
+      }
+    } else {
+      List<File> result = new ArrayList<>(1);
+      result.add(ModuleHelper.getJrtFsFile());
+      return result;
     }
   }
 

@@ -25,6 +25,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import jetbrains.exodus.entitystore.EntityId;
 import meghanada.cache.GlobalCache;
+import meghanada.module.ModuleHelper;
 import meghanada.reflect.CandidateUnit;
 import meghanada.reflect.ClassIndex;
 import meghanada.reflect.MemberDescriptor;
@@ -205,7 +206,11 @@ public class CachedASMReflector {
       }
     }
     try {
-      newIndex.setFilePath(file.getCanonicalPath());
+      if (ModuleHelper.isJrtFsFile(file)) {
+        newIndex.setFilePath(file.getPath());
+      } else {
+        newIndex.setFilePath(file.getCanonicalPath());
+      }
     } catch (IOException e) {
       throw new UncheckedIOException(e);
     }
