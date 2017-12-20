@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import meghanada.GradleTestBase;
+import meghanada.config.Config;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -30,9 +31,17 @@ public class SourceTest extends GradleTestBase {
     GradleTestBase.shutdown();
   }
 
+  private JavaAnalyzer getAnalyzer() {
+    JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8");
+    if (Config.load().isJava9()) {
+      analyzer = new JavaAnalyzer("9", "9");
+    }
+    return analyzer;
+  }
+
   @Test
   public void testOptimizeImports01() throws Exception {
-    final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8");
+    final JavaAnalyzer analyzer = getAnalyzer();
     final String cp = getClasspath();
 
     List<File> files = new ArrayList<>();
@@ -56,7 +65,7 @@ public class SourceTest extends GradleTestBase {
 
   @Test
   public void testOptimizeImports02() throws Exception {
-    final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8");
+    final JavaAnalyzer analyzer = getAnalyzer();
     final String cp = getClasspath();
 
     List<File> files = new ArrayList<>();
@@ -81,8 +90,7 @@ public class SourceTest extends GradleTestBase {
 
   @Test
   public void testOptimizeImports03() throws Exception {
-
-    final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8");
+    final JavaAnalyzer analyzer = getAnalyzer();
     final String cp = getClasspath();
 
     List<File> files = new ArrayList<>();
@@ -106,8 +114,7 @@ public class SourceTest extends GradleTestBase {
 
   @Test
   public void testOptimizeImports04() throws Exception {
-
-    final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8");
+    final JavaAnalyzer analyzer = getAnalyzer();
     final String cp = getClasspath();
 
     List<File> files = new ArrayList<>();
@@ -131,7 +138,7 @@ public class SourceTest extends GradleTestBase {
 
   @Test
   public void testMissingImports1() throws Exception {
-    final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8");
+    final JavaAnalyzer analyzer = getAnalyzer();
     final String cp = getClasspath();
 
     List<File> files = new ArrayList<>();
@@ -155,7 +162,7 @@ public class SourceTest extends GradleTestBase {
 
   @Test
   public void testMissingImports2() throws Exception {
-    final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8");
+    final JavaAnalyzer analyzer = getAnalyzer();
     final String cp = getClasspath();
 
     List<File> files = new ArrayList<>();
@@ -183,7 +190,7 @@ public class SourceTest extends GradleTestBase {
 
   @Test
   public void testMissingImports3() throws Exception {
-    final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8");
+    final JavaAnalyzer analyzer = getAnalyzer();
     final String cp = getClasspath();
 
     List<File> files = new ArrayList<>();
@@ -211,7 +218,7 @@ public class SourceTest extends GradleTestBase {
 
   @Test
   public void testMissingImports4() throws Exception {
-    final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8");
+    final JavaAnalyzer analyzer = getAnalyzer();
     final String cp = getClasspath();
 
     List<File> files = new ArrayList<>();
@@ -239,7 +246,7 @@ public class SourceTest extends GradleTestBase {
 
   @Test
   public void testSource01() throws Exception {
-    final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8");
+    final JavaAnalyzer analyzer = getAnalyzer();
     final String cp = getClasspath();
 
     List<File> files = new ArrayList<>();

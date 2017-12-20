@@ -331,8 +331,13 @@ public class LocationSearcherTest extends GradleTestBase {
     Location result = locationSearcher.searchDeclarationLocation(f, 32, 56, "String").orElse(null);
     assertNotNull(result);
     assertTrue(result.getPath().contains(".java"));
-    assertEquals(111, result.getLine());
-    assertEquals(20, result.getColumn());
+    if (Config.load().isJava9()) {
+      assertEquals(123, result.getLine());
+      assertEquals(20, result.getColumn());
+    } else {
+      assertEquals(111, result.getLine());
+      assertEquals(20, result.getColumn());
+    }
   }
 
   @Test

@@ -1,5 +1,7 @@
 package meghanada.module;
 
+import static java.util.Objects.nonNull;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -34,6 +36,12 @@ public class ModuleHelper {
     walkModuleFS(dir, c);
   }
 
+  public static <T> Optional<T> searchModule(ModuleSupplier<T> ms) throws IOException {
+    FileSystem fileSystem = FileSystems.getFileSystem(URI.create("jrt:/"));
+    Path dir = fileSystem.getPath("/modules");
+    return searchModuleFS(dir, ms);
+  }
+
   public static void walkModule(String mod, ModuleConsumer c) throws IOException {
     FileSystem fileSystem = FileSystems.getFileSystem(URI.create("jrt:/"));
     Path dir = fileSystem.getPath("/modules/" + mod);
@@ -57,6 +65,27 @@ public class ModuleHelper {
     } else {
       consumer.accept(path);
     }
+  }
+
+  private static <T> Optional<T> searchModuleFS(Path path, ModuleSupplier<T> ms)
+      throws IOException {
+    boolean directory = Files.isDirectory(path);
+    if (directory) {
+      try (DirectoryStream<Path> stream = Files.newDirectoryStream(path)) {
+        for (Path p : stream) {
+          Optional<T> o = searchModuleFS(p, ms);
+          if (o.isPresent()) {
+            return o;
+          }
+        }
+      }
+    } else {
+      T t = ms.get(path);
+      if (nonNull(t)) {
+        return Optional.of(t);
+      }
+    }
+    return Optional.empty();
   }
 
   public static Optional<String> pathToClassName(Path p) {
@@ -103,6 +132,11 @@ public class ModuleHelper {
   @FunctionalInterface
   public interface ModuleConsumer {
     void accept(Path path) throws IOException;
+  }
+
+  @FunctionalInterface
+  public interface ModuleSupplier<T> {
+    T get(Path path) throws IOException;
   }
 
   public static final class ClassData {
