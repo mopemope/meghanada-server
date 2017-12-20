@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URI;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -148,7 +149,12 @@ public class JavaAnalyzer {
               "-encoding",
               "UTF-8");
 
-      List<String> compileOptions = config.getExtraJavacArgs();
+      List<String> compileOptions = new ArrayList<>(1);
+      if (this.compileTarget.equals("1.8")) {
+        compileOptions = config.getJava8JavacArgs();
+      } else if (this.compileTarget.equals("1.9") || this.compileTarget.equals("9")) {
+        compileOptions = config.getJava9JavacArgs();
+      }
       compileOptions.addAll(opts);
       JavaCompiler.CompilationTask compilerTask =
           compiler.getTask(

@@ -239,7 +239,7 @@ public class LocationSearcherTest extends GradleTestBase {
         timeIt(() -> searcher.searchDeclarationLocation(f, 63, 19, "getAllowClass")).orElse(null);
     assertNotNull(result);
     assertTrue(result.getPath().contains("Config.java"));
-    assertEquals(335, result.getLine());
+    assertEquals(336, result.getLine());
     assertEquals(23, result.getColumn());
   }
 

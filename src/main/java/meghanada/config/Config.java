@@ -38,7 +38,8 @@ public class Config {
   private boolean debug;
   private List<String> includeList;
   private List<String> excludeList;
-  private List<String> extraJavacArgs = new ArrayList<>(8);
+  private List<String> java8JavacArgs = new ArrayList<>(8);
+  private List<String> java9JavacArgs = new ArrayList<>(8);
   private boolean buildWithDependency = true;
 
   private Config() {
@@ -373,12 +374,20 @@ public class Config {
     return c.getBoolean("aosp-style");
   }
 
-  public void setExtraJavacArgs(List<String> lst) {
-    this.extraJavacArgs = lst;
+  public void setJava8JavacArgs(List<String> lst) {
+    this.java8JavacArgs = lst;
   }
 
-  public List<String> getExtraJavacArgs() {
-    return this.extraJavacArgs;
+  public List<String> getJava8JavacArgs() {
+    return this.java8JavacArgs;
+  }
+
+  public void setJava9JavacArgs(List<String> lst) {
+    this.java8JavacArgs = lst;
+  }
+
+  public List<String> getJava9JavacArgs() {
+    return this.java8JavacArgs;
   }
 
   @FunctionalInterface

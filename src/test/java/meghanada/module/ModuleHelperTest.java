@@ -74,6 +74,7 @@ public class ModuleHelperTest {
                         .ifPresent(
                             mod -> {
                               try (InputStream in = ModuleHelper.getInputStream(p.toString())) {
+                                in.available();
                                 System.out.println(mod + ":" + className);
                               } catch (IOException e) {
                                 e.printStackTrace();

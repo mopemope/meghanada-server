@@ -762,11 +762,11 @@ public abstract class Project implements Serializable, Storable {
 
       if (config.hasPath(JAVA8_JAVAC_ARGS) && mainConfig.isJava8()) {
         final List<String> list = config.getStringList(JAVA8_JAVAC_ARGS);
-        mainConfig.setExtraJavacArgs(list);
+        mainConfig.setJava8JavacArgs(list);
       }
       if (config.hasPath(JAVA9_JAVAC_ARGS) && mainConfig.isJava9()) {
         final List<String> list = config.getStringList(JAVA9_JAVAC_ARGS);
-        mainConfig.setExtraJavacArgs(list);
+        mainConfig.setJava9JavacArgs(list);
       }
     }
 
