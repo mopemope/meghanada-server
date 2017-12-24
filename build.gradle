@@ -129,7 +129,7 @@ dependencies {
   compile 'org.jboss.windup.decompiler:decompiler-fernflower:3.0.0.Final'
   compile 'com.google.code.findbugs:jsr305:3.0.2'
   compile 'org.eclipse.jdt:org.eclipse.jdt.core:3.13.50'
-  compile 'de.ruedigermoeller:fst:2.54'
+  compile 'de.ruedigermoeller:fst:2.56'
   compile "org.jetbrains.xodus:xodus-query:$xodusVersion"
   compile "org.jetbrains.xodus:xodus-openAPI:$xodusVersion"
   compile "org.jetbrains.xodus:xodus-vfs:$xodusVersion"
