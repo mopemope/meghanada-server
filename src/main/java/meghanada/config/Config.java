@@ -66,6 +66,10 @@ public class Config {
     log.debug("fast-boot:{}", useFastBoot());
     log.debug("class-fuzzy-search:{}", useClassFuzzySearch());
     log.debug("javac-arg:{}", getJavacArg());
+    log.debug("cache-in-project:{}", isCacheInProject());
+    if (!isCacheInProject()) {
+      log.debug("cache-root:{}", getCacheRoot());
+    }
   }
 
   public static Config load() {
@@ -388,6 +392,14 @@ public class Config {
 
   public List<String> getJava9JavacArgs() {
     return this.java8JavacArgs;
+  }
+
+  public String getCacheRoot() {
+    return c.getString("cache-root");
+  }
+
+  public boolean isCacheInProject() {
+    return c.getBoolean("cache-in-project");
   }
 
   @FunctionalInterface
