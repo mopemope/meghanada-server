@@ -480,12 +480,11 @@ public class Source implements Serializable, Storable {
         final CandidateUnit[] candidateUnits = findUnits.toArray(new CandidateUnit[1]);
         final String declaration = candidateUnits[0].getDeclaration();
         final String pa = ClassNameUtils.getPackage(declaration);
-        if (nonNull(this.packageName) && pa.equals(this.packageName)) {
-          // remove same package
+        if (pa.equals("java.lang")) {
+          // Only ignore "java.lang" package, exclude subpackages.
           continue;
         }
         if (nonNull(this.packageName) && this.packageName.equals("java.lang")) {
-          // Only ignore "java.lang" package, exclude subpackages.
           continue;
         }
 

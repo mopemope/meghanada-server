@@ -212,6 +212,34 @@ public class SourceTest extends GradleTestBase {
   }
 
   @Test
+  public void testMissingImports5() throws Exception {
+    final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8");
+    final String cp = getClasspath();
+
+    List<File> files = new ArrayList<>();
+    final File file = new File("./src/test/resources/MissingImport5.java").getCanonicalFile();
+    assert file.exists();
+    files.add(file);
+
+    final String tmp = System.getProperty("java.io.tmpdir");
+
+    final Source source =
+        timeIt(
+            () -> {
+              final CompileResult compileResult = analyzer.analyzeAndCompile(files, cp, tmp, false);
+              compileResult.getSources().values().forEach(Source::dump);
+              return compileResult.getSources().get(file);
+            });
+
+    Map<String, List<String>> missingImport = timeIt(source::searchMissingImport);
+    missingImport.forEach(
+        (k, v) -> {
+          System.out.println(k + ':' + v);
+        });
+    assertEquals(1, missingImport.size());
+  }
+
+  @Test
   public void testSource01() throws Exception {
     final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8");
     final String cp = getClasspath();
