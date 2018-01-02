@@ -4,6 +4,7 @@ import static meghanada.config.Config.timeIt;
 import static meghanada.config.Config.timeItF;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.io.IOException;
@@ -16,6 +17,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import meghanada.GradleTestBase;
+import meghanada.config.Config;
 import meghanada.docs.declaration.Declaration;
 import meghanada.docs.declaration.DeclarationSearcher;
 import meghanada.utils.FileUtils;
@@ -40,14 +42,22 @@ public class JavaAnalyzerTest extends GradleTestBase {
     GradleTestBase.shutdown();
   }
 
+  private JavaAnalyzer getAnalyzer() {
+    JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8");
+    if (Config.load().isJava9()) {
+      analyzer = new JavaAnalyzer("9", "9");
+    }
+    return analyzer;
+  }
+
   @Test
   public void analyze01() throws Exception {
-    final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8");
+    final JavaAnalyzer analyzer = getAnalyzer();
     final String cp = getClasspath();
 
     List<File> files = new ArrayList<>(8);
     final File file = new File("./src/test/java/meghanada/Gen1.java").getCanonicalFile();
-    assert file.exists();
+    assertTrue(file.exists());
     files.add(file);
 
     final String tmp = System.getProperty("java.io.tmpdir");
@@ -69,12 +79,12 @@ public class JavaAnalyzerTest extends GradleTestBase {
 
   @Test
   public void analyze02() throws Exception {
-    final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8");
+    final JavaAnalyzer analyzer = getAnalyzer();
     final String cp = getClasspath();
 
     List<File> files = new ArrayList<>();
     final File file = new File("./src/test/java/meghanada/Gen2.java").getCanonicalFile();
-    assert file.exists();
+    assertTrue(file.exists());
     files.add(file);
 
     final String tmp = System.getProperty("java.io.tmpdir");
@@ -94,12 +104,12 @@ public class JavaAnalyzerTest extends GradleTestBase {
 
   @Test
   public void analyze03() throws Exception {
-    final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8");
+    final JavaAnalyzer analyzer = getAnalyzer();
     final String cp = getClasspath();
 
     List<File> files = new ArrayList<>();
     final File file = new File("./src/test/java/meghanada/Gen3.java").getCanonicalFile();
-    assert file.exists();
+    assertTrue(file.exists());
     files.add(file);
 
     final String tmp = System.getProperty("java.io.tmpdir");
@@ -119,12 +129,12 @@ public class JavaAnalyzerTest extends GradleTestBase {
 
   @Test
   public void analyze04() throws Exception {
-    final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8");
+    final JavaAnalyzer analyzer = getAnalyzer();
     final String cp = getClasspath();
 
     List<File> files = new ArrayList<>();
     final File file = new File("./src/test/java/meghanada/Gen4.java").getCanonicalFile();
-    assert file.exists();
+    assertTrue(file.exists());
     files.add(file);
 
     final String tmp = System.getProperty("java.io.tmpdir");
@@ -148,12 +158,12 @@ public class JavaAnalyzerTest extends GradleTestBase {
 
   @Test
   public void analyze05() throws Exception {
-    final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8");
+    final JavaAnalyzer analyzer = getAnalyzer();
     final String cp = getClasspath();
 
     List<File> files = new ArrayList<>();
     final File file = new File("./src/test/java/meghanada/Gen5.java").getCanonicalFile();
-    assert file.exists();
+    assertTrue(file.exists());
     files.add(file);
 
     final String tmp = System.getProperty("java.io.tmpdir");
@@ -173,12 +183,12 @@ public class JavaAnalyzerTest extends GradleTestBase {
 
   @Test
   public void analyze06() throws Exception {
-    final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8");
+    final JavaAnalyzer analyzer = getAnalyzer();
     final String cp = getClasspath();
 
     List<File> files = new ArrayList<>();
     final File file = new File("./src/test/java/meghanada/Gen6.java").getCanonicalFile();
-    assert file.exists();
+    assertTrue(file.exists());
     files.add(file);
 
     final String tmp = System.getProperty("java.io.tmpdir");
@@ -198,12 +208,12 @@ public class JavaAnalyzerTest extends GradleTestBase {
 
   @Test
   public void analyze07() throws Exception {
-    final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8");
+    final JavaAnalyzer analyzer = getAnalyzer();
     final String cp = getClasspath();
 
     List<File> files = new ArrayList<>();
     final File file = new File("./src/test/java/meghanada/Gen7.java").getCanonicalFile();
-    assert file.exists();
+    assertTrue(file.exists());
     files.add(file);
 
     final String tmp = System.getProperty("java.io.tmpdir");
@@ -223,11 +233,12 @@ public class JavaAnalyzerTest extends GradleTestBase {
 
   @Test
   public void analyze08() throws Exception {
-    final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8");
+    final JavaAnalyzer analyzer = getAnalyzer();
     final String cp = getClasspath();
 
     List<File> files = new ArrayList<>();
     final File file = new File("./src/test/java/meghanada/Gen8.java").getCanonicalFile();
+    assertTrue(file.exists());
     files.add(file);
 
     final String tmp = System.getProperty("java.io.tmpdir");
@@ -247,12 +258,12 @@ public class JavaAnalyzerTest extends GradleTestBase {
 
   @Test
   public void analyze09() throws Exception {
-    final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8");
+    final JavaAnalyzer analyzer = getAnalyzer();
     final String cp = getClasspath();
 
     List<File> files = new ArrayList<>();
     final File file = new File("./src/test/java/meghanada/Gen9.java").getCanonicalFile();
-    assert file.exists();
+    assertTrue(file.exists());
     files.add(file);
 
     final String tmp = System.getProperty("java.io.tmpdir");
@@ -272,12 +283,12 @@ public class JavaAnalyzerTest extends GradleTestBase {
 
   @Test
   public void analyze10() throws Exception {
-    final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8");
+    final JavaAnalyzer analyzer = getAnalyzer();
     final String cp = getClasspath();
 
     List<File> files = new ArrayList<>();
     final File file = new File("./src/test/java/meghanada/Gen10.java").getCanonicalFile();
-    assert file.exists();
+    assertTrue(file.exists());
     files.add(file);
 
     final String tmp = System.getProperty("java.io.tmpdir");
@@ -297,12 +308,12 @@ public class JavaAnalyzerTest extends GradleTestBase {
 
   @Test
   public void analyze11() throws Exception {
-    final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8");
+    final JavaAnalyzer analyzer = getAnalyzer();
     final String cp = getClasspath();
 
     List<File> files = new ArrayList<>();
     final File file = new File("./src/test/java/meghanada/Gen11.java").getCanonicalFile();
-    assert file.exists();
+    assertTrue(file.exists());
     files.add(file);
 
     final String tmp = System.getProperty("java.io.tmpdir");
@@ -322,11 +333,11 @@ public class JavaAnalyzerTest extends GradleTestBase {
 
   @Test
   public void analyze12() throws Exception {
-    final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8");
+    final JavaAnalyzer analyzer = getAnalyzer();
     final String cp = getClasspath();
     List<File> files = new ArrayList<>();
     final File file = new File("./src/test/java/meghanada/GenArray1.java").getCanonicalFile();
-    assert file.exists();
+    assertTrue(file.exists());
     files.add(file);
 
     final String tmp = System.getProperty("java.io.tmpdir");
@@ -346,11 +357,11 @@ public class JavaAnalyzerTest extends GradleTestBase {
 
   @Test
   public void analyze13() throws Exception {
-    final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8");
+    final JavaAnalyzer analyzer = getAnalyzer();
     final String cp = getClasspath();
     List<File> files = new ArrayList<>();
     final File file = new File("./src/test/java/meghanada/L1.java").getCanonicalFile();
-    assert file.exists();
+    assertTrue(file.exists());
     files.add(file);
 
     final String tmp = System.getProperty("java.io.tmpdir");
@@ -370,12 +381,12 @@ public class JavaAnalyzerTest extends GradleTestBase {
 
   @Test
   public void analyze14() throws Exception {
-    final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8");
+    final JavaAnalyzer analyzer = getAnalyzer();
     final String cp = getClasspath();
 
     List<File> files = new ArrayList<>();
     final File file = new File("./src/test/java/meghanada/SelfRef1.java").getCanonicalFile();
-    assert file.exists();
+    assertTrue(file.exists());
     files.add(file);
 
     final String tmp = System.getProperty("java.io.tmpdir");
@@ -395,13 +406,13 @@ public class JavaAnalyzerTest extends GradleTestBase {
 
   @Test
   public void analyze15() throws Exception {
-    final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8");
+    final JavaAnalyzer analyzer = getAnalyzer();
     final String cp = getClasspath();
 
     List<File> files = new ArrayList<>();
     final File file =
         new File("./src/main/java/meghanada/server/CommandHandler.java").getCanonicalFile();
-    assert file.exists();
+    assertTrue(file.exists());
     files.add(file);
 
     final String tmp = System.getProperty("java.io.tmpdir");
@@ -416,13 +427,13 @@ public class JavaAnalyzerTest extends GradleTestBase {
 
   @Test
   public void analyze17() throws Exception {
-    final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8");
+    final JavaAnalyzer analyzer = getAnalyzer();
     final String cp = getClasspath();
 
     List<File> files = new ArrayList<>();
     final File file =
         new File("./src/main/java/meghanada/analyze/TreeAnalyzer.java").getCanonicalFile();
-    assert file.exists();
+    assertTrue(file.exists());
     files.add(file);
 
     final String tmp = System.getProperty("java.io.tmpdir");
@@ -437,12 +448,12 @@ public class JavaAnalyzerTest extends GradleTestBase {
 
   @Test
   public void analyze18() throws Exception {
-    final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8");
+    final JavaAnalyzer analyzer = getAnalyzer();
     final String cp = getClasspath();
 
     List<File> files = new ArrayList<>();
     final File file = new File("./src/test/java/meghanada/GenArray1.java").getCanonicalFile();
-    assert file.exists();
+    assertTrue(file.exists());
     files.add(file);
 
     final String tmp = System.getProperty("java.io.tmpdir");
@@ -457,14 +468,14 @@ public class JavaAnalyzerTest extends GradleTestBase {
 
   @Test
   public void analyze19() throws Exception {
-    final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8");
+    final JavaAnalyzer analyzer = getAnalyzer();
     final String cp = getClasspath();
 
     List<File> files = new ArrayList<>();
     final File file =
         new File("./src/main/java/meghanada/reflect/asm/MethodAnalyzeVisitor.java")
             .getCanonicalFile();
-    assert file.exists();
+    assertTrue(file.exists());
     files.add(file);
 
     final String tmp = System.getProperty("java.io.tmpdir");
@@ -479,12 +490,12 @@ public class JavaAnalyzerTest extends GradleTestBase {
 
   @Test
   public void analyze20() throws Exception {
-    final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8");
+    final JavaAnalyzer analyzer = getAnalyzer();
     final String cp = getClasspath();
 
     List<File> files = new ArrayList<>();
     final File file = new File("./src/test/java/meghanada/SelfRef2.java").getCanonicalFile();
-    assert file.exists();
+    assertTrue(file.exists());
     files.add(file);
 
     final String tmp = System.getProperty("java.io.tmpdir");
@@ -499,13 +510,13 @@ public class JavaAnalyzerTest extends GradleTestBase {
 
   @Test
   public void analyze21() throws Exception {
-    final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8");
+    final JavaAnalyzer analyzer = getAnalyzer();
     final String cp = getClasspath();
 
     List<File> files = new ArrayList<>();
     final File file =
         new File("./src/main/java/meghanada/analyze/JavaAnalyzer.java").getCanonicalFile();
-    assert file.exists();
+    assertTrue(file.exists());
     files.add(file);
 
     final String tmp = System.getProperty("java.io.tmpdir");
@@ -520,12 +531,12 @@ public class JavaAnalyzerTest extends GradleTestBase {
 
   @Test
   public void analyze22() throws Exception {
-    final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8");
+    final JavaAnalyzer analyzer = getAnalyzer();
     final String cp = getClasspath();
 
     List<File> files = new ArrayList<>();
     final File file = new File("./src/test/java/meghanada/Gen12.java").getCanonicalFile();
-    assert file.exists();
+    assertTrue(file.exists());
     files.add(file);
 
     final String tmp = System.getProperty("java.io.tmpdir");
@@ -547,7 +558,7 @@ public class JavaAnalyzerTest extends GradleTestBase {
   public void analyzeAll() throws Exception {
     System.setProperty(Source.REPORT_UNKNOWN_TREE, "true");
     // project.clearCache();
-    final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8");
+    final JavaAnalyzer analyzer = getAnalyzer();
     final String cp = getClasspath();
 
     List<File> files =
@@ -589,7 +600,7 @@ public class JavaAnalyzerTest extends GradleTestBase {
   @Test
   public void analyzeFail() throws Exception {
     System.setProperty(Source.REPORT_UNKNOWN_TREE, "false");
-    final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8");
+    final JavaAnalyzer analyzer = getAnalyzer();
     final String cp = getSystemClasspath();
 
     List<File> files =
@@ -625,7 +636,7 @@ public class JavaAnalyzerTest extends GradleTestBase {
 
   @Test
   public void analyzeFromString01() throws Exception {
-    final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8");
+    final JavaAnalyzer analyzer = getAnalyzer();
     final String cp = getClasspath();
 
     final String tmp = System.getProperty("java.io.tmpdir");
@@ -633,12 +644,12 @@ public class JavaAnalyzerTest extends GradleTestBase {
     String code = "class Hello {}";
     CompileResult result = analyzer.runAnalyzeAndCompile(cp, tmp, path, code, false, null);
     String summary = result.getDiagnosticsSummary();
-    assertEquals(result.isSuccess(), true);
+    assertEquals(true, result.isSuccess());
   }
 
   @Test
   public void analyzeFromString02() throws Exception {
-    final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8");
+    final JavaAnalyzer analyzer = getAnalyzer();
     final String cp = getClasspath();
 
     final String tmp = System.getProperty("java.io.tmpdir");
@@ -646,7 +657,7 @@ public class JavaAnalyzerTest extends GradleTestBase {
     String code = "class Hello {a}";
     CompileResult result = analyzer.runAnalyzeAndCompile(cp, tmp, path, code, false, null);
     String summary = result.getDiagnosticsSummary();
-    assertEquals(result.isSuccess(), false);
+    assertEquals(false, result.isSuccess());
   }
 
   private String getClasspath() throws IOException {

@@ -173,7 +173,8 @@ public class GradleProjectTest {
   //    @Ignore
   //    @Test
   //    public void testRunTest() throws Exception {
-  //        try (BufferedReader br = this.project.runTest("meghanada.reflect.asm.ASMReflectorTest")) {
+  //        try (BufferedReader br = this.project.runTest("meghanada.reflect.asm.ASMReflectorTest"))
+  // {
   //            for (; ; ) {
   //                String line = br.readLine();
   //                if (line == null) {

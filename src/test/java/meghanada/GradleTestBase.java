@@ -7,11 +7,13 @@ import com.google.common.io.Files;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import meghanada.config.Config;
+import meghanada.module.ModuleHelper;
 import meghanada.project.Project;
 import meghanada.project.ProjectDependency;
 import meghanada.project.gradle.GradleProject;
@@ -44,7 +46,7 @@ public class GradleTestBase {
       final String path = tempDir.getCanonicalPath();
       System.setProperty(TEMP_PROJECT_SETTING_DIR, path);
       log.info("create database {}", path);
-      project = newProject.parseProject();
+      project = newProject.parseProject().mergeFromProjectConfig();
     }
     Config config = Config.load();
     if (useCache) {
@@ -73,7 +75,16 @@ public class GradleTestBase {
   }
 
   public static File getRTJar() {
-    return new File(Config.load().getJavaHomeDir(), "/lib/rt.jar");
+    Config config = Config.load();
+    if (config.isJava8()) {
+      File jar = new File(Config.load().getJavaHomeDir(), "/lib/rt.jar");
+      if (jar.exists()) {
+        return jar;
+      }
+    } else {
+      return ModuleHelper.getJrtFsFile();
+    }
+    return new File(Config.load().getJavaHomeDir(), "/lib/jrt-fs.jar");
   }
 
   public static Set<File> getJars() {
@@ -92,26 +103,33 @@ public class GradleTestBase {
   }
 
   public static List<File> getSystemJars() {
-    final String javaHome = Config.load().getJavaHomeDir();
-    File jvmDir = new File(javaHome);
-    try {
-      return java.nio.file.Files.walk(jvmDir.toPath())
-          .filter(
-              path -> {
-                String name = path.toFile().getName();
-                return name.endsWith(".jar") && !name.endsWith("policy.jar");
-              })
-          .map(
-              path -> {
-                try {
-                  return path.toFile().getCanonicalFile();
-                } catch (IOException e) {
-                  throw new UncheckedIOException(e);
-                }
-              })
-          .collect(Collectors.toList());
-    } catch (IOException e) {
-      throw new UncheckedIOException(e);
+    Config config = Config.load();
+    if (config.isJava8()) {
+      final String javaHome = Config.load().getJavaHomeDir();
+      File jvmDir = new File(javaHome);
+      try {
+        return java.nio.file.Files.walk(jvmDir.toPath())
+            .filter(
+                path -> {
+                  String name = path.toFile().getName();
+                  return name.endsWith(".jar") && !name.endsWith("policy.jar");
+                })
+            .map(
+                path -> {
+                  try {
+                    return path.toFile().getCanonicalFile();
+                  } catch (IOException e) {
+                    throw new UncheckedIOException(e);
+                  }
+                })
+            .collect(Collectors.toList());
+      } catch (IOException e) {
+        throw new UncheckedIOException(e);
+      }
+    } else {
+      List<File> res = new ArrayList<>(1);
+      res.add(ModuleHelper.getJrtFsFile());
+      return res;
     }
   }
 
@@ -142,7 +160,6 @@ public class GradleTestBase {
     String p = System.getProperty(TEMP_PROJECT_SETTING_DIR);
     File file = new File(p);
     org.apache.commons.io.FileUtils.deleteDirectory(file);
-    assert !file.exists();
     String tempPath = GradleProject.getTempPath();
     if (nonNull(tempPath)) {
       org.apache.commons.io.FileUtils.deleteDirectory(new File(tempPath));

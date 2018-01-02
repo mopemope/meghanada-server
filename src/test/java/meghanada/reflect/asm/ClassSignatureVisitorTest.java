@@ -5,12 +5,14 @@ import static org.junit.Assert.assertEquals;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import meghanada.GradleTestBase;
+import meghanada.module.ModuleHelper;
 import meghanada.reflect.ClassIndex;
 import meghanada.utils.ClassNameUtils;
 import org.junit.AfterClass;
@@ -211,31 +213,59 @@ public class ClassSignatureVisitorTest extends GradleTestBase {
   }
 
   private ClassSignatureVisitor doAnalyze(File file, String fqcn) throws IOException {
-    try (final JarFile jarFile = new JarFile(file)) {
-      final Enumeration<JarEntry> entries = jarFile.entries();
 
-      while (entries.hasMoreElements()) {
-        JarEntry entry = entries.nextElement();
-        String name = entry.getName();
+    if (ModuleHelper.isJrtFsFile(file)) {
 
-        if (name.endsWith(".class")) {
-          // log.debug("class {}", name);
-          try (InputStream in = jarFile.getInputStream(entry)) {
-            ClassReader classReader = new ClassReader(in);
-            String className = classReader.getClassName().replace("/", ".");
+      return ModuleHelper.searchModule(
+              path -> {
+                return ModuleHelper.pathToClassData(path)
+                    .map(
+                        cd -> {
+                          try (final InputStream in = cd.getInputStream()) {
+                            ClassReader classReader = new ClassReader(in);
+                            String className = classReader.getClassName().replace("/", ".");
 
-            if (className.equals(fqcn)) {
-              final int access = classReader.getAccess();
-              TestVisitor testVisitor = new TestVisitor(className);
-              classReader.accept(testVisitor, 0);
-              return testVisitor.getVisitor();
+                            if (className.equals(fqcn)) {
+                              final int access = classReader.getAccess();
+                              TestVisitor testVisitor = new TestVisitor(className);
+                              classReader.accept(testVisitor, 0);
+                              return testVisitor.getVisitor();
+                            }
+                          } catch (IOException ex) {
+                            throw new UncheckedIOException(ex);
+                          }
+                          return null;
+                        })
+                    .orElse(null);
+              })
+          .orElse(null);
+
+    } else {
+      try (final JarFile jarFile = new JarFile(file)) {
+        final Enumeration<JarEntry> entries = jarFile.entries();
+
+        while (entries.hasMoreElements()) {
+          JarEntry entry = entries.nextElement();
+          String name = entry.getName();
+
+          if (name.endsWith(".class")) {
+            // log.debug("class {}", name);
+            try (InputStream in = jarFile.getInputStream(entry)) {
+              ClassReader classReader = new ClassReader(in);
+              String className = classReader.getClassName().replace("/", ".");
+
+              if (className.equals(fqcn)) {
+                final int access = classReader.getAccess();
+                TestVisitor testVisitor = new TestVisitor(className);
+                classReader.accept(testVisitor, 0);
+                return testVisitor.getVisitor();
+              }
             }
           }
         }
       }
-
-      return null;
     }
+    return null;
   }
 
   private static class TestVisitor extends ClassVisitor {

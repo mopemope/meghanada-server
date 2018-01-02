@@ -10,6 +10,7 @@ import java.io.File;
 import java.util.List;
 import java.util.Map;
 import meghanada.GradleTestBase;
+import meghanada.config.Config;
 import meghanada.reflect.ClassIndex;
 import meghanada.reflect.MemberDescriptor;
 import meghanada.reflect.MethodDescriptor;
@@ -49,8 +50,14 @@ public class ASMReflectorTest extends GradleTestBase {
     File jar = getRTJar();
     ASMReflector asmReflector = ASMReflector.getInstance();
     Map<ClassIndex, File> classIndex = timeIt(() -> asmReflector.getClasses(jar));
-    assertEquals(4105, classIndex.size());
-    //        classIndex.forEach((classIndex1, file) -> System.out.println(classIndex1));
+    Config config = Config.load();
+
+    if (config.isJava8()) {
+      assertEquals(4105, classIndex.size());
+    } else {
+      assertEquals(6940, classIndex.size());
+    }
+    // classIndex.forEach((i, file) -> System.out.println(i));
   }
 
   @Test
@@ -106,10 +113,15 @@ public class ASMReflectorTest extends GradleTestBase {
       stopwatch.start();
       List<MemberDescriptor> memberDescriptors = asmReflector.reflectAll(info);
       System.out.println(stopwatch.stop());
-      memberDescriptors.forEach(m -> System.out.println(m.getDisplayDeclaration()));
-      assertEquals(34, memberDescriptors.size());
-      stopwatch.reset();
+      // memberDescriptors.forEach(m -> System.out.println(m.getDeclaration()));
 
+      Config config = Config.load();
+      if (config.isJava8()) {
+        assertEquals(34, memberDescriptors.size());
+      } else {
+        assertEquals(47, memberDescriptors.size());
+      }
+      stopwatch.reset();
       memberDescriptors
           .stream()
           .filter(memberDescriptor -> memberDescriptor.getName().equals("entrySet"))
@@ -142,7 +154,12 @@ public class ASMReflectorTest extends GradleTestBase {
       List<MemberDescriptor> memberDescriptors = asmReflector.reflectAll(info);
       System.out.println(stopwatch.stop());
       memberDescriptors.forEach(m -> System.out.println(m.getDisplayDeclaration()));
-      assertEquals(13, memberDescriptors.size());
+      Config config = Config.load();
+      if (config.isJava8()) {
+        assertEquals(13, memberDescriptors.size());
+      } else {
+        assertEquals(14, memberDescriptors.size());
+      }
       stopwatch.reset();
     }
   }
@@ -161,7 +178,12 @@ public class ASMReflectorTest extends GradleTestBase {
       List<MemberDescriptor> memberDescriptors = asmReflector.reflectAll(info);
       System.out.println(stopwatch.stop());
       memberDescriptors.forEach(m -> System.out.println(m.getDisplayDeclaration()));
-      assertEquals(34, memberDescriptors.size());
+      Config config = Config.load();
+      if (config.isJava8()) {
+        assertEquals(34, memberDescriptors.size());
+      } else {
+        assertEquals(47, memberDescriptors.size());
+      }
       stopwatch.reset();
     }
   }
@@ -228,7 +250,13 @@ public class ASMReflectorTest extends GradleTestBase {
       stopwatch.start();
       List<MemberDescriptor> md = asmReflector.reflectAll(info);
       System.out.println(stopwatch.stop());
-      assertEquals(100, md.size());
+
+      Config config = Config.load();
+      if (config.isJava8()) {
+        assertEquals(100, md.size());
+      } else {
+        assertEquals(109, md.size());
+      }
     }
   }
 
@@ -246,12 +274,17 @@ public class ASMReflectorTest extends GradleTestBase {
               () -> {
                 return asmReflector.reflectAll(info);
               });
-      memberDescriptors1.sort((o1, o2) -> o1.getName().compareTo(o2.getName()));
-      memberDescriptors1.forEach(
-          memberDescriptor -> {
-            System.out.println(memberDescriptor.getDisplayDeclaration());
-          });
-      assertEquals(41, memberDescriptors1.size());
+      // memberDescriptors1.sort((o1, o2) -> o1.getName().compareTo(o2.getName()));
+      // memberDescriptors1.forEach(
+      //     memberDescriptor -> {
+      //       System.out.println(memberDescriptor.getDisplayDeclaration());
+      //     });
+      Config config = Config.load();
+      if (config.isJava8()) {
+        assertEquals(41, memberDescriptors1.size());
+      } else {
+        assertEquals(53, memberDescriptors1.size());
+      }
     }
   }
 

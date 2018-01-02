@@ -109,7 +109,11 @@ public class TreeAnalyzer {
         if (nonNull(typeArguments)) {
           java.util.List<String> temp = new ArrayList<>(typeArguments.length());
           for (JCTree.JCExpression e : typeArguments) {
-            getExpressionType(src, e).ifPresent(fqcn -> markFQCN(src, fqcn));
+            getExpressionType(src, e)
+                .ifPresent(
+                    fqcn -> {
+                      String ignore = TreeAnalyzer.markFQCN(src, fqcn);
+                    });
           }
         }
 
@@ -401,13 +405,21 @@ public class TreeAnalyzer {
     src.setClassStartLine(firstLine);
   }
 
-  private static void analyzePackageName(CompilationUnitTree cut, Source src) {
+  private static void analyzePackageName(
+      CompilationUnitTree cut, Source src, EndPosTable endPosTable) {
     ExpressionTree packageExpr = cut.getPackageName();
-
     if (isNull(packageExpr)) {
       src.setPackageName("");
     } else {
       src.setPackageName(packageExpr.toString());
+    }
+    if (packageExpr instanceof JCTree.JCIdent) {
+      JCTree.JCIdent ident = (JCTree.JCIdent) packageExpr;
+      int startPos = ident.getPreferredPosition();
+      int endPos = ident.getEndPosition(endPosTable);
+      Range range = Range.create(src, startPos + 1, endPos);
+      long pkgLine = range.begin.line;
+      src.setPackageStartLine(pkgLine);
     }
   }
 
@@ -418,7 +430,7 @@ public class TreeAnalyzer {
     EndPosTable endPosTable = ((JCTree.JCCompilationUnit) cut).endPositions;
     context.setEndPosTable(endPosTable);
 
-    analyzePackageName(cut, src);
+    analyzePackageName(cut, src, endPosTable);
 
     analyzeImports(cut, src, endPosTable);
 
@@ -1308,7 +1320,11 @@ public class TreeAnalyzer {
     } else if (kind.equals(ElementKind.ENUM)) {
 
       if (nonNull(sym.type)) {
-        getTypeString(src, sym.type).ifPresent(fqcn -> TreeAnalyzer.markFQCN(src, fqcn));
+        getTypeString(src, sym.type)
+            .ifPresent(
+                fqcn -> {
+                  String ignore = TreeAnalyzer.markFQCN(src, fqcn);
+                });
       }
 
     } else if (kind.equals(ElementKind.ENUM_CONSTANT)) {
@@ -1330,15 +1346,27 @@ public class TreeAnalyzer {
       // skip
     } else if (kind.equals(ElementKind.CLASS)) {
       if (nonNull(sym.type)) {
-        getTypeString(src, sym.type).ifPresent(fqcn -> TreeAnalyzer.markFQCN(src, fqcn));
+        getTypeString(src, sym.type)
+            .ifPresent(
+                fqcn -> {
+                  String ignore = TreeAnalyzer.markFQCN(src, fqcn);
+                });
       }
     } else if (kind.equals(ElementKind.INTERFACE)) {
       if (nonNull(sym.type)) {
-        getTypeString(src, sym.type).ifPresent(fqcn -> TreeAnalyzer.markFQCN(src, fqcn));
+        getTypeString(src, sym.type)
+            .ifPresent(
+                fqcn -> {
+                  String ignore = TreeAnalyzer.markFQCN(src, fqcn);
+                });
       }
     } else if (kind.equals(ElementKind.ANNOTATION_TYPE)) {
       if (nonNull(sym.type)) {
-        getTypeString(src, sym.type).ifPresent(fqcn -> TreeAnalyzer.markFQCN(src, fqcn));
+        getTypeString(src, sym.type)
+            .ifPresent(
+                fqcn -> {
+                  String ignore = TreeAnalyzer.markFQCN(src, fqcn);
+                });
       }
     } else {
       log.warn("other kind:{}", kind);
@@ -1540,13 +1568,16 @@ public class TreeAnalyzer {
       }
 
       for (ClassScope classScope : src.classScopes) {
-        String className = currentClass.get().name;
-        if (ClassNameUtils.getSimpleName(className).equals(nm)) {
-          variable.fqcn = TreeAnalyzer.markFQCN(src, className);
-          variable.argumentIndex = context.getArgumentIndex();
-          context.setArgumentFQCN(variable.fqcn);
-          src.getCurrentScope().ifPresent(scope -> scope.addVariable(variable));
-        }
+        currentClass.ifPresent(
+            cs -> {
+              String className = cs.name;
+              if (ClassNameUtils.getSimpleName(className).equals(nm)) {
+                variable.fqcn = TreeAnalyzer.markFQCN(src, className);
+                variable.argumentIndex = context.getArgumentIndex();
+                context.setArgumentFQCN(variable.fqcn);
+                src.getCurrentScope().ifPresent(scope -> scope.addVariable(variable));
+              }
+            });
       }
 
       // mark unknown

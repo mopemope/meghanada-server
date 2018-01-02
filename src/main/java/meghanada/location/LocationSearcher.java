@@ -25,6 +25,8 @@ import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -478,12 +480,25 @@ public class LocationSearcher {
   private Location searchFromSrcZip(final SearchContext context) throws IOException {
 
     final String javaHomeDir = Config.load().getJavaHomeDir();
-    File srcZip = new File(javaHomeDir, "src.zip");
-    if (!srcZip.exists()) {
-      srcZip = new File(new File(javaHomeDir).getParentFile(), "src.zip");
-    }
-    if (!srcZip.exists()) {
-      return null;
+    File srcZip = null;
+
+    Config config = Config.load();
+    if (config.isJava8()) {
+      srcZip = new File(javaHomeDir, "src.zip");
+      if (!srcZip.exists()) {
+        srcZip = new File(new File(javaHomeDir).getParentFile(), "src.zip");
+      }
+      if (!srcZip.exists()) {
+        return null;
+      }
+    } else {
+      srcZip = new File(javaHomeDir + File.separator + "lib", "src.zip");
+      if (!srcZip.exists()) {
+        srcZip = new File(new File(javaHomeDir).getParentFile(), "src.zip");
+      }
+      if (!srcZip.exists()) {
+        return null;
+      }
     }
 
     final String fqcn = ClassNameUtils.getParentClass(context.searchFQCN);
@@ -653,9 +668,23 @@ public class LocationSearcher {
     }
     try (final ZipFile srcZipFile = new ZipFile(srcZip)) {
       final String s = ClassNameUtils.replace(searchFQCN, ".", "/") + FileUtils.JAVA_EXT;
-      final ZipEntry entry = srcZipFile.getEntry(s);
+      ZipEntry entry = srcZipFile.getEntry(s);
       if (entry == null) {
-        return null;
+        Optional<? extends ZipEntry> zipEntry =
+            srcZipFile
+                .stream()
+                .filter(
+                    e -> {
+                      Path p = Paths.get(e.getName());
+                      Path subpath = p.subpath(1, p.getNameCount());
+                      return subpath.toString().equals(s);
+                    })
+                .findFirst();
+
+        if (!zipEntry.isPresent()) {
+          return null;
+        }
+        entry = zipEntry.get();
       }
 
       String tmpdir = System.getProperty("java.io.tmpdir");

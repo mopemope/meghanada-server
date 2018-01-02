@@ -315,9 +315,9 @@ public class ClassNameUtils {
             }
             continue;
           case '<':
-            //if (indent == 0) {
+            // if (indent == 0) {
             sb.append(c);
-            //}
+            // }
             indent++;
             continue;
           case '>':
@@ -388,16 +388,16 @@ public class ClassNameUtils {
             }
             continue;
           case '<':
-            //if (indent == 0) {
+            // if (indent == 0) {
             sb.append(c);
-            //}
+            // }
             indent++;
             continue;
           case '>':
             indent--;
-            //if (indent == 0) {
+            // if (indent == 0) {
             sb.append(c);
-            //}
+            // }
             continue;
           case ' ':
             if (wild) {

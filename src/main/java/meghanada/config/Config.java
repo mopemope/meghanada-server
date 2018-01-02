@@ -10,6 +10,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URISyntaxException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -37,6 +38,8 @@ public class Config {
   private boolean debug;
   private List<String> includeList;
   private List<String> excludeList;
+  private List<String> java8JavacArgs = new ArrayList<>(8);
+  private List<String> java9JavacArgs = new ArrayList<>(8);
   private boolean buildWithDependency = true;
 
   private Config() {
@@ -63,6 +66,10 @@ public class Config {
     log.debug("fast-boot:{}", useFastBoot());
     log.debug("class-fuzzy-search:{}", useClassFuzzySearch());
     log.debug("javac-arg:{}", getJavacArg());
+    log.debug("cache-in-project:{}", isCacheInProject());
+    if (!isCacheInProject()) {
+      log.debug("cache-root:{}", getCacheRoot());
+    }
   }
 
   public static Config load() {
@@ -260,7 +267,7 @@ public class Config {
     }
   }
 
-  private String getJavaVersion() {
+  public String getJavaVersion() {
     return c.getString("java-version");
   }
 
@@ -359,8 +366,40 @@ public class Config {
     this.c = newConfig;
   }
 
+  public boolean isJava8() {
+    return getJavaVersion().equals("1.8");
+  }
+
+  public boolean isJava9() {
+    return getJavaVersion().equals("9");
+  }
+
   public boolean useAOSPStyle() {
     return c.getBoolean("aosp-style");
+  }
+
+  public void setJava8JavacArgs(List<String> lst) {
+    this.java8JavacArgs = lst;
+  }
+
+  public List<String> getJava8JavacArgs() {
+    return this.java8JavacArgs;
+  }
+
+  public void setJava9JavacArgs(List<String> lst) {
+    this.java8JavacArgs = lst;
+  }
+
+  public List<String> getJava9JavacArgs() {
+    return this.java8JavacArgs;
+  }
+
+  public String getCacheRoot() {
+    return c.getString("cache-root");
+  }
+
+  public boolean isCacheInProject() {
+    return c.getBoolean("cache-in-project");
   }
 
   @FunctionalInterface

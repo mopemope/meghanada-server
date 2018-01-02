@@ -3,6 +3,7 @@ package meghanada.analyze;
 import static meghanada.config.Config.timeIt;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.io.IOException;
@@ -12,6 +13,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import meghanada.GradleTestBase;
+import meghanada.config.Config;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -29,14 +31,22 @@ public class SourceTest extends GradleTestBase {
     GradleTestBase.shutdown();
   }
 
+  private JavaAnalyzer getAnalyzer() {
+    JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8");
+    if (Config.load().isJava9()) {
+      analyzer = new JavaAnalyzer("9", "9");
+    }
+    return analyzer;
+  }
+
   @Test
   public void testOptimizeImports01() throws Exception {
-    final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8");
+    final JavaAnalyzer analyzer = getAnalyzer();
     final String cp = getClasspath();
 
     List<File> files = new ArrayList<>();
     final File file = new File("./src/test/java/meghanada/Opt.java").getCanonicalFile();
-    assert file.exists();
+    assertTrue(file.exists());
     files.add(file);
 
     final String tmp = System.getProperty("java.io.tmpdir");
@@ -55,13 +65,13 @@ public class SourceTest extends GradleTestBase {
 
   @Test
   public void testOptimizeImports02() throws Exception {
-    final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8");
+    final JavaAnalyzer analyzer = getAnalyzer();
     final String cp = getClasspath();
 
     List<File> files = new ArrayList<>();
     final File file =
         new File("./src/main/java/meghanada/server/emacs/EmacsServer.java").getCanonicalFile();
-    assert file.exists();
+    assertTrue(file.exists());
     files.add(file);
 
     final String tmp = System.getProperty("java.io.tmpdir");
@@ -80,13 +90,12 @@ public class SourceTest extends GradleTestBase {
 
   @Test
   public void testOptimizeImports03() throws Exception {
-
-    final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8");
+    final JavaAnalyzer analyzer = getAnalyzer();
     final String cp = getClasspath();
 
     List<File> files = new ArrayList<>();
     final File file = new File("./src/test/java/meghanada/Opt2.java").getCanonicalFile();
-    assert file.exists();
+    assertTrue(file.exists());
     files.add(file);
 
     final String tmp = System.getProperty("java.io.tmpdir");
@@ -104,13 +113,37 @@ public class SourceTest extends GradleTestBase {
   }
 
   @Test
+  public void testOptimizeImports04() throws Exception {
+    final JavaAnalyzer analyzer = getAnalyzer();
+    final String cp = getClasspath();
+
+    List<File> files = new ArrayList<>();
+    final File file = new File("./src/test/java/meghanada/Opt3.java").getCanonicalFile();
+    assertTrue(file.exists());
+    files.add(file);
+
+    final String tmp = System.getProperty("java.io.tmpdir");
+
+    final Source source =
+        timeIt(
+            () -> {
+              final CompileResult compileResult = analyzer.analyzeAndCompile(files, cp, tmp, false);
+              return compileResult.getSources().get(file);
+            });
+
+    List<String> optimizeImports = timeIt(source::optimizeImports);
+    optimizeImports.forEach(System.out::println);
+    assertEquals(2, optimizeImports.size());
+  }
+
+  @Test
   public void testMissingImports1() throws Exception {
-    final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8");
+    final JavaAnalyzer analyzer = getAnalyzer();
     final String cp = getClasspath();
 
     List<File> files = new ArrayList<>();
     final File file = new File("./src/test/resources/meghanada/AnnoTest1.java").getCanonicalFile();
-    assert file.exists();
+    assertTrue(file.exists());
     files.add(file);
 
     final String tmp = System.getProperty("java.io.tmpdir");
@@ -129,12 +162,12 @@ public class SourceTest extends GradleTestBase {
 
   @Test
   public void testMissingImports2() throws Exception {
-    final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8");
+    final JavaAnalyzer analyzer = getAnalyzer();
     final String cp = getClasspath();
 
     List<File> files = new ArrayList<>();
     final File file = new File("./src/test/resources/meghanada/AnnoTest2.java").getCanonicalFile();
-    assert file.exists();
+    assertTrue(file.exists());
     files.add(file);
 
     final String tmp = System.getProperty("java.io.tmpdir");
@@ -157,12 +190,12 @@ public class SourceTest extends GradleTestBase {
 
   @Test
   public void testMissingImports3() throws Exception {
-    final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8");
+    final JavaAnalyzer analyzer = getAnalyzer();
     final String cp = getClasspath();
 
     List<File> files = new ArrayList<>();
     final File file = new File("./src/test/resources/MissingImport3.java").getCanonicalFile();
-    assert file.exists();
+    assertTrue(file.exists());
     files.add(file);
 
     final String tmp = System.getProperty("java.io.tmpdir");
@@ -185,12 +218,12 @@ public class SourceTest extends GradleTestBase {
 
   @Test
   public void testMissingImports4() throws Exception {
-    final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8");
+    final JavaAnalyzer analyzer = getAnalyzer();
     final String cp = getClasspath();
 
     List<File> files = new ArrayList<>();
     final File file = new File("./src/test/resources/MissingImport4.java").getCanonicalFile();
-    assert file.exists();
+    assertTrue(file.exists());
     files.add(file);
 
     final String tmp = System.getProperty("java.io.tmpdir");
@@ -241,13 +274,13 @@ public class SourceTest extends GradleTestBase {
 
   @Test
   public void testSource01() throws Exception {
-    final JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8");
+    final JavaAnalyzer analyzer = getAnalyzer();
     final String cp = getClasspath();
 
     List<File> files = new ArrayList<>();
     final File file =
         new File("./src/main/java/meghanada/analyze/ClassScope.java").getCanonicalFile();
-    assert file.exists();
+    assertTrue(file.exists());
     files.add(file);
 
     final String tmp = System.getProperty("java.io.tmpdir");

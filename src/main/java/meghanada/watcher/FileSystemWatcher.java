@@ -195,8 +195,7 @@ public class FileSystemWatcher {
 
     void sweep() {
       for (final Iterator<Map.Entry<WatchKey, Path>> it = watchKeys.entrySet().iterator();
-          it.hasNext();
-          ) {
+          it.hasNext(); ) {
         final Map.Entry<WatchKey, Path> entry = it.next();
         if (Files.notExists(entry.getValue(), LinkOption.NOFOLLOW_LINKS)) {
           entry.getKey().cancel();

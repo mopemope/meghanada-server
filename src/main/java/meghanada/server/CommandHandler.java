@@ -25,6 +25,7 @@ import meghanada.reflect.CandidateUnit;
 import meghanada.session.Session;
 import meghanada.typeinfo.TypeInfo;
 import meghanada.utils.ClassNameUtils;
+import org.apache.commons.lang3.time.StopWatch;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -337,7 +338,7 @@ public class CommandHandler {
     }
   }
 
-  public void execMain(final long id, String path, boolean debug) {
+  public void execMain(long id, String path, boolean debug) {
     InputStream in = null;
     try {
       in = this.session.execMain(path, debug);
@@ -352,18 +353,27 @@ public class CommandHandler {
       return;
     }
 
-    try (final BufferedReader reader =
+    try (BufferedReader reader =
         new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8))) {
 
       String s;
+      boolean start = false;
+      StopWatch stopWatch = StopWatch.createStarted();
       while ((s = reader.readLine()) != null) {
         if (!s.startsWith("SLF4J: ")) {
+          if (!start) {
+            writer.write("run main: " + path);
+            writer.newLine();
+            start = true;
+          }
           writer.write(s);
           writer.newLine();
           writer.flush();
         }
       }
-
+      writer.write("fin: " + path);
+      writer.newLine();
+      writer.write("elapsed: " + stopWatch.toString());
       writer.newLine();
     } catch (Throwable t) {
       writeError(id, t);

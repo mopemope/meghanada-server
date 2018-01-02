@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -11,6 +12,7 @@ import java.util.Map;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import meghanada.GradleTestBase;
+import meghanada.module.ModuleHelper;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -70,7 +72,7 @@ public class FieldSignatureVisitorTest extends GradleTestBase {
     String fqcn = "meghanada.reflect.asm.MethodAnalyzeVisitor";
     TestVisitor visitor = doAnalyze(f, fqcn);
     System.out.println(visitor.result.get("lvtSlotIndex"));
-    //System.out.println(visitor.classFileMap);
+    // System.out.println(visitor.classFileMap);
     visitor
         .result
         .entrySet()
@@ -99,28 +101,56 @@ public class FieldSignatureVisitorTest extends GradleTestBase {
   }
 
   private FieldSignatureVisitor doAnalyzeJar(File file, String fqcn) throws IOException {
-    try (final JarFile jarFile = new JarFile(file)) {
-      Enumeration<JarEntry> entries = jarFile.entries();
+    if (ModuleHelper.isJrtFsFile(file)) {
 
-      while (entries.hasMoreElements()) {
-        JarEntry entry = entries.nextElement();
-        String name = entry.getName();
+      return ModuleHelper.searchModule(
+              path -> {
+                return ModuleHelper.pathToClassData(path)
+                    .map(
+                        cd -> {
+                          try (final InputStream in = cd.getInputStream()) {
+                            ClassReader classReader = new ClassReader(in);
+                            String className = classReader.getClassName().replace("/", ".");
 
-        if (name.endsWith(".class")) {
-          // log.debug("class {}", name);
-          try (InputStream in = jarFile.getInputStream(entry)) {
-            ClassReader classReader = new ClassReader(in);
-            String className = classReader.getClassName().replace("/", ".");
+                            if (className.equals(fqcn)) {
+                              final int access = classReader.getAccess();
+                              TestVisitor testVisitor = new TestVisitor(className);
+                              classReader.accept(testVisitor, 0);
+                              return testVisitor.getVisitor();
+                            }
+                          } catch (IOException ex) {
+                            throw new UncheckedIOException(ex);
+                          }
+                          return null;
+                        })
+                    .orElse(null);
+              })
+          .orElse(null);
 
-            if (className.equals(fqcn)) {
-              TestVisitor testVisitor = new TestVisitor(className);
-              classReader.accept(testVisitor, 0);
-              return testVisitor.getVisitor();
+    } else {
+      try (final JarFile jarFile = new JarFile(file)) {
+        Enumeration<JarEntry> entries = jarFile.entries();
+
+        while (entries.hasMoreElements()) {
+          JarEntry entry = entries.nextElement();
+          String name = entry.getName();
+
+          if (name.endsWith(".class")) {
+            // log.debug("class {}", name);
+            try (InputStream in = jarFile.getInputStream(entry)) {
+              ClassReader classReader = new ClassReader(in);
+              String className = classReader.getClassName().replace("/", ".");
+
+              if (className.equals(fqcn)) {
+                TestVisitor testVisitor = new TestVisitor(className);
+                classReader.accept(testVisitor, 0);
+                return testVisitor.getVisitor();
+              }
             }
           }
         }
+        return null;
       }
-      return null;
     }
   }
 

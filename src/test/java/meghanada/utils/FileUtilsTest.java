@@ -29,7 +29,11 @@ public class FileUtilsTest {
     final String sum =
         timeIt(
             () -> {
-              return FileUtils.getChecksum(new File(javaHome + "/lib/rt.jar").getCanonicalFile());
+              File jar = new File(javaHome, "/lib/rt.jar");
+              if (!jar.exists()) {
+                jar = new File(javaHome, "/lib/jrt-fs.jar");
+              }
+              return FileUtils.getChecksum(jar.getCanonicalFile());
             });
     System.out.println(sum);
   }

@@ -2,11 +2,14 @@ package meghanada.utils;
 
 import static java.util.Objects.isNull;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.UncheckedIOException;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
@@ -29,6 +32,7 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import meghanada.analyze.Source;
@@ -325,6 +329,27 @@ public final class FileUtils {
       return Collections.emptyList();
     }
     return lines;
+  }
+
+  public static void readRangeLines(File file, long start, long end, Consumer<String> fn)
+      throws IOException {
+
+    try (final BufferedReader br =
+        new BufferedReader(
+            new InputStreamReader(new FileInputStream(file), Charset.forName("UTF-8")))) {
+      String s = null;
+      long i = 0;
+      while ((s = br.readLine()) != null) {
+        if (start > i) {
+          continue;
+        }
+        if (end >= 0 && end <= i) {
+          return;
+        }
+        fn.accept(s);
+        i++;
+      }
+    }
   }
 
   public static void formatJavaFile(final Properties properties, final String path)

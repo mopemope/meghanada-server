@@ -303,6 +303,10 @@ class ProjectDatabase {
         String dir = config.getProjectSettingDir();
 
         File root = new File(dir);
+        if (!config.isCacheInProject()) {
+          String cacheRoot = config.getCacheRoot();
+          root = new File(cacheRoot);
+        }
         if (root.exists() && root.isFile()) {
           root = root.getParentFile();
         }
@@ -318,9 +322,13 @@ class ProjectDatabase {
             Hashing.sha256()
                 .newHasher()
                 .putString(Main.getVersion(), StandardCharsets.UTF_8)
+                .putString(config.getJavaVersion(), StandardCharsets.UTF_8)
+                .putString(config.getJavaHomeDir(), StandardCharsets.UTF_8)
+                .putString(dir, StandardCharsets.UTF_8)
                 .hash()
                 .toString();
-        File base = new File(root, name + '_' + hash.substring(0, 8));
+
+        File base = new File(root, name + '_' + hash.substring(0, 16));
 
         File[] files = root.listFiles();
         if (nonNull(files)) {
@@ -347,10 +355,6 @@ class ProjectDatabase {
     } catch (IOException e) {
       throw new UncheckedIOException(e);
     }
-  }
-
-  public String getProjectRoot() {
-    return projectRoot;
   }
 
   public <R> boolean execute(Function<StoreTransaction, Boolean> fn) {

@@ -32,12 +32,12 @@ public class JavaVariableCompletionTest extends GradleTestBase {
     Optional<LocalVariable> olv =
         timeIt(
             () -> {
-              return completion.localVariable(file, 20);
+              return completion.localVariable(file, 24);
             });
     LocalVariable lv = olv.get();
     System.out.println(lv);
     assertEquals("java.lang.String", lv.getReturnFQCN());
-    assertEquals(lv.getCandidates().size(), 4);
+    assertEquals(4, lv.getCandidates().size());
   }
 
   @Test
@@ -54,7 +54,7 @@ public class JavaVariableCompletionTest extends GradleTestBase {
             });
     LocalVariable lv = olv.get();
     System.out.println(lv);
-    assertEquals(lv.getCandidates().size(), 2);
+    assertEquals(2, lv.getCandidates().size());
   }
 
   @Test
@@ -70,7 +70,7 @@ public class JavaVariableCompletionTest extends GradleTestBase {
             });
     LocalVariable lv = olv.get();
     System.out.println(lv);
-    assertEquals(lv.getCandidates().size(), 4);
+    assertEquals(4, lv.getCandidates().size());
   }
 
   @Test
@@ -86,7 +86,7 @@ public class JavaVariableCompletionTest extends GradleTestBase {
             });
     LocalVariable lv = olv.get();
     System.out.println(lv);
-    assertEquals(lv.getCandidates().size(), 5);
+    assertEquals(5, lv.getCandidates().size());
   }
 
   @Test
@@ -103,7 +103,7 @@ public class JavaVariableCompletionTest extends GradleTestBase {
 
     LocalVariable lv = olv.get();
     System.out.println(lv);
-    assertEquals(lv.getCandidates().size(), 6);
+    assertEquals(6, lv.getCandidates().size());
   }
 
   @Test
@@ -119,7 +119,7 @@ public class JavaVariableCompletionTest extends GradleTestBase {
             });
     LocalVariable lv = olv.get();
     System.out.println(lv);
-    assertEquals(lv.getCandidates().size(), 4);
+    assertEquals(4, lv.getCandidates().size());
   }
 
   private JavaVariableCompletion getCompilation() throws Exception {
