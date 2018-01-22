@@ -1,0 +1,27 @@
+version: 2
+jobs:
+  build:
+
+    working_directory: ~/meghanada-server
+
+    docker:
+      - image: circleci/openjdk:8-jdk-browsers
+
+    steps:
+
+      - checkout
+
+      - restore_cache:
+          key: meghanada-server-{{ checksum "build.gradle" }}
+
+      - run: ./gradlew clean build
+
+      - save_cache:
+          paths:
+            - ~/.gradle
+          key: meghanada-server-{{ checksum "build.gradle" }}
+
+      - run: ./gradlew clean goJF check installEmacs
+
+      - store_artifacts:
+          path: ./build/libs/meghanada-0.9.1.jar
