@@ -23,7 +23,7 @@ ext {
   longVersion = "$serverVersion-${buildVersion}"
   date = new Date().format("yyyy-MM-dd'T'HH:mm:ssZ")
 
-  gradleVersion = '4.4.1'
+  gradleVersion = '4.5'
   log4jVersion = '2.10.0'
   xodusVersion = '1.1.0'
 }
