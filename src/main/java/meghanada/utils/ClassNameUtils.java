@@ -28,6 +28,7 @@ public class ClassNameUtils {
   public static final String ARRAY = "[]";
   private static final String VA_ARGS = "...";
   private static final String SLASH = "/";
+  private static final String WINDOWS_SLASH = "\\";
   private static final String DOT_SEPARATOR = ".";
   private static final Map<String, String> removeCaptureMap;
   private static final Map<String, String> removeTypeValMap;
@@ -165,6 +166,8 @@ public class ClassNameUtils {
     final StringBuilder sb = new StringBuilder(string);
     final int start = sb.indexOf(SLASH, 0);
     replaceString(sb, SLASH, ClassNameUtils.DOT_SEPARATOR, start);
+    final int start2 = sb.indexOf(WINDOWS_SLASH, 0);
+    replaceString(sb, WINDOWS_SLASH, ClassNameUtils.DOT_SEPARATOR, start2);
     return sb.toString();
   }
 
