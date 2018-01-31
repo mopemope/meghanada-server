@@ -251,7 +251,7 @@ public class SourceTest extends GradleTestBase {
 
     List<File> files = new ArrayList<>();
     final File file = new File("./src/test/resources/MissingImport5.java").getCanonicalFile();
-    assert file.exists();
+    assertTrue(file.exists());
     files.add(file);
 
     final String tmp = System.getProperty("java.io.tmpdir");
