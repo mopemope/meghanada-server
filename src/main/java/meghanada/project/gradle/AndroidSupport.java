@@ -32,6 +32,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.gradle.tooling.BuildLauncher;
 import org.gradle.tooling.GradleConnector;
+import org.gradle.tooling.ModelBuilder;
 import org.gradle.tooling.ProjectConnection;
 
 class AndroidSupport {
@@ -61,9 +62,13 @@ class AndroidSupport {
   private String genSourceTaskName = ":generateDebugSources";
   private String genUnitTestTaskName = ":prepareDebugUnitTestDependencies";
   private String genAndroidTestTaskName = ":generateDebugAndroidTestSources";
+  private int apiVersion;
+  private String modelVersion;
 
   AndroidSupport(final GradleProject project) {
     this.project = project;
+    this.apiVersion = project.getAndroidApiVersion();
+    this.modelVersion = project.getAndroidModelVersion();
   }
 
   static AndroidProject getAndroidProject(
@@ -71,10 +76,16 @@ class AndroidSupport {
     String path = gradleProject.getPath();
     String name = path.substring(1);
     File childDir = new File(root, name);
+    File projectDirectory = gradleProject.getProjectDirectory();
     GradleConnector childConnector = GradleConnector.newConnector().forProjectDirectory(childDir);
     ProjectConnection childConnection = childConnector.connect();
     try {
-      return childConnection.getModel(AndroidProject.class);
+      ModelBuilder<AndroidProject> modelBuilder = childConnection.model(AndroidProject.class);
+      if (nonNull(modelBuilder)) {
+        AndroidProject androidProject = modelBuilder.get();
+        return androidProject;
+      }
+      return null;
     } catch (Exception e) {
       return null;
     } finally {
@@ -140,7 +151,6 @@ class AndroidSupport {
   }
 
   void parseAndroidProject(AndroidProject androidProject) throws IOException {
-
     JavaCompileOptions javaCompileOptions = androidProject.getJavaCompileOptions();
     this.project.setCompileSource(javaCompileOptions.getSourceCompatibility());
     this.project.setCompileTarget(javaCompileOptions.getTargetCompatibility());
@@ -257,11 +267,11 @@ class AndroidSupport {
         }
       }
 
-      Dependencies compileDependencies = mainArtifact.getCompileDependencies();
+      Dependencies compileDependencies = mainArtifact.getDependencies();
       Collection<AndroidLibrary> libraries = compileDependencies.getLibraries();
       for (AndroidLibrary androidLibrary : libraries) {
         String project = androidLibrary.getProject();
-        if (nonNull(project)) {
+        if (nonNull(project) && !androidLibrary.isProvided()) {
           if (project.startsWith(":")) {
             project = project.substring(1);
           }
@@ -302,7 +312,7 @@ class AndroidSupport {
         }
       }
 
-      Dependencies compileDependencies = javaArtifact.getCompileDependencies();
+      Dependencies compileDependencies = javaArtifact.getDependencies();
       Collection<AndroidLibrary> libraries = compileDependencies.getLibraries();
       for (AndroidLibrary androidLibrary : libraries) {
         Collection<File> localJars = androidLibrary.getLocalJars();
@@ -347,7 +357,7 @@ class AndroidSupport {
         }
       }
 
-      Dependencies compileDependencies = androidArtifact.getCompileDependencies();
+      Dependencies compileDependencies = androidArtifact.getDependencies();
       // getLibraries
       Collection<AndroidLibrary> libraries = compileDependencies.getLibraries();
       for (AndroidLibrary androidLibrary : libraries) {
@@ -430,6 +440,17 @@ class AndroidSupport {
   }
 
   void prepareCompileAndroidTestJava() {
+    log.info("Use android api version : {}", this.apiVersion);
+    if (this.apiVersion > 2) {
+      // 3.0.0+
+      prepareCompileAndroidTestJavaV3();
+    } else {
+      // 2.x.x
+      prepareCompileAndroidTestJavaV2();
+    }
+  }
+
+  private void prepareCompileAndroidTestJavaV2() {
     ProjectConnection connection = this.project.getProjectConnection();
     try {
       BuildLauncher buildLauncher = connection.newBuild();
@@ -457,4 +478,6 @@ class AndroidSupport {
       connection.close();
     }
   }
+
+  private void prepareCompileAndroidTestJavaV3() {}
 }

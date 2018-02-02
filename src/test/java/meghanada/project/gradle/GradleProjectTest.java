@@ -49,6 +49,7 @@ public class GradleProjectTest {
 
       System.setProperty("meghanada.test", "true");
       this.projectRoot = new File("./").getCanonicalFile();
+      // this.projectRoot = new File("./").getCanonicalFile();
       this.projectRootPath = this.projectRoot.getCanonicalPath();
       this.project = new GradleProject(projectRoot);
       String tmpdir = System.getProperty("java.io.tmpdir");

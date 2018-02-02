@@ -205,11 +205,12 @@ public class GradleProject extends Project {
     final AndroidProject androidProject =
         AndroidSupport.getAndroidProject(this.rootProject, gradleProject);
     if (nonNull(androidProject)) {
-
       Set<ProjectDependency> projectDependencies = analyzeDependencies(ideaModule);
       this.dependencies.addAll(projectDependencies);
       // parse android
       this.isAndroidProject = true;
+      this.androidApiVersion = androidProject.getApiVersion();
+      this.androidModelVersion = androidProject.getModelVersion();
       final AndroidSupport androidSupport = new AndroidSupport(this);
       androidSupport.parseAndroidProject(androidProject);
     } else {
@@ -586,5 +587,9 @@ public class GradleProject extends Project {
         projectConnection.close();
       }
     }
+  }
+
+  public static long getSerialVersionUID() {
+    return serialVersionUID;
   }
 }

@@ -92,6 +92,8 @@ public abstract class Project implements Serializable, Storable {
   protected String compileSource = "1.8";
   protected String compileTarget = "1.8";
   protected Boolean isAndroidProject = false;
+  protected int androidApiVersion;
+  protected String androidModelVersion;
   protected String name;
   String id;
   private Map<String, Set<String>> callerMap = new ConcurrentHashMap<>(128);
@@ -1133,5 +1135,21 @@ public abstract class Project implements Serializable, Storable {
       ProjectDatabaseHelper.saveChecksumMap(this.project.projectRootPath, this.checksumMap);
       this.project.writeCaller();
     }
+  }
+
+  public int getAndroidApiVersion() {
+    return androidApiVersion;
+  }
+
+  public void setAndroidApiVersion(int androidApiVersion) {
+    this.androidApiVersion = androidApiVersion;
+  }
+
+  public String getAndroidModelVersion() {
+    return androidModelVersion;
+  }
+
+  public void setAndroidModelVersion(String androidModelVersion) {
+    this.androidModelVersion = androidModelVersion;
   }
 }
