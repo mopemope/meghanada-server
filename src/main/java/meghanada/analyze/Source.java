@@ -481,6 +481,7 @@ public class Source implements Serializable, Storable {
         final String declaration = candidateUnits[0].getDeclaration();
         final String pa = ClassNameUtils.getPackage(declaration);
         if (pa.equals("java.lang")) {
+          // Only ignore "java.lang" package, exclude subpackages.
           continue;
         }
         if (nonNull(this.packageName) && pa.equals(this.packageName)) {
@@ -541,6 +542,7 @@ public class Source implements Serializable, Storable {
             fqcn -> {
               final String packageName = ClassNameUtils.getPackage(fqcn);
               if (packageName.equals("java.lang")) {
+                // Only ignore "java.lang" package, exclude subpackages.
                 return;
               }
               if (optimizeMap.containsKey(packageName)) {
