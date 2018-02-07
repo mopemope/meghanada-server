@@ -29,7 +29,7 @@ class SExprParser {
 
   public SExpr parse(final String s) {
     try {
-      this.tokenizer = new StringTokenizer(s.trim(), " ()\"\\", true);
+      this.tokenizer = new StringTokenizer(s.trim(), " ()\"", true);
       this.sb = null;
       return this.get();
     } catch (Throwable t) {

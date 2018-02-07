@@ -105,7 +105,7 @@ public class Session {
     while (true) {
 
       log.debug("finding project from '{}' ...", base);
-      if (base.getPath().equals("/")) {
+      if (isNull(base.getParent())) {
         return Optional.empty();
       }
 
@@ -231,7 +231,7 @@ public class Session {
     while (true) {
 
       log.debug("finding project from '{}' ...", base);
-      if (base.getPath().equals("/")) {
+      if (isNull(base.getParent())) {
         return null;
       }
 

@@ -32,19 +32,19 @@ public class ModuleHelper {
 
   public static void walkModule(ModuleConsumer c) throws IOException {
     FileSystem fileSystem = FileSystems.getFileSystem(URI.create("jrt:/"));
-    Path dir = fileSystem.getPath("/modules");
+    Path dir = fileSystem.getPath(File.separator + "modules");
     walkModuleFS(dir, c);
   }
 
   public static <T> Optional<T> searchModule(ModuleSupplier<T> ms) throws IOException {
     FileSystem fileSystem = FileSystems.getFileSystem(URI.create("jrt:/"));
-    Path dir = fileSystem.getPath("/modules");
+    Path dir = fileSystem.getPath(File.separator + "modules");
     return searchModuleFS(dir, ms);
   }
 
   public static void walkModule(String mod, ModuleConsumer c) throws IOException {
     FileSystem fileSystem = FileSystems.getFileSystem(URI.create("jrt:/"));
-    Path dir = fileSystem.getPath("/modules/" + mod);
+    Path dir = fileSystem.getPath(File.separator + "modules" + File.separator + mod);
     walkModuleFS(dir, c);
   }
 
@@ -90,7 +90,7 @@ public class ModuleHelper {
 
   public static Optional<String> pathToClassName(Path p) {
 
-    if (p.startsWith("/modules/")) {
+    if (p.startsWith(File.separator + "modules" + File.separator)) {
       // module path
       Path subpath = p.subpath(2, p.getNameCount());
 
@@ -105,7 +105,7 @@ public class ModuleHelper {
 
   public static Optional<String> pathToModule(Path p) {
 
-    if (p.startsWith("/modules/")) {
+    if (p.startsWith(File.separator + "modules" + File.separator)) {
       // module path
       Path subpath = p.subpath(1, 2);
       return Optional.of(subpath.toString());
@@ -115,7 +115,7 @@ public class ModuleHelper {
 
   public static Optional<ClassData> pathToClassData(Path p) {
 
-    if (p.startsWith("/modules/")) {
+    if (p.startsWith(File.separator + "modules" + File.separator)) {
       Path sub = p.subpath(2, p.getNameCount());
       String s = ClassNameUtils.replaceSlash(sub.toString());
       if (s.endsWith(".class")) {

@@ -2,6 +2,7 @@ package meghanada.utils;
 
 import static org.junit.Assert.assertEquals;
 
+import java.io.File;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -184,7 +185,7 @@ public class ClassNameUtilsTest {
   public void replaceDot() throws Exception {
     String name = "java.util.function.Function<? super T, ? extends Stream<? extends R>>";
     final String s = ClassNameUtils.replaceDot2FileSep(name);
-    assertEquals("java/util/function/Function", s);
+    assertEquals("java"+ File.separator +"util"+File.separator+"function"+File.separator+"Function", s);
   }
 
   @Test

@@ -93,7 +93,7 @@ public class GradleProject extends Project {
     }
     while (true) {
 
-      if (dir.getPath().equals("/")) {
+      if (isNull(dir.getParent())) {
         break;
       }
 
