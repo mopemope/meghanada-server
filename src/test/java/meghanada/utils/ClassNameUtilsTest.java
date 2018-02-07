@@ -185,7 +185,15 @@ public class ClassNameUtilsTest {
   public void replaceDot() throws Exception {
     String name = "java.util.function.Function<? super T, ? extends Stream<? extends R>>";
     final String s = ClassNameUtils.replaceDot2FileSep(name);
-    assertEquals("java"+ File.separator +"util"+File.separator+"function"+File.separator+"Function", s);
+    assertEquals(
+        "java"
+            + File.separator
+            + "util"
+            + File.separator
+            + "function"
+            + File.separator
+            + "Function",
+        s);
   }
 
   @Test
