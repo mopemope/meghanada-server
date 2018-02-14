@@ -7,6 +7,7 @@ import static meghanada.utils.FunctionUtils.wrapIOConsumer;
 
 import com.android.builder.model.AndroidProject;
 import com.google.common.base.Joiner;
+import com.google.common.base.Splitter;
 import com.google.common.io.Files;
 import com.typesafe.config.ConfigFactory;
 import java.io.File;
@@ -328,7 +329,7 @@ public class GradleProject extends Project {
       final List<String> tasks = new ArrayList<>(4);
       final List<String> taskArgs = new ArrayList<>(4);
       for (final String temp : args) {
-        for (final String arg : temp.split(" ")) {
+        for (final String arg : Splitter.on(" ").split(temp)) {
           if (arg.startsWith("-")) {
             taskArgs.add(arg.trim());
           } else {

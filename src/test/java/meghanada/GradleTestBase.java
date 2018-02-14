@@ -7,11 +7,13 @@ import com.google.common.io.Files;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import meghanada.config.Config;
 import meghanada.module.ModuleHelper;
 import meghanada.project.Project;
@@ -107,9 +109,8 @@ public class GradleTestBase {
     if (config.isJava8()) {
       final String javaHome = Config.load().getJavaHomeDir();
       File jvmDir = new File(javaHome);
-      try {
-        return java.nio.file.Files.walk(jvmDir.toPath())
-            .filter(
+      try (Stream<Path> s = java.nio.file.Files.walk(jvmDir.toPath())) {
+        return s.filter(
                 path -> {
                   String name = path.toFile().getName();
                   return name.endsWith(".jar") && !name.endsWith("policy.jar");
@@ -123,6 +124,7 @@ public class GradleTestBase {
                   }
                 })
             .collect(Collectors.toList());
+
       } catch (IOException e) {
         throw new UncheckedIOException(e);
       }

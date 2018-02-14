@@ -2,6 +2,7 @@ package meghanada.junit;
 
 import static java.util.Objects.nonNull;
 
+import com.google.common.base.Splitter;
 import com.google.common.base.Stopwatch;
 import com.google.common.base.Strings;
 import com.google.common.io.Files;
@@ -133,10 +134,10 @@ public class TestRunner {
     List<Request> requests = new ArrayList<>(1);
 
     if (arg.contains("#")) {
-      String[] classAndMethod = arg.split("#");
-      List<Class<?>> classes = getTestClass(classAndMethod[0]);
+      List<String> strings = Splitter.on("#").splitToList(arg);
+      List<Class<?>> classes = getTestClass(strings.get(0));
       for (Class<?> cls : classes) {
-        Request request = Request.method(cls, classAndMethod[1]);
+        Request request = Request.method(cls, strings.get(1));
         requests.add(request);
       }
     } else {

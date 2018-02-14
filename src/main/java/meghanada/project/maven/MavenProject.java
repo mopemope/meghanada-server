@@ -1,5 +1,6 @@
 package meghanada.project.maven;
 
+import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
 import com.google.common.io.Files;
 import java.io.File;
@@ -80,9 +81,7 @@ public class MavenProject extends Project {
       }
       final String cpTxt = Files.asCharSource(logFile, StandardCharsets.UTF_8).readFirstLine();
       if (cpTxt != null && !cpTxt.isEmpty()) {
-        final String[] depends = cpTxt.split(File.pathSeparator);
-
-        for (final String dep : depends) {
+        for (final String dep : Splitter.on(File.pathSeparator).split(cpTxt)) {
           final File file = new File(dep);
           final String parentPath = file.getParent();
           final String version = MavenProject.getVersion(parentPath);

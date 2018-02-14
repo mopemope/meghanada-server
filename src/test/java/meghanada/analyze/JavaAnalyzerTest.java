@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import meghanada.GradleTestBase;
 import meghanada.config.Config;
 import meghanada.docs.declaration.Declaration;
@@ -561,37 +562,43 @@ public class JavaAnalyzerTest extends GradleTestBase {
     final JavaAnalyzer analyzer = getAnalyzer();
     final String cp = getClasspath();
 
-    List<File> files =
+    List<File> files;
+    try (Stream<Path> stream =
         Files.walk(
-                new File("./src/main/java").getCanonicalFile().toPath(),
-                FileVisitOption.FOLLOW_LINKS)
-            .filter(
-                path -> {
-                  File file = path.toFile();
-                  return FileUtils.isJavaFile(file);
-                })
-            .map(Path::toFile)
-            .collect(Collectors.toList());
-
-    List<File> testFiles =
+            new File("./src/main/java").getCanonicalFile().toPath(),
+            FileVisitOption.FOLLOW_LINKS)) {
+      files =
+          stream
+              .filter(
+                  path -> {
+                    File file = path.toFile();
+                    return FileUtils.isJavaFile(file);
+                  })
+              .map(Path::toFile)
+              .collect(Collectors.toList());
+    }
+    try (Stream<Path> stream =
         Files.walk(
-                new File("./src/test/java").getCanonicalFile().toPath(),
-                FileVisitOption.FOLLOW_LINKS)
-            .filter(
-                path -> {
-                  File file = path.toFile();
-                  return FileUtils.isJavaFile(file);
-                })
-            .map(Path::toFile)
-            .collect(Collectors.toList());
-
-    files.addAll(testFiles);
+            new File("./src/test/java").getCanonicalFile().toPath(),
+            FileVisitOption.FOLLOW_LINKS)) {
+      List<File> testFiles =
+          stream
+              .filter(
+                  path -> {
+                    File file = path.toFile();
+                    return FileUtils.isJavaFile(file);
+                  })
+              .map(Path::toFile)
+              .collect(Collectors.toList());
+      files.addAll(testFiles);
+    }
 
     final String tmp = System.getProperty("java.io.tmpdir");
 
+    List<File> finalFiles = files;
     timeIt(
         () -> {
-          final CompileResult compileResult = analyzer.analyzeAndCompile(files, cp, tmp);
+          final CompileResult compileResult = analyzer.analyzeAndCompile(finalFiles, cp, tmp);
           compileResult.getSources().values().forEach(Source::dump);
           return compileResult;
         });
@@ -603,32 +610,44 @@ public class JavaAnalyzerTest extends GradleTestBase {
     final JavaAnalyzer analyzer = getAnalyzer();
     final String cp = getSystemClasspath();
 
-    List<File> files =
-        Files.walk(new File("./src/main/java").toPath(), FileVisitOption.FOLLOW_LINKS)
-            .filter(
-                path -> {
-                  File file = path.toFile();
-                  return FileUtils.isJavaFile(file);
-                })
-            .map(Path::toFile)
-            .collect(Collectors.toList());
-    List<File> testFiles =
-        Files.walk(new File("./src/test/java").toPath(), FileVisitOption.FOLLOW_LINKS)
-            .filter(
-                path -> {
-                  File file = path.toFile();
-                  return FileUtils.isJavaFile(file);
-                })
-            .map(Path::toFile)
-            .collect(Collectors.toList());
-    files.addAll(testFiles);
+    List<File> files;
+    try (Stream<Path> stream =
+        Files.walk(
+            new File("./src/main/java").getCanonicalFile().toPath(),
+            FileVisitOption.FOLLOW_LINKS)) {
+      files =
+          stream
+              .filter(
+                  path -> {
+                    File file = path.toFile();
+                    return FileUtils.isJavaFile(file);
+                  })
+              .map(Path::toFile)
+              .collect(Collectors.toList());
+    }
+    try (Stream<Path> stream =
+        Files.walk(
+            new File("./src/test/java").getCanonicalFile().toPath(),
+            FileVisitOption.FOLLOW_LINKS)) {
+      List<File> testFiles =
+          stream
+              .filter(
+                  path -> {
+                    File file = path.toFile();
+                    return FileUtils.isJavaFile(file);
+                  })
+              .map(Path::toFile)
+              .collect(Collectors.toList());
+      files.addAll(testFiles);
+    }
 
     // System.setProperty(Source.REPORT_UNKNOWN_TREE, "true");
     final String tmp = System.getProperty("java.io.tmpdir");
 
+    List<File> finalFiles = files;
     timeIt(
         () -> {
-          final CompileResult compileResult = analyzer.analyzeAndCompile(files, cp, tmp);
+          final CompileResult compileResult = analyzer.analyzeAndCompile(finalFiles, cp, tmp);
           // compileResult.getSources().values().forEach(Source::dump);
           return compileResult;
         });
