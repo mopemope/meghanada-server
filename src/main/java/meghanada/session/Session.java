@@ -674,8 +674,8 @@ public class Session {
     return location;
   }
 
-  public synchronized Location backDeclaration() {
-    return this.jumpDecHistory.pollLast();
+  public synchronized Optional<Location> backDeclaration() {
+    return Optional.ofNullable(this.jumpDecHistory.pollLast());
   }
 
   public InputStream runTask(List<String> args) throws Exception {

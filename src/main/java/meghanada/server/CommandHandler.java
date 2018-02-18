@@ -1,7 +1,6 @@
 package meghanada.server;
 
 import static java.util.Objects.isNull;
-import static java.util.Objects.nonNull;
 
 import com.google.common.base.Joiner;
 import java.io.BufferedReader;
@@ -248,12 +247,10 @@ public class CommandHandler {
   }
 
   public void backJump(final long id) {
-    final Location location = session.backDeclaration();
+    final Location location = session.backDeclaration().orElseGet(() -> new Location("", -1, -1));
     try {
-      if (nonNull(location)) {
-        final String out = outputFormatter.jumpDeclaration(id, location);
-        writer.write(out);
-      }
+      final String out = outputFormatter.jumpDeclaration(id, location);
+      writer.write(out);
       writer.newLine();
     } catch (Throwable t) {
       writeError(id, t);
