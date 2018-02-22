@@ -76,17 +76,20 @@ class AndroidSupport {
     String path = gradleProject.getPath();
     String name = path.substring(1);
     File childDir = new File(root, name);
-    File projectDirectory = gradleProject.getProjectDirectory();
     GradleConnector childConnector = GradleConnector.newConnector().forProjectDirectory(childDir);
     ProjectConnection childConnection = childConnector.connect();
     try {
-      ModelBuilder<AndroidProject> modelBuilder = childConnection.model(AndroidProject.class);
+      ModelBuilder<AndroidProject> modelBuilder =
+          childConnection
+              .model(AndroidProject.class)
+              .withArguments("-Pandroid.injected.build.model.only.versioned=3");
       if (nonNull(modelBuilder)) {
         AndroidProject androidProject = modelBuilder.get();
         return androidProject;
       }
       return null;
     } catch (Exception e) {
+      log.debug("not android project", e);
       return null;
     } finally {
       childConnection.close();
