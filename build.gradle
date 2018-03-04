@@ -1,12 +1,12 @@
 plugins {
-  id 'com.gradle.build-scan' version '1.10.3'
+  id 'com.gradle.build-scan' version '1.12.1'
   id 'java'
   id 'maven'
   id 'application'
   id 'com.github.johnrengelman.shadow' version '2.0.2'
   id 'com.github.ben-manes.versions' version '0.17.0'
   id 'com.jfrog.bintray' version '1.8.0'
-  id 'org.ajoberstar.grgit' version '1.7.2'
+  id 'org.ajoberstar.grgit' version '2.1.1'
   id 'net.ltgt.errorprone' version '0.0.13'
   id 'com.github.sherter.google-java-format' version '0.6'
 }
@@ -25,7 +25,7 @@ ext {
 
   gradleVersion = '4.6'
   log4jVersion = '2.10.0'
-  xodusVersion = '1.2.0'
+  xodusVersion = '1.2.1'
 }
 
 mainClassName = "meghanada.Main"
@@ -115,7 +115,7 @@ dependencies {
   compile 'org.apache.maven:maven-model-builder:3.5.2'
   compile 'com.leacox.motif:motif:0.1'
   compile 'com.leacox.motif:motif-hamcrest:0.1'
-  compile 'com.github.javaparser:javaparser-core:3.5.14'
+  compile 'com.github.javaparser:javaparser-core:3.5.16'
   compile "org.apache.logging.log4j:log4j-core:$log4jVersion"
   compile "org.apache.logging.log4j:log4j-api:$log4jVersion"
   compile "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
