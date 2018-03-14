@@ -25,7 +25,7 @@ ext {
 
   gradleVersion = '4.6'
   log4jVersion = '2.10.0'
-  xodusVersion = '1.2.1'
+  xodusVersion = '1.2.2'
 }
 
 mainClassName = "meghanada.Main"
@@ -112,10 +112,10 @@ dependencies {
 
   compile files("${System.properties['java.home']}/../lib/tools.jar")
   compile 'com.google.googlejavaformat:google-java-format:1.5'
-  compile 'org.apache.maven:maven-model-builder:3.5.2'
+  compile 'org.apache.maven:maven-model-builder:3.5.3'
   compile 'com.leacox.motif:motif:0.1'
   compile 'com.leacox.motif:motif-hamcrest:0.1'
-  compile 'com.github.javaparser:javaparser-core:3.5.16'
+  compile 'com.github.javaparser:javaparser-core:3.5.17'
   compile "org.apache.logging.log4j:log4j-core:$log4jVersion"
   compile "org.apache.logging.log4j:log4j-api:$log4jVersion"
   compile "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
