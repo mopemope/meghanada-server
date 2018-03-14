@@ -676,6 +676,9 @@ public class LocationSearcher {
                 .filter(
                     e -> {
                       Path p = Paths.get(e.getName());
+                      if (p.getNameCount() < 2) {
+                        return false;
+                      }
                       Path subpath = p.subpath(1, p.getNameCount());
                       return subpath.toString().equals(s);
                     })
