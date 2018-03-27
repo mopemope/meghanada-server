@@ -72,17 +72,33 @@ public class SetupMain {
   }
 
   private static void run(String destRoot, String version) throws IOException {
-    String downloadURL = copyFrom(version);
+    try {
+      downloadFromGithub(destRoot, version);
+    } catch (IOException e) {
+      downloadFromBintray(destRoot, version);
+    }
+  }
+
+  private static void downloadFromBintray(String destRoot, String version) throws IOException {
+    String downloadURL = getBintrayURL(version);
     Path dest = copyDest(destRoot, version);
     downloadJar(downloadURL, dest);
   }
 
-  private static String copyFrom(String version) throws IOException {
-    return copyFromBintray(version);
+  private static void downloadFromGithub(String destRoot, String version) throws IOException {
+    String downloadURL = getGithubURL(version);
+    Path dest = copyDest(destRoot, version);
+    downloadJar(downloadURL, dest);
   }
 
-  private static String copyFromBintray(String version) throws IOException {
-    return "https://dl.bintray.com/mopemope/meghanada/meghanada-" + version + ".jar";
+  private static String getBintrayURL(String version) throws IOException {
+    return String.format("https://dl.bintray.com/mopemope/meghanada/meghanada-%s.jar", version);
+  }
+
+  private static String getGithubURL(String version) throws IOException {
+    return String.format(
+        "https://github.com/mopemope/meghanada-server/releases/download/v%s/meghanada-%s.jar",
+        version, version);
   }
 
   private static Path copyDest(String destRoot, String version) throws IOException {
@@ -91,7 +107,7 @@ public class SetupMain {
     if (Objects.nonNull(destRoot) && !destRoot.isEmpty()) {
       root = FileSystems.getDefault().getPath(destRoot);
     }
-    String file = "meghanada-" + version + ".jar";
+    String file = String.format("meghanada-%s.jar", version);
     return root.resolve(file);
   }
 
