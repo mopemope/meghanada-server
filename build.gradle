@@ -1,9 +1,5 @@
 plugins {
   id 'com.gradle.build-scan' version '1.12.1'
-  id 'java'
-  id 'maven'
-  id 'application'
-  id 'com.github.johnrengelman.shadow' version '2.0.2'
   id 'com.github.ben-manes.versions' version '0.17.0'
   id 'com.jfrog.bintray' version '1.8.0'
   id 'org.ajoberstar.grgit' version '2.1.1'
@@ -11,190 +7,34 @@ plugins {
   id 'com.github.sherter.google-java-format' version '0.6'
 }
 
-ext {
-  group = 'meghanada'
-  serverVersion = '0.9.3'
-  buildVersion = 'release'
+allprojects {
+  apply plugin: "com.github.sherter.google-java-format"
+  apply plugin: 'net.ltgt.errorprone'
 
-  def gitFile = new File('./.git')
-  if (gitFile.exists()) {
-    buildVersion = grgit.head().abbreviatedId
+  googleJavaFormat {
+    toolVersion = '1.5'
+    exclude 'server/src/test/resources/*'
+    exclude 'server/out/*'
   }
-  longVersion = "$serverVersion-${buildVersion}"
-  date = new Date().format("yyyy-MM-dd'T'HH:mm:ssZ")
 
-  gradleVersion = '4.6'
-  log4jVersion = '2.10.0'
-  xodusVersion = '1.2.2'
-}
+  configurations.errorprone {
+    resolutionStrategy.force 'com.google.errorprone:error_prone_core:2.2.0'
+  }
 
-mainClassName = "meghanada.Main"
-applicationName = 'meghanada'
+  repositories {
+    mavenCentral()
+    maven {
+      url 'http://repo.gradle.org/gradle/libs-releases-local'
+    }
+    maven {
+      url 'https://maven.google.com'
+    }
+    jcenter()
+  }
 
-// compileJava {
-//   options.compilerArgs += ["--add-exports", "jdk.compiler/com.sun.tools.javac.code=ALL-UNNAMED",
-//                            "--add-exports", "jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED",
-//                            "--add-exports", "jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED",
-//                            "--add-exports", "jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED"]
-// }
-
-// compileTestJava {
-//   options.compilerArgs += ["--add-exports", "jdk.compiler/com.sun.tools.javac.code=ALL-UNNAMED",
-//                            "--add-exports", "jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED",
-//                            "--add-exports", "jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED",
-//                            "--add-exports", "jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED"]
-// }
-
-googleJavaFormat {
-  toolVersion = '1.5'
-}
-
-tasks.withType(JavaCompile) {
-  options.incremental = true
 }
 
 buildScan {
   licenseAgreementUrl = 'https://gradle.com/terms-of-service'
   licenseAgree = 'yes'
 }
-
-shadowJar {
-  baseName = 'meghanada'
-  classifier = null
-  version = serverVersion
-}
-
-repositories {
-  mavenCentral()
-  maven {
-    url 'http://repo.gradle.org/gradle/libs-releases-local'
-  }
-  maven {
-      url 'https://maven.google.com'
-  }
-  jcenter()
-}
-
-configurations.errorprone {
-  resolutionStrategy.force 'com.google.errorprone:error_prone_core:2.2.0'
-}
-
-bintray {
-  user = System.getenv('BINTRAY_USER')
-  key = System.getenv('BINTRAY_KEY')
-
-  publish = true
-  // override = true
-
-  filesSpec {
-    from 'build/libs'
-    into '.'
-  }
-
-  pkg {
-    repo = 'meghanada'
-    name = 'meghanada'
-    vcsUrl = 'https://github.com/mopemope/meghanada-server.git'
-    licenses = ['GPL-3.0']
-    githubRepo = 'mopemope/meghanada-server'
-    githubReleaseNotesFile = 'README.md'
-    labels = ['java', 'emacs']
-
-    version {
-      name = "$serverVersion"
-      desc = "Meghanada Server $longVersion"
-      released  = new Date()
-    }
-  }
-}
-
-dependencies {
-
-  compile files("${System.properties['java.home']}/../lib/tools.jar")
-  compile 'com.google.googlejavaformat:google-java-format:1.5'
-  compile 'org.apache.maven:maven-model-builder:3.5.3'
-  compile 'com.leacox.motif:motif:0.1'
-  compile 'com.leacox.motif:motif-hamcrest:0.1'
-  compile 'com.github.javaparser:javaparser-core:3.5.17'
-  compile "org.apache.logging.log4j:log4j-core:$log4jVersion"
-  compile "org.apache.logging.log4j:log4j-api:$log4jVersion"
-  compile "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
-  compile 'commons-cli:commons-cli:1.4'
-  compile "org.gradle:gradle-tooling-api:$gradleVersion"
-  compile 'com.google.guava:guava:24.0-jre'
-  compile 'org.ow2.asm:asm:6.0'
-  compile 'com.typesafe:config:1.3.3'
-  compile 'org.atteo:evo-inflector:1.2.2'
-  compile 'junit:junit:4.12'
-  compile 'com.android.tools.build:builder:3.0.1'
-  compile 'com.android.tools.build:builder-model:3.0.1'
-  compile 'io.takari.junit:takari-cpsuite:1.2.7'
-  compile 'org.jboss.windup.decompiler:decompiler-api:3.0.0.Final'
-  compile 'org.jboss.windup.decompiler:decompiler-fernflower:3.0.0.Final'
-  compile 'com.google.code.findbugs:jsr305:3.0.2'
-  compile 'org.eclipse.jdt:org.eclipse.jdt.core:3.13.100'
-  compile 'de.ruedigermoeller:fst:2.56'
-  compile "org.jetbrains.xodus:xodus-query:$xodusVersion"
-  compile "org.jetbrains.xodus:xodus-openAPI:$xodusVersion"
-  compile "org.jetbrains.xodus:xodus-vfs:$xodusVersion"
-  compile "org.jetbrains.xodus:xodus-utils:$xodusVersion"
-  compile "org.jetbrains.xodus:xodus-lucene-directory:$xodusVersion"
-  compile "org.jetbrains.xodus:xodus-environment:$xodusVersion"
-  compile "org.jetbrains.xodus:xodus-entity-store:$xodusVersion"
-  compile "org.jetbrains.xodus:xodus-compress:$xodusVersion"
-}
-
-
-test {
-  jvmArgs = ["-XX:SoftRefLRUPolicyMSPerMB=50", "-XX:+UseConcMarkSweepGC", "-Xverify:none"]
-  testLogging {
-    events "PASSED", "FAILED", "SKIPPED"
-    exceptionFormat "full"
-  }
-}
-
-task wrapper(type: Wrapper) {
-  gradleVersion = "$gradleVersion"
-}
-
-task installEmacsHome(type: Copy) {
-  def home = System.properties['user.home']
-  from "build/libs/meghanada-${serverVersion}.jar"
-  into "$home/.emacs.d/meghanada/"
-}
-
-installEmacsHome.dependsOn(shadowJar)
-
-task embedVersion(type: Copy) {
-  from 'src/main/resources/VERSION'
-  into 'build/resources/main'
-
-  expand(buildDate: new Date(), version: longVersion, appName: applicationName)
-}
-
-classes.dependsOn embedVersion
-embedVersion.mustRunAfter processResources
-
-task('createPom') {
-  doLast {
-    pom {
-      project {
-        groupId 'meghanada'
-        artifactId 'meghanada'
-        version "$serverVersion"
-      }
-    }.writeTo("pom.xml")
-  }
-}
-
-googleJavaFormat {
-  exclude 'src/test/resources/*'
-  exclude 'out/*'
-}
-
-clean.doLast {
-    file('.meghanada').deleteDir()
-}
-
-sourceCompatibility = 1.8
-targetCompatibility = 1.8

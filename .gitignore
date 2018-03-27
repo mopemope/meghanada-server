@@ -1,5 +1,6 @@
 /target
 /build
+*/build
 /classes
 /checkouts
 pom.xml.asc
@@ -24,5 +25,6 @@ secrets.yml
 .settings
 out
 bazel-*
-/bin
+*/bin
 *.log
+.vscode

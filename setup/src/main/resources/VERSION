@@ -1,0 +1,3 @@
+version=${version}
+application-name=${appName}
+build-date=${buildDate.format('yyyy-MM-dd HH:mm:ss')}
