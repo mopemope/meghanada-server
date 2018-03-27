@@ -305,7 +305,7 @@ public class EmacsServer implements Server {
     try {
       this.session = Session.createSession(projectRoot);
       this.session.start();
-      log.info("Start server Listen {}:{}", this.host, this.port);
+      log.info("Start server Listen {} port:{}", this.host, this.serverSocket.getLocalPort());
       this.accept();
     } catch (Throwable e) {
       log.catching(e);

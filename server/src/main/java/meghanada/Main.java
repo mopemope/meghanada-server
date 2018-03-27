@@ -106,7 +106,7 @@ public class Main {
       }
     }
 
-    String port = "55555";
+    String port = "0";
     String projectRoot = "./";
     String fmt = "sexp";
 
