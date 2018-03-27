@@ -10,6 +10,7 @@ plugins {
 allprojects {
   apply plugin: "com.github.sherter.google-java-format"
   apply plugin: 'net.ltgt.errorprone'
+  apply plugin: 'com.jfrog.bintray'
 
   googleJavaFormat {
     toolVersion = '1.5'

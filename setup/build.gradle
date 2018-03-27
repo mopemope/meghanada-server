@@ -62,3 +62,32 @@ configurations.errorprone {
 }
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
+
+bintray {
+  user = System.getenv('BINTRAY_USER')
+  key = System.getenv('BINTRAY_KEY')
+
+  publish = true
+  // override = true
+
+  filesSpec {
+    from 'build/libs'
+    into '.'
+  }
+
+  pkg {
+    repo = 'meghanada'
+    name = 'meghanada-setup'
+    vcsUrl = 'https://github.com/mopemope/meghanada-server.git'
+    licenses = ['GPL-3.0']
+    githubRepo = 'mopemope/meghanada-server'
+    githubReleaseNotesFile = 'README.md'
+    labels = ['java', 'emacs']
+
+    version {
+      name = "$setupVersion"
+      desc = "Meghanada Server setup $setupVersion"
+      released  = new Date()
+    }
+  }
+}
