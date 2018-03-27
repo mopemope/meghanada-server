@@ -515,6 +515,11 @@ public class Source implements Serializable, Storable {
   }
 
   public List<String> optimizeImports() {
+    if (hasCompileError) {
+      // fail
+      throw new IllegalStateException("A source has compile error.please fix it.");
+    }
+
     // shallow copy
     final Map<String, String> importMap = new HashMap<>(this.getImportedClassMap());
 
@@ -528,7 +533,7 @@ public class Source implements Serializable, Storable {
 
     if (missingImport.size() > 0) {
       // fail
-      return Collections.emptyList();
+      throw new IllegalStateException("It can not be resolve missing import.");
     }
 
     // create optimize import

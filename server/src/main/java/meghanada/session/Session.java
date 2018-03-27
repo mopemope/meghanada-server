@@ -443,7 +443,13 @@ public class Session {
     parseJavaSource(file)
         .ifPresent(
             source -> {
-              final List<String> optimized = source.optimizeImports();
+              List<String> optimized = null;
+              try {
+                optimized = source.optimizeImports();
+              } catch (IllegalStateException ex) {
+                log.warn("it can not be optimized:{}", ex.getMessage());
+                return;
+              }
               boolean addLine = false;
               final StringBuilder sb = new StringBuilder(1024 * 4);
 
