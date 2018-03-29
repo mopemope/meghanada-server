@@ -766,8 +766,12 @@ public class Session {
   }
 
   public CompileResult diagnosticString(String sourceFile, String sourceCode) throws IOException {
+
     boolean b = this.changeProject(sourceFile);
-    return currentProject.compileString(sourceFile, sourceCode);
+    CompileResult result = currentProject.compileString(sourceFile, sourceCode);
+    if (result.isSuccess()) {}
+
+    return result;
   }
 
   private ReferenceSearcher getReferenceSearcher() {

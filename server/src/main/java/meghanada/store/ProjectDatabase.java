@@ -317,6 +317,14 @@ class ProjectDatabase {
 
         String rootDir = Config.getProjectRoot();
         String name = new File(rootDir).getName();
+        String nameHash =
+            Hashing.sha256()
+                .newHasher()
+                .putString(name, StandardCharsets.UTF_8)
+                .putString(rootDir, StandardCharsets.UTF_8)
+                .hash()
+                .toString();
+        name += '_' + nameHash.substring(0, 16);
 
         String hash =
             Hashing.sha256()
@@ -337,6 +345,10 @@ class ProjectDatabase {
               org.apache.commons.io.FileUtils.deleteDirectory(file);
             }
           }
+        }
+        if (!base.exists()) {
+          // new database
+          System.setProperty("new-project-database", base.getCanonicalPath());
         }
 
         try {

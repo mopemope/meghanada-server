@@ -110,6 +110,10 @@ public class SessionEventBus {
       return file;
     }
 
+    public Session getSession() {
+      return session;
+    }
+
     @Override
     public String toString() {
       return MoreObjects.toStringHelper(this).add("session", session).add("file", file).toString();

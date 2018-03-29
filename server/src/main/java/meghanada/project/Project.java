@@ -1050,7 +1050,7 @@ public abstract class Project implements Serializable, Storable {
     }
     final Stopwatch stopwatch = Stopwatch.createStarted();
 
-    CompiledSourceHandler handler = new CompiledSourceHandler(this, true);
+    CompiledSourceHandler handler = new CompiledSourceHandler(this, true, true);
     CompileResult compileResult =
         clearMemberCache(
             getJavaAnalyzer()
@@ -1072,6 +1072,7 @@ public abstract class Project implements Serializable, Storable {
     private final Map<String, String> checksumMap;
     private final Project project;
     private boolean diagnostics = false;
+    private boolean cacheImportMember = false;
 
     CompiledSourceHandler(Project project) throws IOException {
       this.project = project;
@@ -1086,13 +1087,22 @@ public abstract class Project implements Serializable, Storable {
       this.diagnostics = diagnostics;
     }
 
+    CompiledSourceHandler(final Project project, boolean diagnostics, boolean cacheImportMember)
+        throws IOException {
+      this(project);
+      this.diagnostics = diagnostics;
+      this.cacheImportMember = cacheImportMember;
+    }
+
     @Override
     public void analyzed(final Source source) throws IOException {
 
       if (!useSourceCache) {
         return;
       }
-
+      if (this.cacheImportMember) {
+        createImportMemberCache(source);
+      }
       final GlobalCache globalCache = GlobalCache.getInstance();
       List<ClassScope> classScopes = source.getClassScopes();
       for (ClassScope cs : classScopes) {
@@ -1134,6 +1144,25 @@ public abstract class Project implements Serializable, Storable {
     public void complete() throws IOException {
       ProjectDatabaseHelper.saveChecksumMap(this.project.projectRootPath, this.checksumMap);
       this.project.writeCaller();
+    }
+
+    @SuppressWarnings("CheckReturnValue")
+    private void createImportMemberCache(final Source src) {
+      if (!src.hasCompileError) {
+        try {
+          final GlobalCache globalCache = GlobalCache.getInstance();
+          src.importClasses.forEach(
+              impFqcn -> {
+                try {
+                  globalCache.getMemberDescriptors(impFqcn);
+                } catch (Exception e) {
+                  log.catching(e);
+                }
+              });
+        } catch (Exception e) {
+          log.catching(e);
+        }
+      }
     }
   }
 

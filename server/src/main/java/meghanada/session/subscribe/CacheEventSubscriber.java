@@ -1,5 +1,6 @@
 package meghanada.session.subscribe;
 
+import static java.util.Objects.nonNull;
 import static meghanada.config.Config.timeItF;
 
 import com.google.common.base.Stopwatch;
@@ -7,6 +8,7 @@ import com.google.common.eventbus.Subscribe;
 import java.io.File;
 import java.util.Collection;
 import meghanada.analyze.CompileResult;
+import meghanada.cache.GlobalCache;
 import meghanada.config.Config;
 import meghanada.project.Project;
 import meghanada.project.ProjectDependency;
@@ -89,22 +91,37 @@ public class CacheEventSubscriber extends AbstractSubscriber {
           }
         });
 
-    final Runtime runtime = Runtime.getRuntime();
-    final float maxMemory = runtime.maxMemory() / 1024 / 1024;
-    final float totalMemory = runtime.totalMemory() / 1024 / 1024;
-    final float usedMemory = (runtime.totalMemory() - runtime.freeMemory()) / 1024 / 1024;
-
     log.info(
         "class index size:{} total elapsed:{}",
         reflector.getGlobalClassIndex().size(),
         stopwatch.stop());
-
     Config.showMemory();
-
     log.info("Ready");
+
+    String db = System.getProperty("new-project-database");
+    if (nonNull(db) && db.isEmpty()) {
+      createStandardClassCache();
+    }
   }
 
   private boolean cleanUnusedSource(Project project) {
     return ProjectDatabaseHelper.deleteUnunsedSource(project);
+  }
+
+  @SuppressWarnings("CheckReturnValue")
+  private void createStandardClassCache() {
+    final CachedASMReflector reflector = CachedASMReflector.getInstance();
+    final GlobalCache globalCache = GlobalCache.getInstance();
+    reflector
+        .getStandardClasses()
+        .values()
+        .forEach(
+            impFqcn -> {
+              try {
+                globalCache.getMemberDescriptors(impFqcn);
+              } catch (Exception e) {
+                log.catching(e);
+              }
+            });
   }
 }
