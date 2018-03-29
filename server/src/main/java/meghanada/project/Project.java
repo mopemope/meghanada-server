@@ -1115,6 +1115,8 @@ public abstract class Project implements Serializable, Storable {
     private final Project project;
     private boolean diagnostics = false;
     private boolean cacheImportMember = false;
+    private long lastRun;
+    private long lastCached;
 
     CompiledSourceHandler(Project project) throws IOException {
       this.project = project;
@@ -1142,9 +1144,15 @@ public abstract class Project implements Serializable, Storable {
       if (!useSourceCache) {
         return;
       }
+
       if (this.cacheImportMember) {
-        createImportMemberCache(source);
+        long now = System.currentTimeMillis();
+        if (now - this.lastCached > 5000) {
+          this.createImportMemberCache(source);
+          this.lastCached = now;
+        }
       }
+
       final GlobalCache globalCache = GlobalCache.getInstance();
       List<ClassScope> classScopes = source.getClassScopes();
       for (ClassScope cs : classScopes) {
@@ -1180,6 +1188,7 @@ public abstract class Project implements Serializable, Storable {
           globalCache.invalidateSource(this.project, sourceFile);
         }
       }
+      this.lastRun = System.currentTimeMillis();
     }
 
     @Override
