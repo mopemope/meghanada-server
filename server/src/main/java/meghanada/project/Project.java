@@ -681,10 +681,17 @@ public abstract class Project implements Serializable, Storable {
         config
             .getStringList(DEPENDENCIES)
             .stream()
-            .filter(path -> new File(path).exists())
             .map(
                 path -> {
-                  final File file = new File(path);
+                  File file = new File(path);
+                  if (!file.isAbsolute()) {
+                    file = new File(this.projectRoot, path);
+                  }
+                  return file;
+                })
+            .filter(File::exists)
+            .map(
+                file -> {
                   final ProjectDependency.Type type = ProjectDependency.getFileType(file);
                   return new ProjectDependency(file.getName(), "COMPILE", "1.0.0", file, type);
                 })
@@ -695,10 +702,17 @@ public abstract class Project implements Serializable, Storable {
         config
             .getStringList(TEST_DEPENDENCIES)
             .stream()
-            .filter(path -> new File(path).exists())
             .map(
                 path -> {
-                  final File file = new File(path);
+                  File file = new File(path);
+                  if (!file.isAbsolute()) {
+                    file = new File(this.projectRoot, path);
+                  }
+                  return file;
+                })
+            .filter(File::exists)
+            .map(
+                file -> {
                   final ProjectDependency.Type type = ProjectDependency.getFileType(file);
                   return new ProjectDependency(file.getName(), "TEST", "1.0.0", file, type);
                 })
@@ -710,8 +724,15 @@ public abstract class Project implements Serializable, Storable {
         config
             .getStringList(SOURCES)
             .stream()
-            .filter(path -> new File(path).exists())
-            .map(File::new)
+            .map(
+                path -> {
+                  File file = new File(path);
+                  if (!file.isAbsolute()) {
+                    file = new File(this.projectRoot, path);
+                  }
+                  return file;
+                })
+            .filter(File::exists)
             .forEach(file -> this.sources.add(file));
       }
       // sources
@@ -719,8 +740,15 @@ public abstract class Project implements Serializable, Storable {
         config
             .getStringList(RESOURCES)
             .stream()
-            .filter(path -> new File(path).exists())
-            .map(File::new)
+            .map(
+                path -> {
+                  File file = new File(path);
+                  if (!file.isAbsolute()) {
+                    file = new File(this.projectRoot, path);
+                  }
+                  return file;
+                })
+            .filter(File::exists)
             .forEach(file -> this.resources.add(file));
       }
       // test-sources
@@ -728,8 +756,15 @@ public abstract class Project implements Serializable, Storable {
         config
             .getStringList(TEST_SOURCES)
             .stream()
-            .filter(path -> new File(path).exists())
-            .map(File::new)
+            .map(
+                path -> {
+                  File file = new File(path);
+                  if (!file.isAbsolute()) {
+                    file = new File(this.projectRoot, path);
+                  }
+                  return file;
+                })
+            .filter(File::exists)
             .forEach(file -> this.testSources.add(file));
       }
       // test-resources
@@ -737,8 +772,15 @@ public abstract class Project implements Serializable, Storable {
         config
             .getStringList(TEST_RESOURCES)
             .stream()
-            .filter(path -> new File(path).exists())
-            .map(File::new)
+            .map(
+                path -> {
+                  File file = new File(path);
+                  if (!file.isAbsolute()) {
+                    file = new File(this.projectRoot, path);
+                  }
+                  return file;
+                })
+            .filter(File::exists)
             .forEach(file -> this.testResources.add(file));
       }
       // output
