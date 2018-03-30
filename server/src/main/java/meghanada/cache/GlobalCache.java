@@ -19,7 +19,7 @@ import org.apache.logging.log4j.Logger;
 
 public class GlobalCache {
 
-  private static final int MEMBER_CACHE_MAX = 128;
+  private static final int MEMBER_CACHE_MAX = 512;
 
   private static final Logger log = LogManager.getLogger(GlobalCache.class);
 

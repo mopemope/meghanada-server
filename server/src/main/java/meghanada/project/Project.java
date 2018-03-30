@@ -32,11 +32,10 @@ import javax.tools.Diagnostic;
 import javax.tools.JavaFileObject;
 import jetbrains.exodus.entitystore.Entity;
 import jetbrains.exodus.entitystore.StoreTransaction;
-import meghanada.analyze.ClassScope;
 import meghanada.analyze.CompileResult;
 import meghanada.analyze.JavaAnalyzer;
 import meghanada.analyze.Source;
-import meghanada.cache.GlobalCache;
+import meghanada.analyze.subscribe.SourceCacheSubscriber;
 import meghanada.config.Config;
 import meghanada.formatter.JavaFormatter;
 import meghanada.store.ProjectDatabaseHelper;
@@ -215,6 +214,7 @@ public abstract class Project implements Serializable, Storable {
   private JavaAnalyzer getJavaAnalyzer() {
     if (this.javaAnalyzer == null) {
       this.javaAnalyzer = new JavaAnalyzer(this.compileSource, this.compileTarget);
+      this.javaAnalyzer.getEventBus().register(new SourceCacheSubscriber(this));
     }
     return this.javaAnalyzer;
   }
@@ -292,11 +292,10 @@ public abstract class Project implements Serializable, Storable {
 
         this.prepareCompile(files);
 
-        final CompiledSourceHandler handler = new CompiledSourceHandler(this);
         final CompileResult compileResult =
             clearMemberCache(
                 getJavaAnalyzer()
-                    .analyzeAndCompile(files, classpath, output.getCanonicalPath(), true, handler));
+                    .analyzeAndCompile(files, classpath, output.getCanonicalPath(), true));
 
         log.info(
             "project {} compile and analyze (java) {} files. force:{} problem:{} elapsed:{}",
@@ -357,12 +356,10 @@ public abstract class Project implements Serializable, Storable {
         final String classpath = this.allClasspath();
         this.prepareTestCompile(files);
 
-        final CompiledSourceHandler handler = new CompiledSourceHandler(this);
         final CompileResult compileResult =
             clearMemberCache(
                 getJavaAnalyzer()
-                    .analyzeAndCompile(
-                        files, classpath, testOutput.getCanonicalPath(), true, handler));
+                    .analyzeAndCompile(files, classpath, testOutput.getCanonicalPath(), true));
 
         log.info(
             "project {} compile and analyze (test) {} files. force:{} problem:{} elapsed:{}",
@@ -454,10 +451,9 @@ public abstract class Project implements Serializable, Storable {
       this.prepareCompile(files);
     }
 
-    final CompiledSourceHandler handler = new CompiledSourceHandler(this);
     final CompileResult compileResult =
         clearMemberCache(
-            getJavaAnalyzer().analyzeAndCompile(files, this.allClasspath(), output, true, handler));
+            getJavaAnalyzer().analyzeAndCompile(files, this.allClasspath(), output, true));
 
     log.info(
         "project {} compile and analyze {} files. force:{} problem:{} elapsed:{}",
@@ -503,10 +499,9 @@ public abstract class Project implements Serializable, Storable {
       this.prepareCompile(files);
     }
 
-    final CompiledSourceHandler handler = new CompiledSourceHandler(this);
     final CompileResult compileResult =
         clearMemberCache(
-            getJavaAnalyzer().analyzeAndCompile(files, this.allClasspath(), output, true, handler));
+            getJavaAnalyzer().analyzeAndCompile(files, this.allClasspath(), output, true));
 
     log.info(
         "project {} compile and analyze {} files. force:{} problem:{} elapsed:{}",
@@ -889,7 +884,11 @@ public abstract class Project implements Serializable, Storable {
     this.callerMap.clear();
   }
 
-  private synchronized void writeCaller() throws IOException {
+  public Map<String, Set<String>> getCallerMap() {
+    return this.callerMap;
+  }
+
+  public synchronized void writeCaller() throws IOException {
     ProjectDatabaseHelper.saveCallerMap(this.projectRootPath, this.callerMap);
   }
 
@@ -1092,12 +1091,11 @@ public abstract class Project implements Serializable, Storable {
     }
     final Stopwatch stopwatch = Stopwatch.createStarted();
 
-    CompiledSourceHandler handler = new CompiledSourceHandler(this, true, true);
     CompileResult compileResult =
         clearMemberCache(
             getJavaAnalyzer()
                 .runAnalyzeAndCompile(
-                    this.allClasspath(), output, sourceFile, sourceCode, true, handler));
+                    this.allClasspath(), output, sourceFile, sourceCode, true, true));
 
     log.info(
         "file {} compile and analyze problem:{} elapsed:{}",
@@ -1105,116 +1103,6 @@ public abstract class Project implements Serializable, Storable {
         compileResult.getDiagnostics().size(),
         stopwatch.stop());
     return compileResult;
-  }
-
-  private static class CompiledSourceHandler implements JavaAnalyzer.SourceAnalyzedHandler {
-
-    private final boolean useSourceCache;
-    private final Map<String, Set<String>> callerMap;
-    private final Map<String, String> checksumMap;
-    private final Project project;
-    private boolean diagnostics = false;
-    private boolean cacheImportMember = false;
-    private long lastRun;
-    private long lastCached;
-
-    CompiledSourceHandler(Project project) throws IOException {
-      this.project = project;
-      this.callerMap = project.callerMap;
-      final Config config = Config.load();
-      this.useSourceCache = config.useSourceCache();
-      this.checksumMap = ProjectDatabaseHelper.getChecksumMap(project.projectRootPath);
-    }
-
-    CompiledSourceHandler(final Project project, boolean diagnostics) throws IOException {
-      this(project);
-      this.diagnostics = diagnostics;
-    }
-
-    CompiledSourceHandler(final Project project, boolean diagnostics, boolean cacheImportMember)
-        throws IOException {
-      this(project);
-      this.diagnostics = diagnostics;
-      this.cacheImportMember = cacheImportMember;
-    }
-
-    @Override
-    public void analyzed(final Source source) throws IOException {
-
-      if (!useSourceCache) {
-        return;
-      }
-
-      if (this.cacheImportMember) {
-        long now = System.currentTimeMillis();
-        if (now - this.lastCached > 5000) {
-          this.createImportMemberCache(source);
-          this.lastCached = now;
-        }
-      }
-
-      final GlobalCache globalCache = GlobalCache.getInstance();
-      List<ClassScope> classScopes = source.getClassScopes();
-      for (ClassScope cs : classScopes) {
-        final String fqcn = cs.getFQCN();
-        for (String clazz : source.usingClasses) {
-          if (this.callerMap.containsKey(clazz)) {
-            final Set<String> set = this.callerMap.get(clazz);
-            set.add(fqcn);
-            this.callerMap.put(clazz, set);
-          } else {
-            final Set<String> set = new HashSet<>(16);
-            set.add(fqcn);
-            this.callerMap.put(clazz, set);
-          }
-        }
-        source.usingClasses.clear();
-      }
-
-      final File sourceFile = source.getFile();
-      final String path = sourceFile.getCanonicalPath();
-      source.invalidateCache();
-      if (!source.hasCompileError) {
-        final String md5sum = FileUtils.getChecksum(sourceFile);
-        checksumMap.put(path, md5sum);
-        globalCache.replaceSource(this.project, source);
-        ProjectDatabaseHelper.saveSource(source);
-      } else {
-        // error
-        checksumMap.remove(path);
-        if (!this.diagnostics) {
-          globalCache.replaceSource(this.project, source);
-        } else {
-          globalCache.invalidateSource(this.project, sourceFile);
-        }
-      }
-      this.lastRun = System.currentTimeMillis();
-    }
-
-    @Override
-    public void complete() throws IOException {
-      ProjectDatabaseHelper.saveChecksumMap(this.project.projectRootPath, this.checksumMap);
-      this.project.writeCaller();
-    }
-
-    @SuppressWarnings("CheckReturnValue")
-    private void createImportMemberCache(final Source src) {
-      if (!src.hasCompileError) {
-        try {
-          final GlobalCache globalCache = GlobalCache.getInstance();
-          src.importClasses.forEach(
-              impFqcn -> {
-                try {
-                  globalCache.getMemberDescriptors(impFqcn);
-                } catch (Exception e) {
-                  log.catching(e);
-                }
-              });
-        } catch (Exception e) {
-          log.catching(e);
-        }
-      }
-    }
   }
 
   public int getAndroidApiVersion() {

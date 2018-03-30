@@ -65,21 +65,6 @@ public class LocationSearcherTest extends GradleTestBase {
   }
 
   @Test
-  public void testJumpParamVariable02() throws Exception {
-    File f =
-        new File(project.getProjectRootPath(), "./src/main/java/meghanada/project/Project.java")
-            .getCanonicalFile();
-    assertTrue(f.exists());
-
-    final LocationSearcher searcher = getSearcher();
-    final Location result =
-        timeIt(() -> searcher.searchDeclarationLocation(f, 1176, 7, "source")).orElse(null);
-    assertNotNull(result);
-    assertEquals(1142, result.getLine());
-    assertEquals(39, result.getColumn());
-  }
-
-  @Test
   public void testJumpField01() throws Exception {
     File f =
         new File(project.getProjectRootPath(), "./src/main/java/meghanada/session/Session.java")

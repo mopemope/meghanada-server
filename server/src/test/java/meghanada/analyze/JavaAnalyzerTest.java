@@ -672,7 +672,7 @@ public class JavaAnalyzerTest extends GradleTestBase {
     final String tmp = System.getProperty("java.io.tmpdir");
     String path = project.getProjectRootPath() + "./src/test/java/meghanada/Hello.java";
     String code = "class Hello {}";
-    CompileResult result = analyzer.runAnalyzeAndCompile(cp, tmp, path, code, false, null);
+    CompileResult result = analyzer.runAnalyzeAndCompile(cp, tmp, path, code, false, true);
     String summary = result.getDiagnosticsSummary();
     assertEquals(true, result.isSuccess());
   }
@@ -685,7 +685,7 @@ public class JavaAnalyzerTest extends GradleTestBase {
     final String tmp = System.getProperty("java.io.tmpdir");
     String path = project.getProjectRootPath() + "./src/test/java/meghanada/Hello.java";
     String code = "class Hello {a}";
-    CompileResult result = analyzer.runAnalyzeAndCompile(cp, tmp, path, code, false, null);
+    CompileResult result = analyzer.runAnalyzeAndCompile(cp, tmp, path, code, false, true);
     String summary = result.getDiagnosticsSummary();
     assertEquals(false, result.isSuccess());
   }

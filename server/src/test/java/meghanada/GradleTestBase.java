@@ -174,6 +174,10 @@ public class GradleTestBase {
     log.info("deleted database {}", file);
   }
 
+  public static void clearProject() throws Exception {
+    project = null;
+  }
+
   public static void addClasspath(CachedASMReflector cachedASMReflector) {
     cachedASMReflector.addClasspath(getSystemJars());
     cachedASMReflector.addClasspath(getJars());

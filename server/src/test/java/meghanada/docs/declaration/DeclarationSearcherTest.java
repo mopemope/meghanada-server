@@ -269,44 +269,4 @@ public class DeclarationSearcherTest extends GradleTestBase {
           assertEquals(-1, declaration.argumentIndex);
         });
   }
-
-  @Test
-  public void testVar04() throws Exception {
-    File f =
-        new File(project.getProjectRootPath(), "./src/main/java/meghanada/project/Project.java")
-            .getCanonicalFile();
-    assertTrue(f.exists());
-
-    final DeclarationSearcher searcher = getSearcher();
-    final Optional<Declaration> result =
-        timeIt(() -> searcher.searchDeclaration(f, 1176, 7, "source"));
-    assertNotNull(result);
-    assertTrue(result.isPresent());
-    result.ifPresent(
-        declaration -> {
-          assertEquals("source", declaration.scopeInfo);
-          assertEquals("meghanada.analyze.Source", declaration.signature);
-          // assertEquals(-1, declaration.argumentIndex);
-        });
-  }
-
-  @Test
-  public void testVar05() throws Exception {
-    File f =
-        new File(project.getProjectRootPath(), "./src/main/java/meghanada/project/Project.java")
-            .getCanonicalFile();
-    assertTrue(f.exists());
-
-    final DeclarationSearcher searcher = getSearcher();
-    final Optional<Declaration> result =
-        timeIt(() -> searcher.searchDeclaration(f, 1171, 9, "source"));
-    assertNotNull(result);
-    assertTrue(result.isPresent());
-    result.ifPresent(
-        declaration -> {
-          assertEquals("source", declaration.scopeInfo);
-          assertEquals("meghanada.analyze.Source", declaration.signature);
-          // assertEquals(-1, declaration.argumentIndex);
-        });
-  }
 }

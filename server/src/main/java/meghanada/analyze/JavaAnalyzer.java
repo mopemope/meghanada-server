@@ -3,6 +3,8 @@ package meghanada.analyze;
 import static java.util.Objects.nonNull;
 import static meghanada.analyze.TreeAnalyzer.analyze;
 
+import com.google.common.eventbus.AsyncEventBus;
+import com.google.common.eventbus.EventBus;
 import com.sun.source.tree.CompilationUnitTree;
 import com.sun.source.util.JavacTask;
 import java.io.File;
@@ -21,8 +23,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
-import javax.annotation.Nullable;
 import javax.tools.Diagnostic;
 import javax.tools.DiagnosticCollector;
 import javax.tools.JavaCompiler;
@@ -40,14 +42,24 @@ public class JavaAnalyzer {
   private static final Logger log = LogManager.getLogger(JavaAnalyzer.class);
 
   private static final JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
-  private ExecutorService executorService = Executors.newSingleThreadExecutor();
+  private final ExecutorService executorService;
 
   private final String compileSource;
   private final String compileTarget;
+  private final EventBus eventBus;
 
   public JavaAnalyzer(String compileSource, String compileTarget) {
     this.compileSource = compileSource;
     this.compileTarget = compileTarget;
+    this.executorService = Executors.newCachedThreadPool();
+    this.eventBus =
+        new AsyncEventBus(
+            executorService,
+            (throwable, subscriberExceptionContext) -> {
+              if (!(throwable instanceof RejectedExecutionException)) {
+                log.error(throwable.getMessage(), throwable);
+              }
+            });
 
     log.debug(
         "compiler settings compileSource:{} compileTarget:{}",
@@ -65,16 +77,21 @@ public class JavaAnalyzer {
                 }));
   }
 
-  private static Set<File> getErrorFiles(List<Diagnostic<? extends JavaFileObject>> diagnostics) {
+  public EventBus getEventBus() {
+    return this.eventBus;
+  }
 
-    Set<File> temp =
+  private static Set<File> getErrorFiles(
+      final List<Diagnostic<? extends JavaFileObject>> diagnostics) {
+
+    final Set<File> temp =
         Collections.newSetFromMap(new ConcurrentHashMap<File, Boolean>(diagnostics.size()));
 
-    for (Diagnostic<? extends JavaFileObject> diagnostic : diagnostics) {
-      Diagnostic.Kind kind = diagnostic.getKind();
-      JavaFileObject fileObject = diagnostic.getSource();
+    for (final Diagnostic<? extends JavaFileObject> diagnostic : diagnostics) {
+      final Diagnostic.Kind kind = diagnostic.getKind();
+      final JavaFileObject fileObject = diagnostic.getSource();
       if (nonNull(fileObject) && kind.equals(Diagnostic.Kind.ERROR)) {
-        URI uri = fileObject.toUri();
+        final URI uri = fileObject.toUri();
         try {
           temp.add(new File(uri.normalize()).getCanonicalFile());
         } catch (IOException e) {
@@ -86,22 +103,23 @@ public class JavaAnalyzer {
     return temp;
   }
 
-  public CompileResult analyzeAndCompile(List<File> files, String classpath, String out)
+  public CompileResult analyzeAndCompile(final List<File> files, final String classpath, String out)
       throws IOException {
     return analyzeAndCompile(files, classpath, out, true);
   }
 
   public CompileResult analyzeAndCompile(
-      List<File> files, String classpath, String out, boolean generate) throws IOException {
-    return analyzeAndCompile(files, classpath, out, generate, null);
+      final List<File> files, final String classpath, final String out, final boolean generate)
+      throws IOException {
+    return analyzeAndCompile(files, classpath, out, generate, false);
   }
 
   public CompileResult analyzeAndCompile(
-      List<File> files,
-      String classpath,
-      String out,
-      boolean generate,
-      @Nullable SourceAnalyzedHandler handler)
+      final List<File> files,
+      final String classpath,
+      final String out,
+      final boolean generate,
+      final boolean isDiagnostic)
       throws IOException {
 
     if (files.isEmpty()) {
@@ -115,26 +133,26 @@ public class JavaAnalyzer {
       log.warn("fail mkdirs path:{}", tempOut);
     }
     log.trace("start compile classpath={} files={} output={}", classpath, files, out);
-    return this.runAnalyzeAndCompile(classpath, out, files, generate, handler);
+    return this.runAnalyzeAndCompile(classpath, out, files, generate, isDiagnostic);
   }
 
   private CompileResult runAnalyzeAndCompile(
-      String classpath,
-      String out,
-      List<File> compileFiles,
-      boolean generate,
-      @Nullable SourceAnalyzedHandler handler)
+      final String classpath,
+      final String out,
+      final List<File> compileFiles,
+      final boolean generate,
+      final boolean isDiagnostics)
       throws IOException {
 
-    Config config = Config.load();
+    final Config config = Config.load();
 
-    try (StandardJavaFileManager fileManager =
+    try (final StandardJavaFileManager fileManager =
         compiler.getStandardFileManager(null, null, Charset.forName("UTF-8"))) {
 
-      Iterable<? extends JavaFileObject> compilationUnits =
+      final Iterable<? extends JavaFileObject> compilationUnits =
           fileManager.getJavaFileObjectsFromFiles(compileFiles);
-      DiagnosticCollector<JavaFileObject> diagnosticCollector = new DiagnosticCollector<>();
-      List<String> opts =
+      final DiagnosticCollector<JavaFileObject> diagnosticCollector = new DiagnosticCollector<>();
+      final List<String> opts =
           Arrays.asList(
               "-cp",
               classpath,
@@ -156,67 +174,55 @@ public class JavaAnalyzer {
         compileOptions = config.getJava9JavacArgs();
       }
       compileOptions.addAll(opts);
-      JavaCompiler.CompilationTask compilerTask =
+      final JavaCompiler.CompilationTask compilerTask =
           compiler.getTask(
               null, fileManager, diagnosticCollector, compileOptions, null, compilationUnits);
 
-      JavacTask javacTask = (JavacTask) compilerTask;
+      final JavacTask javacTask = (JavacTask) compilerTask;
 
-      Iterable<? extends CompilationUnitTree> parsedIter = javacTask.parse();
+      final Iterable<? extends CompilationUnitTree> parsedIter = javacTask.parse();
       javacTask.analyze();
 
-      List<Diagnostic<? extends JavaFileObject>> diagnostics = diagnosticCollector.getDiagnostics();
-      Set<File> errorFiles = JavaAnalyzer.getErrorFiles(diagnostics);
+      final List<Diagnostic<? extends JavaFileObject>> diagnostics =
+          diagnosticCollector.getDiagnostics();
+      final Set<File> errorFiles = JavaAnalyzer.getErrorFiles(diagnostics);
 
-      Map<File, Source> analyzedMap = analyze(parsedIter, errorFiles);
+      final Map<File, Source> analyzedMap = analyze(parsedIter, errorFiles);
 
       if (generate && !Config.load().useExternalBuilder()) {
         javacTask.generate();
         CachedASMReflector.getInstance().updateClassIndexFromDirectory();
       }
 
-      if (nonNull(handler)) {
-        analyzedMap
-            .values()
-            .parallelStream()
-            .forEach(
-                source -> {
-                  try {
-                    handler.analyzed(source);
-                  } catch (IOException e) {
-                    throw new UncheckedIOException(e);
-                  }
-                });
-        handler.complete();
-      }
+      this.eventBus.post(new AnalyzedEvent(analyzedMap, isDiagnostics));
 
-      boolean success = errorFiles.size() == 0;
-      CompileResult result = new CompileResult(success, analyzedMap, diagnostics, errorFiles);
+      final boolean success = errorFiles.size() == 0;
+      final CompileResult result = new CompileResult(success, analyzedMap, diagnostics, errorFiles);
       // ProjectDatabaseHelper.saveCompileResult(result);
       return result;
     }
   }
 
   public CompileResult runAnalyzeAndCompile(
-      String classpath,
-      String out,
-      String sourcePath,
-      String sourceCode,
-      boolean generate,
-      @Nullable SourceAnalyzedHandler handler)
+      final String classpath,
+      final String out,
+      final String sourcePath,
+      final String sourceCode,
+      final boolean generate,
+      final boolean isDiagnostics)
       throws IOException {
 
-    Config config = Config.load();
+    final Config config = Config.load();
 
-    try (StandardJavaFileManager fileManager =
+    try (final StandardJavaFileManager fileManager =
         compiler.getStandardFileManager(null, null, Charset.forName("UTF-8"))) {
 
-      File sourceFile = new File(sourcePath);
-      JavaFileObject fileObject =
+      final File sourceFile = new File(sourcePath);
+      final JavaFileObject fileObject =
           new JavaSourceFromString(sourceFile.getCanonicalPath(), sourceCode);
-      List<? extends JavaFileObject> compilationUnits = Arrays.asList(fileObject);
-      DiagnosticCollector<JavaFileObject> diagnosticCollector = new DiagnosticCollector<>();
-      List<String> compileOptions =
+      final List<? extends JavaFileObject> compilationUnits = Arrays.asList(fileObject);
+      final DiagnosticCollector<JavaFileObject> diagnosticCollector = new DiagnosticCollector<>();
+      final List<String> opts =
           Arrays.asList(
               "-cp",
               classpath,
@@ -230,41 +236,44 @@ public class JavaAnalyzer {
               this.compileTarget,
               "-encoding",
               "UTF-8");
+      List<String> compileOptions = new ArrayList<>(1);
+      if (this.compileTarget.equals("1.8")) {
+        compileOptions = config.getJava8JavacArgs();
+      } else if (this.compileTarget.equals("1.9") || this.compileTarget.equals("9")) {
+        compileOptions = config.getJava9JavacArgs();
+      }
+      compileOptions.addAll(opts);
 
-      JavaCompiler.CompilationTask compilerTask =
+      final JavaCompiler.CompilationTask compilerTask =
           compiler.getTask(
               null, fileManager, diagnosticCollector, compileOptions, null, compilationUnits);
 
-      JavacTask javacTask = (JavacTask) compilerTask;
+      final JavacTask javacTask = (JavacTask) compilerTask;
 
-      Iterable<? extends CompilationUnitTree> parsedIter = javacTask.parse();
+      final Iterable<? extends CompilationUnitTree> parsedIter = javacTask.parse();
       javacTask.analyze();
 
-      List<Diagnostic<? extends JavaFileObject>> diagnostics = diagnosticCollector.getDiagnostics();
+      final List<Diagnostic<? extends JavaFileObject>> diagnostics =
+          diagnosticCollector.getDiagnostics();
 
-      Set<File> errorFiles = JavaAnalyzer.getErrorFiles(diagnostics);
+      final Set<File> errorFiles = JavaAnalyzer.getErrorFiles(diagnostics);
 
       Future<?> future =
           this.getExecutorService()
               .submit(
                   () -> {
                     try {
-                      Map<File, Source> analyzedMap = analyze(parsedIter, errorFiles);
+                      final Map<File, Source> analyzedMap = analyze(parsedIter, errorFiles);
                       if (generate && !Config.load().useExternalBuilder()) {
                         javacTask.generate();
                         CachedASMReflector.getInstance().updateClassIndexFromDirectory();
                       }
-                      if (nonNull(handler)) {
-                        for (Source source : analyzedMap.values()) {
-                          handler.analyzed(source);
-                        }
-                        handler.complete();
-                      }
+                      this.eventBus.post(new AnalyzedEvent(analyzedMap, isDiagnostics));
                     } catch (IOException e) {
                       log.catching(e);
                     }
                   });
-      boolean success = errorFiles.size() == 0;
+      final boolean success = errorFiles.size() == 0;
       return new CompileResult(success, new HashMap<>(0), diagnostics, errorFiles);
     }
   }
@@ -299,6 +308,28 @@ public class JavaAnalyzer {
     @Override
     public CharSequence getCharContent(boolean ignoreEncodingErrors) {
       return code;
+    }
+  }
+
+  public static class AsyncRunEvent {
+    public final Runnable runnable;
+
+    public AsyncRunEvent(Runnable runnable) {
+      this.runnable = runnable;
+    }
+  }
+
+  public static class AnalyzedEvent {
+    public final Map<File, Source> analyzedMap;
+    public boolean diagnostics;
+
+    public AnalyzedEvent(Map<File, Source> analyzedMap) {
+      this.analyzedMap = analyzedMap;
+    }
+
+    public AnalyzedEvent(Map<File, Source> analyzedMap, boolean diagnostics) {
+      this.analyzedMap = analyzedMap;
+      this.diagnostics = diagnostics;
     }
   }
 }
