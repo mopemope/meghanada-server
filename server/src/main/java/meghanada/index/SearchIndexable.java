@@ -11,6 +11,7 @@ public interface SearchIndexable {
   String CLASS_NAME = "class";
   String METHOD_NAME = "method";
   String SYMBOL_NAME = "symbol";
+  String CATEGORY = "category";
 
   String getIndexGroupId();
 

@@ -815,37 +815,55 @@ public class Source implements Serializable, Storable, SearchIndexable {
     try (final BufferedReader br =
         new BufferedReader(
             new InputStreamReader(new FileInputStream(this.filePath), Charset.forName("UTF-8")))) {
-      long i = 1;
+      long lineNumber = 1;
       String s;
       while ((s = br.readLine()) != null) {
         final Document doc = getBaseDocument();
         doc.add(
             new Field(
                 SearchIndexable.LINE_NUMBER,
-                Long.toString(i),
+                Long.toString(lineNumber),
                 Field.Store.YES,
                 Field.Index.NOT_ANALYZED));
 
         doc.add(new Field(SearchIndexable.CODE, s, Field.Store.YES, Field.Index.ANALYZED));
         this.classNameIndex.computeIfPresent(
-            i,
+            lineNumber,
             (line, name) -> {
+              doc.add(
+                  new Field(
+                      SearchIndexable.CATEGORY,
+                      SearchIndexable.CLASS_NAME,
+                      Field.Store.YES,
+                      Field.Index.NOT_ANALYZED));
               doc.add(
                   new Field(
                       SearchIndexable.CLASS_NAME, name, Field.Store.YES, Field.Index.ANALYZED));
               return name;
             });
         this.methodNameIndex.computeIfPresent(
-            i,
+            lineNumber,
             (line, name) -> {
+              doc.add(
+                  new Field(
+                      SearchIndexable.CATEGORY,
+                      SearchIndexable.METHOD_NAME,
+                      Field.Store.YES,
+                      Field.Index.NOT_ANALYZED));
               doc.add(
                   new Field(
                       SearchIndexable.METHOD_NAME, name, Field.Store.YES, Field.Index.ANALYZED));
               return name;
             });
         this.symbolNameIndex.computeIfPresent(
-            i,
+            lineNumber,
             (line, name) -> {
+              doc.add(
+                  new Field(
+                      SearchIndexable.CATEGORY,
+                      SearchIndexable.SYMBOL_NAME,
+                      Field.Store.YES,
+                      Field.Index.NOT_ANALYZED));
               doc.add(
                   new Field(
                       SearchIndexable.SYMBOL_NAME, name, Field.Store.YES, Field.Index.ANALYZED));
@@ -853,7 +871,7 @@ public class Source implements Serializable, Storable, SearchIndexable {
             });
 
         list.add(doc);
-        i++;
+        lineNumber++;
       }
       return list;
     } catch (IOException ex) {

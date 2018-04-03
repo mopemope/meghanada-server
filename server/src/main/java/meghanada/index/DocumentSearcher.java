@@ -36,7 +36,7 @@ public class DocumentSearcher implements AutoCloseable {
 
   private static final Logger log = LogManager.getLogger(DocumentSearcher.class);
 
-  private static final Version LUCENE_VERSION = Version.LUCENE_35;
+  private static final Version LUCENE_VERSION = Version.LUCENE_36;
   private final Environment environment;
   private final Directory directory;
   private final Analyzer analyzer;
@@ -119,7 +119,7 @@ public class DocumentSearcher implements AutoCloseable {
     return queryParser.parse(query);
   }
 
-  public List<Document> search(final String field, final String query, final int cnt)
+  List<Document> search(final String field, final String query, final int cnt)
       throws IOException, ParseException {
     final TopDocs results = indexSearcher.search(getQuery(field, query), cnt);
     return Arrays.stream(results.scoreDocs)
@@ -134,7 +134,7 @@ public class DocumentSearcher implements AutoCloseable {
         .collect(Collectors.toList());
   }
 
-  public <T> List<T> search(
+  <T> List<T> search(
       final String field, final String query, final int cnt, final DocumentConverter<T> converter)
       throws IOException, ParseException {
     final TopDocs results = indexSearcher.search(getQuery(field, query), cnt);
@@ -151,7 +151,7 @@ public class DocumentSearcher implements AutoCloseable {
   }
 
   @SuppressWarnings("CheckReturnValue")
-  public void executeInTransaction(final Runnable runnable) {
+  void executeInTransaction(final Runnable runnable) {
     this.environment.executeInTransaction(
         txn -> {
           try {
@@ -167,7 +167,7 @@ public class DocumentSearcher implements AutoCloseable {
   }
 
   @SuppressWarnings("CheckReturnValue")
-  public <T> T computeInTransaction(final Supplier<T> fn) {
+  <T> T computeInTransaction(final Supplier<T> fn) {
     return this.environment.computeInTransaction(
         txn -> {
           try {
@@ -186,7 +186,7 @@ public class DocumentSearcher implements AutoCloseable {
   }
 
   @SuppressWarnings("CheckReturnValue")
-  public <T> T searchInTransaction(final Supplier<T> fn) {
+  <T> T searchInTransaction(final Supplier<T> fn) {
     return this.environment.computeInReadonlyTransaction(
         txn -> {
           try {

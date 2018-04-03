@@ -190,7 +190,7 @@ public class IndexDatabase {
         });
   }
 
-  public Optional<SearchResults> search(final String query) {
+  public Optional<SearchResults> searchAll(final String query) {
     this.open();
     return this.searcher.searchInTransaction(
         () -> {
@@ -206,7 +206,8 @@ public class IndexDatabase {
                         final String filePath = d.get(SearchIndexable.GROUP_ID);
                         final String line = d.get(SearchIndexable.LINE_NUMBER);
                         final String contents = d.get(SearchIndexable.CODE);
-                        return new SearchResult(filePath, line, contents);
+                        final String cat = d.get(SearchIndexable.CATEGORY);
+                        return new SearchResult(filePath, line, contents, cat);
                       });
 
               log.debug(
@@ -227,7 +228,8 @@ public class IndexDatabase {
                         final String filePath = d.get(SearchIndexable.GROUP_ID);
                         final String line = d.get(SearchIndexable.LINE_NUMBER);
                         final String contents = d.get(SearchIndexable.CODE);
-                        return new SearchResult(filePath, line, contents);
+                        final String cat = d.get(SearchIndexable.CATEGORY);
+                        return new SearchResult(filePath, line, contents, cat);
                       });
 
               log.debug(
@@ -248,7 +250,8 @@ public class IndexDatabase {
                         final String filePath = d.get(SearchIndexable.GROUP_ID);
                         final String line = d.get(SearchIndexable.LINE_NUMBER);
                         final String contents = d.get(SearchIndexable.CODE);
-                        return new SearchResult(filePath, line, contents);
+                        final String cat = d.get(SearchIndexable.CATEGORY);
+                        return new SearchResult(filePath, line, contents, cat);
                       });
 
               log.debug(
@@ -269,7 +272,8 @@ public class IndexDatabase {
                         final String filePath = d.get(SearchIndexable.GROUP_ID);
                         final String line = d.get(SearchIndexable.LINE_NUMBER);
                         final String contents = d.get(SearchIndexable.CODE);
-                        return new SearchResult(filePath, line, contents);
+                        final String cat = d.get(SearchIndexable.CATEGORY);
+                        return new SearchResult(filePath, line, contents, cat);
                       });
 
               log.debug(
@@ -277,7 +281,49 @@ public class IndexDatabase {
                   SearchIndexable.CODE,
                   query,
                   contentResults.size());
-              results.contents = contentResults;
+              results.codes = contentResults;
+            }
+            return Optional.of(results);
+          } catch (IOException e) {
+            throw new UncheckedIOException(e);
+          } catch (ParseException e) {
+            log.catching(e);
+            return Optional.empty();
+          }
+        });
+  }
+
+  public Optional<SearchResults> search(final String query) {
+    this.open();
+    return this.searcher.searchInTransaction(
+        () -> {
+          try {
+            final SearchResults results = new SearchResults();
+            {
+              List<SearchResult> result =
+                  this.searcher.search(
+                      SearchIndexable.CLASS_NAME,
+                      query,
+                      maxHits,
+                      d -> {
+                        final String filePath = d.get(SearchIndexable.GROUP_ID);
+                        final String line = d.get(SearchIndexable.LINE_NUMBER);
+                        final String contents = d.get(SearchIndexable.CODE);
+                        final String cat = d.get(SearchIndexable.CATEGORY);
+                        return new SearchResult(filePath, line, contents, cat);
+                      });
+              result.forEach(
+                  r -> {
+                    if (r.category.equals(SearchIndexable.CLASS_NAME)) {
+                      results.classes.add(r);
+                    } else if (r.category.equals(SearchIndexable.METHOD_NAME)) {
+                      results.methods.add(r);
+                    } else if (r.category.equals(SearchIndexable.SYMBOL_NAME)) {
+                      results.symbols.add(r);
+                    } else if (r.category.equals(SearchIndexable.CODE)) {
+                      results.codes.add(r);
+                    }
+                  });
             }
             return Optional.of(results);
           } catch (IOException e) {
