@@ -18,6 +18,7 @@ import java.util.Optional;
 import meghanada.analyze.CompileResult;
 import meghanada.completion.LocalVariable;
 import meghanada.docs.declaration.Declaration;
+import meghanada.index.SearchResults;
 import meghanada.location.Location;
 import meghanada.reference.Reference;
 import meghanada.reflect.CandidateUnit;
@@ -404,6 +405,25 @@ public class CommandHandler {
       } else {
         TypeInfo dummy = new TypeInfo("");
         final String out = outputFormatter.typeInfo(id, dummy);
+        writer.write(out);
+      }
+
+      writer.newLine();
+      writer.flush();
+    } catch (Throwable t) {
+      writeError(id, t);
+    }
+  }
+
+  public void searchEverywhere(final long id, final String q) {
+    try {
+      final Optional<SearchResults> results = session.searchEverywhere(q);
+      if (results.isPresent()) {
+        final String out = outputFormatter.searchEverywhere(id, results.get());
+        writer.write(out);
+      } else {
+        SearchResults dummy = new SearchResults();
+        final String out = outputFormatter.searchEverywhere(id, dummy);
         writer.write(out);
       }
 

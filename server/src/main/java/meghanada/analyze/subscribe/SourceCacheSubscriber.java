@@ -12,6 +12,7 @@ import meghanada.analyze.JavaAnalyzer;
 import meghanada.analyze.Source;
 import meghanada.cache.GlobalCache;
 import meghanada.config.Config;
+import meghanada.index.IndexDatabase;
 import meghanada.project.Project;
 import meghanada.store.ProjectDatabaseHelper;
 import meghanada.utils.FileUtils;
@@ -70,8 +71,14 @@ public class SourceCacheSubscriber {
     final File sourceFile = source.getFile();
     final String path = sourceFile.getCanonicalPath();
     source.invalidateCache();
+
+    final String oldChecksum = checksumMap.getOrDefault(path, "");
+    final String md5sum = FileUtils.getChecksum(sourceFile);
+    if (!oldChecksum.equals(md5sum)) {
+      IndexDatabase.getInstance().requestIndex(source);
+    }
+
     if (!source.hasCompileError) {
-      final String md5sum = FileUtils.getChecksum(sourceFile);
       checksumMap.put(path, md5sum);
       globalCache.replaceSource(this.project, source);
       ProjectDatabaseHelper.saveSource(source);

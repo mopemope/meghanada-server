@@ -6,6 +6,7 @@ import java.util.Map;
 import meghanada.analyze.CompileResult;
 import meghanada.completion.LocalVariable;
 import meghanada.docs.declaration.Declaration;
+import meghanada.index.SearchResults;
 import meghanada.location.Location;
 import meghanada.reference.Reference;
 import meghanada.reflect.CandidateUnit;
@@ -52,4 +53,6 @@ public interface OutputFormatter {
   String typeInfo(long id, TypeInfo typeInfo);
 
   String killRunningProcess(long id);
+
+  String searchEverywhere(long id, SearchResults r);
 }

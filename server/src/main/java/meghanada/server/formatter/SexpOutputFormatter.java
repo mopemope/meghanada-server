@@ -20,6 +20,7 @@ import javax.tools.JavaFileObject;
 import meghanada.analyze.CompileResult;
 import meghanada.completion.LocalVariable;
 import meghanada.docs.declaration.Declaration;
+import meghanada.index.SearchResults;
 import meghanada.location.Location;
 import meghanada.reference.Reference;
 import meghanada.reflect.CandidateUnit;
@@ -366,5 +367,58 @@ public class SexpOutputFormatter implements OutputFormatter {
   @Override
   public String killRunningProcess(long id) {
     return success(LPAREN + "success" + RPAREN);
+  }
+
+  @Override
+  public String searchEverywhere(long id, SearchResults results) {
+    final StringBuilder sb = new StringBuilder(1024);
+    sb.append(LPAREN);
+
+    sb.append(LIST_SEP);
+    {
+      sb.append(LPAREN);
+      results.classes.forEach(
+          r -> {
+            sb.append(doubleQuote(r.toString()));
+            sb.append(LIST_SEP);
+          });
+      sb.append(RPAREN);
+    }
+
+    sb.append(LIST_SEP);
+    {
+      sb.append(LPAREN);
+      results.methods.forEach(
+          r -> {
+            sb.append(doubleQuote(r.toString()));
+            sb.append(LIST_SEP);
+          });
+      sb.append(RPAREN);
+    }
+
+    sb.append(LIST_SEP);
+    {
+      sb.append(LPAREN);
+      results.symbols.forEach(
+          r -> {
+            sb.append(doubleQuote(r.toString()));
+            sb.append(LIST_SEP);
+          });
+      sb.append(RPAREN);
+    }
+
+    sb.append(LIST_SEP);
+    {
+      sb.append(LPAREN);
+      results.contents.forEach(
+          r -> {
+            sb.append(doubleQuote(r.toString()));
+            sb.append(LIST_SEP);
+          });
+      sb.append(RPAREN);
+    }
+
+    sb.append(RPAREN);
+    return success(sb.toString());
   }
 }

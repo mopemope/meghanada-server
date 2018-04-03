@@ -280,6 +280,14 @@ public class EmacsServer implements Server {
                   handler.execMain(id, args.get(0), true);
                   return true;
                 })
+            .when(headTail(eq("se"), any()))
+            .get(
+                args -> {
+                  // se : Search Everywhere
+                  // usage: se <keyword>
+                  handler.searchEverywhere(id, args.get(0));
+                  return true;
+                })
             .when(headNil(eq("q")))
             .get(
                 () -> {

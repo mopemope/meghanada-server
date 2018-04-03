@@ -198,7 +198,12 @@ public class TreeAnalyzer {
       variable.argumentIndex = context.getArgumentIndex();
       context.setArgumentFQCN(variable.fqcn);
     }
-    src.getCurrentScope().ifPresent(scope -> scope.addVariable(variable));
+    src.getCurrentScope()
+        .ifPresent(
+            scope -> {
+              scope.addVariable(variable);
+              addSymbolIndex(src, scope, variable);
+            });
   }
 
   private static String markFQCN(Source src, String fqcn) {
@@ -329,6 +334,7 @@ public class TreeAnalyzer {
               }
             }
             sc.addVariable(variable);
+            addSymbolIndex(src, sc, variable);
           }
         });
   }
@@ -358,7 +364,12 @@ public class TreeAnalyzer {
 
       if (nonNull(type)) {
         variable.fqcn = TreeAnalyzer.markFQCN(src, type, markUnUse);
-        src.getCurrentScope().ifPresent(scope -> scope.addVariable(variable));
+        src.getCurrentScope()
+            .ifPresent(
+                scope -> {
+                  scope.addVariable(variable);
+                  addSymbolIndex(src, scope, variable);
+                });
       }
     }
   }
@@ -546,7 +557,8 @@ public class TreeAnalyzer {
     for (JCTree tree : classDecl.getMembers()) {
       analyzeParsedTree(context, tree);
     }
-
+    src.classNameIndex.put(
+        classScope.getBeginLine(), ClassNameUtils.getSimpleName(classScope.getFQCN()));
     Optional<ClassScope> endClass = src.endClass();
     log.trace("class={}", endClass);
   }
@@ -1105,6 +1117,7 @@ public class TreeAnalyzer {
                 }
 
                 analyzeParsedTree(context, md.getBody());
+                src.methodNameIndex.put(methodScope.getBeginLine(), methodName);
                 Optional<MethodScope> endMethod = classScope.endMethod();
               } catch (IOException e) {
                 throw new UncheckedIOException(e);
@@ -1244,10 +1257,10 @@ public class TreeAnalyzer {
                 classScope.isEnum = isEnum;
                 log.trace("maybe inner class={}", classScope);
                 parent.startClass(classScope);
-                for (JCTree memberTree : classDecl.getMembers()) {
+                for (final JCTree memberTree : classDecl.getMembers()) {
                   analyzeParsedTree(context, memberTree);
                 }
-
+                src.classNameIndex.put(classScope.getBeginLine(), simpleName.toString());
                 Optional<ClassScope> ignore = parent.endClass();
               } catch (IOException e) {
                 throw new UncheckedIOException(e);
@@ -1294,7 +1307,12 @@ public class TreeAnalyzer {
                     Range vRange = Range.create(src, vStart, vEnd);
                     Variable variable = new Variable(selectScope, ident.pos, vRange);
                     variable.fqcn = fqcn;
-                    src.getCurrentScope().ifPresent(s -> s.addVariable(variable));
+                    src.getCurrentScope()
+                        .ifPresent(
+                            scope -> {
+                              scope.addVariable(variable);
+                              addSymbolIndex(src, scope, variable);
+                            });
                   }
                 });
       }
@@ -1539,7 +1557,12 @@ public class TreeAnalyzer {
                   variable.fqcn = TreeAnalyzer.markFQCN(src, fqcn);
                   variable.argumentIndex = context.getArgumentIndex();
                   context.setArgumentFQCN(variable.fqcn);
-                  src.getCurrentScope().ifPresent(scope -> scope.addVariable(variable));
+                  src.getCurrentScope()
+                      .ifPresent(
+                          scope -> {
+                            scope.addVariable(variable);
+                            addSymbolIndex(src, scope, variable);
+                          });
                 });
       }
     } else {
@@ -1553,7 +1576,12 @@ public class TreeAnalyzer {
           variable.fqcn = TreeAnalyzer.markFQCN(src, className);
           variable.argumentIndex = context.getArgumentIndex();
           context.setArgumentFQCN(variable.fqcn);
-          src.getCurrentScope().ifPresent(scope -> scope.addVariable(variable));
+          src.getCurrentScope()
+              .ifPresent(
+                  scope -> {
+                    scope.addVariable(variable);
+                    addSymbolIndex(src, scope, variable);
+                  });
           return;
         }
       }
@@ -1563,7 +1591,12 @@ public class TreeAnalyzer {
         variable.fqcn = TreeAnalyzer.markFQCN(src, clazz);
         variable.argumentIndex = context.getArgumentIndex();
         context.setArgumentFQCN(variable.fqcn);
-        src.getCurrentScope().ifPresent(scope -> scope.addVariable(variable));
+        src.getCurrentScope()
+            .ifPresent(
+                scope -> {
+                  scope.addVariable(variable);
+                  addSymbolIndex(src, scope, variable);
+                });
         return;
       }
 
@@ -1575,7 +1608,12 @@ public class TreeAnalyzer {
                 variable.fqcn = TreeAnalyzer.markFQCN(src, className);
                 variable.argumentIndex = context.getArgumentIndex();
                 context.setArgumentFQCN(variable.fqcn);
-                src.getCurrentScope().ifPresent(scope -> scope.addVariable(variable));
+                src.getCurrentScope()
+                    .ifPresent(
+                        scope -> {
+                          scope.addVariable(variable);
+                          addSymbolIndex(src, scope, variable);
+                        });
               }
             });
       }
@@ -1878,7 +1916,12 @@ public class TreeAnalyzer {
                     Range vRange = Range.create(src, vStart, vEndPos);
                     Variable variable = new Variable(selectScope, ident.pos, vRange);
                     variable.fqcn = fqcn;
-                    src.getCurrentScope().ifPresent(s -> s.addVariable(variable));
+                    src.getCurrentScope()
+                        .ifPresent(
+                            scope -> {
+                              scope.addVariable(variable);
+                              addSymbolIndex(src, scope, variable);
+                            });
                   }
                 });
       }
@@ -1980,5 +2023,15 @@ public class TreeAnalyzer {
       }
     }
     return baseType;
+  }
+
+  private static void addSymbolIndex(final Source src, final Scope scope, final Variable v) {
+    if (scope instanceof ExpressionScope) {
+      ExpressionScope expressionScope = (ExpressionScope) scope;
+      if (expressionScope.isField) {
+        long line = v.range.begin.line;
+        src.symbolNameIndex.put(line, v.name);
+      }
+    }
   }
 }

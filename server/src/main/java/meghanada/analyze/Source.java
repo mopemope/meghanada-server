@@ -34,6 +34,7 @@ import jetbrains.exodus.entitystore.Entity;
 import jetbrains.exodus.entitystore.EntityId;
 import jetbrains.exodus.entitystore.StoreTransaction;
 import meghanada.cache.GlobalCache;
+import meghanada.index.SearchIndexable;
 import meghanada.reflect.CandidateUnit;
 import meghanada.reflect.ClassIndex;
 import meghanada.reflect.MemberDescriptor;
@@ -43,8 +44,10 @@ import meghanada.utils.ClassNameUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.message.EntryMessage;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
 
-public class Source implements Serializable, Storable {
+public class Source implements Serializable, Storable, SearchIndexable {
 
   public static final String REPORT_UNKNOWN_TREE = "report-unknown-tree";
   public static final String ENTITY_TYPE = "Source";
@@ -75,6 +78,9 @@ public class Source implements Serializable, Storable {
   private Map<String, String> importMap;
   private transient List<LineRange> lineRange;
   private transient LineMap lineMap;
+  Map<Long, String> classNameIndex = new HashMap<>(4);
+  Map<Long, String> methodNameIndex = new HashMap<>(8);
+  Map<Long, String> symbolNameIndex = new HashMap<>(8);
 
   public Source(String filePath) {
     this.filePath = filePath;
@@ -789,5 +795,80 @@ public class Source implements Serializable, Storable {
 
   public void setPackageStartLine(long line) {
     this.pkgStartLine = line;
+  }
+
+  @Override
+  public String getIndexGroupId() {
+    return this.filePath;
+  }
+
+  @Override
+  public List<Document> getDocumentIndices() {
+    final List<Document> list = new ArrayList<>();
+    list.addAll(createSourceTextIndices());
+    return list;
+  }
+
+  @SuppressWarnings("CheckReturnValue")
+  private List<Document> createSourceTextIndices() {
+    final List<Document> list = new ArrayList<>();
+    try (final BufferedReader br =
+        new BufferedReader(
+            new InputStreamReader(new FileInputStream(this.filePath), Charset.forName("UTF-8")))) {
+      long i = 1;
+      String s;
+      while ((s = br.readLine()) != null) {
+        final Document doc = getBaseDocument();
+        doc.add(
+            new Field(
+                SearchIndexable.LINE_NUMBER,
+                Long.toString(i),
+                Field.Store.YES,
+                Field.Index.NOT_ANALYZED));
+
+        doc.add(new Field(SearchIndexable.CONTENTS, s, Field.Store.YES, Field.Index.ANALYZED));
+        this.classNameIndex.computeIfPresent(
+            i,
+            (line, name) -> {
+              doc.add(
+                  new Field(
+                      SearchIndexable.CLASS_NAME, name, Field.Store.YES, Field.Index.ANALYZED));
+              return name;
+            });
+        this.methodNameIndex.computeIfPresent(
+            i,
+            (line, name) -> {
+              doc.add(
+                  new Field(
+                      SearchIndexable.METHOD_NAME, name, Field.Store.YES, Field.Index.ANALYZED));
+              return name;
+            });
+        this.symbolNameIndex.computeIfPresent(
+            i,
+            (line, name) -> {
+              doc.add(
+                  new Field(
+                      SearchIndexable.SYMBOL_NAME, name, Field.Store.YES, Field.Index.ANALYZED));
+              return name;
+            });
+
+        list.add(doc);
+        i++;
+      }
+      return list;
+    } catch (IOException ex) {
+      throw new UncheckedIOException(ex);
+    }
+  }
+
+  private Document getBaseDocument() {
+    final Document doc = new Document();
+    doc.add(
+        new Field(
+            SearchIndexable.GROUP_ID,
+            this.getIndexGroupId(),
+            Field.Store.YES,
+            Field.Index.NOT_ANALYZED));
+    return doc;
   }
 }

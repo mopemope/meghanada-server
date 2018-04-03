@@ -45,7 +45,7 @@ import meghanada.config.Config;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-class ProjectDatabase {
+public class ProjectDatabase {
 
   public static final String ID = "_id";
   public static final String SERIALIZE_KEY = "_serialize";
@@ -69,6 +69,7 @@ class ProjectDatabase {
   private boolean isTerminated;
   private AtomicInteger extraWorkers = new AtomicInteger(0);
   private Instant lastAddWorker = Instant.now();
+  private File baseLocation;
 
   private ProjectDatabase() {
     open();
@@ -352,16 +353,17 @@ class ProjectDatabase {
         }
 
         try {
-          this.environment = Environments.newInstance(base);
+          this.environment = Environments.newInstance(new File(base, "project"));
         } catch (ExodusException ex) {
           // try re-create
-          org.apache.commons.io.FileUtils.deleteDirectory(base);
-          this.environment = Environments.newInstance(base);
+          org.apache.commons.io.FileUtils.deleteDirectory(new File(base, "project"));
+          this.environment = Environments.newInstance(new File(base, "project"));
         }
         this.entityStore = PersistentEntityStores.newInstance(environment, STORE_NAME);
         String location = this.environment.getLocation();
         String projectRoot = Config.getProjectRoot();
         this.projectRoot = projectRoot;
+        this.baseLocation = base;
         log.debug("open project database {}", location);
       }
     } catch (IOException e) {
@@ -618,6 +620,10 @@ class ProjectDatabase {
 
   public ExecutorService getExecutorService() {
     return executorService;
+  }
+
+  public File getBaseLocation() {
+    return this.baseLocation;
   }
 
   static class StoreRequest {

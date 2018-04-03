@@ -43,6 +43,8 @@ import meghanada.completion.LocalVariable;
 import meghanada.config.Config;
 import meghanada.docs.declaration.Declaration;
 import meghanada.docs.declaration.DeclarationSearcher;
+import meghanada.index.IndexDatabase;
+import meghanada.index.SearchResults;
 import meghanada.location.Location;
 import meghanada.location.LocationSearcher;
 import meghanada.module.ModuleHelper;
@@ -806,5 +808,9 @@ public class Session {
 
   public void killRunningProcess() {
     getCurrentProject().killRunningProcess();
+  }
+
+  public Optional<SearchResults> searchEverywhere(final String q) {
+    return IndexDatabase.getInstance().search(q);
   }
 }
