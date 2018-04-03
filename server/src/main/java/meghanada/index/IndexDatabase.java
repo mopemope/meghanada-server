@@ -300,7 +300,7 @@ public class IndexDatabase {
           try {
             final SearchResults results = new SearchResults();
             {
-              List<SearchResult> result =
+              final List<SearchResult> result =
                   this.searcher.search(
                       SearchIndexable.CLASS_NAME,
                       query,
@@ -312,15 +312,17 @@ public class IndexDatabase {
                         final String cat = d.get(SearchIndexable.CATEGORY);
                         return new SearchResult(filePath, line, contents, cat);
                       });
+
               result.forEach(
                   r -> {
-                    if (r.category.equals(SearchIndexable.CLASS_NAME)) {
+                    final String cat = r.category;
+                    if (cat.equals(SearchIndexable.CLASS_NAME)) {
                       results.classes.add(r);
-                    } else if (r.category.equals(SearchIndexable.METHOD_NAME)) {
+                    } else if (cat.equals(SearchIndexable.METHOD_NAME)) {
                       results.methods.add(r);
-                    } else if (r.category.equals(SearchIndexable.SYMBOL_NAME)) {
+                    } else if (cat.equals(SearchIndexable.SYMBOL_NAME)) {
                       results.symbols.add(r);
-                    } else if (r.category.equals(SearchIndexable.CODE)) {
+                    } else {
                       results.codes.add(r);
                     }
                   });

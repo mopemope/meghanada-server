@@ -16,7 +16,7 @@ import jetbrains.exodus.lucene.ExodusDirectory;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.en.EnglishAnalyzer;
+import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -59,7 +59,7 @@ public class DocumentSearcher implements AutoCloseable {
   }
 
   private Analyzer createAnalyzer() {
-    return new EnglishAnalyzer(LUCENE_VERSION);
+    return new StandardAnalyzer(LUCENE_VERSION);
   }
 
   private IndexWriterConfig createIndexConfig(Analyzer analyzer) {
@@ -115,7 +115,7 @@ public class DocumentSearcher implements AutoCloseable {
   private Query getQuery(final String field, final String query) throws ParseException {
     final QueryParser queryParser = new QueryParser(LUCENE_VERSION, field, analyzer);
     queryParser.setAllowLeadingWildcard(true);
-    queryParser.setDefaultOperator(QueryParser.Operator.AND);
+    queryParser.setDefaultOperator(QueryParser.Operator.OR);
     return queryParser.parse(query);
   }
 
