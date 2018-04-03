@@ -826,7 +826,7 @@ public class Source implements Serializable, Storable, SearchIndexable {
                 Field.Store.YES,
                 Field.Index.NOT_ANALYZED));
 
-        doc.add(new Field(SearchIndexable.CONTENTS, s, Field.Store.YES, Field.Index.ANALYZED));
+        doc.add(new Field(SearchIndexable.CODE, s, Field.Store.YES, Field.Index.ANALYZED));
         this.classNameIndex.computeIfPresent(
             i,
             (line, name) -> {

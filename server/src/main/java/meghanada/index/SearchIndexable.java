@@ -7,10 +7,10 @@ public interface SearchIndexable {
 
   String GROUP_ID = "GROUP_ID";
   String LINE_NUMBER = "LINE_NUMBER";
-  String CONTENTS = "CONTENTS";
-  String CLASS_NAME = "CLASS_NAME";
-  String METHOD_NAME = "METHOD_NAME";
-  String SYMBOL_NAME = "SYMBOL_NAME";
+  String CODE = "code";
+  String CLASS_NAME = "class";
+  String METHOD_NAME = "method";
+  String SYMBOL_NAME = "symbol";
 
   String getIndexGroupId();
 

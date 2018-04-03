@@ -192,7 +192,6 @@ public class IndexDatabase {
 
   public Optional<SearchResults> search(final String query) {
     this.open();
-    final String wild = "*" + query + "*";
     return this.searcher.searchInTransaction(
         () -> {
           try {
@@ -201,12 +200,12 @@ public class IndexDatabase {
               List<SearchResult> classResults =
                   this.searcher.search(
                       SearchIndexable.CLASS_NAME,
-                      wild,
+                      query,
                       maxHits,
                       d -> {
                         final String filePath = d.get(SearchIndexable.GROUP_ID);
                         final String line = d.get(SearchIndexable.LINE_NUMBER);
-                        final String contents = d.get(SearchIndexable.CONTENTS);
+                        final String contents = d.get(SearchIndexable.CODE);
                         return new SearchResult(filePath, line, contents);
                       });
 
@@ -222,12 +221,12 @@ public class IndexDatabase {
               List<SearchResult> methodResults =
                   this.searcher.search(
                       SearchIndexable.METHOD_NAME,
-                      wild,
+                      query,
                       maxHits,
                       d -> {
                         final String filePath = d.get(SearchIndexable.GROUP_ID);
                         final String line = d.get(SearchIndexable.LINE_NUMBER);
-                        final String contents = d.get(SearchIndexable.CONTENTS);
+                        final String contents = d.get(SearchIndexable.CODE);
                         return new SearchResult(filePath, line, contents);
                       });
 
@@ -248,7 +247,7 @@ public class IndexDatabase {
                       d -> {
                         final String filePath = d.get(SearchIndexable.GROUP_ID);
                         final String line = d.get(SearchIndexable.LINE_NUMBER);
-                        final String contents = d.get(SearchIndexable.CONTENTS);
+                        final String contents = d.get(SearchIndexable.CODE);
                         return new SearchResult(filePath, line, contents);
                       });
 
@@ -263,19 +262,19 @@ public class IndexDatabase {
             if (textSearch) {
               List<SearchResult> contentResults =
                   this.searcher.search(
-                      SearchIndexable.CONTENTS,
-                      wild,
+                      SearchIndexable.CODE,
+                      query,
                       maxHits,
                       d -> {
                         final String filePath = d.get(SearchIndexable.GROUP_ID);
                         final String line = d.get(SearchIndexable.LINE_NUMBER);
-                        final String contents = d.get(SearchIndexable.CONTENTS);
+                        final String contents = d.get(SearchIndexable.CODE);
                         return new SearchResult(filePath, line, contents);
                       });
 
               log.debug(
                   "field:{} query:{} results:{}",
-                  SearchIndexable.CONTENTS,
+                  SearchIndexable.CODE,
                   query,
                   contentResults.size());
               results.contents = contentResults;
