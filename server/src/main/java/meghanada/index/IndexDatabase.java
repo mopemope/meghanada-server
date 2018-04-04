@@ -213,7 +213,6 @@ public class IndexDatabase {
               result.forEach(
                   r -> {
                     final String cat = r.category;
-                    log.info("category: {}", cat);
                     if (cat.equals(SearchIndexable.CLASS_NAME)) {
                       results.classes.add(r);
                     } else if (cat.equals(SearchIndexable.METHOD_NAME)) {

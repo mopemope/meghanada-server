@@ -116,7 +116,11 @@ public class ClassScope extends TypeScope {
 
   @Override
   public String toString() {
-    return MoreObjects.toStringHelper(this).add("fqcn", name).add("range", range).toString();
+    return MoreObjects.toStringHelper(this)
+        .add("fqcn", name)
+        .add("range", range)
+        .add("nameRange", nameRange)
+        .toString();
   }
 
   @Override

@@ -422,7 +422,7 @@ public class LocationSearcherTest extends GradleTestBase {
         timeIt(() -> searcher.searchDeclarationLocation(f, 5, 23, "Key")).orElse(null);
     assertNotNull(l1);
     assertEquals(8, l1.getLine());
-    assertEquals(15, l1.getColumn());
+    assertEquals(2, l1.getColumn());
   }
 
   @Test

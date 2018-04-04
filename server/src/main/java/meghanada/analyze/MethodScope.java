@@ -18,7 +18,7 @@ public class MethodScope extends BlockScope {
   private final List<String> parameters = new ArrayList<>(3);
   protected String name;
   protected String returnType;
-  private Range nameRange;
+  protected Range nameRange;
   private boolean isConstructor;
 
   public MethodScope(

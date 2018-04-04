@@ -567,6 +567,29 @@ public class JavaAnalyzerTest extends GradleTestBase {
   }
 
   @Test
+  public void analyze23() throws Exception {
+    final JavaAnalyzer analyzer = getAnalyzer();
+    final String cp = getClasspath();
+
+    List<File> files = new ArrayList<>();
+    final File file =
+        new File(
+            project.getProjectRootPath(),
+            "./src/main/java/meghanada/reference/ReferenceSearcher.java");
+    assertTrue(file.exists());
+    files.add(file);
+
+    final String tmp = System.getProperty("java.io.tmpdir");
+
+    timeIt(
+        () -> {
+          final CompileResult compileResult = analyzer.analyzeAndCompile(files, cp, tmp);
+          compileResult.getSources().values().forEach(Source::dump);
+          return compileResult;
+        });
+  }
+
+  @Test
   public void analyzeAll() throws Exception {
     System.setProperty(Source.REPORT_UNKNOWN_TREE, "true");
     // project.clearCache();

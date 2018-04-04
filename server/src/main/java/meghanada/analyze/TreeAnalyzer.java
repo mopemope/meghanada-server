@@ -627,7 +627,7 @@ public class TreeAnalyzer {
 
     } else if (tree instanceof JCTree.JCClassDecl) {
 
-      analyzeInnerClassDecl(context, (JCTree.JCClassDecl) tree, startPos, endPos);
+      analyzeInnerClassDecl(context, (JCTree.JCClassDecl) tree, preferredPos, endPos);
 
     } else if (tree instanceof JCTree.JCBlock) {
 
