@@ -869,6 +869,12 @@ public class Source implements Serializable, Storable, SearchIndexable {
                       SearchIndexable.SYMBOL_NAME, name, Field.Store.YES, Field.Index.ANALYZED));
               return name;
             });
+        doc.add(
+            new Field(
+                SearchIndexable.CATEGORY,
+                SearchIndexable.CODE,
+                Field.Store.YES,
+                Field.Index.NOT_ANALYZED));
 
         list.add(doc);
         lineNumber++;

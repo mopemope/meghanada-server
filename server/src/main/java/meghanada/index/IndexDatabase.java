@@ -190,109 +190,6 @@ public class IndexDatabase {
         });
   }
 
-  public Optional<SearchResults> searchAll(final String query) {
-    this.open();
-    return this.searcher.searchInTransaction(
-        () -> {
-          try {
-            final SearchResults results = new SearchResults();
-            {
-              List<SearchResult> classResults =
-                  this.searcher.search(
-                      SearchIndexable.CLASS_NAME,
-                      query,
-                      maxHits,
-                      d -> {
-                        final String filePath = d.get(SearchIndexable.GROUP_ID);
-                        final String line = d.get(SearchIndexable.LINE_NUMBER);
-                        final String contents = d.get(SearchIndexable.CODE);
-                        final String cat = d.get(SearchIndexable.CATEGORY);
-                        return new SearchResult(filePath, line, contents, cat);
-                      });
-
-              log.debug(
-                  "field:{} query:{} results:{}",
-                  SearchIndexable.CLASS_NAME,
-                  query,
-                  classResults.size());
-              results.classes = classResults;
-            }
-
-            {
-              List<SearchResult> methodResults =
-                  this.searcher.search(
-                      SearchIndexable.METHOD_NAME,
-                      query,
-                      maxHits,
-                      d -> {
-                        final String filePath = d.get(SearchIndexable.GROUP_ID);
-                        final String line = d.get(SearchIndexable.LINE_NUMBER);
-                        final String contents = d.get(SearchIndexable.CODE);
-                        final String cat = d.get(SearchIndexable.CATEGORY);
-                        return new SearchResult(filePath, line, contents, cat);
-                      });
-
-              log.debug(
-                  "field:{} query:{} results:{}",
-                  SearchIndexable.METHOD_NAME,
-                  query,
-                  methodResults.size());
-              results.methods = methodResults;
-            }
-
-            {
-              List<SearchResult> symbolResults =
-                  this.searcher.search(
-                      SearchIndexable.SYMBOL_NAME,
-                      query,
-                      maxHits,
-                      d -> {
-                        final String filePath = d.get(SearchIndexable.GROUP_ID);
-                        final String line = d.get(SearchIndexable.LINE_NUMBER);
-                        final String contents = d.get(SearchIndexable.CODE);
-                        final String cat = d.get(SearchIndexable.CATEGORY);
-                        return new SearchResult(filePath, line, contents, cat);
-                      });
-
-              log.debug(
-                  "field:{} query:{} results:{}",
-                  SearchIndexable.SYMBOL_NAME,
-                  query,
-                  symbolResults.size());
-              results.symbols = symbolResults;
-            }
-
-            if (textSearch) {
-              List<SearchResult> contentResults =
-                  this.searcher.search(
-                      SearchIndexable.CODE,
-                      query,
-                      maxHits,
-                      d -> {
-                        final String filePath = d.get(SearchIndexable.GROUP_ID);
-                        final String line = d.get(SearchIndexable.LINE_NUMBER);
-                        final String contents = d.get(SearchIndexable.CODE);
-                        final String cat = d.get(SearchIndexable.CATEGORY);
-                        return new SearchResult(filePath, line, contents, cat);
-                      });
-
-              log.debug(
-                  "field:{} query:{} results:{}",
-                  SearchIndexable.CODE,
-                  query,
-                  contentResults.size());
-              results.codes = contentResults;
-            }
-            return Optional.of(results);
-          } catch (IOException e) {
-            throw new UncheckedIOException(e);
-          } catch (ParseException e) {
-            log.catching(e);
-            return Optional.empty();
-          }
-        });
-  }
-
   public Optional<SearchResults> search(final String query) {
     this.open();
     return this.searcher.searchInTransaction(
@@ -316,6 +213,7 @@ public class IndexDatabase {
               result.forEach(
                   r -> {
                     final String cat = r.category;
+                    log.info("category: {}", cat);
                     if (cat.equals(SearchIndexable.CLASS_NAME)) {
                       results.classes.add(r);
                     } else if (cat.equals(SearchIndexable.METHOD_NAME)) {

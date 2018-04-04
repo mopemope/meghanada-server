@@ -372,6 +372,12 @@ public class SexpOutputFormatter implements OutputFormatter {
   @Override
   public String searchEverywhere(long id, SearchResults results) {
     final StringBuilder sb = new StringBuilder(1024);
+    if (results.size() == 0) {
+      sb.append(LPAREN);
+      sb.append(RPAREN);
+      return success(sb.toString());
+    }
+
     sb.append(LPAREN);
 
     sb.append(LIST_SEP);
