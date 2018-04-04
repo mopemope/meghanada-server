@@ -19,6 +19,8 @@ Some planned and implemented features:
 * Optimize import
 * Jump declaration
 * Run junit test (include test runner)
+* Search references
+* Full-featured text search
 
 Meghanada-Server support only emacs client (meghanada-mode)
 
@@ -30,19 +32,19 @@ Meghanada updates any information when saving and compile the java file.
 
 ### Requirement
 
-* JDK 8
+* JDK 8 or later.
 
 If your project were maven project, It needs `maven` and add `mvn` command your `$PATH`.
 
 ### Build jar
 
 ```
-./gradlew clean shadowJar
+./gradlew clean goJF check shadowJar
 ```
 
 ## Usage Server
 
-see help.
+See help.
 
 ```
 java -jar path/to/meghanada.jar --help
@@ -74,7 +76,7 @@ Recommend settings jvm args.
 java -XX:+UseConcMarkSweepGC -XX:SoftRefLRUPolicyMSPerMB=50 -Xverify:none -Xms256m -Dfile.encoding=UTF-8 -jar path/to/meghanada.jar
 ```
 
-Meghanada-Server is required JDK 8 (not JRE). It used Compiler API.
+Meghanada-Server is required JDK 8 or later (not JRE). It used Compiler API.
 
 ## Project
 
