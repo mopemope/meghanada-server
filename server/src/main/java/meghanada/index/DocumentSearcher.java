@@ -65,7 +65,7 @@ public class DocumentSearcher implements AutoCloseable {
   private IndexWriterConfig createIndexConfig(Analyzer analyzer) {
     IndexWriterConfig config = new IndexWriterConfig(LUCENE_VERSION, analyzer);
     config.setMergeScheduler(new SerialMergeScheduler());
-    config.setMaxThreadStates(1);
+    config.setMaxThreadStates(2);
     return config;
   }
 

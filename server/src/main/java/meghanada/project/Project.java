@@ -35,6 +35,7 @@ import jetbrains.exodus.entitystore.StoreTransaction;
 import meghanada.analyze.CompileResult;
 import meghanada.analyze.JavaAnalyzer;
 import meghanada.analyze.Source;
+import meghanada.analyze.subscribe.IndexSubscriber;
 import meghanada.analyze.subscribe.SourceCacheSubscriber;
 import meghanada.config.Config;
 import meghanada.formatter.JavaFormatter;
@@ -215,6 +216,7 @@ public abstract class Project implements Serializable, Storable {
     if (this.javaAnalyzer == null) {
       this.javaAnalyzer = new JavaAnalyzer(this.compileSource, this.compileTarget);
       this.javaAnalyzer.getEventBus().register(new SourceCacheSubscriber(this));
+      this.javaAnalyzer.getEventBus().register(new IndexSubscriber(this));
     }
     return this.javaAnalyzer;
   }
