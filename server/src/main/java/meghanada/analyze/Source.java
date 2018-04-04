@@ -78,9 +78,9 @@ public class Source implements Serializable, Storable, SearchIndexable {
   private Map<String, String> importMap;
   private transient List<LineRange> lineRange;
   private transient LineMap lineMap;
-  Map<Long, String> classNameIndex = new HashMap<>(4);
-  Map<Long, String> methodNameIndex = new HashMap<>(8);
-  Map<Long, String> symbolNameIndex = new HashMap<>(8);
+  transient Map<Long, String> classNameIndex = new HashMap<>(4);
+  transient Map<Long, String> methodNameIndex = new HashMap<>(8);
+  transient Map<Long, String> symbolNameIndex = new HashMap<>(8);
 
   public Source(String filePath) {
     this.filePath = filePath;
