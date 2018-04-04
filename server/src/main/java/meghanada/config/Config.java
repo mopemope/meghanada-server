@@ -189,6 +189,19 @@ public class Config {
         String.format("%.2f", maxMemory));
   }
 
+  public static String showMemoryString() {
+
+    final Runtime runtime = Runtime.getRuntime();
+    final float maxMemory = runtime.maxMemory() / 1024 / 1024;
+    final float totalMemory = runtime.totalMemory() / 1024 / 1024;
+    final float usedMemory = (runtime.totalMemory() - runtime.freeMemory()) / 1024 / 1024;
+    return String.format(
+        "memory usage (used/total/max): %sMB / %sMB / %sMB",
+        String.format("%.2f", usedMemory),
+        String.format("%.2f", totalMemory),
+        String.format("%.2f", maxMemory));
+  }
+
   public static String getProjectRoot() {
     return System.getProperty(PROJECT_ROOT_KEY);
   }
@@ -235,11 +248,11 @@ public class Config {
     this.debug = !logLevel.toLowerCase().equals("info");
   }
 
-  private String getHomeDir() {
+  public String getHomeDir() {
     return c.getString("home");
   }
 
-  private String getUserHomeDir() {
+  public String getUserHomeDir() {
     return c.getString("user-home");
   }
 

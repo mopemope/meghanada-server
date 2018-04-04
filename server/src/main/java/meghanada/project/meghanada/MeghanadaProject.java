@@ -24,4 +24,9 @@ public class MeghanadaProject extends Project {
   public InputStream runTask(List<String> args) throws IOException {
     throw new UnsupportedOperationException("Not support");
   }
+
+  @Override
+  public String getProjectType() {
+    return "meghanada";
+  }
 }

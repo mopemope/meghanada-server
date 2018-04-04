@@ -57,6 +57,7 @@ public class EmacsServer implements Server {
     this.projectRoot = projectRoot;
     this.outputFormat = OUTPUT.SEXP;
     this.outputEOT = true;
+    System.setProperty("meghanada.server.port", Integer.toString(this.serverSocket.getLocalPort()));
   }
 
   private boolean dispatch(final List<String> argList, final CommandHandler handler) {
@@ -286,6 +287,14 @@ public class EmacsServer implements Server {
                   // se : Search Everywhere
                   // usage: se <keyword>
                   handler.searchEverywhere(id, args.get(0));
+                  return true;
+                })
+            .when(headTail(eq("sp"), any()))
+            .get(
+                args -> {
+                  // sp : Show project
+                  // usage: sp
+                  handler.showProject(id);
                   return true;
                 })
             .when(headNil(eq("q")))

@@ -445,4 +445,16 @@ public class CommandHandler {
       writeError(id, t);
     }
   }
+
+  public void showProject(final long id) {
+    try {
+      final String s = session.showProject();
+      final String out = outputFormatter.showProject(id, s);
+      writer.write(out);
+      writer.newLine();
+      writer.flush();
+    } catch (Throwable t) {
+      writeError(id, t);
+    }
+  }
 }

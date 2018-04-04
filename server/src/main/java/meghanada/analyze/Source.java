@@ -280,7 +280,7 @@ public class Source implements Serializable, Storable, SearchIndexable {
   }
 
   public void dumpVariable() {
-    final EntryMessage entryMessage = log.traceEntry("{}", Strings.repeat("*", 100));
+    final EntryMessage entryMessage = log.traceEntry("{}", Strings.repeat("*", 80));
     for (final ClassScope cs : classScopes) {
       cs.dumpVariable();
     }
@@ -288,7 +288,7 @@ public class Source implements Serializable, Storable, SearchIndexable {
   }
 
   public void dumpFieldAccess() {
-    final EntryMessage entryMessage = log.traceEntry("{}", Strings.repeat("*", 100));
+    final EntryMessage entryMessage = log.traceEntry("{}", Strings.repeat("*", 80));
     for (final ClassScope cs : classScopes) {
       cs.dumpFieldAccess();
     }
@@ -296,7 +296,7 @@ public class Source implements Serializable, Storable, SearchIndexable {
   }
 
   public void dump() {
-    final EntryMessage entryMessage = log.traceEntry("{}", Strings.repeat("*", 100));
+    final EntryMessage entryMessage = log.traceEntry("{}", Strings.repeat("*", 80));
     for (final ClassScope cs : classScopes) {
       cs.dump();
     }

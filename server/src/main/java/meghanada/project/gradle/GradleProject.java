@@ -593,4 +593,9 @@ public class GradleProject extends Project {
   public static long getSerialVersionUID() {
     return serialVersionUID;
   }
+
+  @Override
+  public String getProjectType() {
+    return "gradle";
+  }
 }

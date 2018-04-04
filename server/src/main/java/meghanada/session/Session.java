@@ -813,4 +813,13 @@ public class Session {
   public Optional<SearchResults> searchEverywhere(final String q) {
     return IndexDatabase.getInstance().search(q);
   }
+
+  public String showProject() {
+    return getCurrentProject().toString();
+  }
+
+  @Override
+  public String toString() {
+    return "";
+  }
 }

@@ -371,7 +371,7 @@ public class SexpOutputFormatter implements OutputFormatter {
 
   @Override
   public String searchEverywhere(long id, SearchResults results) {
-    final StringBuilder sb = new StringBuilder(1024);
+    final StringBuilder sb = new StringBuilder(8192);
     if (results.size() == 0) {
       sb.append(LPAREN);
       sb.append(RPAREN);
@@ -426,5 +426,10 @@ public class SexpOutputFormatter implements OutputFormatter {
 
     sb.append(RPAREN);
     return success(sb.toString());
+  }
+
+  @Override
+  public String showProject(long id, String s) {
+    return success(doubleQuote(s));
   }
 }

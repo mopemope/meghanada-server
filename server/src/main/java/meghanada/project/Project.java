@@ -3,9 +3,9 @@ package meghanada.project;
 import static java.util.Objects.nonNull;
 
 import com.google.common.base.Joiner;
-import com.google.common.base.MoreObjects;
 import com.google.common.base.Objects;
 import com.google.common.base.Stopwatch;
+import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableSet;
 import com.typesafe.config.ConfigFactory;
 import java.io.File;
@@ -537,22 +537,6 @@ public abstract class Project implements Serializable, Storable {
       file = new File(this.projectRoot, file.getPath());
     }
     return file;
-  }
-
-  @Override
-  public String toString() {
-    return MoreObjects.toStringHelper(this)
-        .add("projectRoot", projectRoot)
-        .add("dependencies", dependencies.size())
-        .add("sources", sources)
-        .add("resources", resources)
-        .add("output", output)
-        .add("testSources", testSources)
-        .add("testResources", testResources)
-        .add("testOutput", testOutput)
-        .add("compileSource", compileSource)
-        .add("compileTarget", compileTarget)
-        .toString();
   }
 
   protected InputStream runProcess(List<String> cmd) throws IOException {
@@ -1121,5 +1105,139 @@ public abstract class Project implements Serializable, Storable {
 
   public void setAndroidModelVersion(String androidModelVersion) {
     this.androidModelVersion = androidModelVersion;
+  }
+
+  public abstract String getProjectType();
+
+  @Override
+  public String toString() {
+    final StringBuilder sb = new StringBuilder(8096);
+    Config config = Config.load();
+
+    {
+      sb.append("System:\n");
+      sb.append(Strings.repeat("-", 80));
+      sb.append("\n");
+      sb.append(String.format("os: %s\n", System.getProperty("os.name")));
+      sb.append(String.format("osVersion: %s\n", System.getProperty("os.version")));
+      sb.append(String.format("osArch: %s\n", System.getProperty("os.arch")));
+      sb.append(String.format("memory: %s\n", Config.showMemoryString()));
+      sb.append("\n");
+    }
+
+    {
+      sb.append("Meghanada:\n");
+      sb.append(Strings.repeat("-", 80));
+      sb.append("\n");
+      //
+      try {
+        sb.append(String.format("meghanadaVersion: %s\n", meghanada.Main.getVersion()));
+      } catch (IOException e) {
+        log.catching(e);
+      }
+      sb.append(String.format("meghanadaPath: %s\n", Config.getInstalledPath()));
+      sb.append(
+          String.format("meghanadaServerPort: %s\n", System.getProperty("meghanada.server.port")));
+      sb.append(String.format("home: %s\n", config.getHomeDir()));
+      sb.append(String.format("userHome: %s\n", config.getUserHomeDir()));
+      sb.append(String.format("useFastBoot: %s\n", config.useFastBoot()));
+      sb.append(String.format("useClassFuzzySearch: %s\n", config.useClassFuzzySearch()));
+      sb.append(
+          String.format("useJavaVersion: %s\n", System.getProperty("java.specification.version")));
+      sb.append(String.format("javacArg: %s\n", config.getJavacArg()));
+      sb.append(String.format("useSourceCache: %s\n", config.useSourceCache()));
+      sb.append(String.format("cacheInProject: %s\n", config.isCacheInProject()));
+      sb.append(String.format("cacheRoot: %s\n", config.getCacheRoot()));
+      sb.append(String.format("useExternalBuilder: %s\n", config.useExternalBuilder()));
+      sb.append(String.format("clearCacheOnStart: %s\n", config.clearCacheOnStart()));
+      sb.append(String.format("isSkipBuildSubProjects: %s\n", config.isSkipBuildSubProjects()));
+      sb.append(String.format("useAOSP: %s\n", config.useAOSPStyle()));
+      sb.append(String.format("mavenLocalRepository: %s\n", config.getMavenLocalRepository()));
+      sb.append("\n");
+    }
+
+    {
+      sb.append("Java:\n");
+      sb.append(Strings.repeat("-", 80));
+      sb.append("\n");
+      // java info
+      sb.append(String.format("javaHome: %s\n", System.getProperty("java.home")));
+      sb.append(String.format("javaVersion: %s\n", System.getProperty("java.version")));
+      sb.append(String.format("compileSource: %s\n", compileSource));
+      sb.append(String.format("compileTarget: %s\n", compileTarget));
+      if (config.isJava8()) {
+        sb.append(String.format("javac8Args: %s\n", config.getJava8JavacArgs()));
+      } else {
+        sb.append(String.format("javac9Args: %s\n", config.getJava9JavacArgs()));
+      }
+      Properties sysProp = System.getProperties();
+      sb.append("SystemProperties:\n");
+      sysProp.forEach(
+          (key, value) -> {
+            sb.append(String.format("  %s: %s\n", key, value));
+          });
+      sb.append("\n");
+    }
+
+    {
+      sb.append("Project:\n");
+      sb.append(Strings.repeat("-", 80));
+      sb.append("\n");
+      // project info
+      sb.append(String.format("project: %s\n", getProjectType()));
+      sb.append(String.format("projectRoot: %s\n", projectRoot));
+      sb.append(String.format("gradlePrepareCompileTask: %s\n", config.gradlePrepareCompileTask()));
+      sb.append(
+          String.format(
+              "gradlePrepareTestCompileTask: %s\n", config.gradlePrepareTestCompileTask()));
+
+      sb.append(
+          String.format(
+              "projectDatbase: %s\n",
+              meghanada.store.ProjectDatabase.getInstance().getBaseLocation()));
+
+      long longSize =
+          org.apache.commons.io.FileUtils.sizeOfDirectory(
+              meghanada.store.ProjectDatabase.getInstance().getBaseLocation());
+      float size = longSize / 1024 / 1024;
+      sb.append("projectDatabaseSize: ");
+      sb.append(String.format("  %.2fMB\n", size));
+
+      sb.append("sources:\n");
+      sources.forEach(
+          s -> {
+            sb.append(String.format("  %s\n", s));
+          });
+      sb.append("resources:\n");
+      resources.forEach(
+          s -> {
+            sb.append(String.format("  %s\n", s));
+          });
+      sb.append("output:\n");
+      sb.append(String.format("  %s\n", output));
+
+      sb.append("testSources:\n");
+      testSources.forEach(
+          s -> {
+            sb.append(String.format("  %s\n", s));
+          });
+      sb.append("testResources:\n");
+      testResources.forEach(
+          s -> {
+            sb.append(String.format("  %s\n", s));
+          });
+      sb.append("testOutput:\n");
+      sb.append(String.format("  %s\n", testOutput));
+
+      sb.append("dependencies:\n");
+      dependencies.forEach(
+          d -> {
+            sb.append(String.format("  id:%s \n", d.getId()));
+            sb.append(String.format("  scope: %s\n", d.getScope()));
+            sb.append(String.format("  file: %s\n\n", d.getFile()));
+          });
+    }
+
+    return sb.toString();
   }
 }

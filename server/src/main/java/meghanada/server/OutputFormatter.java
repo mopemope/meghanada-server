@@ -55,4 +55,6 @@ public interface OutputFormatter {
   String killRunningProcess(long id);
 
   String searchEverywhere(long id, SearchResults r);
+
+  String showProject(long id, String s);
 }
