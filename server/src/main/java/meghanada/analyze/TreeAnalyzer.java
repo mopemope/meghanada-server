@@ -32,6 +32,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.Name;
+import meghanada.index.IndexableWord;
 import meghanada.reflect.ClassIndex;
 import meghanada.reflect.asm.CachedASMReflector;
 import meghanada.utils.ClassName;
@@ -431,6 +432,7 @@ public class TreeAnalyzer {
       Range range = Range.create(src, startPos + 1, endPos);
       long pkgLine = range.begin.line;
       src.setPackageStartLine(pkgLine);
+      addPackageIndex(src, pkgLine, 8, src.getPackageName());
     }
   }
 
@@ -557,8 +559,8 @@ public class TreeAnalyzer {
     for (JCTree tree : classDecl.getMembers()) {
       analyzeParsedTree(context, tree);
     }
-    src.classNameIndex.put(
-        classScope.getBeginLine(), ClassNameUtils.getSimpleName(classScope.getFQCN()));
+    addClassNameIndex(
+        src, classScope.range.begin.line, classScope.range.begin.column, classScope.getFQCN());
     Optional<ClassScope> endClass = src.endClass();
     log.trace("class={}", endClass);
   }
@@ -826,7 +828,12 @@ public class TreeAnalyzer {
                     });
           }
 
-          src.getCurrentScope().ifPresent(scope -> scope.addMethodCall(methodCall));
+          src.getCurrentScope()
+              .ifPresent(
+                  scope -> {
+                    scope.addMethodCall(methodCall);
+                    addMethodCallIndex(src, methodCall);
+                  });
         }
       }
 
@@ -1117,7 +1124,8 @@ public class TreeAnalyzer {
                 }
 
                 analyzeParsedTree(context, md.getBody());
-                src.methodNameIndex.put(methodScope.getBeginLine(), methodName);
+                addMethodNameIndex(
+                    src, methodScope.range.begin.line, methodScope.range.begin.column, methodName);
                 Optional<MethodScope> endMethod = classScope.endMethod();
               } catch (IOException e) {
                 throw new UncheckedIOException(e);
@@ -1260,7 +1268,11 @@ public class TreeAnalyzer {
                 for (final JCTree memberTree : classDecl.getMembers()) {
                   analyzeParsedTree(context, memberTree);
                 }
-                src.classNameIndex.put(classScope.getBeginLine(), simpleName.toString());
+                addClassNameIndex(
+                    src,
+                    classScope.range.begin.line,
+                    classScope.range.begin.column,
+                    classScope.getFQCN());
                 Optional<ClassScope> ignore = parent.endClass();
               } catch (IOException e) {
                 throw new UncheckedIOException(e);
@@ -1319,7 +1331,12 @@ public class TreeAnalyzer {
       if (nonNull(sym.type)) {
         setReturnTypeAndArgType(context, src, sym.type, fa);
       }
-      src.getCurrentScope().ifPresent(scope -> scope.addFieldAccess(fa));
+      src.getCurrentScope()
+          .ifPresent(
+              scope -> {
+                scope.addFieldAccess(fa);
+                addFieldAccessIndex(src, fa);
+              });
 
     } else if (kind.equals(ElementKind.METHOD)) {
       MethodCall methodCall =
@@ -1333,7 +1350,12 @@ public class TreeAnalyzer {
       if (nonNull(sym.type)) {
         setReturnTypeAndArgType(context, src, sym.type, methodCall);
       }
-      src.getCurrentScope().ifPresent(scope -> scope.addMethodCall(methodCall));
+      src.getCurrentScope()
+          .ifPresent(
+              scope -> {
+                scope.addMethodCall(methodCall);
+                addMethodCallIndex(src, methodCall);
+              });
 
     } else if (kind.equals(ElementKind.ENUM)) {
 
@@ -1358,7 +1380,12 @@ public class TreeAnalyzer {
       if (nonNull(sym.type)) {
         setReturnTypeAndArgType(context, src, sym.type, fa);
       }
-      src.getCurrentScope().ifPresent(scope -> scope.addFieldAccess(fa));
+      src.getCurrentScope()
+          .ifPresent(
+              scope -> {
+                scope.addFieldAccess(fa);
+                addFieldAccessIndex(src, fa);
+              });
 
     } else if (kind.equals(ElementKind.PACKAGE)) {
       // skip
@@ -1545,7 +1572,12 @@ public class TreeAnalyzer {
                 fqcn -> {
                   setReturnTypeAndArgType(context, src, sym.type, fa);
                   fa.declaringClass = TreeAnalyzer.markFQCN(src, fqcn);
-                  src.getCurrentScope().ifPresent(scope -> scope.addFieldAccess(fa));
+                  src.getCurrentScope()
+                      .ifPresent(
+                          scope -> {
+                            scope.addFieldAccess(fa);
+                            addFieldAccessIndex(src, fa);
+                          });
                 });
 
       } else {
@@ -1763,6 +1795,7 @@ public class TreeAnalyzer {
                 methodCall.setArguments(arguments);
               }
               scope.addMethodCall(methodCall);
+              addMethodCallIndex(src, methodCall);
             });
   }
 
@@ -1836,6 +1869,7 @@ public class TreeAnalyzer {
                     scope -> {
                       mc.setArguments(arguments);
                       scope.addMethodCall(mc);
+                      addMethodCallIndex(src, mc);
                     });
           }
 
@@ -1861,6 +1895,7 @@ public class TreeAnalyzer {
                   scope -> {
                     mc.setArguments(arguments);
                     scope.addMethodCall(mc);
+                    addMethodCallIndex(src, mc);
                   });
         }
       }
@@ -1967,6 +2002,7 @@ public class TreeAnalyzer {
               scope -> {
                 methodCall.setArguments(arguments);
                 scope.addMethodCall(methodCall);
+                addMethodCallIndex(src, methodCall);
               });
 
     } else {
@@ -2025,13 +2061,54 @@ public class TreeAnalyzer {
     return baseType;
   }
 
+  private static void addPackageIndex(Source src, long line, long column, String name) {
+    src.addIndexWord(IndexableWord.Field.PACKAGE_NAME, line, column, name);
+  }
+
+  private static void addClassNameIndex(Source src, long line, long column, String name) {
+    String simpleName = ClassNameUtils.getSimpleName(name);
+    int index = simpleName.lastIndexOf(ClassNameUtils.INNER_MARK);
+    if (index > 0) {
+      simpleName = simpleName.substring(index + 1);
+    }
+    src.addIndexWord(IndexableWord.Field.CLASS_NAME, line, column, simpleName);
+  }
+
+  private static void addMethodNameIndex(Source src, long line, long column, String name) {
+    // check inner class constructor
+    int index = name.lastIndexOf(ClassNameUtils.INNER_MARK);
+    if (index > 0) {
+      name = name.substring(index + 1);
+    }
+    src.addIndexWord(IndexableWord.Field.METHOD_NAME, line, column, name);
+  }
+
   private static void addSymbolIndex(final Source src, final Scope scope, final Variable v) {
     if (scope instanceof ExpressionScope) {
-      ExpressionScope expressionScope = (ExpressionScope) scope;
-      if (expressionScope.isField) {
+      ExpressionScope es = (ExpressionScope) scope;
+      if (es.isField && v.isDecl()) {
         long line = v.range.begin.line;
-        src.symbolNameIndex.put(line, v.name);
+        long column = v.range.begin.column;
+        src.addIndexWord(IndexableWord.Field.SYMBOL_NAME, line, column, v.name);
       }
     }
+  }
+
+  private static void addFieldAccessIndex(final Source src, FieldAccess fa) {
+    long line = fa.range.begin.line;
+    long column = fa.range.begin.column;
+    String name = fa.name;
+    String declaringClass = fa.declaringClass;
+    src.addIndexWord(IndexableWord.Field.USAGE, line, column, name);
+    src.addIndexWord(IndexableWord.Field.DECLARING_CLASS, line, column, declaringClass);
+  }
+
+  private static void addMethodCallIndex(final Source src, MethodCall mc) {
+    long line = mc.range.begin.line;
+    long column = mc.range.begin.column;
+    String name = mc.name;
+    String declaringClass = mc.declaringClass;
+    src.addIndexWord(IndexableWord.Field.USAGE, line, column, name);
+    src.addIndexWord(IndexableWord.Field.DECLARING_CLASS, line, column, declaringClass);
   }
 }

@@ -2,6 +2,11 @@ package meghanada.analyze;
 
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
+import static meghanada.index.IndexableWord.Field.CODE;
+import static org.apache.lucene.document.Field.Index.ANALYZED;
+import static org.apache.lucene.document.Field.Index.NOT_ANALYZED;
+import static org.apache.lucene.document.Field.Store.NO;
+import static org.apache.lucene.document.Field.Store.YES;
 
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Strings;
@@ -14,6 +19,7 @@ import java.io.InputStreamReader;
 import java.io.Serializable;
 import java.io.UncheckedIOException;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -34,6 +40,7 @@ import jetbrains.exodus.entitystore.Entity;
 import jetbrains.exodus.entitystore.EntityId;
 import jetbrains.exodus.entitystore.StoreTransaction;
 import meghanada.cache.GlobalCache;
+import meghanada.index.IndexableWord;
 import meghanada.index.SearchIndexable;
 import meghanada.reflect.CandidateUnit;
 import meghanada.reflect.ClassIndex;
@@ -78,9 +85,8 @@ public class Source implements Serializable, Storable, SearchIndexable {
   private Map<String, String> importMap;
   private transient List<LineRange> lineRange;
   private transient LineMap lineMap;
-  transient Map<Long, String> classNameIndex = new HashMap<>(4);
-  transient Map<Long, String> methodNameIndex = new HashMap<>(8);
-  transient Map<Long, String> symbolNameIndex = new HashMap<>(8);
+
+  transient Map<Long, List<IndexableWord>> indexWords = new HashMap<>(4);
 
   public Source(String filePath) {
     this.filePath = filePath;
@@ -809,90 +815,68 @@ public class Source implements Serializable, Storable, SearchIndexable {
     return list;
   }
 
-  @SuppressWarnings("CheckReturnValue")
-  private List<Document> createSourceTextIndices() {
-    final List<Document> list = new ArrayList<>();
+  private Collection<? extends Document> createSourceTextIndices() {
+    final List<Document> documents = new ArrayList<>();
     try (final BufferedReader br =
         new BufferedReader(
-            new InputStreamReader(new FileInputStream(this.filePath), Charset.forName("UTF-8")))) {
+            new InputStreamReader(new FileInputStream(this.filePath), StandardCharsets.UTF_8))) {
       long lineNumber = 1;
       String s;
       while ((s = br.readLine()) != null) {
-        final Document doc = getBaseDocument();
-        doc.add(
-            new Field(
-                SearchIndexable.LINE_NUMBER,
-                Long.toString(lineNumber),
-                Field.Store.YES,
-                Field.Index.NOT_ANALYZED));
+        final Document doc = getBaseDocument(lineNumber);
+        doc.add(new Field(CODE.getName(), s, YES, ANALYZED));
 
-        doc.add(new Field(SearchIndexable.CODE, s, Field.Store.YES, Field.Index.ANALYZED));
-        this.classNameIndex.computeIfPresent(
-            lineNumber,
-            (line, name) -> {
-              doc.add(
-                  new Field(
-                      SearchIndexable.CATEGORY,
-                      SearchIndexable.CLASS_NAME,
-                      Field.Store.YES,
-                      Field.Index.NOT_ANALYZED));
-              doc.add(
-                  new Field(
-                      SearchIndexable.CLASS_NAME, name, Field.Store.YES, Field.Index.ANALYZED));
-              return name;
-            });
-        this.methodNameIndex.computeIfPresent(
-            lineNumber,
-            (line, name) -> {
-              doc.add(
-                  new Field(
-                      SearchIndexable.CATEGORY,
-                      SearchIndexable.METHOD_NAME,
-                      Field.Store.YES,
-                      Field.Index.NOT_ANALYZED));
-              doc.add(
-                  new Field(
-                      SearchIndexable.METHOD_NAME, name, Field.Store.YES, Field.Index.ANALYZED));
-              return name;
-            });
-        this.symbolNameIndex.computeIfPresent(
-            lineNumber,
-            (line, name) -> {
-              doc.add(
-                  new Field(
-                      SearchIndexable.CATEGORY,
-                      SearchIndexable.SYMBOL_NAME,
-                      Field.Store.YES,
-                      Field.Index.NOT_ANALYZED));
-              doc.add(
-                  new Field(
-                      SearchIndexable.SYMBOL_NAME, name, Field.Store.YES, Field.Index.ANALYZED));
-              return name;
-            });
-        doc.add(
-            new Field(
-                SearchIndexable.CATEGORY,
-                SearchIndexable.CODE,
-                Field.Store.YES,
-                Field.Index.NOT_ANALYZED));
+        if (this.indexWords.containsKey(lineNumber)) {
 
-        list.add(doc);
+          List<IndexableWord> words = this.indexWords.get(lineNumber);
+          words.sort(
+              (w1, w2) -> {
+                Integer sortNo1 = w1.field.getSortNo();
+                Integer sortNo2 = w2.field.getSortNo();
+                return sortNo1.compareTo(sortNo2);
+              });
+          for (IndexableWord word : words) {
+            final IndexableWord.Field field = word.field;
+            final String val = word.word;
+            final String name = field.getName();
+            if (field.isCategorize()) {
+              doc.add(new Field(SearchIndexable.CATEGORY, name, YES, NOT_ANALYZED));
+            }
+            doc.add(new Field(name, val, NO, ANALYZED));
+          }
+        }
+
+        String cat = doc.get(SearchIndexable.CATEGORY);
+        if (Strings.isNullOrEmpty(cat)) {
+          doc.add(new Field(SearchIndexable.CATEGORY, CODE.getName(), YES, NOT_ANALYZED));
+        }
+        documents.add(doc);
         lineNumber++;
       }
-      return list;
     } catch (IOException ex) {
       throw new UncheckedIOException(ex);
     }
+
+    return documents;
   }
 
-  private Document getBaseDocument() {
+  private Document getBaseDocument(long lineNumber) {
     final Document doc = new Document();
-    doc.add(
-        new Field(
-            SearchIndexable.GROUP_ID,
-            this.getIndexGroupId(),
-            Field.Store.YES,
-            Field.Index.NOT_ANALYZED));
+    doc.add(new Field(SearchIndexable.GROUP_ID, this.getIndexGroupId(), YES, NOT_ANALYZED));
+    doc.add(new Field(SearchIndexable.LINE_NUMBER, Long.toString(lineNumber), YES, NOT_ANALYZED));
     return doc;
+  }
+
+  public void addIndexWord(IndexableWord.Field field, long line, long column, String word) {
+    final IndexableWord indexableWord = new IndexableWord(field, line, column, word);
+    if (this.indexWords.containsKey(line)) {
+      List<IndexableWord> words = this.indexWords.get(line);
+      words.add(indexableWord);
+      this.indexWords.put(line, words);
+    } else {
+      List<IndexableWord> words = new ArrayList<>();
+      words.add(indexableWord);
+      this.indexWords.put(line, words);
+    }
   }
 }

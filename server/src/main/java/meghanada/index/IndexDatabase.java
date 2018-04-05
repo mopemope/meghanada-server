@@ -36,8 +36,7 @@ public class IndexDatabase {
   private final EventBus eventBus;
 
   private static IndexDatabase indexDatabase;
-  public int maxHits = 100;
-  private boolean textSearch;
+  public int maxHits = Integer.MAX_VALUE;
 
   public static synchronized IndexDatabase getInstance() {
     if (nonNull(indexDatabase)) {
@@ -197,15 +196,16 @@ public class IndexDatabase {
           try {
             final SearchResults results = new SearchResults();
             {
+              String codeField = IndexableWord.Field.CODE.getName();
               final List<SearchResult> result =
                   this.searcher.search(
-                      SearchIndexable.CLASS_NAME,
+                      codeField,
                       query,
                       maxHits,
                       d -> {
                         final String filePath = d.get(SearchIndexable.GROUP_ID);
                         final String line = d.get(SearchIndexable.LINE_NUMBER);
-                        final String contents = d.get(SearchIndexable.CODE);
+                        final String contents = d.get(codeField);
                         final String cat = d.get(SearchIndexable.CATEGORY);
                         return new SearchResult(filePath, line, contents, cat);
                       });
@@ -213,11 +213,15 @@ public class IndexDatabase {
               result.forEach(
                   r -> {
                     final String cat = r.category;
-                    if (cat.equals(SearchIndexable.CLASS_NAME)) {
+                    if (cat.equals(IndexableWord.Field.CLASS_NAME.getName())) {
                       results.classes.add(r);
-                    } else if (cat.equals(SearchIndexable.METHOD_NAME)) {
+                    } else if (cat.equals(IndexableWord.Field.METHOD_NAME.getName())) {
                       results.methods.add(r);
-                    } else if (cat.equals(SearchIndexable.SYMBOL_NAME)) {
+                    } else if (cat.equals(IndexableWord.Field.PACKAGE_NAME.getName())) {
+                      results.classes.add(r);
+                    } else if (cat.equals(IndexableWord.Field.USAGE.getName())) {
+                      results.usages.add(r);
+                    } else if (cat.equals(IndexableWord.Field.SYMBOL_NAME.getName())) {
                       results.symbols.add(r);
                     } else {
                       results.codes.add(r);

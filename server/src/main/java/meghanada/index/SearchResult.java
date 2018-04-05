@@ -1,5 +1,7 @@
 package meghanada.index;
 
+import static java.util.Objects.isNull;
+
 public class SearchResult {
 
   private final String filePath;
@@ -12,7 +14,7 @@ public class SearchResult {
     this.filePath = filePath;
     this.lineNumber = lineNumber;
     this.contents = contents;
-    this.category = category;
+    this.category = isNull(category) ? "" : category;
   }
 
   @Override
