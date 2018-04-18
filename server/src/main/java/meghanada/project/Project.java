@@ -1,5 +1,6 @@
 package meghanada.project;
 
+import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 
 import com.google.common.base.Joiner;
@@ -213,10 +214,12 @@ public abstract class Project implements Serializable, Storable {
   }
 
   private JavaAnalyzer getJavaAnalyzer() {
-    if (this.javaAnalyzer == null) {
+    if (isNull(this.javaAnalyzer)) {
       this.javaAnalyzer = new JavaAnalyzer(this.compileSource, this.compileTarget);
       this.javaAnalyzer.getEventBus().register(new SourceCacheSubscriber(this));
-      this.javaAnalyzer.getEventBus().register(new IndexSubscriber(this));
+      if (Config.load().useFullTextSearch()) {
+        this.javaAnalyzer.getEventBus().register(new IndexSubscriber(this));
+      }
     }
     return this.javaAnalyzer;
   }
@@ -1153,6 +1156,7 @@ public abstract class Project implements Serializable, Storable {
       sb.append(String.format("isSkipBuildSubProjects: %s\n", config.isSkipBuildSubProjects()));
       sb.append(String.format("useAOSP: %s\n", config.useAOSPStyle()));
       sb.append(String.format("mavenLocalRepository: %s\n", config.getMavenLocalRepository()));
+      sb.append(String.format("useFullTextSearch: %s\n", config.useFullTextSearch()));
       sb.append("\n");
     }
 

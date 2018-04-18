@@ -415,6 +415,10 @@ public class Config {
     return c.getBoolean("cache-in-project");
   }
 
+  public boolean useFullTextSearch() {
+    return c.getBoolean("full-text-search");
+  }
+
   @FunctionalInterface
   public interface SimpleSupplier<R> {
 
