@@ -24,7 +24,7 @@ public abstract class MemberDescriptor
   String returnType;
   boolean hasDefault;
   Set<String> typeParameters;
-  Map<String, String> typeParameterMap;
+  public Map<String, String> typeParameterMap;
 
   public abstract List<String> getParameters();
 

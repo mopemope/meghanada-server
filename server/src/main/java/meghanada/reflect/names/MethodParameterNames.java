@@ -13,7 +13,7 @@ public class MethodParameterNames implements Serializable {
 
   public String className;
   // key = methodName: val = Set
-  public Map<String, List<List<ParameterName>>> names = new HashMap<>();
+  public final Map<String, List<List<ParameterName>>> names = new HashMap<>();
 
   @Override
   public boolean equals(Object o) {

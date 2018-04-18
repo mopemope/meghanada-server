@@ -8,7 +8,7 @@ public class MethodParameter implements Serializable {
 
   private static final long serialVersionUID = 2931973575424068754L;
 
-  public String type;
+  public final String type;
   public String name;
 
   public MethodParameter(final String type, final String name) {

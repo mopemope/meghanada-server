@@ -13,7 +13,7 @@ import org.objectweb.asm.signature.SignatureReader;
 
 class FieldAnalyzeVisitor extends FieldVisitor {
 
-  private static Logger log = LogManager.getLogger(FieldAnalyzeVisitor.class);
+  private static final Logger log = LogManager.getLogger(FieldAnalyzeVisitor.class);
 
   private final ClassAnalyzeVisitor classAnalyzeVisitor;
   private final int access;

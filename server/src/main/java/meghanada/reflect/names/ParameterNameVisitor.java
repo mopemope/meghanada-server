@@ -20,7 +20,7 @@ public class ParameterNameVisitor extends VoidVisitorAdapter<Object> {
   private static final Logger log = LogManager.getLogger(ParameterNameVisitor.class);
 
   String pkg;
-  String originClassName;
+  final String originClassName;
   String className;
   MethodParameterNames names = new MethodParameterNames();
   List<MethodParameterNames> parameterNamesList = new ArrayList<>();

@@ -206,7 +206,7 @@ public class ASMReflectorTest extends GradleTestBase {
             System.out.println(m.getDeclaration());
             // System.out.println("Return: " + m.getRawReturnType());
           });
-      assertEquals(61, memberDescriptors.size());
+      assertEquals(60, memberDescriptors.size());
       stopwatch.reset();
     }
   }
@@ -253,7 +253,7 @@ public class ASMReflectorTest extends GradleTestBase {
 
       Config config = Config.load();
       if (config.isJava8()) {
-        assertEquals(100, md.size());
+        assertEquals(90, md.size());
       } else {
         assertEquals(109, md.size());
       }
@@ -269,21 +269,18 @@ public class ASMReflectorTest extends GradleTestBase {
       Map<String, ClassIndex> index = asmReflector.getClassIndexes(jar);
       final InheritanceInfo info = asmReflector.getReflectInfo(index, fqcn);
       System.out.println(info);
-      List<MemberDescriptor> memberDescriptors1 =
+      List<MemberDescriptor> memberDescriptors =
           debugIt(
               () -> {
                 return asmReflector.reflectAll(info);
               });
-      // memberDescriptors1.sort((o1, o2) -> o1.getName().compareTo(o2.getName()));
-      // memberDescriptors1.forEach(
-      //     memberDescriptor -> {
-      //       System.out.println(memberDescriptor.getDisplayDeclaration());
-      //     });
+      memberDescriptors.sort(MemberDescriptor::compareTo);
+      memberDescriptors.forEach(m -> System.out.println(m.getDisplayDeclaration()));
       Config config = Config.load();
       if (config.isJava8()) {
-        assertEquals(41, memberDescriptors1.size());
+        assertEquals(40, memberDescriptors.size());
       } else {
-        assertEquals(53, memberDescriptors1.size());
+        assertEquals(53, memberDescriptors.size());
       }
     }
   }

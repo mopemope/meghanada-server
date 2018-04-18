@@ -18,7 +18,7 @@ class ClassSignatureVisitor extends SignatureVisitor {
 
   private static Logger log = LogManager.getLogger(ClassSignatureVisitor.class);
 
-  private final Set<ClassInfo> superClasses = new HashSet<>();
+  private final Set<ClassInfo> superClasses = new HashSet<>(4);
   private final ClassInfo classInfo;
   private final boolean isInterface;
 
@@ -224,14 +224,14 @@ class ClassSignatureVisitor extends SignatureVisitor {
 
     void addFormalParameter(String p) {
       if (this.formalTypeParameters == null) {
-        this.formalTypeParameters = new ArrayList<>();
+        this.formalTypeParameters = new ArrayList<>(2);
       }
       this.formalTypeParameters.add(p);
     }
 
     void addTypeParameter(ClassInfo c) {
       if (this.typeParameters == null) {
-        this.typeParameters = new ArrayList<>();
+        this.typeParameters = new ArrayList<>(2);
       }
       if (this.typeParameters.size() > 0) {
         ClassInfo last = this.typeParameters.get(this.typeParameters.size() - 1);

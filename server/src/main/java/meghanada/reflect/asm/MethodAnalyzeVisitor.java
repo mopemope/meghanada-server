@@ -250,8 +250,7 @@ class MethodAnalyzeVisitor extends MethodVisitor {
       if (pmsList == null) {
         return false;
       }
-      final boolean result = this.searchParameterNames(pmsList);
-      return result;
+      return this.searchParameterNames(pmsList);
       // fallback
     } catch (Exception e) {
       log.debug(e.getMessage());
