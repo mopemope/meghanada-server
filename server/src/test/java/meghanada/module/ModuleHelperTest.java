@@ -5,6 +5,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Paths;
 import java.util.Optional;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -12,13 +14,15 @@ import org.junit.Test;
 @Ignore
 public class ModuleHelperTest {
 
+  private static final Logger log = LogManager.getLogger(ModuleHelperTest.class);
+
   @Test
   public void getFile() {
     File f = ModuleHelper.getJrtFsFile();
     String name = f.getPath();
-    System.out.println(name);
+    log.info(name);
     boolean jrtFsFile = ModuleHelper.isJrtFsFile(f);
-    System.out.println(jrtFsFile);
+    log.info(jrtFsFile);
   }
 
   @Test
@@ -31,9 +35,9 @@ public class ModuleHelperTest {
                     ModuleHelper.pathToModule(p)
                         .ifPresent(
                             m -> {
-                              System.out.println(m);
+                              log.info(m);
                             });
-                    System.out.println(s);
+                    log.info(s);
                   });
         });
   }
@@ -49,9 +53,9 @@ public class ModuleHelperTest {
                     ModuleHelper.pathToModule(p)
                         .ifPresent(
                             m -> {
-                              System.out.println(m);
+                              log.info(m);
                             });
-                    System.out.println(s);
+                    log.info(s);
                   });
         });
   }
@@ -75,9 +79,9 @@ public class ModuleHelperTest {
                             mod -> {
                               try (InputStream in = ModuleHelper.getInputStream(p.toString())) {
                                 in.available();
-                                System.out.println(mod + ":" + className);
+                                log.info(mod + ":" + className);
                               } catch (IOException e) {
-                                e.printStackTrace();
+                                log.catching(e);
                               }
                             });
                   });
