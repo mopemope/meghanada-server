@@ -2,6 +2,7 @@ package meghanada.completion;
 
 import static java.util.Objects.nonNull;
 
+import com.google.common.base.Joiner;
 import com.google.common.cache.LoadingCache;
 import java.io.File;
 import java.io.IOException;
@@ -25,6 +26,7 @@ import meghanada.analyze.TypeScope;
 import meghanada.analyze.Variable;
 import meghanada.cache.GlobalCache;
 import meghanada.config.Config;
+import meghanada.index.IndexDatabase;
 import meghanada.project.Project;
 import meghanada.reflect.CandidateUnit;
 import meghanada.reflect.ClassIndex;
@@ -59,13 +61,12 @@ public class JavaCompletion {
     return result
         .stream()
         .sorted(comparing(prefix))
-        .map(
+        .peek(
             classIndex -> {
               final String name =
                   ClassNameUtils.getSimpleName(
                       ClassNameUtils.replaceInnerMark(classIndex.getName()));
               classIndex.setName('@' + name);
-              return classIndex;
             })
         .collect(Collectors.toList());
   }
@@ -316,7 +317,7 @@ public class JavaCompletion {
         result.addAll(reflector.searchClasses(prefix.toLowerCase()));
       }
     }
-
+    result.addAll(searchStaticMethod(result, prefix));
     List<CandidateUnit> list = new ArrayList<>(result);
     list.sort(comparing(source, prefix));
     return list;
@@ -763,5 +764,29 @@ public class JavaCompletion {
         .stream()
         .map(source -> ClassIndex.createPackage(source.getPackageName()))
         .collect(Collectors.toSet());
+  }
+
+  private static List<MemberDescriptor> searchStaticMethod(
+      Set<CandidateUnit> result, final String name) {
+
+    List<String> classes = Config.load().searchStaticMethodClasses();
+    if (classes.isEmpty()) {
+      return Collections.emptyList();
+    }
+    String s = Joiner.on(" OR ").join(classes);
+    return IndexDatabase.getInstance()
+        .searchMembers(
+            IndexDatabase.paren(s),
+            IndexDatabase.doubleQuote("public static"),
+            IndexDatabase.doubleQuote("METHOD"),
+            name + "*")
+        .stream()
+        .filter(m -> !result.contains(m))
+        .peek(
+            m -> {
+              m.setExtra("static-import " + m.getDeclaringClass());
+              m.showStaticClassName = true;
+            })
+        .collect(Collectors.toList());
   }
 }

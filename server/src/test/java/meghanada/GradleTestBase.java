@@ -40,15 +40,15 @@ public class GradleTestBase {
     }
 
     if (project == null) {
-      // replace tmp
-      File f = new File("./").getCanonicalFile();
-      Project newProject = new GradleProject(f);
-
       final File tempDir = Files.createTempDir();
       tempDir.deleteOnExit();
       final String path = tempDir.getCanonicalPath();
       System.setProperty(TEMP_PROJECT_SETTING_DIR, path);
       log.info("create database {}", path);
+
+      // replace tmp
+      File f = new File("./").getCanonicalFile();
+      Project newProject = new GradleProject(f);
       project = newProject.parseProject().mergeFromProjectConfig();
     }
     Config config = Config.load();

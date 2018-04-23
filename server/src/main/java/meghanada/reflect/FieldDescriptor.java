@@ -12,7 +12,7 @@ import meghanada.utils.ClassNameUtils;
 
 public class FieldDescriptor extends MemberDescriptor {
 
-  private static final long serialVersionUID = 7817892454168748759L;
+  private static final long serialVersionUID = -4855039590608720976L;
 
   public FieldDescriptor(
       final String declaringClass,
@@ -52,8 +52,13 @@ public class FieldDescriptor extends MemberDescriptor {
     if (isNull(returnType)) {
       return "";
     }
-    final String rt = ClassNameUtils.getSimpleName(returnType) + ' ' + this.name;
-    return ClassNameUtils.replaceInnerMark(rt);
+    StringBuilder sb = new StringBuilder(16);
+    sb.append(ClassNameUtils.getSimpleName(returnType) + ' ');
+    if (showStaticClassName) {
+      sb.append(ClassNameUtils.getSimpleName(getDeclaringClass()) + '.');
+    }
+    sb.append(this.name);
+    return ClassNameUtils.replaceInnerMark(sb.toString());
   }
 
   @Nullable
@@ -74,8 +79,12 @@ public class FieldDescriptor extends MemberDescriptor {
     return MoreObjects.toStringHelper(this)
         .add("declaringClass", declaringClass)
         .add("name", name)
+        .add("memberType", memberType)
+        .add("modifier", modifier)
         .add("returnType", returnType)
-        .add("info", getDeclaration())
+        .add("hasDefault", hasDefault)
+        .add("typeParameters", typeParameters)
+        .add("typeParameterMap", typeParameterMap)
         .toString();
   }
 

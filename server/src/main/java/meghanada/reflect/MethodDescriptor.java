@@ -19,8 +19,8 @@ import org.apache.logging.log4j.message.EntryMessage;
 
 public class MethodDescriptor extends MemberDescriptor {
 
-  private static final long serialVersionUID = -208297849947386075L;
   private static final Logger log = LogManager.getLogger(MethodDescriptor.class);
+  private static final long serialVersionUID = 833808939768990301L;
 
   private final List<MethodParameter> parameters;
   private String[] exceptions;
@@ -133,7 +133,11 @@ public class MethodDescriptor extends MemberDescriptor {
 
   private String getMethodDisplayDeclaration() {
     final StringBuilder sb = new StringBuilder(ClassNameUtils.getSimpleName(this.returnType));
-    sb.append(' ').append(this.name).append('(');
+    sb.append(' ');
+    if (showStaticClassName) {
+      sb.append(ClassNameUtils.getSimpleName(getDeclaringClass()) + '.');
+    }
+    sb.append(this.name).append('(');
     return appendParameters(sb).append(')').toString();
   }
 
@@ -162,7 +166,7 @@ public class MethodDescriptor extends MemberDescriptor {
       if (this.hasTypeParameters()) {
         s = renderTypeParameters(s, nonNull(formalType));
       }
-      return ClassNameUtils.replaceInnerMark(s);
+      return ClassNameUtils.replaceInnerMark(s).trim();
     }
   }
 
@@ -270,21 +274,24 @@ public class MethodDescriptor extends MemberDescriptor {
   @Override
   public String toString() {
     return MoreObjects.toStringHelper(this)
+        .add("parameters", parameters)
+        .add("exceptions", exceptions)
+        .add("formalType", formalType)
         .add("declaringClass", declaringClass)
         .add("name", name)
-        .add("parameters", parameters)
+        .add("memberType", memberType)
+        .add("modifier", modifier)
         .add("returnType", returnType)
-        .add("exceptions", exceptions)
         .add("hasDefault", hasDefault)
         .add("typeParameters", typeParameters)
-        .add("info", getDeclaration())
+        .add("typeParameterMap", typeParameterMap)
         .toString();
   }
 
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
+    if (!(o instanceof MethodDescriptor)) return false;
     if (!super.equals(o)) return false;
     MethodDescriptor that = (MethodDescriptor) o;
     return Objects.equal(parameters, that.parameters) && Objects.equal(formalType, that.formalType);

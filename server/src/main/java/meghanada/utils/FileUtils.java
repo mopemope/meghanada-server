@@ -183,7 +183,7 @@ public final class FileUtils {
           }
 
           @Override
-          public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
+          public FileVisitResult postVisitDirectory(Path dir, IOException exc) {
             return FileVisitResult.CONTINUE;
           }
         });
@@ -251,14 +251,9 @@ public final class FileUtils {
   }
 
   public static Collection<File> getPackagePrivateSource(final List<File> compileFiles) {
-    final Set<File> temp = Collections.newSetFromMap(new ConcurrentHashMap<File, Boolean>(8));
+    final Set<File> temp = Collections.newSetFromMap(new ConcurrentHashMap<>(8));
 
-    compileFiles
-        .parallelStream()
-        .forEach(
-            file -> {
-              temp.addAll(FileUtils.listJavaFiles(file));
-            });
+    compileFiles.parallelStream().forEach(file -> temp.addAll(FileUtils.listJavaFiles(file)));
     return temp;
   }
 

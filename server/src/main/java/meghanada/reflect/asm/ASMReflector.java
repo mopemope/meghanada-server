@@ -909,7 +909,7 @@ public class ASMReflector {
                   .map(Path::toFile)
                   .filter(f -> f.isFile() && f.getName().endsWith(".class"))
                   .collect(Collectors.toList())
-                  .stream()) {
+                  .parallelStream()) {
 
         stream.forEach(
             classFile -> {
@@ -936,7 +936,7 @@ public class ASMReflector {
 
   @FunctionalInterface
   public interface Scanner {
-    void scan(String name, InputStream in);
+    void scan(String name, InputStream in) throws IOException;
   }
 
   public List<String> loadFromInnerCache(

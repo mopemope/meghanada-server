@@ -14,6 +14,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
@@ -417,6 +418,15 @@ public class Config {
 
   public boolean useFullTextSearch() {
     return c.getBoolean("full-text-search");
+  }
+
+  public List<String> searchStaticMethodClasses() {
+    final String classes = c.getString("search-static-method-classes");
+    final String[] split = StringUtils.split(classes, ",");
+    if (isNull(split)) {
+      return Collections.emptyList();
+    }
+    return Arrays.stream(split).map(String::trim).collect(Collectors.toList());
   }
 
   @FunctionalInterface

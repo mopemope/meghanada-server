@@ -146,7 +146,7 @@ public class LocationSearcherTest extends GradleTestBase {
         searcher.searchDeclarationLocation(f, 534, 46, "searchMissingImport").orElse(null);
     assertNotNull(result);
     assertTrue(result.getPath().contains("Source.java"));
-    assertEquals(455, result.getLine());
+    assertEquals(456, result.getLine());
     assertEquals(36, result.getColumn());
   }
 
@@ -254,7 +254,7 @@ public class LocationSearcherTest extends GradleTestBase {
         timeIt(() -> searcher.searchDeclarationLocation(f, 65, 19, "getAllowClass")).orElse(null);
     assertNotNull(result);
     assertTrue(result.getPath().contains("Config.java"));
-    assertEquals(353, result.getLine());
+    assertEquals(354, result.getLine());
     assertEquals(23, result.getColumn());
   }
 
@@ -328,7 +328,7 @@ public class LocationSearcherTest extends GradleTestBase {
         timeIt(() -> searcher.searchDeclarationLocation(f, 554, 14, "Source")).orElse(null);
     assertNotNull(result);
     assertTrue(result.getPath().contains("Source.java"));
-    assertEquals(57, result.getLine());
+    assertEquals(58, result.getLine());
     assertEquals(14, result.getColumn());
   }
 

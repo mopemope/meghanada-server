@@ -27,6 +27,7 @@ public class CachedASMReflectorTest extends GradleTestBase {
 
   @BeforeClass
   public static void setup() throws Exception {
+    System.setProperty("meghanada.full.text.search", "false");
     GradleTestBase.setupReflector(false);
     CompileResult result = project.compileJava(true);
     CachedASMReflector cachedASMReflector = CachedASMReflector.getInstance();
@@ -317,7 +318,7 @@ public class CachedASMReflectorTest extends GradleTestBase {
       List<MemberDescriptor> memberDescriptors = cachedASMReflector.reflect(fqcn);
       memberDescriptors.sort(MemberDescriptor::compareTo);
       memberDescriptors.forEach(m -> System.out.println(m.getDisplayDeclaration()));
-      assertEquals(50, memberDescriptors.size());
+      assertEquals(55, memberDescriptors.size());
     }
   }
 
@@ -345,7 +346,7 @@ public class CachedASMReflectorTest extends GradleTestBase {
       String fqcn = "meghanada.utils.ClassNameUtils";
       List<MemberDescriptor> memberDescriptors = cachedASMReflector.reflect(fqcn);
       // memberDescriptors.forEach(m -> System.out.println(m.getDisplayDeclaration()));
-      assertEquals(62, memberDescriptors.size());
+      assertEquals(63, memberDescriptors.size());
     }
   }
 
@@ -446,7 +447,7 @@ public class CachedASMReflectorTest extends GradleTestBase {
       String fqcn = "meghanada.reflect.CandidateUnit";
       List<MemberDescriptor> memberDescriptors = cachedASMReflector.reflect(fqcn);
       // memberDescriptors.forEach(m -> System.out.println(m.getDisplayDeclaration()));
-      assertEquals(16, memberDescriptors.size());
+      assertEquals(17, memberDescriptors.size());
     }
   }
 

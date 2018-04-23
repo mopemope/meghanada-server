@@ -64,7 +64,7 @@ public class JavaVariableCompletion {
     final Source source = this.getSource(file);
     return source
         .getExpressionReturn(line)
-        .filter(as -> as != null && as.returnType != null)
+        .filter(as -> as.returnType != null)
         .flatMap(as -> createLocalVariable(as, as.returnType));
   }
 

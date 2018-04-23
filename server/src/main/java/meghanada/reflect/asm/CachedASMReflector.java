@@ -2,6 +2,8 @@ package meghanada.reflect.asm;
 
 import static java.util.Objects.nonNull;
 import static meghanada.utils.FunctionUtils.wrapIOConsumer;
+import static org.apache.lucene.document.Field.Index.NOT_ANALYZED;
+import static org.apache.lucene.document.Field.Store.YES;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.UncheckedExecutionException;
@@ -19,12 +21,15 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ExecutionException;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import jetbrains.exodus.entitystore.EntityId;
 import meghanada.cache.GlobalCache;
+import meghanada.index.IndexDatabase;
+import meghanada.index.SearchIndexable;
 import meghanada.module.ModuleHelper;
 import meghanada.reflect.CandidateUnit;
 import meghanada.reflect.ClassIndex;
@@ -35,6 +40,9 @@ import meghanada.utils.ClassNameUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.objectweb.asm.ClassReader;
 
 public class CachedASMReflector {
 
@@ -545,5 +553,81 @@ public class CachedASMReflector {
     }
     this.standardClasses = map;
     return this.standardClasses;
+  }
+
+  public void scanAllMethods() {
+    ASMReflector reflector = ASMReflector.getInstance();
+    IndexDatabase database = IndexDatabase.getInstance();
+    this.jars
+        .parallelStream()
+        .forEach(
+            file -> {
+              try {
+                final String path = file.getCanonicalPath();
+                boolean b = ProjectDatabaseHelper.isIndexedFile(path);
+                if (b) {
+                  return;
+                }
+                ConcurrentLinkedDeque<MemberDescriptor> deque = new ConcurrentLinkedDeque<>();
+                reflector.scanClasses(
+                    file,
+                    (name, in) -> {
+                      ClassReader read = new ClassReader(in);
+                      ClassAnalyzeVisitor visitor =
+                          new ClassAnalyzeVisitor(name, name, false, false);
+                      read.accept(visitor, 0);
+                      List<MemberDescriptor> members =
+                          visitor
+                              .getMembers()
+                              .stream()
+                              .filter(m -> m.isPublic() && m.isStatic())
+                              .collect(Collectors.toList());
+                      if (!members.isEmpty()) {
+                        deque.addAll(members);
+                      }
+                    });
+                final MemberIndex mi = new MemberIndex(file.getCanonicalPath(), deque);
+                database.requestIndex(
+                    mi,
+                    event -> {
+                      // store
+                      String fileName = file.getName();
+                      if (fileName.endsWith(".jar")
+                          && !ProjectDatabaseHelper.saveIndexedFile(path)) {
+                        log.warn("failed save index. {}", path);
+                      }
+                    });
+              } catch (IOException e) {
+                throw new UncheckedIOException(e);
+              }
+            });
+  }
+
+  private static class MemberIndex implements SearchIndexable {
+    private final String path;
+    private final Collection<MemberDescriptor> members;
+
+    MemberIndex(String path, Collection<MemberDescriptor> members) {
+      this.path = path;
+      this.members = members;
+    }
+
+    @Override
+    public String getIndexGroupId() {
+      return this.path;
+    }
+
+    @Override
+    public List<Document> getDocumentIndices() {
+      return this.members
+          .parallelStream()
+          .map(
+              desc -> {
+                Document doc = desc.toDocument();
+                doc.add(new Field(SearchIndexable.GROUP_ID, getIndexGroupId(), YES, NOT_ANALYZED));
+                return doc;
+              })
+          .collect(Collectors.toList());
+    }
   }
 }

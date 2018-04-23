@@ -2,12 +2,14 @@ package meghanada.store;
 
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
+import static meghanada.store.ProjectDatabase.ID;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -37,6 +39,7 @@ public class ProjectDatabaseHelper {
   private static final String BLOB_PROP_MEMBERS = "members";
   private static final String BLOB_PROP_CHECKSUM = "checksum";
   private static final String BLOB_PROP_CALLER = "caller";
+  private static int indexTTL = 60 * 60;
 
   private static final Logger log = LogManager.getLogger(ProjectDatabaseHelper.class);
 
@@ -130,7 +133,7 @@ public class ProjectDatabaseHelper {
     ProjectDatabase database = ProjectDatabase.getInstance();
     return database.execute(
         txn -> {
-          EntityIterable it = txn.find(ClassIndex.ENTITY_TYPE, ProjectDatabase.ID, fqcn);
+          EntityIterable it = txn.find(ClassIndex.ENTITY_TYPE, ID, fqcn);
           Entity entity = it.getFirst();
 
           if (isNull(entity)) {
@@ -156,7 +159,7 @@ public class ProjectDatabaseHelper {
     return database.computeInReadonly(
         txn -> {
           EntityIterable it =
-              txn.find(ClassIndex.ENTITY_TYPE, ProjectDatabase.ID, fqcn)
+              txn.find(ClassIndex.ENTITY_TYPE, ID, fqcn)
                   .intersect(txn.findWithBlob(ClassIndex.ENTITY_TYPE, BLOB_PROP_MEMBERS));
           Entity entity = it.getFirst();
 
@@ -180,7 +183,7 @@ public class ProjectDatabaseHelper {
     ProjectDatabase database = ProjectDatabase.getInstance();
     return database.execute(
         txn -> {
-          EntityIterable it = txn.find(ClassIndex.ENTITY_TYPE, ProjectDatabase.ID, fqcn);
+          EntityIterable it = txn.find(ClassIndex.ENTITY_TYPE, ID, fqcn);
           Entity entity = it.getFirst();
 
           if (isNull(entity)) {
@@ -259,7 +262,7 @@ public class ProjectDatabaseHelper {
         database.computeInReadonly(
             txn -> {
               EntityIterable entities =
-                  txn.find(Project.ENTITY_TYPE, ProjectDatabase.ID, projectRoot)
+                  txn.find(Project.ENTITY_TYPE, ID, projectRoot)
                       .intersect(txn.findWithBlob(Project.ENTITY_TYPE, BLOB_PROP_CHECKSUM));
               Entity entity = entities.getFirst();
               if (isNull(entity)) {
@@ -280,7 +283,7 @@ public class ProjectDatabaseHelper {
 
     return database.execute(
         txn -> {
-          EntityIterable entities = txn.find(Project.ENTITY_TYPE, ProjectDatabase.ID, projectRoot);
+          EntityIterable entities = txn.find(Project.ENTITY_TYPE, ID, projectRoot);
 
           Entity entity = entities.getFirst();
           if (isNull(entity)) {
@@ -307,7 +310,7 @@ public class ProjectDatabaseHelper {
         database.computeInReadonly(
             txn -> {
               EntityIterable entities =
-                  txn.find(Project.ENTITY_TYPE, ProjectDatabase.ID, projectRoot)
+                  txn.find(Project.ENTITY_TYPE, ID, projectRoot)
                       .intersect(txn.findWithBlob(Project.ENTITY_TYPE, BLOB_PROP_CALLER));
               Entity entity = entities.getFirst();
               if (isNull(entity)) {
@@ -329,7 +332,7 @@ public class ProjectDatabaseHelper {
 
     return database.execute(
         txn -> {
-          EntityIterable entities = txn.find(Project.ENTITY_TYPE, ProjectDatabase.ID, projectRoot);
+          EntityIterable entities = txn.find(Project.ENTITY_TYPE, ID, projectRoot);
 
           Entity entity = entities.getFirst();
           if (isNull(entity)) {
@@ -376,6 +379,47 @@ public class ProjectDatabaseHelper {
           }
           return result;
         });
+  }
+
+  public static boolean saveIndexedFile(String path) {
+    ProjectDatabase database = ProjectDatabase.getInstance();
+    return database.execute(
+        txn -> {
+          Entity entity = txn.newEntity("IndexedFile");
+          entity.setProperty(ID, path);
+          Long timestamp = Instant.now().getEpochSecond();
+          entity.setProperty("path", path);
+          entity.setProperty("lastUpdate", timestamp);
+          return true;
+        });
+  }
+
+  public static boolean isIndexedFile(String path) {
+    ProjectDatabase database = ProjectDatabase.getInstance();
+
+    return database.computeInReadonly(
+        txn -> {
+          EntityIterable entities = txn.find("IndexedFile", ID, path);
+          Entity entity = entities.getFirst();
+          if (isNull(entity)) {
+            return false;
+          }
+
+          Long old = (Long) entity.getProperty("lastUpdate");
+          Long now = Instant.now().getEpochSecond();
+          if ((now - old) > getIndexTTL()) {
+            return false;
+          }
+          return true;
+        });
+  }
+
+  private static int getIndexTTL() {
+    return indexTTL;
+  }
+
+  public static void setIndexTTL(int ttl) {
+    indexTTL = ttl;
   }
 
   public static void reset() {

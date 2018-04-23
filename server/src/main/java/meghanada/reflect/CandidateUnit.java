@@ -12,6 +12,8 @@ public interface CandidateUnit {
 
   String getReturnType();
 
+  String getExtra();
+
   enum MemberType {
     FIELD,
     METHOD,

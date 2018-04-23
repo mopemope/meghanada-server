@@ -172,7 +172,8 @@ public class SexpOutputFormatter implements OutputFormatter {
                             doubleQuote(toSimpleName(d.getName())),
                             doubleQuote(d.getDisplayDeclaration()),
                             doubleQuote(d.getDeclaration()),
-                            doubleQuote(d.getReturnType()))
+                            doubleQuote(d.getReturnType()),
+                            doubleQuote(d.getExtra()))
                         + RPAREN)
             .collect(Collectors.joining(LIST_SEP));
     sb.append(s);
