@@ -51,7 +51,7 @@ public class JavaAnalyzer {
   public JavaAnalyzer(String compileSource, String compileTarget) {
     this.compileSource = compileSource;
     this.compileTarget = compileTarget;
-    this.executorService = Executors.newCachedThreadPool();
+    this.executorService = Executors.newFixedThreadPool(2);
     this.eventBus =
         new AsyncEventBus(
             executorService,
