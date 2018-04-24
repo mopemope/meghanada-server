@@ -3,9 +3,9 @@ package meghanada.completion;
 import static java.util.Objects.nonNull;
 
 import com.google.common.base.Joiner;
-import com.google.common.cache.LoadingCache;
 import java.io.File;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -34,6 +34,7 @@ import meghanada.reflect.FieldDescriptor;
 import meghanada.reflect.MemberDescriptor;
 import meghanada.reflect.asm.CachedASMReflector;
 import meghanada.utils.ClassNameUtils;
+import meghanada.utils.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -649,10 +650,11 @@ public class JavaCompletion {
 
     } else if (searchWord.startsWith("*package")) {
       // completion projects package
-      return this.completionPackage()
-          .stream()
-          .sorted(Comparator.comparing(CandidateUnit::getName))
-          .collect(Collectors.toList());
+      return this.completionPackage(source.getFile());
+      //      return this.completionPackage()
+      //          .stream()
+      //          .sorted(Comparator.comparing(CandidateUnit::getName))
+      //          .collect(Collectors.toList());
     }
 
     // search fields or methods
@@ -755,15 +757,51 @@ public class JavaCompletion {
         .collect(Collectors.toList());
   }
 
-  private Collection<? extends CandidateUnit> completionPackage() {
-    final GlobalCache globalCache = GlobalCache.getInstance();
-    final LoadingCache<File, Source> sourceCache = globalCache.getSourceCache(project);
-    return sourceCache
-        .asMap()
-        .values()
-        .stream()
-        .map(source -> ClassIndex.createPackage(source.getPackageName()))
-        .collect(Collectors.toSet());
+  private Collection<? extends CandidateUnit> completionPackage(File f) {
+    Set<File> allSources = this.project.getAllSources();
+    try {
+      Optional<String> s = FileUtils.convertPathToClass(allSources, f);
+      if (s.isPresent()) {
+        String className = s.get();
+        String pkg = ClassNameUtils.getPackage(className);
+        CandidateUnit unit =
+            new CandidateUnit() {
+              @Override
+              public String getName() {
+                return pkg;
+              }
+
+              @Override
+              public String getType() {
+                return MemberType.PACKAGE.name();
+              }
+
+              @Override
+              public String getDeclaration() {
+                return pkg;
+              }
+
+              @Override
+              public String getDisplayDeclaration() {
+                return pkg;
+              }
+
+              @Override
+              public String getReturnType() {
+                return pkg;
+              }
+
+              @Override
+              public String getExtra() {
+                return "";
+              }
+            };
+        return Collections.singletonList(unit);
+      }
+      return Collections.emptyList();
+    } catch (IOException e) {
+      throw new UncheckedIOException(e);
+    }
   }
 
   private static List<MemberDescriptor> searchStaticMethod(

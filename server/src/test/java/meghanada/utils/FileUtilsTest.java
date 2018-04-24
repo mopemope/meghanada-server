@@ -6,14 +6,20 @@ import static org.junit.Assert.assertTrue;
 
 import com.sun.tools.javac.resources.version;
 import java.io.File;
+import java.io.IOException;
+import java.util.Optional;
 import meghanada.GradleTestBase;
 import meghanada.Main;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
 public class FileUtilsTest extends GradleTestBase {
+
+  private static final Logger log = LogManager.getLogger(FileUtilsTest.class);
 
   @BeforeClass
   public static void setup() throws Exception {
@@ -62,6 +68,20 @@ public class FileUtilsTest extends GradleTestBase {
     System.out.println(version);
     assertNotNull(version);
     assertTrue(version.startsWith(Main.VERSION));
+  }
+
+  @Test
+  public void testConvertPathToClass1() throws Exception {
+    File f =
+        new File(project.getProjectRootPath(), "./src/main/java/meghanada/session/Session.java")
+            .getCanonicalFile();
+
+    try {
+      Optional<String> s = FileUtils.convertPathToClass(project.getAllSources(), f);
+      log.info("{}", s);
+    } catch (IOException e) {
+      log.catching(e);
+    }
   }
 
   //  @Test

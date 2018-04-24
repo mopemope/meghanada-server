@@ -398,4 +398,34 @@ public final class FileUtils {
     final GlobalCache globalCache = GlobalCache.getInstance();
     return Optional.of(globalCache.getSource(project, file.getCanonicalFile()));
   }
+
+  public static Optional<String> convertPathToClass(final Set<File> roots, final File f)
+      throws IOException {
+    for (File root : roots) {
+      Optional<String> s = convertPathToClass(root, f);
+      if (s.isPresent()) {
+        return s;
+      }
+    }
+    return Optional.empty();
+  }
+
+  private static Optional<String> convertPathToClass(final File root, final File f)
+      throws IOException {
+    String rootPath = root.getCanonicalPath();
+    String path = f.getCanonicalPath();
+    if (path.startsWith(rootPath)) {
+      String part = path.substring(rootPath.length());
+      int i = part.lastIndexOf(".");
+      if (i > 0) {
+        part = part.substring(0, i);
+      }
+      String replaced = ClassNameUtils.replace(part, File.separator, ".");
+      if (replaced.startsWith(".")) {
+        replaced = replaced.substring(1);
+      }
+      return Optional.of(replaced);
+    }
+    return Optional.empty();
+  }
 }
