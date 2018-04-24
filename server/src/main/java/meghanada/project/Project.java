@@ -926,7 +926,7 @@ public abstract class Project implements Serializable, Storable {
 
   private Optional<Properties> readFormatPropertiesFromFile() {
     final String val = System.getProperty(FORMATTER_FILE_KEY);
-    if (val != null) {
+    if (nonNull(val)) {
       final File file = new File(val);
       log.info("load formatter rule from {}", val);
       if (val.endsWith(".xml")) {
@@ -1154,7 +1154,7 @@ public abstract class Project implements Serializable, Storable {
       sb.append(String.format("useExternalBuilder: %s\n", config.useExternalBuilder()));
       sb.append(String.format("clearCacheOnStart: %s\n", config.clearCacheOnStart()));
       sb.append(String.format("isSkipBuildSubProjects: %s\n", config.isSkipBuildSubProjects()));
-      sb.append(String.format("useAOSP: %s\n", config.useAOSPStyle()));
+      sb.append(String.format("useAOSPStyleFormat: %s\n", config.useAOSPStyle()));
       sb.append(String.format("mavenLocalRepository: %s\n", config.getMavenLocalRepository()));
       sb.append(String.format("useFullTextSearch: %s\n", config.useFullTextSearch()));
       sb.append("\n");
@@ -1207,6 +1207,17 @@ public abstract class Project implements Serializable, Storable {
       sb.append("projectDatabaseSize: ");
       sb.append(String.format("  %.2fMB\n", size));
 
+      sb.append("source-formatter: ");
+      Optional<Properties> op = getFormatProperties();
+      if (op.isPresent()) {
+        String settingFile = System.getProperty(FORMATTER_FILE_KEY);
+        sb.append("eclipse ");
+        sb.append(settingFile);
+      } else {
+        sb.append("google ");
+        sb.append(String.format("AOSP %s", config.useAOSPStyle()));
+      }
+      sb.append("\n");
       sb.append("sources:\n");
       sources.forEach(
           s -> {
