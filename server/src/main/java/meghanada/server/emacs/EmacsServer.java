@@ -10,6 +10,9 @@ import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 
 import com.google.common.base.Stopwatch;
+import com.google.common.eventbus.AsyncEventBus;
+import com.google.common.eventbus.EventBus;
+import com.google.common.eventbus.Subscribe;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
@@ -18,12 +21,15 @@ import java.io.OutputStreamWriter;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import meghanada.server.CommandHandler;
 import meghanada.server.OutputFormatter;
@@ -38,15 +44,18 @@ public class EmacsServer implements Server {
   private static final Logger log = LogManager.getLogger(EmacsServer.class);
   private static final String EOT = ";;EOT";
   private final ServerSocket serverSocket;
-  private final ExecutorService executorService = Executors.newFixedThreadPool(4);
+  private final ExecutorService executorService = Executors.newFixedThreadPool(6);
   private final OUTPUT outputFormat;
   private final String projectRoot;
   private final String host;
   private final int port;
   private final boolean outputEOT;
+  private final IdleTimer idleTimer;
+  private final EventBus eventBus;
 
   private Session session;
   private long id;
+  private int idleTime = 10;
 
   public EmacsServer(final String host, final int port, final String projectRoot)
       throws IOException {
@@ -58,9 +67,35 @@ public class EmacsServer implements Server {
     this.outputFormat = OUTPUT.SEXP;
     this.outputEOT = true;
     System.setProperty("meghanada.server.port", Integer.toString(this.serverSocket.getLocalPort()));
+    this.idleTimer = new IdleTimer();
+    this.eventBus =
+        new AsyncEventBus(
+            this.executorService,
+            (throwable, subscriberExceptionContext) -> {
+              if (!(throwable instanceof RejectedExecutionException)) {
+                log.error(throwable.getMessage(), throwable);
+              }
+            });
+    this.eventBus.register(this);
+    Runtime.getRuntime()
+        .addShutdownHook(
+            new Thread(
+                () -> {
+                  try {
+                    shutdown();
+                  } catch (Throwable t) {
+                    log.catching(t);
+                  }
+                }));
+    this.applyIdlePlugin();
+  }
+
+  private void applyIdlePlugin() {
+    this.eventBus.register(new IdleCacheSubscriber());
   }
 
   private boolean dispatch(final List<String> argList, final CommandHandler handler) {
+    this.idleTimer.lastRun = Instant.now().getEpochSecond();
     final Stopwatch stopwatch = Stopwatch.createStarted();
     id++;
     final boolean result =
@@ -323,6 +358,7 @@ public class EmacsServer implements Server {
       this.session = Session.createSession(projectRoot);
       this.session.start();
       log.info("Start server Listen {} port:{}", this.host, this.serverSocket.getLocalPort());
+      this.eventBus.post(new IdleMonitorEvent(this.session));
       this.accept();
     } catch (Throwable e) {
       log.catching(e);
@@ -416,9 +452,70 @@ public class EmacsServer implements Server {
     throw new UnsupportedOperationException("not support format");
   }
 
+  public void shutdown() {
+    this.executorService.shutdown();
+    try {
+      this.executorService.awaitTermination(3, TimeUnit.SECONDS);
+    } catch (InterruptedException e) {
+      log.catching(e);
+    }
+  }
+
+  private IdleEvent createIdleEvent(Session session, IdleTimer idleTimer) {
+    return new IdleEvent(session, idleTimer);
+  }
+
+  @Subscribe
+  public void on(final IdleMonitorEvent event) {
+    while (true) {
+      long now = Instant.now().getEpochSecond();
+      if ((now - this.idleTimer.lastRun) > this.idleTime) {
+        IdleEvent idleEvent = createIdleEvent(event.session, this.idleTimer);
+        this.eventBus.post(idleEvent);
+        this.idleTimer.lastRun = now + this.idleTime + 1;
+      }
+      try {
+        Thread.sleep(1000);
+      } catch (InterruptedException e) {
+        log.catching(e);
+        throw new RuntimeException(e);
+      }
+    }
+  }
+
   private enum OUTPUT {
     SEXP,
     CSV,
     JSON,
+  }
+
+  static class IdleTimer {
+    long lastRun;
+  }
+
+  static class IdleMonitorEvent {
+    final Session session;
+
+    IdleMonitorEvent(Session session) {
+      this.session = session;
+    }
+  }
+
+  static class IdleEvent {
+    final Session session;
+    final IdleTimer idleTimer;
+
+    IdleEvent(Session session, IdleTimer idleTimer) {
+      this.session = session;
+      this.idleTimer = idleTimer;
+    }
+
+    public IdleTimer getIdleTimer() {
+      return idleTimer;
+    }
+
+    public Session getSession() {
+      return session;
+    }
   }
 }

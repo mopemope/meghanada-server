@@ -23,6 +23,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ExecutionException;
+import java.util.function.Consumer;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -601,6 +602,23 @@ public class CachedASMReflector {
                 throw new UncheckedIOException(e);
               }
             });
+  }
+
+  public void scan(File file, Consumer<String> c) {
+    ASMReflector reflector = ASMReflector.getInstance();
+    try {
+      reflector.scanClasses(
+          file,
+          (name, in) -> {
+            c.accept(name);
+          });
+    } catch (IOException e) {
+      throw new UncheckedIOException(e);
+    }
+  }
+
+  public Set<File> getJars() {
+    return jars;
   }
 
   private static class MemberIndex implements SearchIndexable {
