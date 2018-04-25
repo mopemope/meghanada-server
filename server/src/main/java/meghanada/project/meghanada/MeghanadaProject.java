@@ -16,7 +16,7 @@ public class MeghanadaProject extends Project {
   }
 
   @Override
-  public Project parseProject() throws ProjectParseException {
+  public Project parseProject(File projectRoot, File current) throws ProjectParseException {
     return this;
   }
 

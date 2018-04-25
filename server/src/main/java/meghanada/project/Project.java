@@ -161,7 +161,7 @@ public abstract class Project implements Serializable, Storable {
     }
   }
 
-  public abstract Project parseProject() throws ProjectParseException;
+  public abstract Project parseProject(File projectRoot, File current) throws ProjectParseException;
 
   public Set<File> getAllSources() {
     final Set<File> temp = new HashSet<>(4);

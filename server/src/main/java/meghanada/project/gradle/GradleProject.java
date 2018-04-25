@@ -135,7 +135,7 @@ public class GradleProject extends Project {
   }
 
   @Override
-  public Project parseProject() throws ProjectParseException {
+  public Project parseProject(File projectRoot, File current) throws ProjectParseException {
     final ProjectConnection connection = getProjectConnection();
     log.info("loading gradle project:{}", new File(this.projectRoot, Project.GRADLE_PROJECT_FILE));
     try {

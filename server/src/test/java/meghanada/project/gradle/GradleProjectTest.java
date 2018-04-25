@@ -68,7 +68,8 @@ public class GradleProjectTest {
   @Ignore
   @Test
   public void testParse01() throws Exception {
-    Project parsed = this.project.parseProject();
+    File file = project.getProjectRoot();
+    Project parsed = this.project.parseProject(file, file);
     final File outputDirectory = parsed.getOutput();
     assertNotNull(outputDirectory);
     System.out.println(outputDirectory);
@@ -77,7 +78,8 @@ public class GradleProjectTest {
   @Ignore
   @Test
   public void testParse02() throws Exception {
-    final Project project = timeIt(() -> this.project.parseProject());
+    File file = project.getProjectRoot();
+    final Project project = timeIt(() -> this.project.parseProject(file, file));
 
     final String classpath = project.classpath();
     assertNotNull(classpath);
@@ -91,7 +93,8 @@ public class GradleProjectTest {
   @Ignore
   @Test
   public void testLoadProject01() throws Exception {
-    Project parsed = project.parseProject();
+    File file = project.getProjectRoot();
+    Project parsed = project.parseProject(file, file);
     String classpath1 = parsed.classpath();
     timeIt(parsed::saveProject);
 
@@ -106,10 +109,11 @@ public class GradleProjectTest {
   @Ignore
   @Test
   public void testCompile01() throws Exception {
+    File file = project.getProjectRoot();
     final CompileResult compileResult =
         timeIt(
             () -> {
-              project.parseProject();
+              project.parseProject(file, file);
               return this.project.compileJava();
             });
 
@@ -121,7 +125,8 @@ public class GradleProjectTest {
   @Ignore
   @Test
   public void testCompile02() throws Exception {
-    project.parseProject();
+    File file = project.getProjectRoot();
+    project.parseProject(file, file);
     setupReflector(project);
     Thread.sleep(1000 * 3);
     final CompileResult compileResult = this.project.compileJava(true);

@@ -49,7 +49,7 @@ public class GradleTestBase {
       // replace tmp
       File f = new File("./").getCanonicalFile();
       Project newProject = new GradleProject(f);
-      project = newProject.parseProject().mergeFromProjectConfig();
+      project = newProject.parseProject(f, f).mergeFromProjectConfig();
     }
     Config config = Config.load();
     if (useCache) {
