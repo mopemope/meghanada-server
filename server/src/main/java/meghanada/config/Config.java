@@ -401,11 +401,11 @@ public class Config {
   }
 
   public void setJava9JavacArgs(List<String> lst) {
-    this.java8JavacArgs = lst;
+    this.java9JavacArgs = lst;
   }
 
   public List<String> getJava9JavacArgs() {
-    return this.java8JavacArgs;
+    return this.java9JavacArgs;
   }
 
   public String getCacheRoot() {
