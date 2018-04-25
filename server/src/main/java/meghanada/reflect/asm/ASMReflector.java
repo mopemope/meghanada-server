@@ -59,7 +59,7 @@ public class ASMReflector {
   private static final Logger log = LogManager.getLogger(ASMReflector.class);
   private static ASMReflector asmReflector;
   private final Set<String> allowClass = new HashSet<>(16);
-  private final Map<String, List<MemberDescriptor>> innerCache = new ConcurrentHashMap<>(32);
+  private Map<String, List<MemberDescriptor>> innerCache = new ConcurrentHashMap<>(16);
 
   private ASMReflector() {
     Config.load().getAllowClass().forEach(this::addAllowClass);
@@ -407,10 +407,11 @@ public class ASMReflector {
                     if (isNull(cached)) {
                       result.put(nameKey, md);
                       paramCache.put(name + "#" + parameters.size(), parameters);
-                    } else if (!ClassNameUtils.compareArgumentType(cached, parameters)) {
-                      String old = name + "::" + cached.toString();
-                      result.remove(old);
-                      result.put(nameKey, md);
+                    } else {
+                      boolean isSame = ClassNameUtils.compareArgumentType(cached, parameters);
+                      if (!isSame) {
+                        result.put(nameKey, md);
+                      }
                     }
                   } else if (md.matchType(CandidateUnit.MemberType.CONSTRUCTOR)) {
                     if (md.getDeclaringClass().equals(info.targetClass)) {
@@ -455,7 +456,7 @@ public class ASMReflector {
 
                               List<MemberDescriptor> members =
                                   this.cachedMember(
-                                      nameWithoutTP,
+                                      nameWithTP,
                                       () -> {
                                         try (InputStream in = cd.getInputStream()) {
                                           ClassReader classReader = new ClassReader(in);
@@ -478,7 +479,7 @@ public class ASMReflector {
                             if (innerClassName.equals(nameWithoutTP)) {
                               List<MemberDescriptor> members =
                                   this.cachedMember(
-                                      nameWithoutTP,
+                                      nameWithTP,
                                       () -> {
                                         try (InputStream in = cd.getInputStream()) {
                                           ClassReader classReader = new ClassReader(in);
@@ -525,7 +526,7 @@ public class ASMReflector {
               if (className.equals(nameWithoutTP)) {
                 List<MemberDescriptor> members =
                     this.cachedMember(
-                        nameWithoutTP,
+                        nameWithTP,
                         () -> {
                           try (InputStream in = jarFile.getInputStream(jarEntry)) {
                             ClassReader classReader = new ClassReader(in);
@@ -547,7 +548,7 @@ public class ASMReflector {
               if (innerClassName.equals(nameWithoutTP)) {
                 List<MemberDescriptor> members =
                     this.cachedMember(
-                        innerClassName,
+                        nameWithTP,
                         () -> {
                           try (InputStream in = jarFile.getInputStream(jarEntry)) {
                             ClassReader classReader = new ClassReader(in);
@@ -943,8 +944,7 @@ public class ASMReflector {
       String mainClass, List<String> targets, List<MemberDescriptor> results) {
     for (Iterator<String> it = targets.iterator(); it.hasNext(); ) {
       String nameWithTP = it.next();
-      String nameWithoutTP = ClassNameUtils.removeTypeParameter(nameWithTP);
-      List<MemberDescriptor> members = this.innerCache.get(nameWithoutTP);
+      List<MemberDescriptor> members = this.innerCache.get(nameWithTP);
       if (nonNull(members)) {
         boolean isSuper = !mainClass.equals(nameWithTP);
         if (isSuper) {
@@ -967,5 +967,10 @@ public class ASMReflector {
     List<MemberDescriptor> newVal = supplier.get();
     innerCache.put(key, newVal);
     return newVal;
+  }
+
+  public void clearInnerCache() {
+    // shrink
+    this.innerCache = new ConcurrentHashMap<>(16);
   }
 }

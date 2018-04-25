@@ -117,13 +117,13 @@ public class CachedASMReflectorTest extends GradleTestBase {
 
       stopwatch.start();
       List<MemberDescriptor> memberDescriptors = cachedASMReflector.reflect(fqcn);
-      System.out.println(stopwatch.stop());
+      log.info(stopwatch.stop());
       stopwatch.reset();
       // memberDescriptors.sort(MemberDescriptor::compareTo);
       // memberDescriptors.forEach(m -> System.out.println(m.getDisplayDeclaration()));
       Config config = Config.load();
       if (config.isJava8()) {
-        assertEquals(90, memberDescriptors.size());
+        assertEquals(98, memberDescriptors.size());
       } else {
         assertEquals(109, memberDescriptors.size());
       }
@@ -133,12 +133,12 @@ public class CachedASMReflectorTest extends GradleTestBase {
       GlobalCache.getInstance().invalidateMemberDescriptors(fqcn);
       stopwatch.start();
       List<MemberDescriptor> memberDescriptors = cachedASMReflector.reflect(fqcn);
-      System.out.println(stopwatch.stop());
+      log.info(stopwatch.stop());
       // memberDescriptors.forEach(m -> System.out.println(m));
       stopwatch.reset();
       Config config = Config.load();
       if (config.isJava8()) {
-        assertEquals(90, memberDescriptors.size());
+        assertEquals(98, memberDescriptors.size());
       } else {
         assertEquals(109, memberDescriptors.size());
       }
@@ -155,7 +155,7 @@ public class CachedASMReflectorTest extends GradleTestBase {
       // memberDescriptors.forEach(m -> System.out.println(m.getDisplayDeclaration()));
       Config config = Config.load();
       if (config.isJava8()) {
-        assertEquals(40, memberDescriptors.size());
+        assertEquals(41, memberDescriptors.size());
       } else {
         assertEquals(53, memberDescriptors.size());
       }
@@ -186,9 +186,10 @@ public class CachedASMReflectorTest extends GradleTestBase {
 
     {
       String fqcn = "com.google.common.collect.FluentIterable<String>";
-      List<MemberDescriptor> memberDescriptors = cachedASMReflector.reflect(fqcn);
-      // memberDescriptors.forEach(md -> System.out.println(md.getDisplayDeclaration()));
-      assertEquals(52, memberDescriptors.size());
+      List<MemberDescriptor> descriptors = cachedASMReflector.reflect(fqcn);
+      descriptors.sort(MemberDescriptor::compareTo);
+      descriptors.forEach(m -> log.info(m.getDisplayDeclaration()));
+      assertEquals(56, descriptors.size());
     }
   }
 
@@ -202,7 +203,7 @@ public class CachedASMReflectorTest extends GradleTestBase {
       // memberDescriptors.forEach(md -> System.out.println(md.getDeclaration()));
       Config config = Config.load();
       if (config.isJava8()) {
-        assertEquals(57, memberDescriptors.size());
+        assertEquals(58, memberDescriptors.size());
       } else {
         assertEquals(62, memberDescriptors.size());
       }
@@ -217,7 +218,7 @@ public class CachedASMReflectorTest extends GradleTestBase {
       String fqcn = "com.google.common.base.Joiner";
       List<MemberDescriptor> memberDescriptors = cachedASMReflector.reflect(fqcn);
       // memberDescriptors.forEach(md -> System.out.println(md.getDisplayDeclaration()));
-      assertEquals(25, memberDescriptors.size());
+      assertEquals(30, memberDescriptors.size());
     }
   }
 
@@ -232,7 +233,7 @@ public class CachedASMReflectorTest extends GradleTestBase {
       // System.out.println(md);
       // }
       // memberDescriptors.forEach(md -> System.out.println(md.getDisplayDeclaration()));
-      assertEquals(120, memberDescriptors.size());
+      assertEquals(123, memberDescriptors.size());
     }
   }
 
@@ -317,7 +318,7 @@ public class CachedASMReflectorTest extends GradleTestBase {
       String fqcn = "meghanada.reflect.MemberDescriptor";
       List<MemberDescriptor> memberDescriptors = cachedASMReflector.reflect(fqcn);
       memberDescriptors.sort(MemberDescriptor::compareTo);
-      memberDescriptors.forEach(m -> System.out.println(m.getDisplayDeclaration()));
+      memberDescriptors.forEach(m -> log.info(m.getDisplayDeclaration()));
       assertEquals(55, memberDescriptors.size());
     }
   }
@@ -483,5 +484,18 @@ public class CachedASMReflectorTest extends GradleTestBase {
     for (String clazz : superClass) {
       // System.out.println(clazz);
     }
+  }
+
+  @Test
+  public void testReflectMatcher() throws Exception {
+    CachedASMReflector cachedASMReflector = CachedASMReflector.getInstance();
+    addClasspath(cachedASMReflector);
+    cachedASMReflector.createClassIndexes();
+
+    String fqcn = "java.util.regex.Matcher";
+    List<MemberDescriptor> descriptors = cachedASMReflector.reflect(fqcn);
+    descriptors.sort(MemberDescriptor::compareTo);
+    descriptors.forEach(m -> log.info("{}", m.getDeclaration()));
+    assertEquals(70, descriptors.size());
   }
 }
