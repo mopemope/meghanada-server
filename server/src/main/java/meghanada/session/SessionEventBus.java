@@ -11,6 +11,7 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import meghanada.session.subscribe.CacheEventSubscriber;
 import meghanada.session.subscribe.FileWatchEventSubscriber;
+import meghanada.session.subscribe.IdleMonitorSubscriber;
 import meghanada.session.subscribe.ParseEventSubscriber;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -21,11 +22,11 @@ public class SessionEventBus {
   private final EventBus eventBus;
   private final Session session;
   private final ExecutorService executorService;
+  private final IdleTimer idleTimer;
 
   SessionEventBus(final Session session) {
     this.session = session;
     this.executorService = Executors.newCachedThreadPool();
-
     this.eventBus =
         new AsyncEventBus(
             executorService,
@@ -34,6 +35,8 @@ public class SessionEventBus {
                 log.error(throwable.getMessage(), throwable);
               }
             });
+    this.idleTimer = new IdleTimer();
+    this.idleTimer.lastRun = Long.MAX_VALUE;
   }
 
   void subscribeFileWatch() {
@@ -46,6 +49,10 @@ public class SessionEventBus {
 
   void subscribeCache() {
     this.eventBus.register(new CacheEventSubscriber(this));
+  }
+
+  void subscribeIdle() {
+    this.eventBus.register(new IdleMonitorSubscriber(this, idleTimer));
   }
 
   void shutdown(int timeout) {
@@ -90,6 +97,11 @@ public class SessionEventBus {
 
   public void requestWatchFile(final File file) {
     this.eventBus.post(new FileWatchRequest(this.session, file));
+  }
+
+  public void requestIdleMonitor() {
+    IdleMonitorEvent event = new IdleMonitorEvent(this.session);
+    this.eventBus.post(event);
   }
 
   abstract static class IORequest {
@@ -168,5 +180,39 @@ public class SessionEventBus {
     public ParseFilesRequest(Session session, List<File> files) {
       super(session, files);
     }
+  }
+
+  public static class IdleTimer {
+    public long lastRun;
+  }
+
+  public static class IdleMonitorEvent {
+    public final Session session;
+
+    public IdleMonitorEvent(Session session) {
+      this.session = session;
+    }
+  }
+
+  public static class IdleEvent {
+    final Session session;
+    final IdleTimer idleTimer;
+
+    public IdleEvent(Session session, IdleTimer idleTimer) {
+      this.session = session;
+      this.idleTimer = idleTimer;
+    }
+
+    public IdleTimer getIdleTimer() {
+      return idleTimer;
+    }
+
+    public Session getSession() {
+      return session;
+    }
+  }
+
+  public IdleTimer getIdleTimer() {
+    return idleTimer;
   }
 }

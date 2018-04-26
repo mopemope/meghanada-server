@@ -103,6 +103,8 @@ public class CacheEventSubscriber extends AbstractSubscriber {
     if (nonNull(db) && db.isEmpty()) {
       createStandardClassCache();
     }
+    // start idle monitor
+    this.sessionEventBus.requestIdleMonitor();
   }
 
   private boolean cleanUnusedSource(Project project) {

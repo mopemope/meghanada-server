@@ -319,6 +319,7 @@ public class Session {
     this.sessionEventBus.subscribeFileWatch();
     this.sessionEventBus.subscribeParse();
     this.sessionEventBus.subscribeCache();
+    this.sessionEventBus.subscribeIdle();
   }
 
   public void start() throws IOException {
@@ -821,5 +822,9 @@ public class Session {
   @Override
   public String toString() {
     return "";
+  }
+
+  public SessionEventBus getSessionEventBus() {
+    return sessionEventBus;
   }
 }
