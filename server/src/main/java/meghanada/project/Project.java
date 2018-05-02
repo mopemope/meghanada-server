@@ -1215,7 +1215,9 @@ public abstract class Project implements Serializable, Storable {
         sb.append(settingFile);
       } else {
         sb.append("google ");
-        sb.append(String.format("AOSP %s", config.useAOSPStyle()));
+        if (config.useAOSPStyle()) {
+          sb.append("(AOSP)");
+        }
       }
       sb.append("\n");
       sb.append("sources:\n");
