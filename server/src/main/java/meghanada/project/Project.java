@@ -5,6 +5,7 @@ import static java.util.Objects.nonNull;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Objects;
+import com.google.common.base.Splitter;
 import com.google.common.base.Stopwatch;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableSet;
@@ -1173,6 +1174,24 @@ public abstract class Project implements Serializable, Storable {
         sb.append(String.format("javac8Args: %s\n", config.getJava8JavacArgs()));
       } else {
         sb.append(String.format("javac9Args: %s\n", config.getJava9JavacArgs()));
+      }
+      List<String> cpList = Splitter.on(File.pathSeparator).splitToList(this.cachedClasspath);
+      if (cpList.size() > 0) {
+        sb.append("classpath:\n");
+        cpList.forEach(
+            s -> {
+              sb.append(String.format("  %s\n", s));
+            });
+        sb.append("\n");
+      }
+      List<String> cpAllList = Splitter.on(File.pathSeparator).splitToList(this.cachedAllClasspath);
+      if (cpAllList.size() > 0) {
+        sb.append("allClasspath:\n");
+        cpAllList.forEach(
+            s -> {
+              sb.append(String.format("  %s\n", s));
+            });
+        sb.append("\n");
       }
       Properties sysProp = System.getProperties();
       sb.append("SystemProperties:\n");
