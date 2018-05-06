@@ -184,29 +184,26 @@ public class CachedASMReflectorTest extends GradleTestBase {
   public void testReflectTypeParam2() throws Exception {
     CachedASMReflector cachedASMReflector = CachedASMReflector.getInstance();
 
-    {
-      String fqcn = "com.google.common.collect.FluentIterable<String>";
-      List<MemberDescriptor> descriptors = cachedASMReflector.reflect(fqcn);
-      descriptors.sort(MemberDescriptor::compareTo);
-      descriptors.forEach(m -> log.info(m.getDisplayDeclaration()));
-      assertEquals(56, descriptors.size());
-    }
+    String fqcn = "com.google.common.collect.FluentIterable<String>";
+    List<MemberDescriptor> descriptors = cachedASMReflector.reflect(fqcn);
+    descriptors.sort(MemberDescriptor::compareTo);
+    descriptors.forEach(m -> System.out.println(m.getDisplayDeclaration()));
+    assertEquals(56, descriptors.size());
   }
 
   @Test
   public void testReflectTypeParam3() throws Exception {
     CachedASMReflector cachedASMReflector = CachedASMReflector.getInstance();
 
-    {
-      String fqcn = "java.util.stream.Stream<String>";
-      List<MemberDescriptor> memberDescriptors = cachedASMReflector.reflect(fqcn);
-      // memberDescriptors.forEach(md -> System.out.println(md.getDeclaration()));
-      Config config = Config.load();
-      if (config.isJava8()) {
-        assertEquals(58, memberDescriptors.size());
-      } else {
-        assertEquals(62, memberDescriptors.size());
-      }
+    String fqcn = "java.util.stream.Stream<String>";
+    List<MemberDescriptor> descriptors = cachedASMReflector.reflect(fqcn);
+    descriptors.sort(MemberDescriptor::compareTo);
+    descriptors.forEach(md -> System.out.println(md.getDisplayDeclaration()));
+    Config config = Config.load();
+    if (config.isJava8()) {
+      assertEquals(58, descriptors.size());
+    } else {
+      assertEquals(62, descriptors.size());
     }
   }
 
@@ -214,12 +211,11 @@ public class CachedASMReflectorTest extends GradleTestBase {
   public void testReflectTypeParam4() throws Exception {
     CachedASMReflector cachedASMReflector = CachedASMReflector.getInstance();
 
-    {
-      String fqcn = "com.google.common.base.Joiner";
-      List<MemberDescriptor> memberDescriptors = cachedASMReflector.reflect(fqcn);
-      // memberDescriptors.forEach(md -> System.out.println(md.getDisplayDeclaration()));
-      assertEquals(30, memberDescriptors.size());
-    }
+    String fqcn = "com.google.common.base.Joiner";
+    List<MemberDescriptor> results = cachedASMReflector.reflect(fqcn);
+    results.sort(MemberDescriptor::compareTo);
+    results.forEach(md -> System.out.println(md.getDisplayDeclaration()));
+    assertEquals(31, results.size());
   }
 
   @Test
@@ -314,13 +310,11 @@ public class CachedASMReflectorTest extends GradleTestBase {
     cachedASMReflector.addClasspath(getOutput());
     cachedASMReflector.createClassIndexes();
 
-    {
-      String fqcn = "meghanada.reflect.MemberDescriptor";
-      List<MemberDescriptor> memberDescriptors = cachedASMReflector.reflect(fqcn);
-      memberDescriptors.sort(MemberDescriptor::compareTo);
-      memberDescriptors.forEach(m -> log.info(m.getDisplayDeclaration()));
-      assertEquals(55, memberDescriptors.size());
-    }
+    String fqcn = "meghanada.reflect.MemberDescriptor";
+    List<MemberDescriptor> memberDescriptors = cachedASMReflector.reflect(fqcn);
+    memberDescriptors.sort(MemberDescriptor::compareTo);
+    memberDescriptors.forEach(m -> System.out.println(m.getDisplayDeclaration()));
+    assertEquals(55, memberDescriptors.size());
   }
 
   @Test
@@ -329,12 +323,11 @@ public class CachedASMReflectorTest extends GradleTestBase {
     cachedASMReflector.addClasspath(getOutput());
     cachedASMReflector.createClassIndexes();
 
-    {
-      String fqcn = "meghanada.reflect.asm.MethodAnalyzeVisitor";
-      List<MemberDescriptor> memberDescriptors = cachedASMReflector.reflect(fqcn);
-      // memberDescriptors.forEach(m -> System.out.println(m.getDisplayDeclaration()));
-      assertEquals(71, memberDescriptors.size());
-    }
+    String fqcn = "meghanada.reflect.asm.MethodAnalyzeVisitor";
+    List<MemberDescriptor> descriptors = cachedASMReflector.reflect(fqcn);
+    descriptors.sort(MemberDescriptor::compareTo);
+    descriptors.forEach(m -> System.out.println(m.getDisplayDeclaration()));
+    assertEquals(72, descriptors.size());
   }
 
   @Test

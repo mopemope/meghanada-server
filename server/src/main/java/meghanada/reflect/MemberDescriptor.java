@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
+import javax.annotation.Nonnull;
 import meghanada.store.Serializer;
 import meghanada.utils.ClassNameUtils;
 import org.apache.lucene.document.Document;
@@ -230,7 +231,7 @@ public abstract class MemberDescriptor
   }
 
   @Override
-  public int compareTo(MemberDescriptor other) {
+  public int compareTo(@Nonnull MemberDescriptor other) {
 
     if (this.isStatic() && other.isStatic()) {
       return this.compareType(other, true);

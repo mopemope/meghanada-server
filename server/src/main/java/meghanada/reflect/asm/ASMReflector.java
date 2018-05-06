@@ -34,6 +34,7 @@ import meghanada.module.ModuleHelper;
 import meghanada.reflect.CandidateUnit;
 import meghanada.reflect.ClassIndex;
 import meghanada.reflect.MemberDescriptor;
+import meghanada.reflect.MethodDescriptor;
 import meghanada.utils.ClassNameUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -390,36 +391,41 @@ public class ASMReflector {
                     Collectors.toList()));
 
     Map<String, MemberDescriptor> result = new HashMap<>(64);
-    Map<String, List<String>> paramCache = new HashMap<>(64);
+    Map<String, List<String>> paramMemo = new HashMap<>(64);
     info.inherit.forEach(
         clazz -> {
-          String key = ClassNameUtils.removeTypeParameter(clazz);
-          List<MemberDescriptor> list = collect.get(key);
+          String clazzKey = ClassNameUtils.removeTypeParameter(clazz);
+          List<MemberDescriptor> list = collect.get(clazzKey);
           if (nonNull(list)) {
             list.forEach(
-                md -> {
-                  if (md.matchType(CandidateUnit.MemberType.METHOD)) {
-                    String name = md.getName();
-                    List<String> parameters = md.getParameters();
-                    List<String> cached = paramCache.get(name + "#" + parameters.size());
+                desc -> {
+                  if (desc.matchType(CandidateUnit.MemberType.METHOD)) {
+                    MethodDescriptor mDesc = (MethodDescriptor) desc;
+                    String name = mDesc.getName();
+                    List<String> parameters = mDesc.getParameters();
+                    String pKey = name + "#" + parameters.size();
+                    List<String> cached = paramMemo.get(pKey);
                     String nameKey = name + "::" + parameters.toString();
-
                     if (isNull(cached)) {
-                      result.put(nameKey, md);
-                      paramCache.put(name + "#" + parameters.size(), parameters);
+                      result.put(nameKey, mDesc);
+                      paramMemo.put(pKey, parameters);
                     } else {
-                      boolean isSame = ClassNameUtils.compareArgumentType(cached, parameters);
-                      if (!isSame) {
-                        result.put(nameKey, md);
+                      // TODO varargs ?
+                      boolean b = ClassNameUtils.compareArgumentType(cached, parameters, false);
+                      //                      boolean b =
+                      //                          ClassNameUtils.compareArgumentType(cached,
+                      // parameters, mDesc.hasVarargs);
+                      if (!b) {
+                        result.put(nameKey, desc);
                       }
                     }
-                  } else if (md.matchType(CandidateUnit.MemberType.CONSTRUCTOR)) {
-                    if (md.getDeclaringClass().equals(info.targetClass)) {
-                      String declaration = md.getDeclaration();
-                      result.putIfAbsent(declaration, md);
+                  } else if (desc.matchType(CandidateUnit.MemberType.CONSTRUCTOR)) {
+                    if (desc.getDeclaringClass().equals(info.targetClass)) {
+                      String declaration = desc.getDeclaration();
+                      result.putIfAbsent(declaration, desc);
                     }
                   } else {
-                    result.putIfAbsent(md.getName(), md);
+                    result.putIfAbsent(desc.getName(), desc);
                   }
                 });
           }

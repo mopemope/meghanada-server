@@ -1100,15 +1100,19 @@ public class TreeAnalyzer {
                   }
                 }
 
-                MethodScope methodScope =
+                MethodScope scope =
                     classScope.startMethod(
                         methodName, nameRange, preferredPos, range, isConstructor);
-                methodScope.returnType = TreeAnalyzer.markFQCN(src, returnFQCN);
+                scope.returnType = TreeAnalyzer.markFQCN(src, returnFQCN);
 
                 // check method parameter
                 context.setParameter(true);
 
                 for (JCTree.JCVariableDecl vd : md.getParameters()) {
+                  String s = vd.toString();
+                  if (s.contains("...")) {
+                    scope.vararg = true;
+                  }
                   analyzeParsedTree(context, vd);
                 }
 
@@ -1125,7 +1129,7 @@ public class TreeAnalyzer {
 
                 analyzeParsedTree(context, md.getBody());
                 addMethodNameIndex(
-                    src, methodScope.range.begin.line, methodScope.range.begin.column, methodName);
+                    src, scope.range.begin.line, scope.range.begin.column, methodName);
                 Optional<MethodScope> endMethod = classScope.endMethod();
               } catch (IOException e) {
                 throw new UncheckedIOException(e);

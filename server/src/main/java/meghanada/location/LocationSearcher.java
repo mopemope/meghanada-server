@@ -1,5 +1,6 @@
 package meghanada.location;
 
+import static java.util.Objects.isNull;
 import static meghanada.utils.FileUtils.existsFQCN;
 import static meghanada.utils.FunctionUtils.wrapIO;
 import static meghanada.utils.FunctionUtils.wrapIOConsumer;
@@ -327,55 +328,52 @@ public class LocationSearcher {
     return list;
   }
 
-  private Optional<Location> searchMethodCall(
-      final Source source, final int line, final int col, final String symbol) {
-    final EntryMessage entryMessage = log.traceEntry("line={} col={} symbol={}", line, col, symbol);
-    final Optional<MethodCall> methodCall = source.getMethodCall(line, col, true);
-    final Optional<Location> result =
-        methodCall.flatMap(
-            mc -> {
-              final String methodName = mc.name;
-              final List<String> arguments = mc.getArguments();
-              final String declaringClass = mc.declaringClass;
-              if (declaringClass == null) {
-                return Optional.empty();
-              }
-              final List<String> searchTargets = new ArrayList<>(2);
-              searchTargets.add(declaringClass);
-
-              final CachedASMReflector reflector = CachedASMReflector.getInstance();
-              searchTargets.addAll(reflector.getSuperClass(declaringClass));
-
-              return searchTargets
-                  .stream()
-                  .map(
-                      targetFqcn ->
-                          existsFQCN(project.getAllSourcesWithDependencies(), targetFqcn)
-                              .flatMap(
-                                  file -> getMethodLocationFromProject(methodName, arguments, file))
-                              .orElseGet(
-                                  wrapIO(
-                                      () -> {
-                                        final SearchContext context =
-                                            new SearchContext(targetFqcn, SearchKind.METHOD);
-                                        context.name = methodName;
-                                        context.arguments = arguments;
-                                        return Optional.ofNullable(searchFromSrcZip(context))
-                                            .orElseGet(wrapIO(() -> searchFromDependency(context)));
-                                      })))
-                  .filter(Objects::nonNull)
-                  .findFirst();
-            });
+  private Optional<Location> searchMethodCall(Source source, int line, int col, String symbol) {
+    EntryMessage entryMessage = log.traceEntry("line={} col={} symbol={}", line, col, symbol);
+    Optional<MethodCall> methodCall = source.getMethodCall(line, col, true);
+    Optional<Location> result = methodCall.flatMap(mc -> searchMethodCallLocation(mc));
 
     log.traceExit(entryMessage);
     return result;
   }
 
+  private Optional<Location> searchMethodCallLocation(MethodCall mc) {
+    String methodName = mc.name;
+    List<String> arguments = mc.getArguments();
+    String declaringClass = mc.declaringClass;
+    if (isNull(declaringClass)) {
+      return Optional.empty();
+    }
+    List<String> targets = new ArrayList<>(2);
+    targets.add(declaringClass);
+
+    CachedASMReflector reflector = CachedASMReflector.getInstance();
+    targets.addAll(reflector.getSuperClass(declaringClass));
+
+    return targets
+        .stream()
+        .map(
+            fqcn ->
+                existsFQCN(project.getAllSourcesWithDependencies(), fqcn)
+                    .flatMap(file -> getMethodLocationFromProject(methodName, arguments, file))
+                    .orElseGet(
+                        wrapIO(
+                            () -> {
+                              SearchContext context = new SearchContext(fqcn, SearchKind.METHOD);
+                              context.name = methodName;
+                              context.arguments = arguments;
+                              return Optional.ofNullable(searchFromSrcZip(context))
+                                  .orElseGet(wrapIO(() -> searchFromDependency(context)));
+                            })))
+        .filter(Objects::nonNull)
+        .findFirst();
+  }
+
   private Optional<Location> getMethodLocationFromProject(
-      final String methodName, final List<String> arguments, final File file) {
+      String methodName, List<String> arguments, File file) {
     try {
-      final Source declaringClassSrc = getSource(project, file);
-      final String path = declaringClassSrc.getFile().getPath();
+      Source declaringClassSrc = getSource(project, file);
+      String path = declaringClassSrc.getFile().getPath();
       return declaringClassSrc
           .getClassScopes()
           .stream()
@@ -388,9 +386,9 @@ public class LocationSearcher {
                 if (!(bs instanceof MethodScope)) {
                   return false;
                 }
-                final MethodScope methodScope = (MethodScope) bs;
-                final List<String> parameters = methodScope.getParameters();
-                return ClassNameUtils.compareArgumentType(arguments, parameters);
+                MethodScope ms = (MethodScope) bs;
+                List<String> parameters = ms.getParameters();
+                return ClassNameUtils.compareArgumentType(arguments, parameters, ms.vararg);
               })
           .map(MethodScope.class::cast)
           .map(ms -> new Location(path, ms.getBeginLine(), ms.getNameRange().begin.column))
@@ -712,26 +710,22 @@ public class LocationSearcher {
     }
   }
 
-  private Optional<Location> searchFieldAccess(
-      final Source src, final int line, final int col, final String symbol) {
-    final EntryMessage entryMessage = log.traceEntry("line={} col={} symbol={}", line, col, symbol);
-
-    final Optional<Location> result =
+  private Optional<Location> searchFieldAccess(Source src, int line, int col, String symbol) {
+    EntryMessage entryMessage = log.traceEntry("line={} col={} symbol={}", line, col, symbol);
+    Optional<Location> result =
         src.searchFieldAccess(line, col, symbol)
             .flatMap(
                 fa -> {
-                  final String fieldName = fa.name;
-                  final String declaringClass = fa.declaringClass;
+                  String fieldName = fa.name;
+                  String declaringClass = fa.declaringClass;
                   if (declaringClass == null) {
                     return Optional.empty();
                   }
-                  final List<String> searchTargets = new ArrayList<>(2);
-                  searchTargets.add(declaringClass);
-
-                  final CachedASMReflector reflector = CachedASMReflector.getInstance();
-                  searchTargets.addAll(reflector.getSuperClass(declaringClass));
-
-                  return searchTargets
+                  List<String> targets = new ArrayList<>(2);
+                  targets.add(declaringClass);
+                  CachedASMReflector reflector = CachedASMReflector.getInstance();
+                  targets.addAll(reflector.getSuperClass(declaringClass));
+                  return targets
                       .stream()
                       .map(
                           fqcn ->
@@ -741,7 +735,7 @@ public class LocationSearcher {
                                   .orElseGet(
                                       wrapIO(
                                           () -> {
-                                            final SearchContext context =
+                                            SearchContext context =
                                                 new SearchContext(fqcn, SearchKind.FIELD);
                                             context.name = fieldName;
                                             return Optional.ofNullable(searchFromSrcZip(context))
