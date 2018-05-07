@@ -195,19 +195,18 @@ public class ASMReflectorTest extends GradleTestBase {
   @Test
   public void testReflectWithGenerics4() throws Exception {
     ASMReflector asmReflector = ASMReflector.getInstance();
-    {
-      String fqcn = "com.google.common.cache.CacheBuilder<Object, Object>";
-      File jar = getJar("guava");
-      Map<String, ClassIndex> index = asmReflector.getClassIndexes(jar);
-      final InheritanceInfo info = asmReflector.getReflectInfo(index, fqcn);
 
-      Stopwatch stopwatch = Stopwatch.createStarted();
-      List<MemberDescriptor> memberDescriptors = asmReflector.reflectAll(info);
-      log.info(stopwatch.stop());
-      memberDescriptors.sort(MemberDescriptor::compareTo);
-      memberDescriptors.forEach(m -> log.info(m.getDeclaration()));
-      assertEquals(61, memberDescriptors.size());
-    }
+    String fqcn = "com.google.common.cache.CacheBuilder<Object, Object>";
+    File jar = getJar("guava");
+    Map<String, ClassIndex> index = asmReflector.getClassIndexes(jar);
+    final InheritanceInfo info = asmReflector.getReflectInfo(index, fqcn);
+
+    Stopwatch stopwatch = Stopwatch.createStarted();
+    List<MemberDescriptor> memberDescriptors = asmReflector.reflectAll(info);
+    log.info(stopwatch.stop());
+    memberDescriptors.sort(MemberDescriptor::compareTo);
+    memberDescriptors.forEach(m -> System.out.println(m.getDeclaration()));
+    assertEquals(64, memberDescriptors.size());
   }
 
   @Test
