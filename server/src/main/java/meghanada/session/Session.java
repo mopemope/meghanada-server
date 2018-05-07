@@ -827,4 +827,17 @@ public class Session {
   public SessionEventBus getSessionEventBus() {
     return sessionEventBus;
   }
+
+  public boolean completionResolve(
+      String path, int lineInt, int columnInt, String type, String item, String desc)
+      throws ExecutionException {
+
+    File file = normalize(path);
+    if (!FileUtils.isJavaFile(file)) {
+      return false;
+    }
+    getCompletion().resolve(file, type, desc);
+    log.info("path {} {} {} {}", path, type, item, desc);
+    return true;
+  }
 }

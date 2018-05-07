@@ -1,8 +1,10 @@
 package meghanada.completion;
 
+import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 
 import com.google.common.base.Joiner;
+import com.google.common.collect.TreeBasedTable;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -15,6 +17,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.SortedMap;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -42,10 +45,14 @@ public class JavaCompletion {
 
   private static final Logger log = LogManager.getLogger(JavaCompletion.class);
   private static final String STATIC = "static ";
+  private final TreeBasedTable<File, CandidateUnit, Integer> statisticsTable;
+
   private Project project;
+  private Collection<? extends CandidateUnit> hits;
 
   public JavaCompletion(final Project project) {
     this.project = project;
+    this.statisticsTable = createStatisticsTable();
   }
 
   private static Collection<? extends CandidateUnit> annotationCompletion(
@@ -596,6 +603,30 @@ public class JavaCompletion {
     return Collections.emptyList();
   }
 
+  private static List<MemberDescriptor> searchStaticMethod(
+      Set<CandidateUnit> result, final String name) {
+
+    List<String> classes = Config.load().searchStaticMethodClasses();
+    if (classes.isEmpty()) {
+      return Collections.emptyList();
+    }
+    String s = Joiner.on(" OR ").join(classes);
+    return IndexDatabase.getInstance()
+        .searchMembers(
+            IndexDatabase.paren(s),
+            IndexDatabase.doubleQuote("public static"),
+            IndexDatabase.doubleQuote("METHOD"),
+            name + "*")
+        .stream()
+        .filter(m -> !result.contains(m))
+        .peek(
+            m -> {
+              m.setExtra("static-import " + m.getDeclaringClass());
+              m.showStaticClassName = true;
+            })
+        .collect(Collectors.toList());
+  }
+
   public void setProject(Project project) {
     this.project = project;
   }
@@ -606,6 +637,16 @@ public class JavaCompletion {
   }
 
   public Collection<? extends CandidateUnit> completionAt(
+      final File file, int line, int column, String prefix) {
+    Collection<? extends CandidateUnit> collection =
+        this.completionAtInternal(file, line, column, prefix);
+    if (nonNull(collection)) {
+      this.hits = collection;
+    }
+    return collection;
+  }
+
+  private Collection<? extends CandidateUnit> completionAtInternal(
       final File file, int line, int column, String prefix) {
 
     log.debug("line={} column={} prefix={}", line, column, prefix);
@@ -804,27 +845,45 @@ public class JavaCompletion {
     }
   }
 
-  private static List<MemberDescriptor> searchStaticMethod(
-      Set<CandidateUnit> result, final String name) {
-
-    List<String> classes = Config.load().searchStaticMethodClasses();
-    if (classes.isEmpty()) {
-      return Collections.emptyList();
+  public synchronized void resolve(File file, String type, String desc) {
+    if (nonNull(hits)) {
+      hits.forEach(
+          c -> {
+            if (c.getType().equals(type) && c.getDisplayDeclaration().equals(desc)) {
+              // match
+              Integer count = this.statisticsTable.get(file, c);
+              if (isNull(count)) {
+                count = 0;
+              }
+              count++;
+              this.statisticsTable.put(file, c, count);
+            }
+          });
     }
-    String s = Joiner.on(" OR ").join(classes);
-    return IndexDatabase.getInstance()
-        .searchMembers(
-            IndexDatabase.paren(s),
-            IndexDatabase.doubleQuote("public static"),
-            IndexDatabase.doubleQuote("METHOD"),
-            name + "*")
-        .stream()
-        .filter(m -> !result.contains(m))
-        .peek(
-            m -> {
-              m.setExtra("static-import " + m.getDeclaringClass());
-              m.showStaticClassName = true;
-            })
-        .collect(Collectors.toList());
+  }
+
+  private TreeBasedTable<File, CandidateUnit, Integer> createStatisticsTable() {
+    TreeBasedTable<File, CandidateUnit, Integer> table =
+        TreeBasedTable.create(
+            Comparator.naturalOrder(),
+            (o1, o2) -> {
+              String name1 = o1.getName();
+              String name2 = o2.getName();
+              return name1.compareTo(name2);
+            });
+    return table;
+  }
+
+  public void dumpStatsTable() {
+    this.statisticsTable
+        .rowKeySet()
+        .forEach(
+            f -> {
+              SortedMap<CandidateUnit, Integer> map = this.statisticsTable.row(f);
+              map.forEach(
+                  (c, i) -> {
+                    log.info("{} {} {}", f.getName(), c.getDisplayDeclaration(), i);
+                  });
+            });
   }
 }

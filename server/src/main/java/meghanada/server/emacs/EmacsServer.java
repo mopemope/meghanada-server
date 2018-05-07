@@ -106,6 +106,21 @@ public class EmacsServer implements Server {
                   handler.autocomplete(id, args.get(0), args.get(1), args.get(2), args.get(3));
                   return true;
                 })
+            .when(headTail(eq("cr"), any()))
+            .get(
+                args -> {
+                  // cr : CompletionItem resolve
+                  // usage: cr <filepath> <line> <column> <type> <item> <desc>
+                  handler.autocompleteResolve(
+                      id,
+                      args.get(0),
+                      args.get(1),
+                      args.get(2),
+                      args.get(3),
+                      args.get(4),
+                      args.get(5));
+                  return true;
+                })
             .when(headTail(eq("c"), any()))
             .get(
                 args -> {
