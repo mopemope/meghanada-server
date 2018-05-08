@@ -2,7 +2,7 @@ plugins {
   id 'java'
   id 'maven'
   id 'application'
-  id 'com.github.johnrengelman.shadow' version '2.0.3'
+  id 'com.github.johnrengelman.shadow' version '2.0.4'
 }
 
 ext {
@@ -48,6 +48,11 @@ shadowJar {
   baseName = 'meghanada'
   classifier = null
   version = serverVersion
+  relocate 'junit.framework', 'meghanada.junit.framework'
+  relocate 'com.github.javaparser', 'meghanada.com.github.javaparser'
+  relocate 'com.google', 'meghanada.com.google'
+  relocate 'org.objectweb.asm', 'meghanada.org.objectweb.asm'
+  relocate 'org.eclipse', 'meghanada.org.eclipse'
 }
 
 bintray {
