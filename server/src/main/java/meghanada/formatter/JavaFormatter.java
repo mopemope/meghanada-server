@@ -67,7 +67,7 @@ public class JavaFormatter {
 
   public static String formatGoogleStyle(final String content) {
     try {
-      return getGoogleFormatter().formatSource(content);
+      return getGoogleFormatter().formatSourceAndFixImports(content);
     } catch (FormatterException e) {
       return content;
     }
