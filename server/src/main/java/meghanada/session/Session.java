@@ -38,6 +38,7 @@ import meghanada.analyze.CompileResult;
 import meghanada.analyze.Source;
 import meghanada.cache.GlobalCache;
 import meghanada.completion.JavaCompletion;
+import meghanada.completion.JavaImportCompletion;
 import meghanada.completion.JavaVariableCompletion;
 import meghanada.completion.LocalVariable;
 import meghanada.config.Config;
@@ -77,6 +78,7 @@ public class Session {
   private Project currentProject;
   private JavaCompletion completion;
   private JavaVariableCompletion variableCompletion;
+  private JavaImportCompletion importCompletion;
   private LocationSearcher locationSearcher;
   private DeclarationSearcher declarationSearcher;
   private ReferenceSearcher referenceSearcher;
@@ -283,6 +285,7 @@ public class Session {
       this.getLocationSearcher().setProject(currentProject);
       this.getDeclarationSearcher().setProject(this.currentProject);
       this.getVariableCompletion().setProject(this.currentProject);
+      this.getImportCompletion().setProject(this.currentProject);
       this.getCompletion().setProject(this.currentProject);
       return true;
     }
@@ -310,6 +313,7 @@ public class Session {
     this.getLocationSearcher().setProject(currentProject);
     this.getDeclarationSearcher().setProject(this.currentProject);
     this.getVariableCompletion().setProject(currentProject);
+    this.getImportCompletion().setProject(currentProject);
     this.getCompletion().setProject(currentProject);
     return true;
   }
@@ -376,6 +380,13 @@ public class Session {
       this.variableCompletion = new JavaVariableCompletion(currentProject);
     }
     return variableCompletion;
+  }
+
+  private JavaImportCompletion getImportCompletion() {
+    if (isNull(this.importCompletion)) {
+      this.importCompletion = new JavaImportCompletion(this.currentProject);
+    }
+    return this.importCompletion;
   }
 
   public synchronized Collection<? extends CandidateUnit> completionAt(
@@ -837,7 +848,21 @@ public class Session {
       return false;
     }
     getCompletion().resolve(file, type, desc);
-    log.info("path {} {} {} {}", path, type, item, desc);
+    log.trace("path {} {} {} {}", path, type, item, desc);
     return true;
+  }
+
+  public synchronized Map<String, List<String>> searchImports(
+      String path, int line, int column, String symbol) throws IOException, ExecutionException {
+    // java file only
+    final File file = normalize(path);
+    if (!FileUtils.isJavaFile(file)) {
+      return Collections.emptyMap();
+    }
+
+    boolean b = this.changeProject(path);
+    return getImportCompletion()
+        .importAtPoint(file, line, column, symbol)
+        .orElse(Collections.emptyMap());
   }
 }

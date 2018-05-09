@@ -385,13 +385,13 @@ public class CachedASMReflector {
     return ci;
   }
 
-  public List<ClassIndex> searchClasses(String keyword, boolean partial, boolean anno) {
+  public List<ClassIndex> searchClasses(String keyword, boolean partial, boolean annotationOnly) {
     List<ClassIndex> result = new ArrayList<>(64);
     for (ClassIndex c : this.globalClassIndex.values()) {
       if (keyword.isEmpty()) {
         result.add(cloneClassIndex(c));
       } else {
-        if (!(anno && !c.isAnnotation())
+        if (!(annotationOnly && !c.isAnnotation())
             && CachedASMReflector.containsKeyword(keyword, partial, c)) {
           result.add(cloneClassIndex(c));
         }

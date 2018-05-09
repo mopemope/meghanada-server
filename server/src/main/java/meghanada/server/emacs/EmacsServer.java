@@ -217,6 +217,14 @@ public class EmacsServer implements Server {
                   handler.importAll(id, args.get(0));
                   return true;
                 })
+            .when(headTail(eq("ip"), any()))
+            .get(
+                args -> {
+                  // ip : Import at point
+                  // usage: ip <filepath> <line> <column> <symbol>
+                  handler.importAtPoint(id, args.get(0), args.get(1), args.get(2), args.get(3));
+                  return true;
+                })
             .when(headTail(eq("st"), any()))
             .get(
                 args -> {

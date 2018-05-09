@@ -449,4 +449,29 @@ public class SexpOutputFormatter implements OutputFormatter {
   public String completionResolve(long id, boolean b) {
     return success(doubleQuote(Boolean.toString(b)));
   }
+
+  @Override
+  public String importAtPoint(long id, Map<String, List<String>> result) {
+    final StringBuilder sb = new StringBuilder(128);
+    sb.append(LPAREN);
+
+    final String str =
+        result
+            .values()
+            .stream()
+            .filter(strings -> nonNull(strings) && strings.size() > 0)
+            .map(
+                strings ->
+                    LPAREN
+                        + strings
+                            .stream()
+                            .map(SexpOutputFormatter::doubleQuote)
+                            .collect(Collectors.joining(LIST_SEP))
+                        + RPAREN)
+            .filter(Objects::nonNull)
+            .collect(Collectors.joining(LIST_SEP));
+    sb.append(str);
+    sb.append(RPAREN);
+    return success(sb.toString());
+  }
 }
