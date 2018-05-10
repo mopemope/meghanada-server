@@ -556,9 +556,38 @@ public class CachedASMReflector {
     return this.standardClasses;
   }
 
-  public void scanAllMethods() {
+  public void scanAllStaticMembers() {
     ASMReflector reflector = ASMReflector.getInstance();
     IndexDatabase database = IndexDatabase.getInstance();
+    try (Stream<File> stream = this.directories.stream().parallel()) {
+      stream.forEach(
+          file -> {
+            ConcurrentLinkedDeque<MemberDescriptor> deque = new ConcurrentLinkedDeque<>();
+            try {
+              reflector.scanClasses(
+                  file,
+                  (name, in) -> {
+                    ClassReader read = new ClassReader(in);
+                    ClassAnalyzeVisitor visitor = new ClassAnalyzeVisitor(name, name, false, false);
+                    read.accept(visitor, 0);
+                    List<MemberDescriptor> members =
+                        visitor
+                            .getMembers()
+                            .stream()
+                            .filter(m -> m.isPublic() && m.isStatic())
+                            .collect(Collectors.toList());
+                    if (!members.isEmpty()) {
+                      deque.addAll(members);
+                    }
+                  });
+              MemberIndex mi = new MemberIndex(file.getCanonicalPath(), deque);
+              database.requestIndex(mi, event -> {});
+            } catch (IOException e) {
+              throw new UncheckedIOException(e);
+            }
+          });
+    }
+
     this.jars
         .parallelStream()
         .forEach(

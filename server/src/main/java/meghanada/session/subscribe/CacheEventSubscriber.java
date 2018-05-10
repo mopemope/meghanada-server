@@ -97,7 +97,7 @@ public class CacheEventSubscriber extends AbstractSubscriber {
         stopwatch.stop());
     Config.showMemory();
     log.info("Ready");
-    reflector.scanAllMethods();
+    reflector.scanAllStaticMembers();
 
     String db = System.getProperty("new-project-database");
     if (nonNull(db) && db.isEmpty()) {

@@ -457,13 +457,16 @@ public class SexpOutputFormatter implements OutputFormatter {
 
     final String str =
         result
-            .values()
+            .entrySet()
             .stream()
-            .filter(strings -> nonNull(strings) && strings.size() > 0)
+            .filter(entry -> nonNull(entry.getValue()) && entry.getValue().size() > 0)
             .map(
-                strings ->
+                entry ->
                     LPAREN
-                        + strings
+                        + entry.getKey()
+                        + LIST_SEP
+                        + entry
+                            .getValue()
                             .stream()
                             .map(SexpOutputFormatter::doubleQuote)
                             .collect(Collectors.joining(LIST_SEP))
