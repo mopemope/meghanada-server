@@ -18,6 +18,7 @@ import meghanada.analyze.Variable;
 import meghanada.project.Project;
 import meghanada.reflect.ClassIndex;
 import meghanada.reflect.MemberDescriptor;
+import meghanada.reflect.MethodDescriptor;
 import meghanada.reflect.asm.CachedASMReflector;
 import meghanada.utils.ClassNameUtils;
 import org.apache.logging.log4j.LogManager;
@@ -127,9 +128,10 @@ public class DeclarationSearcher {
       final String declaringClass, final String methodName, final List<String> arguments) {
     final CachedASMReflector reflector = CachedASMReflector.getInstance();
 
-    for (final MemberDescriptor md : reflector.reflectMethods(declaringClass, methodName)) {
-      if (ClassNameUtils.compareArgumentType(arguments, md.getParameters())) {
-        return Optional.of(md);
+    for (final MemberDescriptor desc : reflector.reflectMethods(declaringClass, methodName)) {
+      MethodDescriptor mDesc = (MethodDescriptor) desc;
+      if (ClassNameUtils.compareArgumentType(arguments, desc.getParameters(), mDesc.hasVarargs)) {
+        return Optional.of(desc);
       }
     }
     return Optional.empty();
@@ -138,10 +140,10 @@ public class DeclarationSearcher {
   private static Optional<MemberDescriptor> searchConstructor(
       final String declaringClass, final List<String> arguments) {
     final CachedASMReflector reflector = CachedASMReflector.getInstance();
-
-    for (final MemberDescriptor md : reflector.reflectConstructors(declaringClass)) {
-      if (ClassNameUtils.compareArgumentType(arguments, md.getParameters())) {
-        return Optional.of(md);
+    for (final MemberDescriptor desc : reflector.reflectConstructors(declaringClass)) {
+      MethodDescriptor mDesc = (MethodDescriptor) desc;
+      if (ClassNameUtils.compareArgumentType(arguments, desc.getParameters(), mDesc.hasVarargs)) {
+        return Optional.of(desc);
       }
     }
     return Optional.empty();

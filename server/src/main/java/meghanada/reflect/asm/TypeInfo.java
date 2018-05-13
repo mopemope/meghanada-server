@@ -54,7 +54,7 @@ class TypeInfo {
       sb.append(ClassNameUtils.INNER_MARK);
       sb.append(innerClass);
     }
-    if (isArray) {
+    if (isArray || variableArguments) {
       sb.append("[]");
     }
     return sb.toString();

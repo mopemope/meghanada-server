@@ -20,11 +20,12 @@ import org.apache.logging.log4j.message.EntryMessage;
 public class MethodDescriptor extends MemberDescriptor {
 
   private static final Logger log = LogManager.getLogger(MethodDescriptor.class);
-  private static final long serialVersionUID = 833808939768990301L;
+  private static final long serialVersionUID = 2705480824413845391L;
 
   private final List<MethodParameter> parameters;
   private String[] exceptions;
   public String formalType;
+  public boolean hasVarargs;
 
   public MethodDescriptor(
       final String declaringClass,
@@ -256,7 +257,7 @@ public class MethodDescriptor extends MemberDescriptor {
     }
     return this.parameters
         .stream()
-        .map(p -> renderTypeParameters(p.type, nonNull(formalType)))
+        .map(p -> renderTypeParameters(p.getType(), nonNull(formalType)))
         .collect(Collectors.toList());
   }
 

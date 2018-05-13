@@ -3,6 +3,7 @@ package meghanada.utils;
 import static org.junit.Assert.assertEquals;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -236,5 +237,41 @@ public class ClassNameUtilsTest {
     final String name = "java.utils.Map1";
     final boolean b = ClassNameUtils.isAnonymousClass(name);
     assertEquals(false, b);
+  }
+
+  @Test
+  public void compareArgumentType1() {
+    List<String> arg1 = new ArrayList<>();
+    arg1.add("boolean");
+    arg1.add("java.lang.String");
+    List<String> arg2 = new ArrayList<>();
+    arg2.add("boolean");
+    arg2.add("java.lang.String");
+    boolean b = ClassNameUtils.compareArgumentType(arg1, arg2, false);
+    assertEquals(true, b);
+  }
+
+  @Test
+  public void compareArgumentType2() {
+    List<String> arg1 = new ArrayList<>();
+    arg1.add("boolean");
+    arg1.add("java.lang.String");
+    List<String> arg2 = new ArrayList<>();
+    arg2.add("boolean");
+    arg2.add("java.lang.String[]");
+    boolean b = ClassNameUtils.compareArgumentType(arg1, arg2, false);
+    assertEquals(false, b);
+  }
+
+  @Test
+  public void compareArgumentType3() {
+    List<String> arg1 = new ArrayList<>();
+    arg1.add("boolean");
+    arg1.add("java.lang.String");
+    List<String> arg2 = new ArrayList<>();
+    arg2.add("boolean");
+    arg2.add("java.lang.String[]");
+    boolean b = ClassNameUtils.compareArgumentType(arg1, arg2, true);
+    assertEquals(true, b);
   }
 }

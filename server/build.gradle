@@ -2,12 +2,12 @@ plugins {
   id 'java'
   id 'maven'
   id 'application'
-  id 'com.github.johnrengelman.shadow' version '2.0.3'
+  id 'com.github.johnrengelman.shadow' version '2.0.4'
 }
 
 ext {
   group = 'meghanada'
-  serverVersion = '1.0.1'
+  serverVersion = '1.0.2'
   buildVersion = 'release'
 
   def gitFile = new File('./.git')
@@ -48,6 +48,11 @@ shadowJar {
   baseName = 'meghanada'
   classifier = null
   version = serverVersion
+  relocate 'junit.framework', 'meghanada.junit.framework'
+  relocate 'com.github.javaparser', 'meghanada.com.github.javaparser'
+  relocate 'com.google', 'meghanada.com.google'
+  relocate 'org.objectweb.asm', 'meghanada.org.objectweb.asm'
+  relocate 'org.eclipse', 'meghanada.org.eclipse'
 }
 
 bintray {
@@ -92,7 +97,7 @@ dependencies {
   compile "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
   compile 'commons-cli:commons-cli:1.4'
   compile "org.gradle:gradle-tooling-api:$gradleVersion"
-  compile 'com.google.guava:guava:24.1-jre'
+  compile 'com.google.guava:guava:25.0-jre'
   compile 'org.ow2.asm:asm:6.1.1'
   compile 'com.typesafe:config:1.3.3'
   compile 'org.atteo:evo-inflector:1.2.2'

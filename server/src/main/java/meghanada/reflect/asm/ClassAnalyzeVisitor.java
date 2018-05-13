@@ -161,7 +161,7 @@ class ClassAnalyzeVisitor extends ClassVisitor {
   }
 
   List<MemberDescriptor> getMembers() {
-    return members;
+    return this.members;
   }
 
   ClassIndex getClassIndex() {

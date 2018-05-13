@@ -209,11 +209,11 @@ public class LocationSearcherTest extends GradleTestBase {
 
     LocationSearcher searcher = getSearcher();
     Location result =
-        timeIt(() -> searcher.searchDeclarationLocation(f, 323, 20, "searchFieldAccess"))
+        timeIt(() -> searcher.searchDeclarationLocation(f, 324, 20, "searchFieldAccess"))
             .orElse(null);
     assertNotNull(result);
     assertTrue(result.getPath().contains("LocationSearcher.java"));
-    assertEquals(715, result.getLine());
+    assertEquals(713, result.getLine());
     assertEquals(30, result.getColumn());
   }
 
@@ -231,7 +231,7 @@ public class LocationSearcherTest extends GradleTestBase {
         timeIt(
                 () -> {
                   System.setProperty("disable-source-jar", "true");
-                  return searcher.searchDeclarationLocation(f, 600, 22, "decompileArchive");
+                  return searcher.searchDeclarationLocation(f, 598, 22, "decompileArchive");
                 })
             .orElse(null);
     assertNotNull(result);
@@ -251,7 +251,7 @@ public class LocationSearcherTest extends GradleTestBase {
 
     LocationSearcher searcher = getSearcher();
     Location result =
-        timeIt(() -> searcher.searchDeclarationLocation(f, 65, 19, "getAllowClass")).orElse(null);
+        timeIt(() -> searcher.searchDeclarationLocation(f, 66, 19, "getAllowClass")).orElse(null);
     assertNotNull(result);
     assertTrue(result.getPath().contains("Config.java"));
     assertEquals(354, result.getLine());
@@ -314,6 +314,22 @@ public class LocationSearcherTest extends GradleTestBase {
       assertEquals(7, result.getLine());
       assertEquals(22, result.getColumn());
     }
+  }
+
+  @Test
+  public void testJumpMethod11() throws Exception {
+    File f =
+        new File(project.getProjectRootPath(), "./src/main/java/meghanada/project/Project.java")
+            .getCanonicalFile();
+    assertTrue(f.exists());
+    LocationSearcher searcher = getSearcher();
+    GlobalCache.getInstance().invalidateSource(project, f);
+    Location result =
+        timeIt(() -> searcher.searchDeclarationLocation(f, 587, 14, "runUnitTest").orElse(null));
+    assertNotNull(result);
+    assertTrue(result.getPath().contains("Project.java"));
+    assertEquals(593, result.getLine());
+    assertEquals(23, result.getColumn());
   }
 
   @Test

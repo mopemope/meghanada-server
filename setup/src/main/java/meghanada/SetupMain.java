@@ -2,12 +2,14 @@ package meghanada;
 
 import java.io.BufferedInputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.net.URL;
+import java.net.URLConnection;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
+import java.nio.file.StandardOpenOption;
 import java.util.Objects;
 import java.util.Properties;
 import org.apache.commons.cli.CommandLine;
@@ -20,16 +22,19 @@ import org.apache.commons.cli.ParseException;
 
 public class SetupMain {
 
-  public static final String VERSION = "0.0.1";
+  public static final String VERSION = "0.0.2";
   private static final String OPT_SERVER_VERSION = "server-version";
   private static final String OPT_DEST = "dest";
+  private static final String OPT_SIMPLE = "simple";
 
   private static String version;
+  private static boolean useSimple;
 
   public static String getVersion() throws IOException {
     if (version != null) {
       return version;
     }
+
     final String v = getVersionInfo();
     if (v != null) {
       version = v;
@@ -42,7 +47,6 @@ public class SetupMain {
   public static void main(String args[]) throws ParseException, IOException {
     final String version = getVersion();
     System.setProperty("meghanada-setup.version", version);
-
     final Options options = buildOptions();
 
     final CommandLineParser parser = new DefaultParser();
@@ -56,6 +60,9 @@ public class SetupMain {
     if (cmd.hasOption("version")) {
       System.out.println(version);
       return;
+    }
+    if (cmd.hasOption("simple")) {
+      useSimple = true;
     }
 
     if (cmd.hasOption(OPT_SERVER_VERSION)) {
@@ -113,9 +120,43 @@ public class SetupMain {
 
   private static void downloadJar(String downloadURL, Path destPath) throws IOException {
     URL url = new URL(downloadURL);
-    try (BufferedInputStream in = new BufferedInputStream(url.openStream())) {
-      Files.copy(in, destPath, StandardCopyOption.REPLACE_EXISTING);
+    URLConnection connection = url.openConnection();
+    long contentLength = connection.getContentLengthLong();
+    System.out.println("download from " + downloadURL);
+    try (BufferedInputStream in = new BufferedInputStream(connection.getInputStream());
+        OutputStream out =
+            Files.newOutputStream(destPath, StandardOpenOption.CREATE, StandardOpenOption.WRITE)) {
+      long nread = 0L;
+      byte[] buf = new byte[1024 * 64];
+      int n;
+      while ((n = in.read(buf)) > 0) {
+        out.write(buf, 0, n);
+        nread += n;
+        if (useSimple) {
+          showSimpleProgress(contentLength, nread);
+        } else {
+          showProgress(contentLength, nread);
+        }
+      }
     }
+    System.out.println("downloaded " + destPath);
+    System.out.println("done");
+  }
+
+  private static void showSimpleProgress(long contentLength, long nread) {
+    int percent = (int) (((double) nread / (double) contentLength) * 100);
+    if (percent % 10 == 0) {
+      String s = String.format(" %d/%d bytes", nread, contentLength);
+      String per = String.format("downloaded %d%%", percent);
+      System.out.println(per + s);
+    }
+  }
+
+  private static void showProgress(long contentLength, long nread) {
+    String s = String.format(" %d/%d bytes", nread, contentLength);
+    String per =
+        String.format("downloaded %d%%", (int) (((double) nread / (double) contentLength) * 100));
+    System.out.print("\r" + per + s);
   }
 
   private static Options buildOptions() {
@@ -135,6 +176,9 @@ public class SetupMain {
 
     final Option dest = new Option(null, OPT_DEST, true, "set download dest");
     options.addOption(dest);
+
+    final Option simple = new Option(null, OPT_SIMPLE, false, "use simple message");
+    options.addOption(simple);
 
     return options;
   }

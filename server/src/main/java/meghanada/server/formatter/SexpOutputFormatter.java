@@ -444,4 +444,9 @@ public class SexpOutputFormatter implements OutputFormatter {
   public String showProject(long id, String s) {
     return success(doubleQuote(s));
   }
+
+  @Override
+  public String completionResolve(long id, boolean b) {
+    return success(doubleQuote(Boolean.toString(b)));
+  }
 }

@@ -115,8 +115,8 @@ public class JavaCompletionTest extends GradleTestBase {
     assertTrue(file.exists());
     final Collection<? extends CandidateUnit> logMethod =
         timeIt(() -> completion.completionAt(file, 18, 4, "*log#"));
-    logMethod.forEach(a -> log.info(a.getDeclaration()));
-    assertEquals(348, logMethod.size());
+    logMethod.forEach(a -> System.out.println(a.getDisplayDeclaration()));
+    assertEquals(362, logMethod.size());
   }
 
   @Test

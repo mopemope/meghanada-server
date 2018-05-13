@@ -457,4 +457,19 @@ public class CommandHandler {
       writeError(id, t);
     }
   }
+
+  public void autocompleteResolve(
+      long id, String path, String line, String column, String type, String item, String desc) {
+    try {
+      int lineInt = Integer.parseInt(line);
+      int columnInt = Integer.parseInt(column);
+      boolean b = session.completionResolve(path, lineInt, columnInt, type, item, desc);
+      final String out = outputFormatter.completionResolve(id, b);
+      writer.write(out);
+      writer.newLine();
+      writer.flush();
+    } catch (Throwable t) {
+      writeError(id, t);
+    }
+  }
 }
