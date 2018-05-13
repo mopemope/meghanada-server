@@ -38,6 +38,7 @@ import meghanada.analyze.CompileResult;
 import meghanada.analyze.Source;
 import meghanada.cache.GlobalCache;
 import meghanada.completion.JavaCompletion;
+import meghanada.completion.JavaImportCompletion;
 import meghanada.completion.JavaVariableCompletion;
 import meghanada.completion.LocalVariable;
 import meghanada.config.Config;
@@ -77,6 +78,7 @@ public class Session {
   private Project currentProject;
   private JavaCompletion completion;
   private JavaVariableCompletion variableCompletion;
+  private JavaImportCompletion importCompletion;
   private LocationSearcher locationSearcher;
   private DeclarationSearcher declarationSearcher;
   private ReferenceSearcher referenceSearcher;
@@ -104,8 +106,8 @@ public class Session {
   }
 
   public static Optional<Project> findProject(File base) throws IOException {
+    File current = base;
     while (true) {
-
       log.debug("finding project from '{}' ...", base);
       if (isNull(base.getParent())) {
         return Optional.empty();
@@ -118,13 +120,13 @@ public class Session {
 
       if (gradle.exists()) {
         log.debug("find gradle project {}", gradle);
-        return loadProject(base, Project.GRADLE_PROJECT_FILE);
+        return loadProject(base, Project.GRADLE_PROJECT_FILE, current);
       } else if (mvn.exists()) {
         log.debug("find mvn project {}", mvn);
-        return loadProject(base, Project.MVN_PROJECT_FILE);
+        return loadProject(base, Project.MVN_PROJECT_FILE, current);
       } else if (meghanada.exists()) {
-        log.debug("find meghanada project {}", meghanada);
-        return loadProject(base, Config.MEGHANADA_CONF_FILE);
+        log.debug("find meghanada project {}", meghanada, current);
+        return loadProject(base, Config.MEGHANADA_CONF_FILE, current);
       }
 
       File parent = base.getParentFile();
@@ -135,22 +137,22 @@ public class Session {
     }
   }
 
-  private static Optional<Project> loadProject(final File projectRoot, final String targetFile)
+  private static Optional<Project> loadProject(File projectRoot, String targetFile, File current)
       throws IOException {
 
-    final EntryMessage entryMessage =
+    EntryMessage entryMessage =
         log.traceEntry("projectRoot={} targetFile={}", projectRoot, targetFile);
 
-    final String projectRootPath = projectRoot.getCanonicalPath();
+    String projectRootPath = projectRoot.getCanonicalPath();
     Config.setProjectRoot(projectRootPath);
 
     try {
-      final Config config = Config.load();
+      Config config = Config.load();
 
-      final String id = FileUtils.findProjectID(projectRoot, targetFile);
+      String id = FileUtils.findProjectID(projectRoot, targetFile);
       if (Project.loadedProject.containsKey(id)) {
         // loaded skip
-        final Project project = Project.loadedProject.get(id);
+        Project project = Project.loadedProject.get(id);
         log.traceExit(entryMessage);
         Config.setProjectRoot(projectRootPath);
         return Optional.of(project);
@@ -160,7 +162,7 @@ public class Session {
 
       if (config.useFastBoot()) {
         try {
-          final Project tempProject = Project.loadProject(projectRootPath);
+          Project tempProject = Project.loadProject(projectRootPath);
           if (nonNull(tempProject) && tempProject.getId().equals(id)) {
             tempProject.setId(id);
             log.debug("load from cache project={}", tempProject);
@@ -187,8 +189,8 @@ public class Session {
       }
 
       project.setId(id);
-      final Stopwatch stopwatch = Stopwatch.createStarted();
-      final Project parsed = project.parseProject();
+      Stopwatch stopwatch = Stopwatch.createStarted();
+      Project parsed = project.parseProject(projectRoot, current);
       if (config.useFastBoot()) {
         parsed.saveProject();
       }
@@ -283,20 +285,21 @@ public class Session {
       this.getLocationSearcher().setProject(currentProject);
       this.getDeclarationSearcher().setProject(this.currentProject);
       this.getVariableCompletion().setProject(this.currentProject);
+      this.getImportCompletion().setProject(this.currentProject);
       this.getCompletion().setProject(this.currentProject);
       return true;
     }
 
     if (currentProject instanceof GradleProject) {
-      return loadProject(projectRoot, Project.GRADLE_PROJECT_FILE)
+      return loadProject(projectRoot, Project.GRADLE_PROJECT_FILE, base)
           .map(project -> setProject(projectRoot, project))
           .orElse(false);
     } else if (currentProject instanceof MavenProject) {
-      return loadProject(projectRoot, Project.MVN_PROJECT_FILE)
+      return loadProject(projectRoot, Project.MVN_PROJECT_FILE, base)
           .map(project -> setProject(projectRoot, project))
           .orElse(false);
     }
-    return loadProject(projectRoot, Config.MEGHANADA_CONF_FILE)
+    return loadProject(projectRoot, Config.MEGHANADA_CONF_FILE, base)
         .map(project -> setProject(projectRoot, project))
         .orElse(false);
   }
@@ -310,6 +313,7 @@ public class Session {
     this.getLocationSearcher().setProject(currentProject);
     this.getDeclarationSearcher().setProject(this.currentProject);
     this.getVariableCompletion().setProject(currentProject);
+    this.getImportCompletion().setProject(currentProject);
     this.getCompletion().setProject(currentProject);
     return true;
   }
@@ -319,6 +323,7 @@ public class Session {
     this.sessionEventBus.subscribeFileWatch();
     this.sessionEventBus.subscribeParse();
     this.sessionEventBus.subscribeCache();
+    this.sessionEventBus.subscribeIdle();
   }
 
   public void start() throws IOException {
@@ -375,6 +380,13 @@ public class Session {
       this.variableCompletion = new JavaVariableCompletion(currentProject);
     }
     return variableCompletion;
+  }
+
+  private JavaImportCompletion getImportCompletion() {
+    if (isNull(this.importCompletion)) {
+      this.importCompletion = new JavaImportCompletion(this.currentProject);
+    }
+    return this.importCompletion;
   }
 
   public synchronized Collection<? extends CandidateUnit> completionAt(
@@ -706,19 +718,19 @@ public class Session {
     final File projectRoot = currentProject.getProjectRoot();
     this.projects.clear();
     if (currentProject instanceof GradleProject) {
-      loadProject(projectRoot, Project.GRADLE_PROJECT_FILE)
+      loadProject(projectRoot, Project.GRADLE_PROJECT_FILE, projectRoot)
           .ifPresent(
               project -> {
                 boolean ret = setProject(projectRoot, project);
               });
     } else if (currentProject instanceof MavenProject) {
-      loadProject(projectRoot, Project.MVN_PROJECT_FILE)
+      loadProject(projectRoot, Project.MVN_PROJECT_FILE, projectRoot)
           .ifPresent(
               project -> {
                 boolean ret = setProject(projectRoot, project);
               });
     } else {
-      loadProject(projectRoot, Config.MEGHANADA_CONF_FILE)
+      loadProject(projectRoot, Config.MEGHANADA_CONF_FILE, projectRoot)
           .ifPresent(
               project -> {
                 boolean ret = setProject(projectRoot, project);
@@ -821,5 +833,36 @@ public class Session {
   @Override
   public String toString() {
     return "";
+  }
+
+  public SessionEventBus getSessionEventBus() {
+    return sessionEventBus;
+  }
+
+  public boolean completionResolve(
+      String path, int lineInt, int columnInt, String type, String item, String desc)
+      throws ExecutionException {
+
+    File file = normalize(path);
+    if (!FileUtils.isJavaFile(file)) {
+      return false;
+    }
+    getCompletion().resolve(file, type, desc);
+    log.trace("path {} {} {} {}", path, type, item, desc);
+    return true;
+  }
+
+  public synchronized Map<String, List<String>> searchImports(
+      String path, int line, int column, String symbol) throws IOException, ExecutionException {
+    // java file only
+    final File file = normalize(path);
+    if (!FileUtils.isJavaFile(file)) {
+      return Collections.emptyMap();
+    }
+
+    boolean b = this.changeProject(path);
+    return getImportCompletion()
+        .importAtPoint(file, line, column, symbol)
+        .orElse(Collections.emptyMap());
   }
 }

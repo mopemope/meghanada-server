@@ -67,6 +67,11 @@ public class ClassIndex implements CandidateUnit, Cloneable, Serializable, Stora
   }
 
   @Override
+  public String getExtra() {
+    return "";
+  }
+
+  @Override
   public String getDeclaration() {
     return ClassNameUtils.replaceInnerMark(this.declaration);
   }

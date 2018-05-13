@@ -1,5 +1,7 @@
 package meghanada.utils;
 
+import static java.util.Objects.isNull;
+
 import com.google.common.base.Joiner;
 import java.io.File;
 import java.util.ArrayList;
@@ -11,6 +13,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import meghanada.reflect.MemberDescriptor;
 import meghanada.reflect.asm.CachedASMReflector;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.logging.log4j.LogManager;
@@ -70,8 +73,8 @@ public class ClassNameUtils {
     removeWildcardMap.put("? super ", "");
     removeWildcardMap.put("? extends ", "");
 
-    // char -> int, long, floa, double
-    Set<String> c = new HashSet<String>(4);
+    // char -> int, long, float, double
+    Set<String> c = new HashSet<>(4);
     c.add("java.lang.Integer");
     c.add("java.lang.Long");
     c.add("java.lang.Float");
@@ -79,7 +82,7 @@ public class ClassNameUtils {
     implicitTypeCastMap.put("java.lang.Character", c);
 
     // byte -> short, int, long, float, double
-    Set<String> b = new HashSet<String>(5);
+    Set<String> b = new HashSet<>(5);
     b.add("java.lang.Short");
     b.add("java.lang.Integer");
     b.add("java.lang.Long");
@@ -88,7 +91,7 @@ public class ClassNameUtils {
     implicitTypeCastMap.put("java.lang.Byte", b);
 
     // short -> int, long, float, double
-    Set<String> s = new HashSet<String>(4);
+    Set<String> s = new HashSet<>(4);
     s.add("java.lang.Integer");
     s.add("java.lang.Long");
     s.add("java.lang.Float");
@@ -96,20 +99,20 @@ public class ClassNameUtils {
     implicitTypeCastMap.put("java.lang.Short", s);
 
     // int -> long, float, double
-    Set<String> i = new HashSet<String>(3);
+    Set<String> i = new HashSet<>(3);
     i.add("java.lang.Long");
     i.add("java.lang.Float");
     i.add("java.lang.Double");
     implicitTypeCastMap.put("java.lang.Integer", i);
 
     // long -> float, double
-    Set<String> l = new HashSet<String>(2);
+    Set<String> l = new HashSet<>(2);
     l.add("java.lang.Float");
     l.add("java.lang.Double");
-    implicitTypeCastMap.put("java.lang.Long", i);
+    implicitTypeCastMap.put("java.lang.Long", l);
 
     // float -> double
-    Set<String> f = new HashSet<String>(1);
+    Set<String> f = new HashSet<>(1);
     f.add("java.lang.Double");
     implicitTypeCastMap.put("java.lang.Float", f);
   }
@@ -526,23 +529,22 @@ public class ClassNameUtils {
   }
 
   public static boolean compareArgumentType(
-      final List<String> arguments, final List<String> parameters) {
+      List<String> arguments, List<String> parameters, boolean hasVarargs) {
 
-    if (!parameters.isEmpty() && parameters.size() > 0 && arguments.size() > parameters.size()) {
-      final String last = parameters.get(parameters.size() - 1);
-      final boolean isVarargs = last.endsWith(ClassNameUtils.ARRAY);
-      if (isVarargs) {
-        return compareVarArgumentType(arguments, parameters);
-      }
+    if (!parameters.isEmpty() && arguments.size() >= parameters.size() && hasVarargs) {
+      return compareVarArgumentType(arguments, parameters);
     }
-    if (arguments.size() != parameters.size()) {
+
+    int aSize = arguments.size();
+    int pSize = parameters.size();
+    if (aSize != pSize) {
       return false;
     }
-    final Iterator<String> iteratorA = arguments.iterator();
-    final CachedASMReflector reflector = CachedASMReflector.getInstance();
-    for (final String paramStr : parameters) {
-      final String realArgStr = iteratorA.next();
-      if (realArgStr == null) {
+    Iterator<String> iteratorA = arguments.iterator();
+    CachedASMReflector reflector = CachedASMReflector.getInstance();
+    for (String paramStr : parameters) {
+      String realArgStr = iteratorA.next();
+      if (isNull(realArgStr)) {
         return false;
       }
       if (realArgStr.equals("<null>")) {
@@ -552,10 +554,10 @@ public class ClassNameUtils {
       if (ClassNameUtils.isArray(paramStr) != ClassNameUtils.isArray(realArgStr)) {
         return false;
       }
-      final ClassName paramClass = new ClassName(paramStr);
-      final ClassName argClass = new ClassName(realArgStr);
-      final String paramClassName = autoBoxing(paramClass.getName());
-      final String argClassName = autoBoxing(argClass.getName());
+      ClassName paramClass = new ClassName(paramStr);
+      ClassName argClass = new ClassName(realArgStr);
+      String paramClassName = autoBoxing(paramClass.getName());
+      String argClassName = autoBoxing(argClass.getName());
 
       if (paramClassName.equals(argClassName)) {
         continue;
@@ -566,12 +568,12 @@ public class ClassNameUtils {
           continue;
         }
       }
-      final boolean result =
+      boolean result =
           reflector
               .getSuperClassStream(argClassName)
               .anyMatch(
                   s -> {
-                    final String cls = new ClassName(s).getName();
+                    String cls = new ClassName(s).getName();
                     return cls.equals(paramClassName);
                   });
       if (!result) {
@@ -582,22 +584,22 @@ public class ClassNameUtils {
   }
 
   private static boolean compareVarArgumentType(List<String> arguments, List<String> parameters) {
-    final Iterator<String> iteratorA = arguments.iterator();
-    final CachedASMReflector reflector = CachedASMReflector.getInstance();
-    final int last = parameters.size() - 1;
+    Iterator<String> iteratorA = arguments.iterator();
+    CachedASMReflector reflector = CachedASMReflector.getInstance();
+    int last = parameters.size() - 1;
     int index = 0;
-    for (final String paramStr : parameters) {
+    for (String paramStr : parameters) {
       if (index == last) {
         return checkVarargs(iteratorA, paramStr);
       } else {
-        final String realArgStr = iteratorA.next();
+        String realArgStr = iteratorA.next();
         if (ClassNameUtils.isArray(paramStr) != ClassNameUtils.isArray(realArgStr)) {
           return false;
         }
-        final ClassName paramClass = new ClassName(paramStr);
-        final ClassName argClass = new ClassName(realArgStr);
-        final String paramClassName = autoBoxing(paramClass.getName());
-        final String argClassName = autoBoxing(argClass.getName());
+        ClassName paramClass = new ClassName(paramStr);
+        ClassName argClass = new ClassName(realArgStr);
+        String paramClassName = autoBoxing(paramClass.getName());
+        String argClassName = autoBoxing(argClass.getName());
 
         index++;
         if (paramClassName.equals(argClassName)) {
@@ -611,12 +613,12 @@ public class ClassNameUtils {
           }
         }
 
-        final boolean result =
+        boolean result =
             reflector
                 .getSuperClassStream(argClassName)
                 .anyMatch(
                     s -> {
-                      final String cls = new ClassName(s).getName();
+                      String cls = new ClassName(s).getName();
                       return cls.equals(paramClassName);
                     });
         if (!result) {
@@ -653,5 +655,21 @@ public class ClassNameUtils {
       return NumberUtils.isDigits(s);
     }
     return false;
+  }
+
+  public static void replaceDescriptorsType(
+      final String nameWithTP, final List<MemberDescriptor> members) {
+    for (MemberDescriptor m : members) {
+      Iterator<String> classTypeIterator = ClassNameUtils.parseTypeParameter(nameWithTP).iterator();
+      for (String tp : m.getTypeParameters()) {
+        if (classTypeIterator.hasNext()) {
+          String ct = classTypeIterator.next();
+          log.trace("type nameWithoutTP: {} classTP: {} reflectTP: {}", nameWithTP, ct, tp);
+          if (!ct.startsWith(ClassNameUtils.CLASS_TYPE_VARIABLE_MARK)) {
+            m.putTypeParameter(tp, ct);
+          }
+        }
+      }
+    }
   }
 }

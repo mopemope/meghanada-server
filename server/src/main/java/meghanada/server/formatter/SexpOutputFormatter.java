@@ -172,7 +172,8 @@ public class SexpOutputFormatter implements OutputFormatter {
                             doubleQuote(toSimpleName(d.getName())),
                             doubleQuote(d.getDisplayDeclaration()),
                             doubleQuote(d.getDeclaration()),
-                            doubleQuote(d.getReturnType()))
+                            doubleQuote(d.getReturnType()),
+                            doubleQuote(d.getExtra()))
                         + RPAREN)
             .collect(Collectors.joining(LIST_SEP));
     sb.append(s);
@@ -442,5 +443,35 @@ public class SexpOutputFormatter implements OutputFormatter {
   @Override
   public String showProject(long id, String s) {
     return success(doubleQuote(s));
+  }
+
+  @Override
+  public String completionResolve(long id, boolean b) {
+    return success(doubleQuote(Boolean.toString(b)));
+  }
+
+  @Override
+  public String importAtPoint(long id, Map<String, List<String>> result) {
+    final StringBuilder sb = new StringBuilder(128);
+    sb.append(LPAREN);
+
+    final String str =
+        result
+            .values()
+            .stream()
+            .filter(strings -> nonNull(strings) && strings.size() > 0)
+            .map(
+                strings ->
+                    LPAREN
+                        + strings
+                            .stream()
+                            .map(SexpOutputFormatter::doubleQuote)
+                            .collect(Collectors.joining(LIST_SEP))
+                        + RPAREN)
+            .filter(Objects::nonNull)
+            .collect(Collectors.joining(LIST_SEP));
+    sb.append(str);
+    sb.append(RPAREN);
+    return success(sb.toString());
   }
 }

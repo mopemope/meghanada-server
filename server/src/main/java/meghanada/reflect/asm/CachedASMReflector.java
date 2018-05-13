@@ -2,6 +2,8 @@ package meghanada.reflect.asm;
 
 import static java.util.Objects.nonNull;
 import static meghanada.utils.FunctionUtils.wrapIOConsumer;
+import static org.apache.lucene.document.Field.Index.NOT_ANALYZED;
+import static org.apache.lucene.document.Field.Store.YES;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.UncheckedExecutionException;
@@ -19,12 +21,16 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ExecutionException;
+import java.util.function.Consumer;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import jetbrains.exodus.entitystore.EntityId;
 import meghanada.cache.GlobalCache;
+import meghanada.index.IndexDatabase;
+import meghanada.index.SearchIndexable;
 import meghanada.module.ModuleHelper;
 import meghanada.reflect.CandidateUnit;
 import meghanada.reflect.ClassIndex;
@@ -35,6 +41,9 @@ import meghanada.utils.ClassNameUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.objectweb.asm.ClassReader;
 
 public class CachedASMReflector {
 
@@ -51,7 +60,7 @@ public class CachedASMReflector {
   private Map<String, String> standardClasses;
 
   private CachedASMReflector() {
-    final GlobalCache globalCache = GlobalCache.getInstance();
+    GlobalCache globalCache = GlobalCache.getInstance();
     globalCache.setupMemberCache();
   }
 
@@ -109,11 +118,11 @@ public class CachedASMReflector {
     return members;
   }
 
-  public void addClasspath(final Collection<File> depends) {
+  public void addClasspath(Collection<File> depends) {
     depends.forEach(this::addClasspath);
   }
 
-  public void addClasspath(final File dep) {
+  public void addClasspath(File dep) {
     if (dep.isDirectory()) {
       this.directories.add(dep);
     } else {
@@ -146,7 +155,7 @@ public class CachedASMReflector {
                       this.globalClassIndex.put(fqcn, index);
                     }
                   } else {
-                    final ASMReflector reflector = ASMReflector.getInstance();
+                    ASMReflector reflector = ASMReflector.getInstance();
                     reflector
                         .getClasses(root)
                         .entrySet()
@@ -163,8 +172,8 @@ public class CachedASMReflector {
   }
 
   private void saveAllClassIndexes() {
-    List<ClassIndex> jarIndexes = new ArrayList<>();
-    List<ClassIndex> otherIndexes = new ArrayList<>();
+    List<ClassIndex> jarIndexes = new ArrayList<>(1024);
+    List<ClassIndex> otherIndexes = new ArrayList<>(1024);
     globalClassIndex
         .values()
         .forEach(
@@ -195,7 +204,7 @@ public class CachedASMReflector {
 
   private void addClassIndex(ClassIndex newIndex, File file) {
 
-    final String fqcn = newIndex.getRawDeclaration();
+    String fqcn = newIndex.getRawDeclaration();
     ClassIndex old = this.globalClassIndex.get(fqcn);
 
     if (nonNull(old)) {
@@ -218,7 +227,7 @@ public class CachedASMReflector {
     this.globalClassIndex.put(fqcn, newIndex);
   }
 
-  public void createClassIndexes(final Collection<File> addJars) {
+  public void createClassIndexes(Collection<File> addJars) {
     addJars
         .parallelStream()
         .forEach(
@@ -227,7 +236,7 @@ public class CachedASMReflector {
                   if (this.jars.contains(jar)) {
                     return;
                   }
-                  final ASMReflector reflector = ASMReflector.getInstance();
+                  ASMReflector reflector = ASMReflector.getInstance();
                   reflector
                       .getClasses(jar)
                       .entrySet()
@@ -245,7 +254,7 @@ public class CachedASMReflector {
           wrapIOConsumer(
               file -> {
                 // TODO is loaded ?
-                final ASMReflector reflector = ASMReflector.getInstance();
+                ASMReflector reflector = ASMReflector.getInstance();
                 reflector
                     .getClasses(file)
                     .entrySet()
@@ -280,9 +289,9 @@ public class CachedASMReflector {
       packageName = PACKAGE_RE.matcher(packageName).replaceAll("");
     }
 
-    final Map<String, String> result = new HashMap<>(64);
+    Map<String, String> result = new HashMap<>(64);
 
-    for (final ClassIndex ci : this.globalClassIndex.values()) {
+    for (ClassIndex ci : this.globalClassIndex.values()) {
       if (ci.getPackage().equals(packageName)) {
         result.putIfAbsent(ci.getName(), ci.getRawDeclaration());
       }
@@ -291,24 +300,24 @@ public class CachedASMReflector {
     return result;
   }
 
-  public List<ClassIndex> fuzzySearchClasses(final String keyword) {
+  public List<ClassIndex> fuzzySearchClasses(String keyword) {
     return this.fuzzySearchClasses(keyword, false);
   }
 
-  public List<ClassIndex> fuzzySearchAnnotations(final String keyword) {
+  public List<ClassIndex> fuzzySearchAnnotations(String keyword) {
     return this.fuzzySearchClasses(keyword, true);
   }
 
-  private List<ClassIndex> fuzzySearchClasses(final String keyword, final boolean anno) {
-    final int length = keyword.length() + 1;
+  private List<ClassIndex> fuzzySearchClasses(String keyword, boolean anno) {
+    int length = keyword.length() + 1;
 
-    final List<ClassIndex> result = new ArrayList<>(64);
-    for (final ClassIndex c : this.globalClassIndex.values()) {
+    List<ClassIndex> result = new ArrayList<>(64);
+    for (ClassIndex c : this.globalClassIndex.values()) {
       if (anno && !c.isAnnotation()) {
         continue;
       }
-      final String name = c.getName();
-      final int score = StringUtils.getFuzzyDistance(name, keyword, Locale.ENGLISH);
+      String name = c.getName();
+      int score = StringUtils.getFuzzyDistance(name, keyword, Locale.ENGLISH);
       if (score >= length) {
         result.add(cloneClassIndex(c));
       }
@@ -316,8 +325,8 @@ public class CachedASMReflector {
     return result;
   }
 
-  public Stream<ClassIndex> fuzzySearchClassesStream(final String keyword, final boolean anno) {
-    final int length = keyword.length() + 1;
+  public Stream<ClassIndex> fuzzySearchClassesStream(String keyword, boolean anno) {
+    int length = keyword.length() + 1;
     return this.globalClassIndex
         .values()
         .parallelStream()
@@ -326,14 +335,14 @@ public class CachedASMReflector {
               if (anno && !classIndex.isAnnotation()) {
                 return false;
               }
-              final String name = classIndex.getName();
-              final int score = StringUtils.getFuzzyDistance(name, keyword, Locale.ENGLISH);
+              String name = classIndex.getName();
+              int score = StringUtils.getFuzzyDistance(name, keyword, Locale.ENGLISH);
               return score >= length;
             })
         .map(this::cloneClassIndex);
   }
 
-  public List<ClassIndex> searchInnerClasses(final String parent) {
+  public List<ClassIndex> searchInnerClasses(String parent) {
     return this.globalClassIndex
         .values()
         .parallelStream()
@@ -355,11 +364,11 @@ public class CachedASMReflector {
     return result;
   }
 
-  public List<ClassIndex> searchClasses(final String keyword) {
+  public List<ClassIndex> searchClasses(String keyword) {
     return this.searchClasses(keyword, true, false);
   }
 
-  public List<ClassIndex> searchAnnotations(final String keyword) {
+  public List<ClassIndex> searchAnnotations(String keyword) {
     return this.searchClasses(keyword, true, true);
   }
 
@@ -376,13 +385,13 @@ public class CachedASMReflector {
     return ci;
   }
 
-  public List<ClassIndex> searchClasses(String keyword, boolean partial, boolean anno) {
+  public List<ClassIndex> searchClasses(String keyword, boolean partial, boolean annotationOnly) {
     List<ClassIndex> result = new ArrayList<>(64);
     for (ClassIndex c : this.globalClassIndex.values()) {
       if (keyword.isEmpty()) {
         result.add(cloneClassIndex(c));
       } else {
-        if (!(anno && !c.isAnnotation())
+        if (!(annotationOnly && !c.isAnnotation())
             && CachedASMReflector.containsKeyword(keyword, partial, c)) {
           result.add(cloneClassIndex(c));
         }
@@ -391,8 +400,7 @@ public class CachedASMReflector {
     return result;
   }
 
-  public Stream<ClassIndex> searchClassesStream(
-      final String keyword, final boolean partial, final boolean anno) {
+  public Stream<ClassIndex> searchClassesStream(String keyword, boolean partial, boolean anno) {
     return this.globalClassIndex
         .values()
         .parallelStream()
@@ -418,22 +426,22 @@ public class CachedASMReflector {
         .parallelStream()
         .flatMap(
             cl -> {
-              final String declaration = cl.getDeclaration();
+              String declaration = cl.getDeclaration();
               return reflect(declaration)
                   .parallelStream()
                   .filter(m -> m.matchType(CandidateUnit.MemberType.METHOD));
             });
   }
 
-  public List<MemberDescriptor> reflect(final String className) {
-    final ClassName cn = new ClassName(className);
+  public List<MemberDescriptor> reflect(String className) {
+    ClassName cn = new ClassName(className);
     // check type parameter
-    final String classWithoutTP = cn.getName();
-    final GlobalCache globalCache = GlobalCache.getInstance();
+    String classWithoutTP = cn.getName();
+    GlobalCache globalCache = GlobalCache.getInstance();
     try {
-      final List<MemberDescriptor> members = new ArrayList<>(16);
+      List<MemberDescriptor> members = new ArrayList<>(16);
       List<MemberDescriptor> list = globalCache.getMemberDescriptors(classWithoutTP);
-      for (final MemberDescriptor md : list) {
+      for (MemberDescriptor md : list) {
         members.add(md.clone());
       }
       if (cn.hasTypeParameter()) {
@@ -446,28 +454,28 @@ public class CachedASMReflector {
   }
 
   private List<MemberDescriptor> replaceMembers(
-      final String classWithoutTP, final String className, final List<MemberDescriptor> members) {
+      String classWithoutTP, String className, List<MemberDescriptor> members) {
 
-    final ClassIndex classIdx = this.globalClassIndex.get(classWithoutTP);
+    ClassIndex classIdx = this.globalClassIndex.get(classWithoutTP);
     if (classIdx != null) {
       return replaceTypeParameters(className, classIdx.getDisplayDeclaration(), members);
     }
     return members;
   }
 
-  private Stream<MemberDescriptor> reflectStream(final String className) {
+  private Stream<MemberDescriptor> reflectStream(String className) {
     return this.reflect(className).stream();
   }
 
-  public Stream<MemberDescriptor> reflectMethodStream(final String className, final String name) {
+  public Stream<MemberDescriptor> reflectMethodStream(String className, String name) {
     return this.reflect(className)
         .stream()
         .filter(m -> m.getName().equals(name) && m.matchType(CandidateUnit.MemberType.METHOD));
   }
 
-  public Collection<MemberDescriptor> reflectMethods(final String className, final String name) {
-    final List<MemberDescriptor> result = new ArrayList<>(16);
-    for (final MemberDescriptor m : this.reflect(className)) {
+  public Collection<MemberDescriptor> reflectMethods(String className, String name) {
+    List<MemberDescriptor> result = new ArrayList<>(16);
+    for (MemberDescriptor m : this.reflect(className)) {
       if (m.getName().equals(name) && m.matchType(CandidateUnit.MemberType.METHOD)) {
         result.add(m);
       }
@@ -475,15 +483,15 @@ public class CachedASMReflector {
     return result;
   }
 
-  public Stream<MemberDescriptor> reflectConstructorStream(final String className) {
+  public Stream<MemberDescriptor> reflectConstructorStream(String className) {
     return this.reflect(className)
         .stream()
         .filter(m -> m.matchType(CandidateUnit.MemberType.CONSTRUCTOR));
   }
 
-  public Collection<MemberDescriptor> reflectConstructors(final String className) {
-    final List<MemberDescriptor> result = new ArrayList<>(16);
-    for (final MemberDescriptor m : this.reflect(className)) {
+  public Collection<MemberDescriptor> reflectConstructors(String className) {
+    List<MemberDescriptor> result = new ArrayList<>(16);
+    for (MemberDescriptor m : this.reflect(className)) {
       if (m.matchType(CandidateUnit.MemberType.CONSTRUCTOR)) {
         result.add(m);
       }
@@ -491,11 +499,11 @@ public class CachedASMReflector {
     return result;
   }
 
-  public Stream<String> getSuperClassStream(final String className) {
+  public Stream<String> getSuperClassStream(String className) {
     return this.getSuperClass(className).stream();
   }
 
-  private Collection<String> getSuperClassInternal(final String className) {
+  private Collection<String> getSuperClassInternal(String className) {
 
     Set<String> result = new LinkedHashSet<>(4);
     String fqcn = ClassNameUtils.removeTypeParameter(className);
@@ -513,7 +521,7 @@ public class CachedASMReflector {
 
               for (String superClazz : supers) {
                 if (!superClazz.equals(ClassNameUtils.OBJECT_CLASS)) {
-                  final String clazz = ClassNameUtils.removeTypeMark(superClazz);
+                  String clazz = ClassNameUtils.removeTypeMark(superClazz);
                   result.add(clazz);
                   result.addAll(getSuperClassInternal(superClazz));
                 }
@@ -523,13 +531,13 @@ public class CachedASMReflector {
     return result;
   }
 
-  public Collection<String> getSuperClass(final String className) {
+  public Collection<String> getSuperClass(String className) {
     Collection<String> result = getSuperClassInternal(className);
     result.add(ClassNameUtils.OBJECT_CLASS);
     return result;
   }
 
-  public Optional<ClassIndex> containsClassIndex(final String className) {
+  public Optional<ClassIndex> containsClassIndex(String className) {
     return Optional.ofNullable(this.globalClassIndex.get(className));
   }
 
@@ -537,7 +545,7 @@ public class CachedASMReflector {
     if (this.standardClasses != null) {
       return this.standardClasses;
     }
-    final ImmutableMap<String, String> map =
+    ImmutableMap<String, String> map =
         new ImmutableMap.Builder<String, String>()
             .putAll(this.getPackageClasses("java.lang"))
             .build();
@@ -546,5 +554,98 @@ public class CachedASMReflector {
     }
     this.standardClasses = map;
     return this.standardClasses;
+  }
+
+  public void scanAllMethods() {
+    ASMReflector reflector = ASMReflector.getInstance();
+    IndexDatabase database = IndexDatabase.getInstance();
+    this.jars
+        .parallelStream()
+        .forEach(
+            file -> {
+              try {
+                final String path = file.getCanonicalPath();
+                boolean b = ProjectDatabaseHelper.isIndexedFile(path);
+                if (b) {
+                  return;
+                }
+                ConcurrentLinkedDeque<MemberDescriptor> deque = new ConcurrentLinkedDeque<>();
+                reflector.scanClasses(
+                    file,
+                    (name, in) -> {
+                      ClassReader read = new ClassReader(in);
+                      ClassAnalyzeVisitor visitor =
+                          new ClassAnalyzeVisitor(name, name, false, false);
+                      read.accept(visitor, 0);
+                      List<MemberDescriptor> members =
+                          visitor
+                              .getMembers()
+                              .stream()
+                              .filter(m -> m.isPublic() && m.isStatic())
+                              .collect(Collectors.toList());
+                      if (!members.isEmpty()) {
+                        deque.addAll(members);
+                      }
+                    });
+                final MemberIndex mi = new MemberIndex(file.getCanonicalPath(), deque);
+                database.requestIndex(
+                    mi,
+                    event -> {
+                      // store
+                      String fileName = file.getName();
+                      if (fileName.endsWith(".jar")
+                          && !ProjectDatabaseHelper.saveIndexedFile(path)) {
+                        log.warn("failed save index. {}", path);
+                      }
+                    });
+              } catch (IOException e) {
+                throw new UncheckedIOException(e);
+              }
+            });
+  }
+
+  public void scan(File file, Consumer<String> c) {
+    ASMReflector reflector = ASMReflector.getInstance();
+    try {
+      reflector.scanClasses(
+          file,
+          (name, in) -> {
+            c.accept(name);
+          });
+    } catch (IOException e) {
+      throw new UncheckedIOException(e);
+    }
+  }
+
+  public Set<File> getJars() {
+    return jars;
+  }
+
+  private static class MemberIndex implements SearchIndexable {
+    private final String path;
+    private final Collection<MemberDescriptor> members;
+
+    MemberIndex(String path, Collection<MemberDescriptor> members) {
+      this.path = path;
+      this.members = members;
+    }
+
+    @Override
+    public String getIndexGroupId() {
+      return this.path;
+    }
+
+    @Override
+    public List<Document> getDocumentIndices() {
+      return this.members
+          .parallelStream()
+          .map(
+              desc -> {
+                Document doc = desc.toDocument();
+                doc.add(new Field(SearchIndexable.GROUP_ID, getIndexGroupId(), YES, NOT_ANALYZED));
+                return doc;
+              })
+          .collect(Collectors.toList());
+    }
   }
 }

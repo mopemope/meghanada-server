@@ -17,7 +17,7 @@ import org.objectweb.asm.signature.SignatureVisitor;
 
 class FieldSignatureVisitor extends SignatureVisitor {
 
-  private static Logger log = LogManager.getLogger(FieldSignatureVisitor.class);
+  private static final Logger log = LogManager.getLogger(FieldSignatureVisitor.class);
 
   private final List<String> classTypeParameters;
   private final String name;

@@ -20,7 +20,7 @@ Some planned and implemented features:
 * Jump declaration
 * Run junit test (include test runner)
 * Search references
-* Full-featured text search
+* Full-featured text search (default off)
 
 Meghanada-Server support only emacs client (meghanada-mode)
 

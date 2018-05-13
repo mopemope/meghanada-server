@@ -59,7 +59,7 @@ public class MavenProject extends Project {
   }
 
   @Override
-  public Project parseProject() throws ProjectParseException {
+  public Project parseProject(File projectRoot, File current) throws ProjectParseException {
     try {
       final String mavenPath = Config.load().getMavenPath();
       if (!Strings.isNullOrEmpty(mavenPath)) {

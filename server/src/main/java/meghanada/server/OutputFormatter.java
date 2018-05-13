@@ -57,4 +57,8 @@ public interface OutputFormatter {
   String searchEverywhere(long id, SearchResults r);
 
   String showProject(long id, String s);
+
+  String completionResolve(long id, boolean b);
+
+  String importAtPoint(long id, Map<String, List<String>> result);
 }

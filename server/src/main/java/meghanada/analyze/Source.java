@@ -9,6 +9,7 @@ import static org.apache.lucene.document.Field.Store.NO;
 import static org.apache.lucene.document.Field.Store.YES;
 
 import com.google.common.base.MoreObjects;
+import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
 import com.sun.source.tree.LineMap;
 import java.io.BufferedReader;
@@ -603,6 +604,14 @@ public class Source implements Serializable, Storable, SearchIndexable {
   }
 
   public boolean addImportIfAbsent(final String fqcn) {
+
+    int i = fqcn.indexOf("#");
+    if (i > 0) {
+      // static import
+      List<String> imps = Splitter.on("#").splitToList(fqcn);
+      this.staticImportClass.putIfAbsent(imps.get(1), imps.get(0));
+      return true;
+    }
 
     if (this.importClasses.contains(fqcn)) {
       return false;

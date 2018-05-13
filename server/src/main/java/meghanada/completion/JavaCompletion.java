@@ -1,10 +1,13 @@
 package meghanada.completion;
 
+import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 
-import com.google.common.cache.LoadingCache;
+import com.google.common.base.Joiner;
+import com.google.common.collect.TreeBasedTable;
 import java.io.File;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -14,6 +17,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.SortedMap;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -25,6 +29,7 @@ import meghanada.analyze.TypeScope;
 import meghanada.analyze.Variable;
 import meghanada.cache.GlobalCache;
 import meghanada.config.Config;
+import meghanada.index.IndexDatabase;
 import meghanada.project.Project;
 import meghanada.reflect.CandidateUnit;
 import meghanada.reflect.ClassIndex;
@@ -32,6 +37,7 @@ import meghanada.reflect.FieldDescriptor;
 import meghanada.reflect.MemberDescriptor;
 import meghanada.reflect.asm.CachedASMReflector;
 import meghanada.utils.ClassNameUtils;
+import meghanada.utils.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -39,10 +45,14 @@ public class JavaCompletion {
 
   private static final Logger log = LogManager.getLogger(JavaCompletion.class);
   private static final String STATIC = "static ";
+  private final TreeBasedTable<File, CandidateUnit, Integer> statisticsTable;
+
   private Project project;
+  private Collection<? extends CandidateUnit> hits;
 
   public JavaCompletion(final Project project) {
     this.project = project;
+    this.statisticsTable = createStatisticsTable();
   }
 
   private static Collection<? extends CandidateUnit> annotationCompletion(
@@ -59,13 +69,12 @@ public class JavaCompletion {
     return result
         .stream()
         .sorted(comparing(prefix))
-        .map(
+        .peek(
             classIndex -> {
               final String name =
                   ClassNameUtils.getSimpleName(
                       ClassNameUtils.replaceInnerMark(classIndex.getName()));
               classIndex.setName('@' + name);
-              return classIndex;
             })
         .collect(Collectors.toList());
   }
@@ -316,7 +325,7 @@ public class JavaCompletion {
         result.addAll(reflector.searchClasses(prefix.toLowerCase()));
       }
     }
-
+    result.addAll(searchStaticMethod(result, prefix));
     List<CandidateUnit> list = new ArrayList<>(result);
     list.sort(comparing(source, prefix));
     return list;
@@ -594,6 +603,30 @@ public class JavaCompletion {
     return Collections.emptyList();
   }
 
+  private static List<MemberDescriptor> searchStaticMethod(
+      Set<CandidateUnit> result, final String name) {
+
+    List<String> classes = Config.load().searchStaticMethodClasses();
+    if (classes.isEmpty()) {
+      return Collections.emptyList();
+    }
+    String s = Joiner.on(" OR ").join(classes);
+    return IndexDatabase.getInstance()
+        .searchMembers(
+            IndexDatabase.paren(s),
+            IndexDatabase.doubleQuote("public static"),
+            IndexDatabase.doubleQuote("METHOD"),
+            name + "*")
+        .stream()
+        .filter(m -> !result.contains(m))
+        .peek(
+            m -> {
+              m.setExtra("static-import " + m.getDeclaringClass());
+              m.showStaticClassName = true;
+            })
+        .collect(Collectors.toList());
+  }
+
   public void setProject(Project project) {
     this.project = project;
   }
@@ -604,6 +637,16 @@ public class JavaCompletion {
   }
 
   public Collection<? extends CandidateUnit> completionAt(
+      final File file, int line, int column, String prefix) {
+    Collection<? extends CandidateUnit> collection =
+        this.completionAtInternal(file, line, column, prefix);
+    if (nonNull(collection)) {
+      this.hits = collection;
+    }
+    return collection;
+  }
+
+  private Collection<? extends CandidateUnit> completionAtInternal(
       final File file, int line, int column, String prefix) {
 
     log.debug("line={} column={} prefix={}", line, column, prefix);
@@ -648,10 +691,11 @@ public class JavaCompletion {
 
     } else if (searchWord.startsWith("*package")) {
       // completion projects package
-      return this.completionPackage()
-          .stream()
-          .sorted(Comparator.comparing(CandidateUnit::getName))
-          .collect(Collectors.toList());
+      return this.completionPackage(source.getFile());
+      //      return this.completionPackage()
+      //          .stream()
+      //          .sorted(Comparator.comparing(CandidateUnit::getName))
+      //          .collect(Collectors.toList());
     }
 
     // search fields or methods
@@ -754,14 +798,92 @@ public class JavaCompletion {
         .collect(Collectors.toList());
   }
 
-  private Collection<? extends CandidateUnit> completionPackage() {
-    final GlobalCache globalCache = GlobalCache.getInstance();
-    final LoadingCache<File, Source> sourceCache = globalCache.getSourceCache(project);
-    return sourceCache
-        .asMap()
-        .values()
-        .stream()
-        .map(source -> ClassIndex.createPackage(source.getPackageName()))
-        .collect(Collectors.toSet());
+  private Collection<? extends CandidateUnit> completionPackage(File f) {
+    Set<File> allSources = this.project.getAllSources();
+    try {
+      Optional<String> s = FileUtils.convertPathToClass(allSources, f);
+      if (s.isPresent()) {
+        String className = s.get();
+        String pkg = ClassNameUtils.getPackage(className);
+        CandidateUnit unit =
+            new CandidateUnit() {
+              @Override
+              public String getName() {
+                return pkg;
+              }
+
+              @Override
+              public String getType() {
+                return MemberType.PACKAGE.name();
+              }
+
+              @Override
+              public String getDeclaration() {
+                return pkg;
+              }
+
+              @Override
+              public String getDisplayDeclaration() {
+                return pkg;
+              }
+
+              @Override
+              public String getReturnType() {
+                return pkg;
+              }
+
+              @Override
+              public String getExtra() {
+                return "";
+              }
+            };
+        return Collections.singletonList(unit);
+      }
+      return Collections.emptyList();
+    } catch (IOException e) {
+      throw new UncheckedIOException(e);
+    }
+  }
+
+  public synchronized void resolve(File file, String type, String desc) {
+    if (nonNull(hits)) {
+      hits.forEach(
+          c -> {
+            if (c.getType().equals(type) && c.getDisplayDeclaration().equals(desc)) {
+              // match
+              Integer count = this.statisticsTable.get(file, c);
+              if (isNull(count)) {
+                count = 0;
+              }
+              count++;
+              this.statisticsTable.put(file, c, count);
+            }
+          });
+    }
+  }
+
+  private TreeBasedTable<File, CandidateUnit, Integer> createStatisticsTable() {
+    TreeBasedTable<File, CandidateUnit, Integer> table =
+        TreeBasedTable.create(
+            Comparator.naturalOrder(),
+            (o1, o2) -> {
+              String name1 = o1.getName();
+              String name2 = o2.getName();
+              return name1.compareTo(name2);
+            });
+    return table;
+  }
+
+  public void dumpStatsTable() {
+    this.statisticsTable
+        .rowKeySet()
+        .forEach(
+            f -> {
+              SortedMap<CandidateUnit, Integer> map = this.statisticsTable.row(f);
+              map.forEach(
+                  (c, i) -> {
+                    log.info("{} {} {}", f.getName(), c.getDisplayDeclaration(), i);
+                  });
+            });
   }
 }

@@ -1,7 +1,16 @@
 package meghanada.reflect;
 
 import static java.util.Objects.nonNull;
+import static meghanada.index.IndexableWord.Field.C_BINARY;
+import static meghanada.index.IndexableWord.Field.C_COMPLETION;
+import static meghanada.index.IndexableWord.Field.C_DECLARING_CLASS;
+import static meghanada.index.IndexableWord.Field.C_MEMBER_TYPE;
+import static meghanada.index.IndexableWord.Field.C_MODIFIER;
+import static org.apache.lucene.document.Field.Index.ANALYZED;
+import static org.apache.lucene.document.Field.Store.NO;
+import static org.apache.lucene.document.Field.Store.YES;
 
+import com.google.common.base.MoreObjects;
 import com.google.common.base.Objects;
 import java.io.Serializable;
 import java.util.HashMap;
@@ -9,13 +18,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
+import javax.annotation.Nonnull;
+import meghanada.store.Serializer;
 import meghanada.utils.ClassNameUtils;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
 
 public abstract class MemberDescriptor
     implements CandidateUnit, Cloneable, Comparable<MemberDescriptor>, Serializable {
 
   static final Pattern TRIM_RE = Pattern.compile("<[\\w ?,]+>");
-  private static final long serialVersionUID = -6014921331666546814L;
+  private static final long serialVersionUID = -3673903957102734585L;
 
   public String declaringClass;
   public String name;
@@ -24,7 +37,9 @@ public abstract class MemberDescriptor
   String returnType;
   boolean hasDefault;
   Set<String> typeParameters;
-  Map<String, String> typeParameterMap;
+  public Map<String, String> typeParameterMap;
+  public transient boolean showStaticClassName;
+  private transient String extra = "";
 
   public abstract List<String> getParameters();
 
@@ -169,23 +184,30 @@ public abstract class MemberDescriptor
 
   @Override
   public boolean equals(Object o) {
-    if (this == o) {
-      return true;
-    }
-    if (!(o instanceof MemberDescriptor)) {
-      return false;
-    }
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
     MemberDescriptor that = (MemberDescriptor) o;
-    return Objects.equal(name, that.name)
+    return hasDefault == that.hasDefault
+        && Objects.equal(declaringClass, that.declaringClass)
+        && Objects.equal(name, that.name)
         && memberType == that.memberType
         && Objects.equal(modifier, that.modifier)
         && Objects.equal(returnType, that.returnType)
-        && Objects.equal(typeParameters, that.typeParameters);
+        && Objects.equal(typeParameters, that.typeParameters)
+        && Objects.equal(typeParameterMap, that.typeParameterMap);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hashCode(name, memberType, modifier, returnType, typeParameters);
+    return Objects.hashCode(
+        declaringClass,
+        name,
+        memberType,
+        modifier,
+        returnType,
+        hasDefault,
+        typeParameters,
+        typeParameterMap);
   }
 
   @Override
@@ -209,7 +231,7 @@ public abstract class MemberDescriptor
   }
 
   @Override
-  public int compareTo(MemberDescriptor other) {
+  public int compareTo(@Nonnull MemberDescriptor other) {
 
     if (this.isStatic() && other.isStatic()) {
       return this.compareType(other, true);
@@ -261,5 +283,38 @@ public abstract class MemberDescriptor
     }
 
     return this.getName().compareTo(other.getName());
+  }
+
+  @Override
+  public String getExtra() {
+    return this.extra;
+  }
+
+  public void setExtra(String extra) {
+    this.extra = extra;
+  }
+
+  @Override
+  public String toString() {
+    return MoreObjects.toStringHelper(this)
+        .add("declaringClass", declaringClass)
+        .add("name", name)
+        .add("memberType", memberType)
+        .add("modifier", modifier)
+        .add("returnType", returnType)
+        .add("hasDefault", hasDefault)
+        .add("typeParameters", typeParameters)
+        .add("typeParameterMap", typeParameterMap)
+        .toString();
+  }
+
+  public Document toDocument() {
+    Document doc = new Document();
+    doc.add(new Field(C_BINARY.getName(), Serializer.asByte(this)));
+    doc.add(new Field(C_DECLARING_CLASS.getName(), getDeclaringClass(), YES, ANALYZED));
+    doc.add(new Field(C_COMPLETION.getName(), getName(), YES, ANALYZED));
+    doc.add(new Field(C_MEMBER_TYPE.getName(), getMemberType().name(), NO, ANALYZED));
+    doc.add(new Field(C_MODIFIER.getName(), modifier.trim(), NO, ANALYZED));
+    return doc;
   }
 }

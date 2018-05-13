@@ -72,14 +72,14 @@ public class ReferenceSearcher {
 
       for (BlockScope blockScope : classScope.getScopes()) {
         if (blockScope instanceof MethodScope) {
-          MethodScope methodScope = ((MethodScope) blockScope);
-          Position pos = methodScope.getNameRange().begin;
-          String name = methodScope.getName();
+          MethodScope ms = ((MethodScope) blockScope);
+          Position pos = ms.getNameRange().begin;
+          String name = ms.getName();
           if (pos.line == line && name.equals(symbol)) {
             String clazz = classScope.getFQCN();
             SearchCondition condition =
                 new SearchCondition(
-                    clazz, name, SearchCondition.Type.METHOD, methodScope.getParameters());
+                    clazz, name, SearchCondition.Type.METHOD, ms.getParameters(), ms.vararg);
             return Optional.of(condition);
           }
         }
@@ -105,9 +105,10 @@ public class ReferenceSearcher {
   private static Optional<MemberDescriptor> searchMatchConstructor(
       String declaringClass, List<String> arguments) {
     CachedASMReflector reflector = CachedASMReflector.getInstance();
-    for (MemberDescriptor md : reflector.reflectConstructors(declaringClass)) {
-      if (ClassNameUtils.compareArgumentType(arguments, md.getParameters())) {
-        return Optional.of(md);
+    for (MemberDescriptor desc : reflector.reflectConstructors(declaringClass)) {
+      MethodDescriptor mDesc = (MethodDescriptor) desc;
+      if (ClassNameUtils.compareArgumentType(arguments, desc.getParameters(), mDesc.hasVarargs)) {
+        return Optional.of(desc);
       }
     }
     return Optional.empty();
@@ -116,9 +117,10 @@ public class ReferenceSearcher {
   private static Optional<MemberDescriptor> searchMatchMethod(
       String declaringClass, String methodName, List<String> arguments) {
     CachedASMReflector reflector = CachedASMReflector.getInstance();
-    for (MemberDescriptor md : reflector.reflectMethods(declaringClass, methodName)) {
-      if (ClassNameUtils.compareArgumentType(arguments, md.getParameters())) {
-        return Optional.of(md);
+    for (MemberDescriptor desc : reflector.reflectMethods(declaringClass, methodName)) {
+      MethodDescriptor mDesc = (MethodDescriptor) desc;
+      if (ClassNameUtils.compareArgumentType(arguments, desc.getParameters(), mDesc.hasVarargs)) {
+        return Optional.of(desc);
       }
     }
     return Optional.empty();
@@ -152,10 +154,15 @@ public class ReferenceSearcher {
                     mc.declaringClass,
                     mc.name,
                     SearchCondition.Type.CONSTRUCTOR,
-                    mc.getArguments());
+                    mc.getArguments(),
+                    md.hasVarargs);
               }
               return new SearchCondition(
-                  mc.declaringClass, mc.name, SearchCondition.Type.METHOD, mc.getArguments());
+                  mc.declaringClass,
+                  mc.name,
+                  SearchCondition.Type.METHOD,
+                  mc.getArguments(),
+                  md.hasVarargs);
             });
     log.traceExit(msg);
     return result;
@@ -268,7 +275,9 @@ public class ReferenceSearcher {
     for (MethodCall mc : methodCalls) {
       String declaringClass = mc.declaringClass;
       String methodName = mc.name;
-      boolean compare = ClassNameUtils.compareArgumentType(mc.getArguments(), sc.arguments);
+
+      boolean compare =
+          ClassNameUtils.compareArgumentType(mc.getArguments(), sc.arguments, sc.varargs);
       if (compare && sc.declaringClass.equals(declaringClass) && sc.name.equals(methodName)) {
         Range range = mc.nameRange;
         long line = range.begin.line;
@@ -404,16 +413,19 @@ public class ReferenceSearcher {
     final String name;
     final Type type;
     final List<String> arguments;
+    final boolean varargs;
 
-    SearchCondition(String declaringClass, String name, Type type, List<String> arguments) {
+    SearchCondition(
+        String declaringClass, String name, Type type, List<String> arguments, boolean varargs) {
       this.declaringClass = declaringClass;
       this.name = name;
       this.type = type;
       this.arguments = arguments;
+      this.varargs = varargs;
     }
 
     SearchCondition(String declaringClass, String name, Type type) {
-      this(declaringClass, name, type, Collections.emptyList());
+      this(declaringClass, name, type, Collections.emptyList(), false);
     }
 
     @Override

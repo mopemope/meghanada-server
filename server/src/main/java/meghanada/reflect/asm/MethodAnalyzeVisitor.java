@@ -38,6 +38,8 @@ class MethodAnalyzeVisitor extends MethodVisitor {
   private final String methodSignature;
   private final boolean interfaceMethod;
   private final int[] lvtSlotIndex;
+  private final boolean hasVarargs;
+
   private boolean hasDefault;
   private String[] parameterNames;
   private List<TypeInfo> parameterTypes;
@@ -72,7 +74,7 @@ class MethodAnalyzeVisitor extends MethodVisitor {
     this.parameterNames = new String[args.length];
     boolean isStatic = (Opcodes.ACC_STATIC & access) > 0;
     this.lvtSlotIndex = computeLvtSlotIndices(isStatic, args);
-
+    this.hasVarargs = (Opcodes.ACC_VARARGS & access) > 0;
     String target = desc;
     if (signature != null) {
       target = signature;
@@ -225,12 +227,16 @@ class MethodAnalyzeVisitor extends MethodVisitor {
     if (((this.parameterTypes.size() != this.parameterNames.length)
             || (this.parameterNames.length > 0 && this.parameterNames[0] == null))
         && !tryGetParameterName(this.classAnalyzeVisitor.className, this.name)) {
-      setDefaultParameterNames();
+      this.setDefaultParameterNames();
     }
 
-    for (int i = 0; i < this.parameterTypes.size(); i++) {
-      TypeInfo typeInfo = this.parameterTypes.get(i);
-      typeInfo.paramName = this.parameterNames[i];
+    int size = this.parameterTypes.size();
+    for (int i = 0; i < size; i++) {
+      TypeInfo ti = this.parameterTypes.get(i);
+      ti.paramName = this.parameterNames[i];
+      if (i == size - 1 && this.hasVarargs) {
+        ti.variableArguments = true;
+      }
     }
     // log.debug("{} ({})", this.name, this.parameterTypes);
     this.toMemberDescriptor();
@@ -250,8 +256,7 @@ class MethodAnalyzeVisitor extends MethodVisitor {
       if (pmsList == null) {
         return false;
       }
-      final boolean result = this.searchParameterNames(pmsList);
-      return result;
+      return this.searchParameterNames(pmsList);
       // fallback
     } catch (Exception e) {
       log.debug(e.getMessage());
@@ -352,10 +357,13 @@ class MethodAnalyzeVisitor extends MethodVisitor {
     final List<MethodParameter> methodParameters =
         this.parameterTypes
             .stream()
-            .map(typeInfo -> new MethodParameter(typeInfo.getFQCN(), typeInfo.paramName))
+            .map(
+                typeInfo ->
+                    new MethodParameter(
+                        typeInfo.getFQCN(), typeInfo.paramName, typeInfo.variableArguments))
             .collect(Collectors.toList());
 
-    final MethodDescriptor descriptor =
+    final MethodDescriptor md =
         new MethodDescriptor(
             this.classAnalyzeVisitor.className,
             methodName,
@@ -365,13 +373,13 @@ class MethodAnalyzeVisitor extends MethodVisitor {
             returnFQCN,
             this.hasDefault,
             memberType);
-
-    descriptor.setTypeParameters(this.typeParameters);
+    md.hasVarargs = this.hasVarargs;
+    md.setTypeParameters(this.typeParameters);
     log.trace("formalType={}", this.formalType);
     if (this.formalType != null) {
-      descriptor.formalType = this.formalType.toString();
+      md.formalType = this.formalType.toString();
     }
-    this.classAnalyzeVisitor.members.add(descriptor);
+    this.classAnalyzeVisitor.members.add(md);
     log.traceExit(message);
   }
 

@@ -51,7 +51,7 @@ public class JavaAnalyzer {
   public JavaAnalyzer(String compileSource, String compileTarget) {
     this.compileSource = compileSource;
     this.compileTarget = compileTarget;
-    this.executorService = Executors.newCachedThreadPool();
+    this.executorService = Executors.newFixedThreadPool(2);
     this.eventBus =
         new AsyncEventBus(
             executorService,
@@ -167,11 +167,11 @@ public class JavaAnalyzer {
               "-encoding",
               "UTF-8");
 
-      List<String> compileOptions = new ArrayList<>(1);
+      List<String> compileOptions = new ArrayList<>(16);
       if (this.compileTarget.equals("1.8")) {
-        compileOptions = config.getJava8JavacArgs();
+        compileOptions.addAll(config.getJava8JavacArgs());
       } else if (this.compileTarget.equals("1.9") || this.compileTarget.equals("9")) {
-        compileOptions = config.getJava9JavacArgs();
+        compileOptions.addAll(config.getJava9JavacArgs());
       }
       compileOptions.addAll(opts);
       final JavaCompiler.CompilationTask compilerTask =
@@ -236,11 +236,11 @@ public class JavaAnalyzer {
               this.compileTarget,
               "-encoding",
               "UTF-8");
-      List<String> compileOptions = new ArrayList<>(1);
+      List<String> compileOptions = new ArrayList<>(16);
       if (this.compileTarget.equals("1.8")) {
-        compileOptions = config.getJava8JavacArgs();
+        compileOptions.addAll(config.getJava8JavacArgs());
       } else if (this.compileTarget.equals("1.9") || this.compileTarget.equals("9")) {
-        compileOptions = config.getJava9JavacArgs();
+        compileOptions.addAll(config.getJava9JavacArgs());
       }
       compileOptions.addAll(opts);
 

@@ -1,9 +1,11 @@
 package meghanada.project;
 
+import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Objects;
+import com.google.common.base.Splitter;
 import com.google.common.base.Stopwatch;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableSet;
@@ -160,7 +162,7 @@ public abstract class Project implements Serializable, Storable {
     }
   }
 
-  public abstract Project parseProject() throws ProjectParseException;
+  public abstract Project parseProject(File projectRoot, File current) throws ProjectParseException;
 
   public Set<File> getAllSources() {
     final Set<File> temp = new HashSet<>(4);
@@ -213,10 +215,12 @@ public abstract class Project implements Serializable, Storable {
   }
 
   private JavaAnalyzer getJavaAnalyzer() {
-    if (this.javaAnalyzer == null) {
+    if (isNull(this.javaAnalyzer)) {
       this.javaAnalyzer = new JavaAnalyzer(this.compileSource, this.compileTarget);
       this.javaAnalyzer.getEventBus().register(new SourceCacheSubscriber(this));
-      this.javaAnalyzer.getEventBus().register(new IndexSubscriber(this));
+      if (Config.load().useFullTextSearch()) {
+        this.javaAnalyzer.getEventBus().register(new IndexSubscriber(this));
+      }
     }
     return this.javaAnalyzer;
   }
@@ -923,7 +927,7 @@ public abstract class Project implements Serializable, Storable {
 
   private Optional<Properties> readFormatPropertiesFromFile() {
     final String val = System.getProperty(FORMATTER_FILE_KEY);
-    if (val != null) {
+    if (nonNull(val)) {
       final File file = new File(val);
       log.info("load formatter rule from {}", val);
       if (val.endsWith(".xml")) {
@@ -1151,8 +1155,9 @@ public abstract class Project implements Serializable, Storable {
       sb.append(String.format("useExternalBuilder: %s\n", config.useExternalBuilder()));
       sb.append(String.format("clearCacheOnStart: %s\n", config.clearCacheOnStart()));
       sb.append(String.format("isSkipBuildSubProjects: %s\n", config.isSkipBuildSubProjects()));
-      sb.append(String.format("useAOSP: %s\n", config.useAOSPStyle()));
+      sb.append(String.format("useAOSPStyleFormat: %s\n", config.useAOSPStyle()));
       sb.append(String.format("mavenLocalRepository: %s\n", config.getMavenLocalRepository()));
+      sb.append(String.format("useFullTextSearch: %s\n", config.useFullTextSearch()));
       sb.append("\n");
     }
 
@@ -1169,6 +1174,24 @@ public abstract class Project implements Serializable, Storable {
         sb.append(String.format("javac8Args: %s\n", config.getJava8JavacArgs()));
       } else {
         sb.append(String.format("javac9Args: %s\n", config.getJava9JavacArgs()));
+      }
+      List<String> cpList = Splitter.on(File.pathSeparator).splitToList(this.cachedClasspath);
+      if (cpList.size() > 0) {
+        sb.append("classpath:\n");
+        cpList.forEach(
+            s -> {
+              sb.append(String.format("  %s\n", s));
+            });
+        sb.append("\n");
+      }
+      List<String> cpAllList = Splitter.on(File.pathSeparator).splitToList(this.cachedAllClasspath);
+      if (cpAllList.size() > 0) {
+        sb.append("allClasspath:\n");
+        cpAllList.forEach(
+            s -> {
+              sb.append(String.format("  %s\n", s));
+            });
+        sb.append("\n");
       }
       Properties sysProp = System.getProperties();
       sb.append("SystemProperties:\n");
@@ -1203,6 +1226,19 @@ public abstract class Project implements Serializable, Storable {
       sb.append("projectDatabaseSize: ");
       sb.append(String.format("  %.2fMB\n", size));
 
+      sb.append("source-formatter: ");
+      Optional<Properties> op = getFormatProperties();
+      if (op.isPresent()) {
+        String settingFile = System.getProperty(FORMATTER_FILE_KEY);
+        sb.append("eclipse ");
+        sb.append(settingFile);
+      } else {
+        sb.append("google ");
+        if (config.useAOSPStyle()) {
+          sb.append("(AOSP)");
+        }
+      }
+      sb.append("\n");
       sb.append("sources:\n");
       sources.forEach(
           s -> {

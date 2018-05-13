@@ -18,18 +18,21 @@ import java.io.OutputStreamWriter;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import meghanada.server.CommandHandler;
 import meghanada.server.OutputFormatter;
 import meghanada.server.Server;
 import meghanada.server.formatter.SexpOutputFormatter;
 import meghanada.session.Session;
+import meghanada.session.SessionEventBus;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -38,12 +41,13 @@ public class EmacsServer implements Server {
   private static final Logger log = LogManager.getLogger(EmacsServer.class);
   private static final String EOT = ";;EOT";
   private final ServerSocket serverSocket;
-  private final ExecutorService executorService = Executors.newFixedThreadPool(4);
+  private final ExecutorService executorService = Executors.newFixedThreadPool(5);
   private final OUTPUT outputFormat;
   private final String projectRoot;
   private final String host;
   private final int port;
   private final boolean outputEOT;
+  private SessionEventBus.IdleTimer idleTimer;
 
   private Session session;
   private long id;
@@ -58,9 +62,22 @@ public class EmacsServer implements Server {
     this.outputFormat = OUTPUT.SEXP;
     this.outputEOT = true;
     System.setProperty("meghanada.server.port", Integer.toString(this.serverSocket.getLocalPort()));
+    Runtime.getRuntime()
+        .addShutdownHook(
+            new Thread(
+                () -> {
+                  try {
+                    shutdown();
+                  } catch (Throwable t) {
+                    log.catching(t);
+                  }
+                }));
   }
 
   private boolean dispatch(final List<String> argList, final CommandHandler handler) {
+    if (nonNull(this.idleTimer)) {
+      this.idleTimer.lastRun = Instant.now().getEpochSecond();
+    }
     final Stopwatch stopwatch = Stopwatch.createStarted();
     id++;
     final boolean result =
@@ -87,6 +104,21 @@ public class EmacsServer implements Server {
                   // ap : Autocomplete Prefix
                   // usage: ap <filepath> <line> <column> <prefix> <fmt>
                   handler.autocomplete(id, args.get(0), args.get(1), args.get(2), args.get(3));
+                  return true;
+                })
+            .when(headTail(eq("cr"), any()))
+            .get(
+                args -> {
+                  // cr : CompletionItem resolve
+                  // usage: cr <filepath> <line> <column> <type> <item> <desc>
+                  handler.autocompleteResolve(
+                      id,
+                      args.get(0),
+                      args.get(1),
+                      args.get(2),
+                      args.get(3),
+                      args.get(4),
+                      args.get(5));
                   return true;
                 })
             .when(headTail(eq("c"), any()))
@@ -183,6 +215,14 @@ public class EmacsServer implements Server {
                   // ia : Import All
                   // usage: ia <filepath>
                   handler.importAll(id, args.get(0));
+                  return true;
+                })
+            .when(headTail(eq("ip"), any()))
+            .get(
+                args -> {
+                  // ip : Import at point
+                  // usage: ip <filepath> <line> <column> <symbol>
+                  handler.importAtPoint(id, args.get(0), args.get(1), args.get(2), args.get(3));
                   return true;
                 })
             .when(headTail(eq("st"), any()))
@@ -323,6 +363,7 @@ public class EmacsServer implements Server {
       this.session = Session.createSession(projectRoot);
       this.session.start();
       log.info("Start server Listen {} port:{}", this.host, this.serverSocket.getLocalPort());
+      this.idleTimer = this.session.getSessionEventBus().getIdleTimer();
       this.accept();
     } catch (Throwable e) {
       log.catching(e);
@@ -414,6 +455,15 @@ public class EmacsServer implements Server {
       return new SexpOutputFormatter();
     }
     throw new UnsupportedOperationException("not support format");
+  }
+
+  public void shutdown() {
+    this.executorService.shutdown();
+    try {
+      this.executorService.awaitTermination(3, TimeUnit.SECONDS);
+    } catch (InterruptedException e) {
+      log.catching(e);
+    }
   }
 
   private enum OUTPUT {

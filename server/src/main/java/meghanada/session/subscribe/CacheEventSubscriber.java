@@ -97,11 +97,14 @@ public class CacheEventSubscriber extends AbstractSubscriber {
         stopwatch.stop());
     Config.showMemory();
     log.info("Ready");
+    reflector.scanAllMethods();
 
     String db = System.getProperty("new-project-database");
     if (nonNull(db) && db.isEmpty()) {
       createStandardClassCache();
     }
+    // start idle monitor
+    this.sessionEventBus.requestIdleMonitor();
   }
 
   private boolean cleanUnusedSource(Project project) {
@@ -116,9 +119,28 @@ public class CacheEventSubscriber extends AbstractSubscriber {
         .getStandardClasses()
         .values()
         .forEach(
-            impFqcn -> {
+            c -> {
               try {
-                globalCache.getMemberDescriptors(impFqcn);
+                globalCache.getMemberDescriptors(c);
+              } catch (Exception e) {
+                log.catching(e);
+              }
+            });
+    createClassCache("java.util.*");
+    createClassCache("java.io.*");
+  }
+
+  @SuppressWarnings("CheckReturnValue")
+  private void createClassCache(String name) {
+    final CachedASMReflector reflector = CachedASMReflector.getInstance();
+    final GlobalCache globalCache = GlobalCache.getInstance();
+    reflector
+        .getPackageClasses(name)
+        .values()
+        .forEach(
+            c -> {
+              try {
+                globalCache.getMemberDescriptors(c);
               } catch (Exception e) {
                 log.catching(e);
               }

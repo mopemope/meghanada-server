@@ -98,11 +98,11 @@ public class ReferenceSearcherTest extends GradleTestBase {
 
     final ReferenceSearcher searcher = getSearcher();
     final List<Reference> result =
-        timeIt(() -> searcher.searchReference(f, 355, 22, "formatJavaFile"));
+        timeIt(() -> searcher.searchReference(f, 350, 22, "formatJavaFile"));
     assertNotNull(result);
     assertEquals(1, result.size());
     Reference reference = result.get(0);
-    assertEquals(700, reference.getLine());
+    assertEquals(712, reference.getLine());
   }
 
   @Test
@@ -115,7 +115,7 @@ public class ReferenceSearcherTest extends GradleTestBase {
     final ReferenceSearcher searcher = getSearcher();
     final List<Reference> result = timeIt(() -> searcher.searchReference(f, 45, 20, "FileUtils"));
     assertNotNull(result);
-    assertEquals(57, result.size());
+    assertEquals(62, result.size());
     //    for (Reference reference : result) {
     //      System.out.println(reference.getCode());
     //    }
@@ -129,8 +129,8 @@ public class ReferenceSearcherTest extends GradleTestBase {
     assertTrue(f.exists());
 
     final ReferenceSearcher searcher = getSearcher();
-    final List<Reference> result = timeIt(() -> searcher.searchReference(f, 81, 47, "toString"));
+    final List<Reference> result = timeIt(() -> searcher.searchReference(f, 86, 47, "toString"));
     assertNotNull(result);
-    assertEquals(40, result.size());
+    assertEquals(42, result.size());
   }
 }

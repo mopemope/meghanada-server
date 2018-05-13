@@ -11,7 +11,7 @@ public class InheritanceInfo {
 
   final String targetClass;
   List<String> inherit = new ArrayList<>(8);
-  Map<File, List<String>> classFileMap = new HashMap<>(8);
+  final Map<File, List<String>> classFileMap = new HashMap<>(8);
 
   public InheritanceInfo(String targetClass) {
     this.targetClass = targetClass;

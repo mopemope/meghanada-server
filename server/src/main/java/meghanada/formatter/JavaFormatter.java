@@ -1,5 +1,7 @@
 package meghanada.formatter;
 
+import static java.util.Objects.nonNull;
+
 import com.google.googlejavaformat.java.Formatter;
 import com.google.googlejavaformat.java.FormatterException;
 import com.google.googlejavaformat.java.JavaFormatterOptions;
@@ -28,7 +30,7 @@ public class JavaFormatter {
   private JavaFormatter() {}
 
   private static Formatter getGoogleFormatter() {
-    if (googleFormatter != null) {
+    if (nonNull(googleFormatter)) {
       return googleFormatter;
     }
 
@@ -65,7 +67,7 @@ public class JavaFormatter {
 
   public static String formatGoogleStyle(final String content) {
     try {
-      return getGoogleFormatter().formatSource(content);
+      return getGoogleFormatter().formatSourceAndFixImports(content);
     } catch (FormatterException e) {
       return content;
     }

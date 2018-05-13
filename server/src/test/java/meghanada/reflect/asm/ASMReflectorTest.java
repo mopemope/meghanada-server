@@ -14,11 +14,15 @@ import meghanada.config.Config;
 import meghanada.reflect.ClassIndex;
 import meghanada.reflect.MemberDescriptor;
 import meghanada.reflect.MethodDescriptor;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class ASMReflectorTest extends GradleTestBase {
+
+  private static Logger log = LogManager.getLogger(ASMReflectorTest.class);
 
   @BeforeClass
   public static void setup() throws Exception {
@@ -191,24 +195,18 @@ public class ASMReflectorTest extends GradleTestBase {
   @Test
   public void testReflectWithGenerics4() throws Exception {
     ASMReflector asmReflector = ASMReflector.getInstance();
-    Stopwatch stopwatch = Stopwatch.createUnstarted();
-    {
-      String fqcn = "com.google.common.cache.CacheBuilder<Object, Object>";
-      File jar = getJar("guava");
-      Map<String, ClassIndex> index = asmReflector.getClassIndexes(jar);
-      final InheritanceInfo info = asmReflector.getReflectInfo(index, fqcn);
 
-      stopwatch.start();
-      List<MemberDescriptor> memberDescriptors = asmReflector.reflectAll(info);
-      System.out.println(stopwatch.stop());
-      memberDescriptors.forEach(
-          m -> {
-            System.out.println(m.getDeclaration());
-            // System.out.println("Return: " + m.getRawReturnType());
-          });
-      assertEquals(61, memberDescriptors.size());
-      stopwatch.reset();
-    }
+    String fqcn = "com.google.common.cache.CacheBuilder<Object, Object>";
+    File jar = getJar("guava");
+    Map<String, ClassIndex> index = asmReflector.getClassIndexes(jar);
+    final InheritanceInfo info = asmReflector.getReflectInfo(index, fqcn);
+
+    Stopwatch stopwatch = Stopwatch.createStarted();
+    List<MemberDescriptor> memberDescriptors = asmReflector.reflectAll(info);
+    log.info(stopwatch.stop());
+    memberDescriptors.sort(MemberDescriptor::compareTo);
+    memberDescriptors.forEach(m -> System.out.println(m.getDeclaration()));
+    assertEquals(64, memberDescriptors.size());
   }
 
   @Test
@@ -246,14 +244,14 @@ public class ASMReflectorTest extends GradleTestBase {
       String fqcn = "java.lang.String";
       Map<String, ClassIndex> index = asmReflector.getClassIndexes(jar);
       final InheritanceInfo info = asmReflector.getReflectInfo(index, fqcn);
-      System.out.println(info);
+      log.info(info);
       stopwatch.start();
       List<MemberDescriptor> md = asmReflector.reflectAll(info);
-      System.out.println(stopwatch.stop());
+      log.info(stopwatch.stop());
 
       Config config = Config.load();
       if (config.isJava8()) {
-        assertEquals(100, md.size());
+        assertEquals(98, md.size());
       } else {
         assertEquals(109, md.size());
       }
@@ -268,22 +266,15 @@ public class ASMReflectorTest extends GradleTestBase {
       String fqcn = "java.util.List";
       Map<String, ClassIndex> index = asmReflector.getClassIndexes(jar);
       final InheritanceInfo info = asmReflector.getReflectInfo(index, fqcn);
-      System.out.println(info);
-      List<MemberDescriptor> memberDescriptors1 =
-          debugIt(
-              () -> {
-                return asmReflector.reflectAll(info);
-              });
-      // memberDescriptors1.sort((o1, o2) -> o1.getName().compareTo(o2.getName()));
-      // memberDescriptors1.forEach(
-      //     memberDescriptor -> {
-      //       System.out.println(memberDescriptor.getDisplayDeclaration());
-      //     });
+      log.info(info);
+      List<MemberDescriptor> memberDescriptors = debugIt(() -> asmReflector.reflectAll(info));
+      memberDescriptors.sort(MemberDescriptor::compareTo);
+      memberDescriptors.forEach(m -> log.info(m.getDisplayDeclaration()));
       Config config = Config.load();
       if (config.isJava8()) {
-        assertEquals(41, memberDescriptors1.size());
+        assertEquals(41, memberDescriptors.size());
       } else {
-        assertEquals(53, memberDescriptors1.size());
+        assertEquals(53, memberDescriptors.size());
       }
     }
   }

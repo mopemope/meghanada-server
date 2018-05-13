@@ -1,5 +1,7 @@
 package meghanada.store;
 
+import static java.util.Objects.isNull;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -66,7 +68,7 @@ public class Serializer {
     FSTObjectInput in = getFST().getObjectInput(input);
     Object obj = in.readObject(clazz);
     input.close();
-    if (obj == null) {
+    if (isNull(obj)) {
       return null;
     }
     return clazz.cast(obj);
@@ -119,5 +121,15 @@ public class Serializer {
   public static byte[] asByte(Object obj) {
     FSTConfiguration fst = getFST();
     return fst.asByteArray(obj);
+  }
+
+  @Nullable
+  public static <T> T asObject(byte[] b, Class<T> clazz) {
+    FSTConfiguration fst = getFST();
+    Object obj = fst.asObject(b);
+    if (isNull(obj)) {
+      return null;
+    }
+    return clazz.cast(obj);
   }
 }

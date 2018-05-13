@@ -30,7 +30,8 @@ public class ParameterNamesIndexer {
         "netscape"
       };
 
-  private static FSTConfiguration fstConfiguration = FSTConfiguration.createDefaultConfiguration();
+  private static final FSTConfiguration fstConfiguration =
+      FSTConfiguration.createDefaultConfiguration();
 
   private static Logger log = LogManager.getLogger(ParameterNamesIndexer.class);
 

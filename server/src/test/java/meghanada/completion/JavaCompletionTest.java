@@ -9,12 +9,16 @@ import java.util.Collection;
 import meghanada.GradleTestBase;
 import meghanada.config.Config;
 import meghanada.reflect.CandidateUnit;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
 public class JavaCompletionTest extends GradleTestBase {
+
+  private static final Logger log = LogManager.getLogger(JavaCompletionTest.class);
 
   @BeforeClass
   public static void setup() throws Exception {
@@ -111,8 +115,8 @@ public class JavaCompletionTest extends GradleTestBase {
     assertTrue(file.exists());
     final Collection<? extends CandidateUnit> logMethod =
         timeIt(() -> completion.completionAt(file, 18, 4, "*log#"));
-    logMethod.forEach(a -> System.out.println(a.getDeclaration()));
-    assertEquals(369, logMethod.size());
+    logMethod.forEach(a -> System.out.println(a.getDisplayDeclaration()));
+    assertEquals(362, logMethod.size());
   }
 
   @Test
