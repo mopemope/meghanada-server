@@ -126,7 +126,7 @@ test {
 task installEmacsHome(type: Copy) {
   def home = System.properties['user.home']
   from "build/libs/meghanada-${serverVersion}.jar"
-  into "$home/.emacs.d/meghanada/"
+  into "$home/.emacs.d/.cache/meghanada/"
 }
 
 installEmacsHome.dependsOn(shadowJar)
