@@ -32,7 +32,7 @@ tasks.withType(JavaCompile) {
 task installEmacsHome(type: Copy) {
   def home = System.properties['user.home']
   from "build/libs/meghanada-setup-${setupVersion}.jar"
-  into "$home/.emacs.d/.cache/meghanada/"
+  into "$home/.emacs.d/meghanada/"
 }
 
 installEmacsHome.dependsOn(shadowJar)
