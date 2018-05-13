@@ -472,4 +472,18 @@ public class CommandHandler {
       writeError(id, t);
     }
   }
+
+  public void importAtPoint(final long id, String path, String line, String column, String symbol) {
+    try {
+      int lineInt = Integer.parseInt(line);
+      int columnInt = Integer.parseInt(column);
+      final Map<String, List<String>> result =
+          session.searchImports(path, lineInt, columnInt, symbol);
+      final String out = outputFormatter.importAtPoint(id, result);
+      writer.write(out);
+      writer.newLine();
+    } catch (Throwable t) {
+      writeError(id, t);
+    }
+  }
 }
