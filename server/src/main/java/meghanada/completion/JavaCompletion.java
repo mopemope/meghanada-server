@@ -2,6 +2,9 @@ package meghanada.completion;
 
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
+import java.util.regex.Pattern;
+import java.util.regex.Matcher;
+import meghanada.utils.StringUtils;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.TreeBasedTable;
@@ -108,37 +111,39 @@ public class JavaCompletion {
       final boolean withCONSTRUCTOR,
       final String target) {
 
-    final String name = cu.getName().toLowerCase();
-    if (!target.isEmpty() && !name.contains(target)) {
-      return false;
-    }
-
-    final String declaration = cu.getDeclaration();
-    if (!declaration.contains("public")) {
-      return false;
-    }
-    if (!isStatic) {
-      if (withCONSTRUCTOR) {
-        return !declaration.contains(STATIC);
+      final String name = cu.getName();
+      final boolean matched = StringUtils.getInstance().isMatch(name, target);
+      if (!target.isEmpty() && !matched) {
+          return false;
       }
-      return !declaration.contains(STATIC) && !cu.getType().equals("CONSTRUCTOR");
-    }
-    return declaration.contains(STATIC);
+
+      final String declaration = cu.getDeclaration();
+      if (!declaration.contains("public")) {
+          return false;
+      }
+      if (!isStatic) {
+          if (withCONSTRUCTOR) {
+              return !declaration.contains(STATIC);
+          }
+          return !declaration.contains(STATIC) && !cu.getType().equals("CONSTRUCTOR");
+      }
+      return declaration.contains(STATIC);
   }
 
-  private static boolean publicFilter(final CandidateUnit cu, final String target) {
+    private static boolean publicFilter(final CandidateUnit cu, final String target) {
 
-    final String name = cu.getName().toLowerCase();
-    if (!target.isEmpty() && !name.contains(target)) {
-      return false;
-    }
-    if (cu.getType().equals("CONSTRUCTOR")) {
-      return false;
-    }
+        final String name = cu.getName();
+        final boolean matched = StringUtils.getInstance().isMatch(name, target);
+        if (!target.isEmpty() && !matched) {
+            return false;
+        }
+        if (cu.getType().equals("CONSTRUCTOR")) {
+            return false;
+        }
 
-    final String declaration = cu.getDeclaration();
-    return declaration.contains("public");
-  }
+        final String declaration = cu.getDeclaration();
+        return declaration.contains("public");
+    }
 
   private static boolean packageFilter(
       final CandidateUnit cu,
@@ -146,8 +151,8 @@ public class JavaCompletion {
       final boolean withCONSTRUCTOR,
       final String target) {
     final String name = cu.getName().toLowerCase();
-
-    if (!target.isEmpty() && !name.contains(target)) {
+    final boolean matched = StringUtils.getInstance().isMatch(name, target);
+    if (!target.isEmpty() && !matched) {
       return false;
     }
     final String declaration = cu.getDeclaration();
@@ -169,21 +174,22 @@ public class JavaCompletion {
       final boolean withCONSTRUCTOR,
       final String target) {
 
-    final String name = cu.getName().toLowerCase();
+    final String name = cu.getName();
     if (cu.getType().equals("FIELD") && name.startsWith("this$")) {
-      return false;
+        return false;
     }
 
-    if (!target.isEmpty() && !name.contains(target)) {
-      return false;
+    final boolean matched = StringUtils.getInstance().isMatch(name, target);
+    if (!target.isEmpty() && !matched) {
+        return false;
     }
 
     final String declaration = cu.getDeclaration();
     if (!isStatic) {
-      if (withCONSTRUCTOR) {
-        return !declaration.contains(STATIC);
-      }
-      return !declaration.contains(STATIC) && !cu.getType().equals("CONSTRUCTOR");
+        if (withCONSTRUCTOR) {
+            return !declaration.contains(STATIC);
+        }
+        return !declaration.contains(STATIC) && !cu.getType().equals("CONSTRUCTOR");
     }
     return declaration.contains(STATIC);
   }
@@ -191,9 +197,10 @@ public class JavaCompletion {
   private static boolean privateFilter(
       final CandidateUnit cu, final boolean withCONSTRUCTOR, final String target) {
 
-    final String name = cu.getName().toLowerCase();
+    final String name = cu.getName();
+    final boolean matched = StringUtils.getInstance().isMatch(name, target);
     return !(cu.getType().equals("FIELD") && name.startsWith("this$"))
-        && !(!target.isEmpty() && !name.contains(target))
+        && !(!target.isEmpty() && !matched)
         && (withCONSTRUCTOR || !cu.getType().equals("CONSTRUCTOR"));
   }
 
@@ -703,7 +710,7 @@ public class JavaCompletion {
     if (idx > 0) {
       final String var = searchWord.substring(1, idx);
       final String prefix = searchWord.substring(idx + 1);
-      return JavaCompletion.completionFieldsOrMethods(source, line, var, prefix.toLowerCase())
+      return JavaCompletion.completionFieldsOrMethods(source, line, var, prefix)
           .stream()
           .sorted(methodComparing(prefix))
           .collect(Collectors.toList());
