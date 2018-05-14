@@ -31,7 +31,6 @@ import meghanada.store.Serializer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.queryParser.ParseException;
 
 public class IndexDatabase {
 
@@ -126,8 +125,8 @@ public class IndexDatabase {
             searcher.deleteDocuments(SearchIndexable.GROUP_ID, id);
             searcher.addDocuments(docs);
             log.debug("indexed :{} elapsed:{}", id, stopwatch.stop());
-          } catch (IOException ex) {
-            throw new UncheckedIOException(ex);
+          } catch (Throwable e) {
+            log.catching(e);
           }
         });
   }
@@ -146,8 +145,8 @@ public class IndexDatabase {
                 log.debug("indexed :{}", id);
               }
             }
-          } catch (IOException ex) {
-            throw new UncheckedIOException(ex);
+          } catch (Throwable e) {
+            log.catching(e);
           }
         });
   }
@@ -220,9 +219,7 @@ public class IndexDatabase {
                   });
             }
             return Optional.of(results);
-          } catch (IOException e) {
-            throw new UncheckedIOException(e);
-          } catch (ParseException e) {
+          } catch (Throwable e) {
             log.catching(e);
             return Optional.empty();
           }
@@ -262,9 +259,7 @@ public class IndexDatabase {
                   byte[] b = d.getBinaryValue("binary");
                   return Serializer.asObject(b, MemberDescriptor.class);
                 });
-          } catch (IOException e) {
-            throw new UncheckedIOException(e);
-          } catch (ParseException e) {
+          } catch (Throwable e) {
             log.catching(e);
             return Collections.emptyList();
           }

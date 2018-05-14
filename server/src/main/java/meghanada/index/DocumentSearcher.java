@@ -82,7 +82,7 @@ public class DocumentSearcher implements AutoCloseable {
     return IndexReader.open(directory);
   }
 
-  private IndexSearcher createIndexSearcher(IndexReader indexReader) throws IOException {
+  private IndexSearcher createIndexSearcher(IndexReader indexReader) {
     if (nonNull(this.indexSearcher)) {
       return this.indexSearcher;
     }
@@ -208,8 +208,8 @@ public class DocumentSearcher implements AutoCloseable {
       this.closeIndexSearcher();
       this.closeIndexWriter();
       this.directory.close();
-    } catch (IOException ex) {
-      throw new UncheckedIOException(ex);
+    } catch (Throwable e) {
+      log.catching(e);
     }
   }
 }
