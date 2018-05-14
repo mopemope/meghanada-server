@@ -3,7 +3,7 @@ plugins {
   id 'com.github.ben-manes.versions' version '0.17.0'
   id 'com.jfrog.bintray' version '1.8.0'
   id 'org.ajoberstar.grgit' version '2.1.1'
-  id 'net.ltgt.errorprone' version '0.0.13'
+  id 'net.ltgt.errorprone' version '0.0.14'
   id 'com.github.sherter.google-java-format' version '0.6'
 }
 
