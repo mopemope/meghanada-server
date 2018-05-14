@@ -2,8 +2,6 @@ package meghanada.completion;
 
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
-import java.util.regex.Pattern;
-import java.util.regex.Matcher;
 import meghanada.utils.StringUtils;
 
 import com.google.common.base.Joiner;
@@ -111,39 +109,39 @@ public class JavaCompletion {
       final boolean withCONSTRUCTOR,
       final String target) {
 
-      final String name = cu.getName();
-      final boolean matched = StringUtils.getInstance().isMatch(name, target);
-      if (!target.isEmpty() && !matched) {
-          return false;
-      }
+    final String name = cu.getName();
+    final boolean matched = StringUtils.getInstance().isMatch(name, target);
+    if (!target.isEmpty() && !matched) {
+      return false;
+    }
 
-      final String declaration = cu.getDeclaration();
-      if (!declaration.contains("public")) {
-          return false;
+    final String declaration = cu.getDeclaration();
+    if (!declaration.contains("public")) {
+      return false;
+    }
+    if (!isStatic) {
+      if (withCONSTRUCTOR) {
+        return !declaration.contains(STATIC);
       }
-      if (!isStatic) {
-          if (withCONSTRUCTOR) {
-              return !declaration.contains(STATIC);
-          }
-          return !declaration.contains(STATIC) && !cu.getType().equals("CONSTRUCTOR");
-      }
-      return declaration.contains(STATIC);
+      return !declaration.contains(STATIC) && !cu.getType().equals("CONSTRUCTOR");
+    }
+    return declaration.contains(STATIC);
   }
 
-    private static boolean publicFilter(final CandidateUnit cu, final String target) {
+  private static boolean publicFilter(final CandidateUnit cu, final String target) {
 
-        final String name = cu.getName();
-        final boolean matched = StringUtils.getInstance().isMatch(name, target);
-        if (!target.isEmpty() && !matched) {
-            return false;
-        }
-        if (cu.getType().equals("CONSTRUCTOR")) {
-            return false;
-        }
-
-        final String declaration = cu.getDeclaration();
-        return declaration.contains("public");
+    final String name = cu.getName();
+    final boolean matched = StringUtils.getInstance().isMatch(name, target);
+    if (!target.isEmpty() && !matched) {
+      return false;
     }
+    if (cu.getType().equals("CONSTRUCTOR")) {
+      return false;
+    }
+
+    final String declaration = cu.getDeclaration();
+    return declaration.contains("public");
+  }
 
   private static boolean packageFilter(
       final CandidateUnit cu,
@@ -176,20 +174,20 @@ public class JavaCompletion {
 
     final String name = cu.getName();
     if (cu.getType().equals("FIELD") && name.startsWith("this$")) {
-        return false;
+      return false;
     }
 
     final boolean matched = StringUtils.getInstance().isMatch(name, target);
     if (!target.isEmpty() && !matched) {
-        return false;
+      return false;
     }
 
     final String declaration = cu.getDeclaration();
     if (!isStatic) {
-        if (withCONSTRUCTOR) {
-            return !declaration.contains(STATIC);
-        }
-        return !declaration.contains(STATIC) && !cu.getType().equals("CONSTRUCTOR");
+      if (withCONSTRUCTOR) {
+        return !declaration.contains(STATIC);
+      }
+      return !declaration.contains(STATIC) && !cu.getType().equals("CONSTRUCTOR");
     }
     return declaration.contains(STATIC);
   }
@@ -263,7 +261,7 @@ public class JavaCompletion {
 
     // add this member
     for (MemberDescriptor c : JavaCompletion.reflectSelf(fqcn, true, prefix)) {
-      if (c.getName().startsWith(prefix)) {
+      if (StringUtils.getInstance().isMatch(c.getName(), prefix)) {
         result.add(c);
       }
     }
@@ -278,7 +276,7 @@ public class JavaCompletion {
         }
         parentClass = parentClass.substring(0, i);
         for (MemberDescriptor c : JavaCompletion.reflectSelf(parentClass, true, prefix)) {
-          if (c.getName().startsWith(prefix)) {
+          if (StringUtils.getInstance().isMatch(c.getName(), prefix)) {
             result.add(c);
           }
         }
@@ -353,18 +351,16 @@ public class JavaCompletion {
 
   private static Collection<MemberDescriptor> reflectSelf(
       final String fqcn, final boolean withConstructor, final String prefix) {
-    final String target = prefix.toLowerCase();
     return doReflect(fqcn)
         .stream()
-        .filter(md -> JavaCompletion.privateFilter(md, withConstructor, target))
+        .filter(md -> JavaCompletion.privateFilter(md, withConstructor, prefix))
         .collect(Collectors.toSet());
   }
 
   private static Collection<MemberDescriptor> reflectWithFQCN(String fqcn, String prefix) {
-    String target = prefix.toLowerCase();
     return doReflect(fqcn)
         .stream()
-        .filter(md -> JavaCompletion.publicFilter(md, target))
+        .filter(md -> JavaCompletion.publicFilter(md, prefix))
         .collect(Collectors.toSet());
   }
 
@@ -431,7 +427,7 @@ public class JavaCompletion {
       for (final ClassScope cs : source.getClassScopes()) {
         final String fqcn = cs.getFQCN();
         final Optional<MemberDescriptor> fieldResult =
-            JavaCompletion.reflectSelf(fqcn, true, target)
+            JavaCompletion.reflectSelf(fqcn, true, var)
                 .stream()
                 .filter(c -> c instanceof FieldDescriptor && c.getName().equals(var))
                 .findFirst();
@@ -612,13 +608,14 @@ public class JavaCompletion {
 
   private static List<MemberDescriptor> searchStaticMethod(
       Set<CandidateUnit> result, final String name) {
-
+    List<MemberDescriptor> members = new ArrayList<>();
     List<String> classes = Config.load().searchStaticMethodClasses();
     if (classes.isEmpty()) {
       return Collections.emptyList();
     }
     String s = Joiner.on(" OR ").join(classes);
-    return IndexDatabase.getInstance()
+    try {
+      members = IndexDatabase.getInstance()
         .searchMembers(
             IndexDatabase.paren(s),
             IndexDatabase.doubleQuote("public static"),
@@ -632,6 +629,10 @@ public class JavaCompletion {
               m.showStaticClassName = true;
             })
         .collect(Collectors.toList());
+    } catch (Exception ex) {
+        log.error("Error getting static method for {}", name);
+    }
+    return members;
   }
 
   public void setProject(Project project) {

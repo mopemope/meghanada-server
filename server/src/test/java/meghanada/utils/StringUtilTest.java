@@ -26,8 +26,10 @@ public class StringUtilTest {
         assertTrue(StringUtils.getInstance().isMatch("aVeryLongMethodName", "aVLMN"));
         assertTrue(StringUtils.getInstance().isMatch("averylongmethodnameonlylowercase", "averyl"));
         assertTrue(StringUtils.getInstance().isMatch("charAt", ""));
-        assertTrue(StringUtils.getInstance().isMatch("charat", ""));
+        assertTrue(StringUtils.getInstance().isMatch("acceptJsonFormatterVisitor", "aJFV"));
+        assertTrue(StringUtils.getInstance().isMatch("saveOperationChannel", "sOpC"));
         assertTrue(StringUtils.getInstance().isMatch("CHARAT", ""));
+        assertTrue(StringUtils.getInstance().isMatch("acceptCase", "a"));
         assertTrue(StringUtils.getInstance().isMatch("acceptCase", "a"));
     }
 }
