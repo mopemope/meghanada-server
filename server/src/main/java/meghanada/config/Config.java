@@ -53,23 +53,13 @@ public class Config {
       this.debug = true;
     }
     // force change
-    final LoggerContext context = (LoggerContext) LogManager.getContext(false);
-    final Configuration configuration = context.getConfiguration();
-    final LoggerConfig loggerConfig = configuration.getLoggerConfig(LogManager.ROOT_LOGGER_NAME);
-    loggerConfig.setLevel(level);
-    context.updateLoggers();
-
-    log.debug("home:{}", getHomeDir());
-    log.debug("java-home:{}", getJavaHomeDir());
-    log.debug("java-version:{}", getJavaVersion());
-    log.debug("user-home:{}", getUserHomeDir());
-    log.debug("project-root-dir:{}", getProjectRootDir());
-    log.debug("fast-boot:{}", useFastBoot());
-    log.debug("class-fuzzy-search:{}", useClassFuzzySearch());
-    log.debug("javac-arg:{}", getJavacArg());
-    log.debug("cache-in-project:{}", isCacheInProject());
-    if (!isCacheInProject()) {
-      log.debug("cache-root:{}", getCacheRoot());
+    Object ctx = LogManager.getContext(false);
+    if (ctx instanceof LoggerContext) {
+      LoggerContext context = (LoggerContext) ctx;
+      Configuration configuration = context.getConfiguration();
+      LoggerConfig loggerConfig = configuration.getLoggerConfig(LogManager.ROOT_LOGGER_NAME);
+      loggerConfig.setLevel(level);
+      context.updateLoggers();
     }
   }
 
@@ -238,15 +228,16 @@ public class Config {
   }
 
   private void setLogLevel(final String logLevel) {
-    final Level level = Level.toLevel(logLevel);
-    // force change
-    final LoggerContext context = (LoggerContext) LogManager.getContext(false);
-    final Configuration configuration = context.getConfiguration();
-    final LoggerConfig loggerConfig = configuration.getLoggerConfig(LogManager.ROOT_LOGGER_NAME);
-    loggerConfig.setLevel(level);
-    context.updateLoggers();
-
-    this.debug = !logLevel.toLowerCase().equals("info");
+    Object ctx = LogManager.getContext(false);
+    if (ctx instanceof LoggerContext) {
+      LoggerContext context = (LoggerContext) ctx;
+      Level level = Level.toLevel(logLevel);
+      Configuration configuration = context.getConfiguration();
+      LoggerConfig loggerConfig = configuration.getLoggerConfig(LogManager.ROOT_LOGGER_NAME);
+      loggerConfig.setLevel(level);
+      context.updateLoggers();
+      this.debug = !logLevel.toLowerCase().equals("info");
+    }
   }
 
   public String getHomeDir() {
@@ -265,7 +256,6 @@ public class Config {
 
     String useTemp = c.getString("temp-project-setting-dir");
     if (nonNull(useTemp) && !useTemp.isEmpty()) {
-      log.debug("use temp project setting dir {}", useTemp);
       return useTemp;
     }
 

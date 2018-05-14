@@ -135,8 +135,6 @@ public class CachedASMReflector {
   }
 
   public void createClassIndexes() {
-    log.debug("start createClassIndexes");
-
     this.jars
         .parallelStream()
         .forEach(
