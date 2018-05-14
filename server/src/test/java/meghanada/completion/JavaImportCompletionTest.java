@@ -20,6 +20,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 public class JavaImportCompletionTest extends GradleTestBase {
@@ -78,6 +79,7 @@ public class JavaImportCompletionTest extends GradleTestBase {
     return String.join(File.pathSeparator, classpath);
   }
 
+  @Ignore
   @Test
   public void testImportAtPoint1() throws IOException, ExecutionException {
     JavaImportCompletion completion = new JavaImportCompletion(project);
@@ -89,6 +91,7 @@ public class JavaImportCompletionTest extends GradleTestBase {
     assertFalse(res.isPresent());
   }
 
+  @Ignore
   @Test
   public void testImportAtPoint2() throws IOException, ExecutionException {
     JavaImportCompletion completion = new JavaImportCompletion(project);
@@ -103,6 +106,7 @@ public class JavaImportCompletionTest extends GradleTestBase {
     log.info("{}", map);
   }
 
+  @Ignore
   @Test
   public void testImportAtPoint3() throws Exception {
     JavaAnalyzer analyzer = getAnalyzer();
@@ -124,6 +128,7 @@ public class JavaImportCompletionTest extends GradleTestBase {
     assertEquals(3, methods.size());
   }
 
+  @Ignore
   @Test
   public void testImportAtPoint4() throws Exception {
     JavaAnalyzer analyzer = getAnalyzer();
