@@ -3,7 +3,6 @@ package meghanada.formatter;
 import static java.util.Objects.nonNull;
 
 import com.google.googlejavaformat.java.Formatter;
-import com.google.googlejavaformat.java.FormatterException;
 import com.google.googlejavaformat.java.JavaFormatterOptions;
 import java.io.File;
 import java.io.FileInputStream;
@@ -17,7 +16,6 @@ import javax.xml.stream.XMLStreamReader;
 import meghanada.config.Config;
 import org.eclipse.jdt.core.ToolFactory;
 import org.eclipse.jdt.core.formatter.CodeFormatter;
-import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.Document;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.text.edits.TextEdit;
@@ -68,7 +66,7 @@ public class JavaFormatter {
   public static String formatGoogleStyle(final String content) {
     try {
       return getGoogleFormatter().formatSourceAndFixImports(content);
-    } catch (FormatterException e) {
+    } catch (Throwable e) {
       return content;
     }
   }
@@ -85,16 +83,15 @@ public class JavaFormatter {
               content.length(),
               0,
               null);
-      if (textEdit != null) {
+      if (nonNull(textEdit)) {
         textEdit.apply(document);
+        return ensureCorrectNewLines(document.get());
       } else {
         return content;
       }
-    } catch (final BadLocationException e) {
+    } catch (Throwable e) {
       return content;
     }
-
-    return ensureCorrectNewLines(document.get());
   }
 
   private static String ensureCorrectNewLines(final String content) {

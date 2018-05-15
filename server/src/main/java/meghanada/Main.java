@@ -75,22 +75,27 @@ public class Main {
     addFileAppender();
 
     if (cmd.hasOption("v")) {
-      final LoggerContext context = (LoggerContext) LogManager.getContext(false);
-      final Configuration configuration = context.getConfiguration();
-      final LoggerConfig loggerConfig = configuration.getLoggerConfig(LogManager.ROOT_LOGGER_NAME);
-      loggerConfig.setLevel(Level.DEBUG);
-      context.updateLoggers();
+      Object ctx = LogManager.getContext(false);
+      if (ctx instanceof LoggerContext) {
+        LoggerContext context = (LoggerContext) ctx;
+        Configuration configuration = context.getConfiguration();
+        LoggerConfig loggerConfig = configuration.getLoggerConfig(LogManager.ROOT_LOGGER_NAME);
+        loggerConfig.setLevel(Level.DEBUG);
+        context.updateLoggers();
+      }
       System.setProperty("log-level", "DEBUG");
       log.debug("set verbose flag(DEBUG)");
     }
 
     if (cmd.hasOption("vv")) {
-      final LoggerContext context = (LoggerContext) LogManager.getContext(false);
-      final Configuration configuration = context.getConfiguration();
-      final LoggerConfig loggerConfig = configuration.getLoggerConfig(LogManager.ROOT_LOGGER_NAME);
-
-      loggerConfig.setLevel(Level.TRACE);
-      context.updateLoggers();
+      Object ctx = LogManager.getContext(false);
+      if (ctx instanceof LoggerContext) {
+        LoggerContext context = (LoggerContext) ctx;
+        Configuration configuration = context.getConfiguration();
+        LoggerConfig loggerConfig = configuration.getLoggerConfig(LogManager.ROOT_LOGGER_NAME);
+        loggerConfig.setLevel(Level.TRACE);
+        context.updateLoggers();
+      }
       System.setProperty("log-level", "TRACE");
       log.debug("set verbose flag(TRACE)");
     }
@@ -128,23 +133,26 @@ public class Main {
   }
 
   private static void addFileAppender() throws IOException {
-    final String tempDir = System.getProperty("java.io.tmpdir");
-    final File logFile = new File(tempDir, "meghanada_server.log");
-    final LoggerContext context = (LoggerContext) LogManager.getContext(false);
-    final Configuration configuration = context.getConfiguration();
-    final LoggerConfig loggerConfig = configuration.getLoggerConfig(LogManager.ROOT_LOGGER_NAME);
-    final FileAppender fileAppender =
-        FileAppender.newBuilder()
-            .withName("file")
-            .withLayout(
-                PatternLayout.newBuilder()
-                    .withPattern("[%d][%-5.-5p][%-14.-14c{1}:%4L] %-22.-22M - %m%n")
-                    .build())
-            .withFileName(logFile.getCanonicalPath())
-            .build();
-    configuration.addAppender(fileAppender);
-    loggerConfig.addAppender(fileAppender, Level.ERROR, null);
-    context.updateLoggers();
+    String tempDir = System.getProperty("java.io.tmpdir");
+    File logFile = new File(tempDir, "meghanada_server.log");
+    Object ctx = LogManager.getContext(false);
+    if (ctx instanceof LoggerContext) {
+      LoggerContext context = (LoggerContext) ctx;
+      Configuration configuration = context.getConfiguration();
+      LoggerConfig loggerConfig = configuration.getLoggerConfig(LogManager.ROOT_LOGGER_NAME);
+      FileAppender fileAppender =
+          FileAppender.newBuilder()
+              .withName("file")
+              .withLayout(
+                  PatternLayout.newBuilder()
+                      .withPattern("[%d][%-5.-5p][%-14.-14c{1}:%4L] %-22.-22M - %m%n")
+                      .build())
+              .withFileName(logFile.getCanonicalPath())
+              .build();
+      configuration.addAppender(fileAppender);
+      loggerConfig.addAppender(fileAppender, Level.ERROR, null);
+      context.updateLoggers();
+    }
   }
 
   private static Server createServer(

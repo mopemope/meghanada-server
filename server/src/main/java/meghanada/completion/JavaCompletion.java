@@ -330,7 +330,7 @@ public class JavaCompletion {
         result.addAll(reflector.searchClasses(prefix.toLowerCase()));
       }
     }
-    result.addAll(searchStaticMethod(result, prefix));
+    result.addAll(searchStaticMembers(result, prefix));
     List<CandidateUnit> list = new ArrayList<>(result);
     list.sort(comparing(source, prefix));
     return list;
@@ -606,7 +606,7 @@ public class JavaCompletion {
     return Collections.emptyList();
   }
 
-  private static List<MemberDescriptor> searchStaticMethod(
+  private static List<MemberDescriptor> searchStaticMembers(
       Set<CandidateUnit> result, final String name) {
     List<MemberDescriptor> members = new ArrayList<>();
     List<String> classes = Config.load().searchStaticMethodClasses();
@@ -619,7 +619,7 @@ public class JavaCompletion {
         .searchMembers(
             IndexDatabase.paren(s),
             IndexDatabase.doubleQuote("public static"),
-            IndexDatabase.doubleQuote("METHOD"),
+            "(\"METHOD\" OR \"FIELD\")",
             name + "*")
         .stream()
         .filter(m -> !result.contains(m))

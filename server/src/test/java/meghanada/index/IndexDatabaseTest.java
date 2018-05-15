@@ -39,7 +39,7 @@ public class IndexDatabaseTest extends GradleTestBase {
   @Test
   public void searchMembers1() throws InterruptedException {
     final CachedASMReflector reflector = CachedASMReflector.getInstance();
-    timeIt(() -> reflector.scanAllMethods());
+    timeIt(() -> reflector.scanAllStaticMembers());
     Thread.sleep(1000 * 10);
     List<MemberDescriptor> members =
         IndexDatabase.getInstance().searchMembers("", "public static", "METHOD", "isNull");
@@ -51,7 +51,7 @@ public class IndexDatabaseTest extends GradleTestBase {
   @Test
   public void searchMembers2() throws InterruptedException {
     final CachedASMReflector reflector = CachedASMReflector.getInstance();
-    timeIt(() -> reflector.scanAllMethods());
+    timeIt(() -> reflector.scanAllStaticMembers());
     Thread.sleep(1000 * 10);
     List<MemberDescriptor> members =
         IndexDatabase.getInstance().searchMembers("java.util.List", "", "METHOD", "");
@@ -65,7 +65,7 @@ public class IndexDatabaseTest extends GradleTestBase {
   @Test
   public void searchMembers3() throws InterruptedException {
     final CachedASMReflector reflector = CachedASMReflector.getInstance();
-    timeIt(() -> reflector.scanAllMethods());
+    timeIt(() -> reflector.scanAllStaticMembers());
     Thread.sleep(1000 * 10);
     List<MemberDescriptor> members =
         IndexDatabase.getInstance()

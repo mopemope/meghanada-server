@@ -214,7 +214,6 @@ public class ProjectDatabase {
 
       this.executorService = Executors.newCachedThreadPool();
       this.isTerminated = false;
-      log.debug("start async database worker");
 
       this.executorService.execute(
           () -> {
@@ -226,15 +225,11 @@ public class ProjectDatabase {
                 if (nonNull(req) && !req.isShutdown()) {
                   mergeAndStore(req);
                 }
-                if (blockingQueue.isEmpty()) {
-                  log.debug("store queue is empty");
-                }
+                if (blockingQueue.isEmpty()) {}
               } catch (Exception e) {
                 log.catching(e);
               }
             }
-
-            log.debug("shutdown async database worker");
           });
     }
   }
@@ -366,7 +361,6 @@ public class ProjectDatabase {
         String projectRoot = Config.getProjectRoot();
         this.projectRoot = projectRoot;
         this.baseLocation = base;
-        log.debug("open project database {}", location);
       }
     } catch (IOException e) {
       throw new UncheckedIOException(e);
