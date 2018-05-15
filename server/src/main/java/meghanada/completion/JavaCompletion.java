@@ -2,7 +2,6 @@ package meghanada.completion;
 
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
-import meghanada.utils.StringUtils;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.TreeBasedTable;
@@ -39,6 +38,7 @@ import meghanada.reflect.MemberDescriptor;
 import meghanada.reflect.asm.CachedASMReflector;
 import meghanada.utils.ClassNameUtils;
 import meghanada.utils.FileUtils;
+import meghanada.utils.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -622,22 +622,23 @@ public class JavaCompletion {
     }
     String s = Joiner.on(" OR ").join(classes);
     try {
-      members = IndexDatabase.getInstance()
-        .searchMembers(
-            IndexDatabase.paren(s),
-            IndexDatabase.doubleQuote("public static"),
-            "(\"METHOD\" OR \"FIELD\")",
-            name + "*")
-        .stream()
-        .filter(m -> !result.contains(m))
-        .peek(
-            m -> {
-              m.setExtra("static-import " + m.getDeclaringClass());
-              m.showStaticClassName = true;
-            })
-        .collect(Collectors.toList());
+      members =
+          IndexDatabase.getInstance()
+              .searchMembers(
+                  IndexDatabase.paren(s),
+                  IndexDatabase.doubleQuote("public static"),
+                  "(\"METHOD\" OR \"FIELD\")",
+                  name + "*")
+              .stream()
+              .filter(m -> !result.contains(m))
+              .peek(
+                  m -> {
+                    m.setExtra("static-import " + m.getDeclaringClass());
+                    m.showStaticClassName = true;
+                  })
+              .collect(Collectors.toList());
     } catch (Exception ex) {
-        log.error("Error getting static method for {}", name);
+      log.error("Error getting static method for {}", name);
     }
     return members;
   }

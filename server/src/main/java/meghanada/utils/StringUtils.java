@@ -1,15 +1,14 @@
 package meghanada.utils;
 
-import com.google.common.base.Splitter;
-import meghanada.config.Config;
+import static java.util.Objects.isNull;
 
+import com.google.common.base.Splitter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import static java.util.Objects.isNull;
+import meghanada.config.Config;
 
 public class StringUtils {
 
@@ -45,7 +44,7 @@ public class StringUtils {
     } else if (!useccc) {
       matched = name.toLowerCase().contains(target.toLowerCase());
     } else {
-      Integer key = name.hashCode()/2 + target.hashCode()/2;
+      Integer key = name.hashCode() / 2 + target.hashCode() / 2;
       Boolean result = cachedResult.get(key);
       if (!isNull(result)) {
         matched = result;

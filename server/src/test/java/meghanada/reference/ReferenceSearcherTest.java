@@ -131,6 +131,6 @@ public class ReferenceSearcherTest extends GradleTestBase {
     final ReferenceSearcher searcher = getSearcher();
     final List<Reference> result = timeIt(() -> searcher.searchReference(f, 86, 47, "toString"));
     assertNotNull(result);
-    assertEquals(42, result.size());
+    assertEquals(43, result.size());
   }
 }
