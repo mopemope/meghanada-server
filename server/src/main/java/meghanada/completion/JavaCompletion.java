@@ -2,6 +2,7 @@ package meghanada.completion;
 
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
+import meghanada.utils.StringUtils;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.TreeBasedTable;
@@ -108,8 +109,9 @@ public class JavaCompletion {
       final boolean withCONSTRUCTOR,
       final String target) {
 
-    final String name = cu.getName().toLowerCase();
-    if (!target.isEmpty() && !name.contains(target)) {
+    final String name = cu.getName();
+    final boolean matched = StringUtils.getInstance().isMatch(name, target);
+    if (!target.isEmpty() && !matched) {
       return false;
     }
 
@@ -128,8 +130,9 @@ public class JavaCompletion {
 
   private static boolean publicFilter(final CandidateUnit cu, final String target) {
 
-    final String name = cu.getName().toLowerCase();
-    if (!target.isEmpty() && !name.contains(target)) {
+    final String name = cu.getName();
+    final boolean matched = StringUtils.getInstance().isMatch(name, target);
+    if (!target.isEmpty() && !matched) {
       return false;
     }
     if (cu.getType().equals("CONSTRUCTOR")) {
@@ -146,8 +149,8 @@ public class JavaCompletion {
       final boolean withCONSTRUCTOR,
       final String target) {
     final String name = cu.getName().toLowerCase();
-
-    if (!target.isEmpty() && !name.contains(target)) {
+    final boolean matched = StringUtils.getInstance().isMatch(name, target);
+    if (!target.isEmpty() && !matched) {
       return false;
     }
     final String declaration = cu.getDeclaration();
@@ -169,12 +172,13 @@ public class JavaCompletion {
       final boolean withCONSTRUCTOR,
       final String target) {
 
-    final String name = cu.getName().toLowerCase();
+    final String name = cu.getName();
     if (cu.getType().equals("FIELD") && name.startsWith("this$")) {
       return false;
     }
 
-    if (!target.isEmpty() && !name.contains(target)) {
+    final boolean matched = StringUtils.getInstance().isMatch(name, target);
+    if (!target.isEmpty() && !matched) {
       return false;
     }
 
@@ -191,9 +195,10 @@ public class JavaCompletion {
   private static boolean privateFilter(
       final CandidateUnit cu, final boolean withCONSTRUCTOR, final String target) {
 
-    final String name = cu.getName().toLowerCase();
+    final String name = cu.getName();
+    final boolean matched = StringUtils.getInstance().isMatch(name, target);
     return !(cu.getType().equals("FIELD") && name.startsWith("this$"))
-        && !(!target.isEmpty() && !name.contains(target))
+        && !(!target.isEmpty() && !matched)
         && (withCONSTRUCTOR || !cu.getType().equals("CONSTRUCTOR"));
   }
 
@@ -256,7 +261,7 @@ public class JavaCompletion {
 
     // add this member
     for (MemberDescriptor c : JavaCompletion.reflectSelf(fqcn, true, prefix)) {
-      if (c.getName().startsWith(prefix)) {
+      if (StringUtils.getInstance().isMatch(c.getName(), prefix)) {
         result.add(c);
       }
     }
@@ -271,7 +276,7 @@ public class JavaCompletion {
         }
         parentClass = parentClass.substring(0, i);
         for (MemberDescriptor c : JavaCompletion.reflectSelf(parentClass, true, prefix)) {
-          if (c.getName().startsWith(prefix)) {
+          if (StringUtils.getInstance().isMatch(c.getName(), prefix)) {
             result.add(c);
           }
         }
@@ -346,18 +351,16 @@ public class JavaCompletion {
 
   private static Collection<MemberDescriptor> reflectSelf(
       final String fqcn, final boolean withConstructor, final String prefix) {
-    final String target = prefix.toLowerCase();
     return doReflect(fqcn)
         .stream()
-        .filter(md -> JavaCompletion.privateFilter(md, withConstructor, target))
+        .filter(md -> JavaCompletion.privateFilter(md, withConstructor, prefix))
         .collect(Collectors.toSet());
   }
 
   private static Collection<MemberDescriptor> reflectWithFQCN(String fqcn, String prefix) {
-    String target = prefix.toLowerCase();
     return doReflect(fqcn)
         .stream()
-        .filter(md -> JavaCompletion.publicFilter(md, target))
+        .filter(md -> JavaCompletion.publicFilter(md, prefix))
         .collect(Collectors.toSet());
   }
 
@@ -424,7 +427,7 @@ public class JavaCompletion {
       for (final ClassScope cs : source.getClassScopes()) {
         final String fqcn = cs.getFQCN();
         final Optional<MemberDescriptor> fieldResult =
-            JavaCompletion.reflectSelf(fqcn, true, target)
+            JavaCompletion.reflectSelf(fqcn, true, var)
                 .stream()
                 .filter(c -> c instanceof FieldDescriptor && c.getName().equals(var))
                 .findFirst();
@@ -612,13 +615,14 @@ public class JavaCompletion {
 
   private static List<MemberDescriptor> searchStaticMembers(
       Set<CandidateUnit> result, final String name) {
-
+    List<MemberDescriptor> members = new ArrayList<>();
     List<String> classes = Config.load().searchStaticMethodClasses();
     if (classes.isEmpty()) {
       return Collections.emptyList();
     }
     String s = Joiner.on(" OR ").join(classes);
-    return IndexDatabase.getInstance()
+    try {
+      members = IndexDatabase.getInstance()
         .searchMembers(
             IndexDatabase.paren(s),
             IndexDatabase.doubleQuote("public static"),
@@ -632,6 +636,10 @@ public class JavaCompletion {
               m.showStaticClassName = true;
             })
         .collect(Collectors.toList());
+    } catch (Exception ex) {
+        log.error("Error getting static method for {}", name);
+    }
+    return members;
   }
 
   public void setProject(Project project) {
@@ -710,7 +718,7 @@ public class JavaCompletion {
     if (idx > 0) {
       final String var = searchWord.substring(1, idx);
       final String prefix = searchWord.substring(idx + 1);
-      return JavaCompletion.completionFieldsOrMethods(source, line, var, prefix.toLowerCase())
+      return JavaCompletion.completionFieldsOrMethods(source, line, var, prefix)
           .stream()
           .sorted(methodComparing(prefix))
           .collect(Collectors.toList());

@@ -410,6 +410,10 @@ public class Config {
     return c.getBoolean("full-text-search");
   }
 
+  public boolean useCamelCaseCompletion() {
+    return c.getBoolean("camel-case-completion");
+  }
+
   public List<String> searchStaticMethodClasses() {
     final String classes = c.getString("search-static-method-classes");
     final String[] split = StringUtils.split(classes, ",");
