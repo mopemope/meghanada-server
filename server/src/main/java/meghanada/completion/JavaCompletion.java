@@ -325,7 +325,7 @@ public class JavaCompletion {
       CachedASMReflector reflector = CachedASMReflector.getInstance();
       boolean fuzzySearch = Config.load().useClassFuzzySearch();
       if (fuzzySearch) {
-        result.addAll(reflector.fuzzySearchClasses(prefix.toLowerCase()));
+        result.addAll(reflector.fuzzySearchClasses(prefix));
       } else {
         result.addAll(reflector.searchClasses(prefix.toLowerCase()));
       }
@@ -589,18 +589,25 @@ public class JavaCompletion {
     if (idx > 0) {
       final String classPrefix = searchWord.substring(idx + 1, searchWord.length());
       if (useFuzzySearch) {
-        stream = reflector.fuzzySearchClassesStream(classPrefix.toLowerCase(), false);
+        stream = reflector.fuzzySearchClassesStream(classPrefix, false);
+        return stream
+            .map(
+                cl -> {
+                  cl.setMemberType(CandidateUnit.MemberType.IMPORT);
+                  return cl;
+                })
+            .collect(Collectors.toList());
       } else {
         stream = reflector.searchClassesStream(classPrefix.toLowerCase(), true, false);
+        return stream
+            .map(
+                cl -> {
+                  cl.setMemberType(CandidateUnit.MemberType.IMPORT);
+                  return cl;
+                })
+            .sorted(comparing(classPrefix))
+            .collect(Collectors.toList());
       }
-      return stream
-          .map(
-              cl -> {
-                cl.setMemberType(CandidateUnit.MemberType.IMPORT);
-                return cl;
-              })
-          .sorted(comparing(classPrefix))
-          .collect(Collectors.toList());
     }
 
     return Collections.emptyList();
@@ -792,11 +799,11 @@ public class JavaCompletion {
       final String classPrefix = searchWord.substring(idx + 1, searchWord.length());
       CachedASMReflector reflector = CachedASMReflector.getInstance();
       if (useFuzzySearch) {
-        result = reflector.fuzzySearchClasses(classPrefix.toLowerCase());
+        result = reflector.fuzzySearchClasses(classPrefix);
       } else {
         result = reflector.searchClasses(classPrefix.toLowerCase());
+        result.sort(comparing(source, classPrefix));
       }
-      result.sort(comparing(source, classPrefix));
       return result;
     }
 
