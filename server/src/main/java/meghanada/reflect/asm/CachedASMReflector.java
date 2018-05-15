@@ -16,7 +16,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -29,6 +28,8 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import jetbrains.exodus.entitystore.EntityId;
 import meghanada.cache.GlobalCache;
+import meghanada.completion.matcher.CompletionMatcher;
+import meghanada.completion.matcher.FuzzyMatcher;
 import meghanada.index.IndexDatabase;
 import meghanada.index.SearchIndexable;
 import meghanada.module.ModuleHelper;
@@ -38,7 +39,6 @@ import meghanada.reflect.MemberDescriptor;
 import meghanada.store.ProjectDatabaseHelper;
 import meghanada.utils.ClassName;
 import meghanada.utils.ClassNameUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.lucene.document.Document;
@@ -307,24 +307,22 @@ public class CachedASMReflector {
   }
 
   private List<ClassIndex> fuzzySearchClasses(String keyword, boolean anno) {
-    int length = keyword.length() + 1;
-
+    CompletionMatcher m = new FuzzyMatcher(keyword);
     List<ClassIndex> result = new ArrayList<>(64);
     for (ClassIndex c : this.globalClassIndex.values()) {
       if (anno && !c.isAnnotation()) {
         continue;
       }
-      String name = c.getName();
-      int score = StringUtils.getFuzzyDistance(name, keyword, Locale.ENGLISH);
-      if (score >= length) {
+      if (m.match(c)) {
         result.add(cloneClassIndex(c));
       }
     }
+    result.sort(m.comparator());
     return result;
   }
 
   public Stream<ClassIndex> fuzzySearchClassesStream(String keyword, boolean anno) {
-    int length = keyword.length() + 1;
+    CompletionMatcher m = new FuzzyMatcher(keyword);
     return this.globalClassIndex
         .values()
         .parallelStream()
@@ -333,11 +331,10 @@ public class CachedASMReflector {
               if (anno && !classIndex.isAnnotation()) {
                 return false;
               }
-              String name = classIndex.getName();
-              int score = StringUtils.getFuzzyDistance(name, keyword, Locale.ENGLISH);
-              return score >= length;
+              return m.match(classIndex);
             })
-        .map(this::cloneClassIndex);
+        .map(this::cloneClassIndex)
+        .sorted(m.comparator());
   }
 
   public List<ClassIndex> searchInnerClasses(String parent) {
