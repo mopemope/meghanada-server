@@ -31,6 +31,7 @@ import meghanada.cache.GlobalCache;
 import meghanada.completion.matcher.CompletionMatcher;
 import meghanada.completion.matcher.DefaultMatcher;
 import meghanada.completion.matcher.FuzzyMatcher;
+import meghanada.completion.matcher.CamelCaseMatcher;
 import meghanada.config.Config;
 import meghanada.index.IndexDatabase;
 import meghanada.project.Project;
@@ -101,8 +102,11 @@ public class JavaCompletion {
   private static CompletionMatcher getClassCompletionMatcher(final String prefix) {
     CompletionMatcher matcher;
     boolean useFuzzySearch = Config.load().useClassFuzzySearch();
+    boolean useCamelCaseCompletion = Config.load().useCamelCaseCompletion();
     if (useFuzzySearch) {
       matcher = new FuzzyMatcher(prefix);
+    } else if (useCamelCaseCompletion) {
+      matcher = new CamelCaseMatcher(prefix);
     } else {
       matcher = new DefaultMatcher(prefix.toLowerCase(), true);
     }
