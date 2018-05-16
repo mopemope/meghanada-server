@@ -137,7 +137,7 @@ public class MethodDescriptor extends MemberDescriptor {
     final StringBuilder sb = new StringBuilder(ClassNameUtils.getSimpleName(this.returnType));
     sb.append(' ');
     if (showStaticClassName) {
-      sb.append(ClassNameUtils.getSimpleName(getDeclaringClass()) + '.');
+      sb.append(ClassNameUtils.getSimpleName(getDeclaringClass())).append('.');
     }
     sb.append(this.name).append('(');
     return appendParameters(sb).append(')').toString();
