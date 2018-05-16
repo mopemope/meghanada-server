@@ -846,10 +846,14 @@ public class Source implements Serializable, Storable, SearchIndexable {
             final IndexableWord.Field field = word.field;
             final String val = word.word;
             final String name = field.getName();
-            if (field.isCategorize()) {
-              doc.add(new Field(SearchIndexable.CATEGORY, name, YES, NOT_ANALYZED));
-            }
-            doc.add(new Field(name, val, NO, ANALYZED));
+              if (field.isCategorize()) {
+                if (!isNull(name)) {
+                  doc.add(new Field(SearchIndexable.CATEGORY, name, YES, NOT_ANALYZED));
+                }
+              }
+              if (!isNull(val) && !isNull(name)){
+                doc.add(new Field(name, val, NO, ANALYZED));
+              }
           }
         }
 
