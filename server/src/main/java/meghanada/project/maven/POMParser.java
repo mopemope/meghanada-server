@@ -12,7 +12,7 @@ import java.util.Set;
 import javax.annotation.Nullable;
 import meghanada.config.Config;
 import meghanada.project.ProjectParseException;
-import meghanada.utils.ClassNameUtils;
+import meghanada.utils.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.maven.model.Build;
@@ -232,7 +232,7 @@ class POMParser {
         throws UnresolvableModelException {
       final Config config = Config.load();
       final String localRepository = config.getMavenLocalRepository();
-      final String parent = ClassNameUtils.replace(groupId, ".", File.separator);
+      final String parent = StringUtils.replace(groupId, ".", File.separator);
       final String path =
           Joiner.on(File.separator).join(localRepository, parent, artifactId, version);
       final String file = artifactId + '-' + version + ".pom";

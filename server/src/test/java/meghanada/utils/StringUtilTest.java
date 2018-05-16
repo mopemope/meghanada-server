@@ -7,46 +7,44 @@ import org.junit.Test;
 public class StringUtilTest {
 
   @Test
-  public void testIsMatchWhenConfigOn() {
-    StringUtils.getInstance().setUseccc(true);
-    assertTrue(StringUtils.getInstance().isMatch("charAt", "cA"));
-    assertFalse(StringUtils.getInstance().isMatch("codePointAt", "cA"));
-    assertTrue(StringUtils.getInstance().isMatch("codePointAt", "codPoA"));
-    assertTrue(StringUtils.getInstance().isMatch("contains", "con"));
-    assertFalse(StringUtils.getInstance().isMatch("istrue", "iT"));
-    assertTrue(StringUtils.getInstance().isMatch("isTrue", "isT"));
-    assertTrue(StringUtils.getInstance().isMatch("aVeryLongMethodName", "aVLM"));
-    assertTrue(StringUtils.getInstance().isMatch("aVeryLongMethodName", "aVLMN"));
-    assertTrue(StringUtils.getInstance().isMatch("averylongmethodnameonlylowercase", "averyl"));
-    assertTrue(StringUtils.getInstance().isMatch("charAt", ""));
-    assertTrue(StringUtils.getInstance().isMatch("acceptJsonFormatterVisitor", "aJFV"));
-    assertTrue(StringUtils.getInstance().isMatch("saveOperationChannel", "sOpC"));
-    assertTrue(StringUtils.getInstance().isMatch("CHARAT", ""));
-    assertTrue(StringUtils.getInstance().isMatch("acceptCase", "a"));
-    assertFalse(StringUtils.getInstance().isMatch("StringUtils", "sU"));
-    assertTrue(StringUtils.getInstance().isMatch("StringUtils", "SU"));
-    assertFalse(StringUtils.getInstance().isMatch("AbstractConsumerConnection", "SU"));
-    assertTrue(StringUtils.getInstance().isMatch("appendCodePoint", "aC"));
+  public void testIsMatchCamelCase() {
+    assertTrue(StringUtils.isMatchCamelCase("charAt", "cA"));
+    assertFalse(StringUtils.isMatchCamelCase("codePointAt", "cA"));
+    assertTrue(StringUtils.isMatchCamelCase("codePointAt", "codPoA"));
+    assertTrue(StringUtils.isMatchCamelCase("contains", "con"));
+    assertFalse(StringUtils.isMatchCamelCase("istrue", "iT"));
+    assertTrue(StringUtils.isMatchCamelCase("isTrue", "isT"));
+    assertTrue(StringUtils.isMatchCamelCase("aVeryLongMethodName", "aVLM"));
+    assertTrue(StringUtils.isMatchCamelCase("aVeryLongMethodName", "aVLMN"));
+    assertTrue(StringUtils.isMatchCamelCase("averylongmethodnameonlylowercase", "averyl"));
+    assertTrue(StringUtils.isMatchCamelCase("charAt", ""));
+    assertTrue(StringUtils.isMatchCamelCase("acceptJsonFormatterVisitor", "aJFV"));
+    assertTrue(StringUtils.isMatchCamelCase("saveOperationChannel", "sOpC"));
+    assertTrue(StringUtils.isMatchCamelCase("CHARAT", ""));
+    assertTrue(StringUtils.isMatchCamelCase("acceptCase", "a"));
+    assertFalse(StringUtils.isMatchCamelCase("StringUtils", "sU"));
+    assertTrue(StringUtils.isMatchCamelCase("StringUtils", "SU"));
+    assertFalse(StringUtils.isMatchCamelCase("AbstractConsumerConnection", "SU"));
+    assertTrue(StringUtils.isMatchCamelCase("appendCodePoint", "aC"));
   }
 
   @Test
-  public void testWhenConfigOff() {
-    StringUtils.getInstance().setUseccc(false);
-    assertFalse(StringUtils.getInstance().isMatch("charAt", "cA"));
-    assertFalse(StringUtils.getInstance().isMatch("codePointAt", "cA"));
-    assertFalse(StringUtils.getInstance().isMatch("codePointAt", "codPoA"));
-    assertTrue(StringUtils.getInstance().isMatch("contains", "con"));
-    assertFalse(StringUtils.getInstance().isMatch("istrue", "iT"));
-    assertTrue(StringUtils.getInstance().isMatch("isTrue", "isT"));
-    assertFalse(StringUtils.getInstance().isMatch("aVeryLongMethodName", "aVLM"));
-    assertFalse(StringUtils.getInstance().isMatch("aVeryLongMethodName", "aVLMN"));
-    assertTrue(StringUtils.getInstance().isMatch("averylongmethodnameonlylowercase", "averyl"));
-    assertTrue(StringUtils.getInstance().isMatch("charAt", ""));
-    assertFalse(StringUtils.getInstance().isMatch("acceptJsonFormatterVisitor", "aJFV"));
-    assertFalse(StringUtils.getInstance().isMatch("saveOperationChannel", "sOpC"));
-    assertTrue(StringUtils.getInstance().isMatch("CHARAT", ""));
-    assertTrue(StringUtils.getInstance().isMatch("acceptCase", "a"));
-    assertFalse(StringUtils.getInstance().isMatch("StringUtils", "sU"));
-    assertTrue(StringUtils.getInstance().isMatch("AbstractConsumerConnection", "SU"));
+  public void testContains() {
+    assertFalse(StringUtils.contains("charAt", "cA"));
+    assertFalse(StringUtils.contains("codePointAt", "cA"));
+    assertFalse(StringUtils.contains("codePointAt", "codPoA"));
+    assertTrue(StringUtils.contains("contains", "con"));
+    assertFalse(StringUtils.contains("istrue", "iT"));
+    assertTrue(StringUtils.contains("isTrue", "isT"));
+    assertFalse(StringUtils.contains("aVeryLongMethodName", "aVLM"));
+    assertFalse(StringUtils.contains("aVeryLongMethodName", "aVLMN"));
+    assertTrue(StringUtils.contains("averylongmethodnameonlylowercase", "averyl"));
+    assertTrue(StringUtils.contains("charAt", ""));
+    assertFalse(StringUtils.contains("acceptJsonFormatterVisitor", "aJFV"));
+    assertFalse(StringUtils.contains("saveOperationChannel", "sOpC"));
+    assertTrue(StringUtils.contains("CHARAT", ""));
+    assertTrue(StringUtils.contains("acceptCase", "a"));
+    assertFalse(StringUtils.contains("StringUtils", "sU"));
+    assertTrue(StringUtils.contains("AbstractConsumerConnection", "SU"));
   }
 }

@@ -190,8 +190,14 @@ public class JavaCompletion {
     String fqcn = typeScope.get().getFQCN();
 
     // add this member
+    boolean useCamelCaseCompletion = Config.load().useCamelCaseCompletion();
     for (MemberDescriptor c : JavaCompletion.reflectSelf(fqcn, true, prefix)) {
-      if (StringUtils.getInstance().isMatch(c.getName(), prefix)) {
+      String name = c.getName();
+      final boolean matched =
+          useCamelCaseCompletion
+              ? StringUtils.isMatchCamelCase(name, prefix)
+              : name.startsWith(prefix);
+      if (matched) {
         result.add(c);
       }
     }
@@ -206,7 +212,12 @@ public class JavaCompletion {
         }
         parentClass = parentClass.substring(0, i);
         for (MemberDescriptor c : JavaCompletion.reflectSelf(parentClass, true, prefix)) {
-          if (StringUtils.getInstance().isMatch(c.getName(), prefix)) {
+          String name = c.getName();
+          boolean matched =
+              useCamelCaseCompletion
+                  ? StringUtils.isMatchCamelCase(name, prefix)
+                  : StringUtils.contains(name, prefix);
+          if (matched) {
             result.add(c);
           }
         }
@@ -671,7 +682,7 @@ public class JavaCompletion {
       final String prefix = searchWord.substring(prefixIdx + 1);
       // return methods of prefix class
       String fqcn = searchWord.substring(classIdx + 1, prefixIdx);
-      fqcn = ClassNameUtils.replace(fqcn, ClassNameUtils.CAPTURE_OF, "");
+      fqcn = StringUtils.replace(fqcn, ClassNameUtils.CAPTURE_OF, "");
       return reflectWithFQCN(fqcn, prefix)
           .stream()
           .sorted(methodComparing(prefix))
@@ -682,7 +693,7 @@ public class JavaCompletion {
     if (classIdx > 0) {
       // return methods of prefix class
       String fqcn = searchWord.substring(classIdx + 1, searchWord.length());
-      fqcn = ClassNameUtils.replace(fqcn, ClassNameUtils.CAPTURE_OF, "");
+      fqcn = StringUtils.replace(fqcn, ClassNameUtils.CAPTURE_OF, "");
       return reflect(pkg, fqcn, "")
           .stream()
           .sorted(defaultComparing())
@@ -706,8 +717,7 @@ public class JavaCompletion {
       while (size > 0 && startColumn-- > 0) {
         for (AccessSymbol as : targets) {
           if (as.match(line, startColumn) && nonNull(as.returnType)) {
-            final String fqcn =
-                ClassNameUtils.replace(as.returnType, ClassNameUtils.CAPTURE_OF, "");
+            final String fqcn = StringUtils.replace(as.returnType, ClassNameUtils.CAPTURE_OF, "");
             return reflect(pkg, fqcn, prefix)
                 .stream()
                 .sorted(methodComparing(prefix))

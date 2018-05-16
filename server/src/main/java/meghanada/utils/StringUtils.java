@@ -8,41 +8,40 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import meghanada.config.Config;
 
 public class StringUtils {
 
   private static final String PatternForLowerCaseWord = "[^A-Z]*";
   private static final String PatternForAnything = ".*";
   private static final String PatternForSplitByUpper = "(?=\\p{Upper})";
-  private static final StringUtils instance = new StringUtils();
   private static final Map<String, Pattern> cachedPatterns = new HashMap<>(500);
   private static final Map<Integer, Boolean> cachedResult = new HashMap<>(500);
 
-  private boolean useccc;
-
-  void setUseccc(boolean useccc) {
-    this.useccc = useccc;
+  public static String replace(final String string, final String target, final String replacement) {
+    final StringBuilder sb = new StringBuilder(string);
+    final int start = sb.indexOf(target, 0);
+    replaceString(sb, target, replacement, start);
+    return sb.toString();
   }
 
-  public static StringUtils getInstance() {
-    return instance;
-  }
-
-  private StringUtils() {
-    try {
-      setUseccc(Config.load().useCamelCaseCompletion());
-    } catch (Exception e) {
-      setUseccc(true);
+  static void replaceString(
+      final StringBuilder sb, final String key, final String value, int start) {
+    while (start > -1) {
+      final int end = start + key.length();
+      final int nextSearchStart = start + value.length();
+      sb.replace(start, end, value);
+      start = sb.indexOf(key, nextSearchStart);
     }
   }
 
-  public boolean isMatch(String name, String target) {
-    boolean matched = false;
+  public static boolean contains(final String name, final String target) {
+    return name.toLowerCase().contains(target.toLowerCase());
+  }
+
+  public static boolean isMatchCamelCase(final String name, final String target) {
+    boolean matched;
     if (org.apache.commons.lang3.StringUtils.isEmpty(target)) {
       matched = true;
-    } else if (!useccc) {
-      matched = name.toLowerCase().contains(target.toLowerCase());
     } else {
       Integer key = name.hashCode() / 2 + target.hashCode() / 2;
       Boolean result = cachedResult.get(key);
@@ -64,22 +63,22 @@ public class StringUtils {
     return matched;
   }
 
-  private Boolean matchAndUpdateCache(Pattern p, String name, Integer key) {
+  private static Boolean matchAndUpdateCache(Pattern p, String name, Integer key) {
     Matcher m = p.matcher(name);
     boolean matched = m.matches();
     cachedResult.put(key, matched);
     return matched;
   }
 
-  private boolean hasUpperCase(String target) {
+  private static boolean hasUpperCase(String target) {
     return !target.equals(target.toLowerCase());
   }
 
-  private boolean matchWhenAllLowerCaseLetters(String name, String target) {
+  private static boolean matchWhenAllLowerCaseLetters(String name, String target) {
     return name.startsWith(target);
   }
 
-  private Pattern compilePattern(List<String> input) {
+  private static Pattern compilePattern(List<String> input) {
     Pattern p = null;
     if (input.size() > 0) {
       StringBuilder sb = new StringBuilder();
@@ -92,7 +91,7 @@ public class StringUtils {
     return p;
   }
 
-  private Pattern fromCacheOrCompile(String target) {
+  private static Pattern fromCacheOrCompile(String target) {
     Pattern pattern = cachedPatterns.get(target);
     if (isNull(pattern)) {
       List<String> r = Splitter.onPattern(PatternForSplitByUpper).splitToList(target);

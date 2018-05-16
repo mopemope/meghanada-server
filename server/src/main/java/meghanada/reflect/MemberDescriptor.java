@@ -21,6 +21,7 @@ import java.util.regex.Pattern;
 import javax.annotation.Nonnull;
 import meghanada.store.Serializer;
 import meghanada.utils.ClassNameUtils;
+import meghanada.utils.StringUtils;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 
@@ -83,21 +84,21 @@ public abstract class MemberDescriptor
       for (Map.Entry<String, String> entry : this.typeParameterMap.entrySet()) {
         final String k = entry.getKey();
         final String v = entry.getValue();
-        temp = ClassNameUtils.replace(temp, ClassNameUtils.CLASS_TYPE_VARIABLE_MARK + k, v);
+        temp = StringUtils.replace(temp, ClassNameUtils.CLASS_TYPE_VARIABLE_MARK + k, v);
         if (formalType) {
           // follow intellij
-          temp = ClassNameUtils.replace(temp, ClassNameUtils.FORMAL_TYPE_VARIABLE_MARK + k, v);
+          temp = StringUtils.replace(temp, ClassNameUtils.FORMAL_TYPE_VARIABLE_MARK + k, v);
         }
       }
     } else {
       for (String entry : this.typeParameters) {
         temp =
-            ClassNameUtils.replace(
+            StringUtils.replace(
                 temp, ClassNameUtils.CLASS_TYPE_VARIABLE_MARK + entry, ClassNameUtils.OBJECT_CLASS);
         if (formalType) {
           // follow intellij
           temp =
-              ClassNameUtils.replace(
+              StringUtils.replace(
                   temp,
                   ClassNameUtils.FORMAL_TYPE_VARIABLE_MARK + entry,
                   ClassNameUtils.OBJECT_CLASS);
@@ -108,7 +109,7 @@ public abstract class MemberDescriptor
         temp = TRIM_RE.matcher(temp).replaceAll("");
       }
     }
-    return ClassNameUtils.replace(temp, ClassNameUtils.FORMAL_TYPE_VARIABLE_MARK, "").trim();
+    return StringUtils.replace(temp, ClassNameUtils.FORMAL_TYPE_VARIABLE_MARK, "").trim();
   }
 
   public void clearTypeParameterMap() {
@@ -165,12 +166,12 @@ public abstract class MemberDescriptor
           return false;
         }
         final String replaceKey = ClassNameUtils.CLASS_TYPE_VARIABLE_MARK + k;
-        temp = ClassNameUtils.replace(temp, replaceKey, v);
+        temp = StringUtils.replace(temp, replaceKey, v);
       }
     } else {
       for (String entry : this.typeParameters) {
         temp =
-            ClassNameUtils.replace(
+            StringUtils.replace(
                 temp, ClassNameUtils.CLASS_TYPE_VARIABLE_MARK + entry, ClassNameUtils.OBJECT_CLASS);
       }
 

@@ -2,6 +2,7 @@ package meghanada.completion;
 
 import static meghanada.reflect.CandidateUnit.MemberType;
 
+import meghanada.config.Config;
 import meghanada.reflect.MemberDescriptor;
 import meghanada.utils.StringUtils;
 
@@ -11,7 +12,11 @@ public class CompletionFilters {
 
   public static boolean publicMemberFilter(final MemberDescriptor descriptor, final String target) {
     final String name = descriptor.getName();
-    final boolean matched = StringUtils.getInstance().isMatch(name, target);
+    boolean useCamelCaseCompletion = Config.load().useCamelCaseCompletion();
+    final boolean matched =
+        useCamelCaseCompletion
+            ? StringUtils.isMatchCamelCase(name, target)
+            : StringUtils.contains(name, target);
     if (!target.isEmpty() && !matched) {
       return false;
     }
@@ -28,7 +33,11 @@ public class CompletionFilters {
       final String target) {
 
     final String name = descriptor.getName();
-    final boolean matched = StringUtils.getInstance().isMatch(name, target);
+    boolean useCamelCaseCompletion = Config.load().useCamelCaseCompletion();
+    final boolean matched =
+        useCamelCaseCompletion
+            ? StringUtils.isMatchCamelCase(name, target)
+            : StringUtils.contains(name, target);
     if (!target.isEmpty() && !matched) {
       return false;
     }
@@ -52,7 +61,11 @@ public class CompletionFilters {
       final String target) {
 
     final String name = descriptor.getName();
-    final boolean matched = StringUtils.getInstance().isMatch(name, target);
+    boolean useCamelCaseCompletion = Config.load().useCamelCaseCompletion();
+    final boolean matched =
+        useCamelCaseCompletion
+            ? StringUtils.isMatchCamelCase(name, target)
+            : StringUtils.contains(name, target);
     if (!target.isEmpty() && !matched) {
       return false;
     }
@@ -72,7 +85,11 @@ public class CompletionFilters {
   public static boolean privateMemberFilter(
       final MemberDescriptor md, final boolean withCONSTRUCTOR, final String target) {
     final String name = md.getName();
-    final boolean matched = StringUtils.getInstance().isMatch(name, target);
+    boolean useCamelCaseCompletion = Config.load().useCamelCaseCompletion();
+    final boolean matched =
+        useCamelCaseCompletion
+            ? StringUtils.isMatchCamelCase(name, target)
+            : StringUtils.contains(name, target);
     return !(md.getMemberType().equals(MemberType.FIELD) && name.startsWith("this$"))
         && !(!target.isEmpty() && !matched)
         && (withCONSTRUCTOR || !md.getMemberType().equals(MemberType.CONSTRUCTOR));

@@ -14,6 +14,7 @@ import meghanada.reflect.names.MethodParameterNames;
 import meghanada.reflect.names.ParameterName;
 import meghanada.store.Serializer;
 import meghanada.utils.ClassNameUtils;
+import meghanada.utils.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.message.EntryMessage;
@@ -245,7 +246,7 @@ class MethodAnalyzeVisitor extends MethodVisitor {
 
   private boolean tryGetParameterName(final String className, final String name) {
     // log.debug("search {}", name);
-    final String path = ClassNameUtils.replace(className, ".", "/");
+    final String path = StringUtils.replace(className, ".", "/");
     try (final InputStream in = getClass().getResourceAsStream("/params/" + path + ".param")) {
       if (in == null) {
         return false;
@@ -283,10 +284,10 @@ class MethodAnalyzeVisitor extends MethodVisitor {
           typeInfoType = typeInfoType.substring(0, idx1);
         }
         if (i == last) {
-          typeInfoType = ClassNameUtils.replace(typeInfoType, "...", "");
+          typeInfoType = StringUtils.replace(typeInfoType, "...", "");
         }
         // replace mark
-        typeInfoType = ClassNameUtils.replace(typeInfoType, "%%", "");
+        typeInfoType = StringUtils.replace(typeInfoType, "%%", "");
         int idx2 = parameterNameType.indexOf('<');
         if (idx2 > 0) {
           parameterNameType = parameterNameType.substring(0, idx2);
@@ -320,7 +321,7 @@ class MethodAnalyzeVisitor extends MethodVisitor {
   private void toMemberDescriptor() {
     String modifier = ASMReflector.toModifier(this.access, this.hasDefault);
     if (this.interfaceMethod) {
-      modifier = ClassNameUtils.replace(modifier, "abstract", "").trim();
+      modifier = StringUtils.replace(modifier, "abstract", "").trim();
     }
 
     final CandidateUnit.MemberType memberType =

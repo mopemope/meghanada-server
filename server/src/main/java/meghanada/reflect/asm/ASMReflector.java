@@ -36,6 +36,7 @@ import meghanada.reflect.ClassIndex;
 import meghanada.reflect.MemberDescriptor;
 import meghanada.reflect.MethodDescriptor;
 import meghanada.utils.ClassNameUtils;
+import meghanada.utils.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.objectweb.asm.ClassReader;
@@ -218,8 +219,7 @@ public class ASMReflector {
       if (tpIterator.hasNext()) {
         String tp = tpIterator.next();
         if (real.contains(ClassNameUtils.CLASS_TYPE_VARIABLE_MARK)) {
-          String removed =
-              ClassNameUtils.replace(real, ClassNameUtils.CLASS_TYPE_VARIABLE_MARK, "");
+          String removed = StringUtils.replace(real, ClassNameUtils.CLASS_TYPE_VARIABLE_MARK, "");
 
           if (!tp.equals(removed)) {
             replace.put(ClassNameUtils.CLASS_TYPE_VARIABLE_MARK + tp, real);

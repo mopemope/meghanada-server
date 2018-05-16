@@ -224,7 +224,7 @@ public final class FileUtils {
       final String root = rootFile.getCanonicalPath();
       if (path.startsWith(root)) {
         final String src = path.substring(root.length());
-        final String classFile = ClassNameUtils.replace(src, JAVA_EXT, CLASS_EXT);
+        final String classFile = StringUtils.replace(src, JAVA_EXT, CLASS_EXT);
         final Path p = Paths.get(outPath, classFile);
         return Files.exists(p, LinkOption.NOFOLLOW_LINKS);
       }
@@ -240,7 +240,7 @@ public final class FileUtils {
       final String root = rootFile.getCanonicalPath();
       if (path.startsWith(root)) {
         final String src = path.substring(root.length());
-        final String classFile = ClassNameUtils.replace(src, JAVA_EXT, CLASS_EXT);
+        final String classFile = StringUtils.replace(src, JAVA_EXT, CLASS_EXT);
         final Path p = Paths.get(outPath, classFile);
         if (Files.exists(p, LinkOption.NOFOLLOW_LINKS)) {
           return Optional.of(p.toFile());
@@ -389,7 +389,7 @@ public final class FileUtils {
 
   private static File convertFQCNToFile(final File root, final String fqcn) {
     final String clazzName = ClassNameUtils.getParentClass(fqcn);
-    final String path = ClassNameUtils.replace(clazzName, ".", File.separator) + FileUtils.JAVA_EXT;
+    final String path = StringUtils.replace(clazzName, ".", File.separator) + FileUtils.JAVA_EXT;
     return new File(root, path);
   }
 
@@ -420,7 +420,7 @@ public final class FileUtils {
       if (i > 0) {
         part = part.substring(0, i);
       }
-      String replaced = ClassNameUtils.replace(part, File.separator, ".");
+      String replaced = StringUtils.replace(part, File.separator, ".");
       if (replaced.startsWith(".")) {
         replaced = replaced.substring(1);
       }

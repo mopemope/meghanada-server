@@ -30,7 +30,6 @@ import meghanada.config.Config;
 import meghanada.project.Project;
 import meghanada.project.ProjectDependency;
 import meghanada.project.ProjectParseException;
-import meghanada.utils.ClassNameUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -113,7 +112,7 @@ public class GradleProject extends Project {
   }
 
   private static String convertName(final String path) {
-    final String replaced = ClassNameUtils.replace(path, ":", "-");
+    final String replaced = meghanada.utils.StringUtils.replace(path, ":", "-");
     if (replaced.startsWith("-")) {
       return replaced.substring(1);
     }

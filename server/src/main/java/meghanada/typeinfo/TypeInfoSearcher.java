@@ -25,6 +25,7 @@ import meghanada.reflect.ClassIndex;
 import meghanada.reflect.MemberDescriptor;
 import meghanada.reflect.asm.CachedASMReflector;
 import meghanada.utils.ClassNameUtils;
+import meghanada.utils.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -73,7 +74,7 @@ public class TypeInfoSearcher {
 
     for (String cls : hierarchy) {
       final String className = ClassNameUtils.removeTypeParameter(cls);
-      final String name = ClassNameUtils.replace(cls, "%%", "");
+      final String name = StringUtils.replace(cls, "%%", "");
 
       reflector
           .containsClassIndex(className)

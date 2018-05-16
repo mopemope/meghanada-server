@@ -13,6 +13,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import meghanada.utils.ClassNameUtils;
+import meghanada.utils.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.message.EntryMessage;
@@ -198,22 +199,22 @@ public class MethodDescriptor extends MemberDescriptor {
       for (final Map.Entry<String, String> entry : this.typeParameterMap.entrySet()) {
         final String k = entry.getKey();
         final String v = entry.getValue();
-        temp = ClassNameUtils.replace(temp, ClassNameUtils.CLASS_TYPE_VARIABLE_MARK + k, v);
+        temp = StringUtils.replace(temp, ClassNameUtils.CLASS_TYPE_VARIABLE_MARK + k, v);
         if (formalType) {
           // follow intellij
-          temp = ClassNameUtils.replace(temp, ClassNameUtils.FORMAL_TYPE_VARIABLE_MARK + k, v);
+          temp = StringUtils.replace(temp, ClassNameUtils.FORMAL_TYPE_VARIABLE_MARK + k, v);
         }
       }
     } else {
 
       for (final String entry : this.typeParameters) {
         temp =
-            ClassNameUtils.replace(
+            StringUtils.replace(
                 temp, ClassNameUtils.CLASS_TYPE_VARIABLE_MARK + entry, ClassNameUtils.OBJECT_CLASS);
         if (formalType) {
           // follow intellij
           temp =
-              ClassNameUtils.replace(
+              StringUtils.replace(
                   temp,
                   ClassNameUtils.FORMAL_TYPE_VARIABLE_MARK + entry,
                   ClassNameUtils.OBJECT_CLASS);
@@ -225,7 +226,7 @@ public class MethodDescriptor extends MemberDescriptor {
       }
     }
     final String rendered =
-        ClassNameUtils.replace(temp, ClassNameUtils.FORMAL_TYPE_VARIABLE_MARK, "").trim();
+        StringUtils.replace(temp, ClassNameUtils.FORMAL_TYPE_VARIABLE_MARK, "").trim();
     return log.traceExit(entryMessage, rendered);
   }
 
