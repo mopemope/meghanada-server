@@ -31,6 +31,7 @@ import meghanada.cache.GlobalCache;
 import meghanada.completion.matcher.CompletionMatcher;
 import meghanada.completion.matcher.DefaultMatcher;
 import meghanada.completion.matcher.FuzzyMatcher;
+import meghanada.completion.matcher.CamelCaseMatcher;
 import meghanada.config.Config;
 import meghanada.index.IndexDatabase;
 import meghanada.project.Project;
@@ -101,8 +102,11 @@ public class JavaCompletion {
   private static CompletionMatcher getClassCompletionMatcher(final String prefix) {
     CompletionMatcher matcher;
     boolean useFuzzySearch = Config.load().useClassFuzzySearch();
+    boolean useCamelCaseCompletion = Config.load().useCamelCaseCompletion();
     if (useFuzzySearch) {
       matcher = new FuzzyMatcher(prefix);
+    } else if (useCamelCaseCompletion) {
+      matcher = new CamelCaseMatcher(prefix);
     } else {
       matcher = new DefaultMatcher(prefix.toLowerCase(), true);
     }
@@ -233,7 +237,11 @@ public class JavaCompletion {
       String k = e.getKey();
       Variable v = e.getValue();
       log.debug("check variable name:{}", k);
-      if (k.startsWith(prefix)) {
+      boolean matched =
+          useCamelCaseCompletion
+              ? StringUtils.isMatchCamelCase(k, prefix)
+              : k.startsWith(prefix);
+      if (matched) {
         log.debug("match variable name:{}", k);
         if (!v.isField) {
           result.add(v.toCandidateUnit());
