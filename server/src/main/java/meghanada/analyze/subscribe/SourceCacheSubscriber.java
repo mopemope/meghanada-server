@@ -88,7 +88,8 @@ public class SourceCacheSubscriber {
   }
 
   public void complete() throws IOException {
-    ProjectDatabaseHelper.saveChecksumMap(this.project.getProjectRootPath(), this.checksumMap);
+    boolean b =
+        ProjectDatabaseHelper.saveChecksumMap(this.project.getProjectRootPath(), this.checksumMap);
     this.project.writeCaller();
   }
 

@@ -43,8 +43,8 @@ import meghanada.config.Config;
 import meghanada.formatter.JavaFormatter;
 import meghanada.store.ProjectDatabaseHelper;
 import meghanada.store.Storable;
-import meghanada.utils.ClassNameUtils;
 import meghanada.utils.FileUtils;
+import meghanada.utils.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.eclipse.jdt.core.JavaCore;
@@ -853,7 +853,7 @@ public abstract class Project implements Serializable, Storable {
                   final String path = file.getCanonicalPath();
                   if (path.startsWith(rootPath)) {
                     final String p = path.substring(rootPath.length() + 1, path.length() - 5);
-                    final String importClass = ClassNameUtils.replace(p, File.separator, ".");
+                    final String importClass = StringUtils.replace(p, File.separator, ".");
                     if (this.callerMap.containsKey(importClass)) {
                       final Set<String> imports = this.callerMap.get(importClass);
                       for (final String dep : imports) {
@@ -879,7 +879,7 @@ public abstract class Project implements Serializable, Storable {
   }
 
   public synchronized void writeCaller() throws IOException {
-    ProjectDatabaseHelper.saveCallerMap(this.projectRootPath, this.callerMap);
+    boolean b = ProjectDatabaseHelper.saveCallerMap(this.projectRootPath, this.callerMap);
   }
 
   private void loadCaller() throws IOException {

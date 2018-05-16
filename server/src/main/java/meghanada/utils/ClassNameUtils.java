@@ -146,31 +146,24 @@ public class ClassNameUtils {
       String value = entry.getValue();
 
       final int start = sb.indexOf(key, 0);
-      replaceString(sb, key, value, start);
+      StringUtils.replaceString(sb, key, value, start);
     }
-    return sb.toString();
-  }
-
-  public static String replace(final String string, final String target, final String replacement) {
-    final StringBuilder sb = new StringBuilder(string);
-    final int start = sb.indexOf(target, 0);
-    replaceString(sb, target, replacement, start);
     return sb.toString();
   }
 
   public static String replaceDot2FileSep(final String string) {
     final StringBuilder sb = new StringBuilder(ClassNameUtils.removeTypeAndArray(string));
     final int start = sb.indexOf(DOT_SEPARATOR, 0);
-    replaceString(sb, DOT_SEPARATOR, File.separator, start);
+    StringUtils.replaceString(sb, DOT_SEPARATOR, File.separator, start);
     return sb.toString();
   }
 
   public static String replaceSlash(String string) {
     final StringBuilder sb = new StringBuilder(string);
     final int start = sb.indexOf(SLASH, 0);
-    replaceString(sb, SLASH, ClassNameUtils.DOT_SEPARATOR, start);
+    StringUtils.replaceString(sb, SLASH, ClassNameUtils.DOT_SEPARATOR, start);
     final int start2 = sb.indexOf(WINDOWS_SLASH, 0);
-    replaceString(sb, WINDOWS_SLASH, ClassNameUtils.DOT_SEPARATOR, start2);
+    StringUtils.replaceString(sb, WINDOWS_SLASH, ClassNameUtils.DOT_SEPARATOR, start2);
     return sb.toString();
   }
 
@@ -190,25 +183,15 @@ public class ClassNameUtils {
     }
     final StringBuilder sb = new StringBuilder(string);
     final int start = sb.indexOf(INNER_MARK, 0);
-    replaceString(sb, INNER_MARK, ClassNameUtils.DOT_SEPARATOR, start);
+    StringUtils.replaceString(sb, INNER_MARK, ClassNameUtils.DOT_SEPARATOR, start);
     return sb.toString();
   }
 
   public static String replaceDotToInnerMark(String string, boolean last) {
     final StringBuilder sb = new StringBuilder(string);
     final int start = last ? sb.lastIndexOf(DOT_SEPARATOR, 0) : sb.indexOf(DOT_SEPARATOR, 0);
-    replaceString(sb, DOT_SEPARATOR, ClassNameUtils.INNER_MARK, start);
+    StringUtils.replaceString(sb, DOT_SEPARATOR, ClassNameUtils.INNER_MARK, start);
     return sb.toString();
-  }
-
-  private static void replaceString(
-      final StringBuilder sb, final String key, final String value, int start) {
-    while (start > -1) {
-      final int end = start + key.length();
-      final int nextSearchStart = start + value.length();
-      sb.replace(start, end, value);
-      start = sb.indexOf(key, nextSearchStart);
-    }
   }
 
   public static String removeTypeMark(final String val) {
@@ -451,7 +434,7 @@ public class ClassNameUtils {
       } else if (gen.contains("super " + stringStringEntry.getKey())) {
         // replace
         final String replaceStr =
-            ClassNameUtils.replace(
+            StringUtils.replace(
                 gen,
                 "super " + stringStringEntry.getKey(),
                 "super " + stringStringEntry.getValue());
@@ -461,7 +444,7 @@ public class ClassNameUtils {
       } else if (gen.contains("extends " + stringStringEntry.getKey())) {
         // replace
         final String replaceStr =
-            ClassNameUtils.replace(
+            StringUtils.replace(
                 gen,
                 "extends " + stringStringEntry.getKey(),
                 "extends " + stringStringEntry.getValue());
@@ -491,7 +474,7 @@ public class ClassNameUtils {
 
   static String vaArgsToArray(String name) {
     if (name.endsWith(VA_ARGS)) {
-      return ClassNameUtils.replace(name, VA_ARGS, ARRAY);
+      return StringUtils.replace(name, VA_ARGS, ARRAY);
     }
     return name;
   }

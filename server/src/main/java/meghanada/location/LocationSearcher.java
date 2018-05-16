@@ -54,6 +54,7 @@ import meghanada.project.ProjectDependency;
 import meghanada.reflect.asm.CachedASMReflector;
 import meghanada.utils.ClassNameUtils;
 import meghanada.utils.FileUtils;
+import meghanada.utils.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.message.EntryMessage;
@@ -199,7 +200,7 @@ public class LocationSearcher {
                   rename.put(' ' + inner + '(', ' ' + innerClass + '(');
                   rename.put(' ' + inner + '.', ' ' + innerClass + '.');
                   rename.put('(' + inner + '.', '(' + innerClass + '.');
-                  final String replace = ClassNameUtils.replace(s, inner, innerClass);
+                  final String replace = StringUtils.replace(s, inner, innerClass);
                   bw.write(replace);
                   bw.newLine();
                 } else {
@@ -549,7 +550,7 @@ public class LocationSearcher {
       final File depParent = classFile.getParentFile();
       final File dependencyDir = depParent.getParentFile();
       final String srcJarName =
-          ClassNameUtils.replace(classFile.getName(), FileUtils.JAR_EXT, "-sources.jar");
+          StringUtils.replace(classFile.getName(), FileUtils.JAR_EXT, "-sources.jar");
 
       final String disable = System.getProperty("disable-source-jar");
       if (disable != null && disable.equals("true")) {
@@ -600,7 +601,7 @@ public class LocationSearcher {
               output.toPath(),
               zipEntry -> {
                 final String name = zipEntry.getName();
-                final String base = ClassNameUtils.replace(searchFQCN, ".", "/");
+                final String base = StringUtils.replace(searchFQCN, ".", "/");
                 final String search = base + FileUtils.CLASS_EXT;
                 if (name.equals(search)) {
                   return Filter.Result.ACCEPT;
@@ -665,7 +666,7 @@ public class LocationSearcher {
       this.copiedSrcFile.remove(searchFQCN);
     }
     try (final ZipFile srcZipFile = new ZipFile(srcZip)) {
-      final String s = ClassNameUtils.replace(searchFQCN, ".", "/") + FileUtils.JAVA_EXT;
+      final String s = StringUtils.replace(searchFQCN, ".", "/") + FileUtils.JAVA_EXT;
       ZipEntry entry = srcZipFile.getEntry(s);
       if (entry == null) {
         Optional<? extends ZipEntry> zipEntry =

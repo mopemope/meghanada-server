@@ -1,6 +1,6 @@
 @CheckReturnValue
 @ParametersAreNonnullByDefault
-package meghanada.analyze.store;
+package meghanada.store;
 
 import javax.annotation.CheckReturnValue;
 import javax.annotation.ParametersAreNonnullByDefault;

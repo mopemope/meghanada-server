@@ -53,9 +53,9 @@ public class FieldDescriptor extends MemberDescriptor {
       return "";
     }
     StringBuilder sb = new StringBuilder(16);
-    sb.append(ClassNameUtils.getSimpleName(returnType) + ' ');
+    sb.append(ClassNameUtils.getSimpleName(returnType)).append(' ');
     if (showStaticClassName) {
-      sb.append(ClassNameUtils.getSimpleName(getDeclaringClass()) + '.');
+      sb.append(ClassNameUtils.getSimpleName(getDeclaringClass())).append('.');
     }
     sb.append(this.name);
     return ClassNameUtils.replaceInnerMark(sb.toString());

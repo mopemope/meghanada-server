@@ -819,9 +819,7 @@ public class Source implements Serializable, Storable, SearchIndexable {
 
   @Override
   public List<Document> getDocumentIndices() {
-    final List<Document> list = new ArrayList<>();
-    list.addAll(createSourceTextIndices());
-    return list;
+    return new ArrayList<>(createSourceTextIndices());
   }
 
   private Collection<? extends Document> createSourceTextIndices() {

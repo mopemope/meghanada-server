@@ -19,14 +19,16 @@ public class FuzzyMatcher implements CompletionMatcher {
 
   private final String query;
   private final int threshold;
+  private final boolean advanced;
   private Source source;
 
   public FuzzyMatcher(String query) {
-    this(query, null);
+    this(query, false, null);
   }
 
-  public FuzzyMatcher(String query, Source source) {
+  public FuzzyMatcher(String query, boolean advanced, Source source) {
     this.query = query;
+    this.advanced = advanced;
     this.threshold = (int) (query.length() * SCORE_FACTOR);
     this.source = source;
   }
@@ -41,59 +43,59 @@ public class FuzzyMatcher implements CompletionMatcher {
       // TODO allow special class
     }
     int score = fuzzyScore(name, this.query, first);
-    return score > this.threshold;
+    boolean result = score > this.threshold;
+    if (!result && advanced) {
+      return name.contains(this.query);
+    }
+    return result;
   }
 
   private static int fuzzyScore(String term, String query, boolean requireFirstMatch) {
 
-    if (nonNull(term) && nonNull(query)) {
-      int score = 0;
-      int termIndex = 0;
-      int previousMatchingCharacterIndex = Integer.MIN_VALUE;
-      int tlength = term.length();
-      int qlength = query.length();
+    int score = 0;
+    int termIndex = 0;
+    int previousMatchingCharacterIndex = Integer.MIN_VALUE;
+    int tlength = term.length();
+    int qlength = query.length();
 
-      for (int queryIndex = 0; queryIndex < qlength; ++queryIndex) {
-        char queryChar = query.charAt(queryIndex);
-        for (boolean termCharacterMatchFound = false;
-            termIndex < tlength && !termCharacterMatchFound;
-            ++termIndex) {
+    for (int queryIndex = 0; queryIndex < qlength; ++queryIndex) {
+      char queryChar = query.charAt(queryIndex);
+      for (boolean termCharacterMatchFound = false;
+          termIndex < tlength && !termCharacterMatchFound;
+          ++termIndex) {
 
-          char termChar = term.charAt(termIndex);
-          if (requireFirstMatch && termIndex == 0 && queryIndex == 0 && queryChar != termChar) {
-            // not match
-            return 0;
+        char termChar = term.charAt(termIndex);
+        if (requireFirstMatch && termIndex == 0 && queryIndex == 0 && queryChar != termChar) {
+          // not match
+          return 0;
+        }
+
+        if (queryChar == termChar) {
+          if (termIndex == queryIndex) {
+            ++score;
+          }
+          if (previousMatchingCharacterIndex + 1 == termIndex) {
+            score += 2;
+          }
+          if (Character.isUpperCase(termChar)) {
+            score += 2;
           }
 
-          if (queryChar == termChar) {
-            if (termIndex == queryIndex) {
-              ++score;
-            }
-            if (previousMatchingCharacterIndex + 1 == termIndex) {
-              score += 2;
-            }
-            if (Character.isUpperCase(termChar)) {
-              score += 2;
-            }
-
-            previousMatchingCharacterIndex = termIndex;
-            termCharacterMatchFound = true;
-          } else if (Character.isUpperCase(termChar)) {
-            if (Character.toLowerCase(termChar) == queryChar) {
-              score += 2;
-            }
+          previousMatchingCharacterIndex = termIndex;
+          termCharacterMatchFound = true;
+        } else if (Character.isUpperCase(termChar)) {
+          if (Character.toLowerCase(termChar) == queryChar) {
+            score += 2;
           }
         }
       }
-      return score;
-    } else {
-      throw new IllegalArgumentException("Strings must not be null");
     }
+    return score;
   }
 
   @Override
   public Predicate<CandidateUnit> filter() {
-    return c -> match(c);
+    return this::match;
   }
 
   @Override

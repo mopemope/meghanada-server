@@ -14,7 +14,7 @@ import meghanada.config.Config;
 import meghanada.project.Project;
 import meghanada.project.ProjectDependency;
 import meghanada.project.ProjectParseException;
-import meghanada.utils.ClassNameUtils;
+import meghanada.utils.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -50,7 +50,7 @@ public class MavenProject extends Project {
     if (i > 0) {
       parent = parent.substring(i + 11);
     }
-    final String groupID = ClassNameUtils.replace(parent, File.separator, ".");
+    final String groupID = StringUtils.replace(parent, File.separator, ".");
     return groupID + ':' + artifactID;
   }
 

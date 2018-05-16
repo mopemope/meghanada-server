@@ -254,17 +254,17 @@ public class ProjectDatabase {
       }
 
       if (!buf.isEmpty()) {
-        storeObjects(buf, true);
+        int i = storeObjects(buf, true);
       }
     } else {
 
       Storable storable = req.getStorable();
       if (nonNull(storable)) {
-        storeObject(storable, req.isAllowUpdate());
+        long i = storeObject(storable, req.isAllowUpdate());
       }
       Collection<? extends Storable> storables = req.getStorables();
       if (nonNull(storables)) {
-        storeObjects(storables, req.isAllowUpdate());
+        int i = storeObjects(storables, req.isAllowUpdate());
       }
     }
   }

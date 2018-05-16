@@ -23,6 +23,8 @@ public class JavaCompletionTest extends GradleTestBase {
   @BeforeClass
   public static void setup() throws Exception {
     GradleTestBase.setupReflector(false);
+    Config config = Config.load();
+    config.update("camel-case-completion", false);
   }
 
   @AfterClass

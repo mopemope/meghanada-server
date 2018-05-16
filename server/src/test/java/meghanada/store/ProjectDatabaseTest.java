@@ -59,7 +59,7 @@ public class ProjectDatabaseTest {
               () -> {
                 ClassIndex c =
                     new ClassIndex(name, Collections.emptyList(), Collections.emptyList());
-                database.storeObject(c);
+                long l = database.storeObject(c);
                 return c;
               });
     }
@@ -88,7 +88,7 @@ public class ProjectDatabaseTest {
               () -> {
                 ClassIndex c =
                     new ClassIndex(name, Collections.emptyList(), Collections.emptyList());
-                database.storeObject(c, false);
+                long l = database.storeObject(c, false);
                 return c;
               });
     }
@@ -115,7 +115,7 @@ public class ProjectDatabaseTest {
       ClassIndex c = new ClassIndex(name + i, Collections.emptyList(), Collections.emptyList());
       lst.add(c);
     }
-    database.storeObjects(lst, true);
+    long l = database.storeObjects(lst, true);
     lst.forEach(
         c -> {
           System.out.println(c.getEntityId());

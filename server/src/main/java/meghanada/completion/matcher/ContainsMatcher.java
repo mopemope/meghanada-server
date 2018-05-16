@@ -36,7 +36,7 @@ public class ContainsMatcher implements CompletionMatcher {
 
   @Override
   public Predicate<CandidateUnit> filter() {
-    return c -> match(c);
+    return this::match;
   }
 
   @Override
