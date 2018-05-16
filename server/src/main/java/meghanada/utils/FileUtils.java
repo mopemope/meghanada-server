@@ -304,7 +304,7 @@ public final class FileUtils {
                 })
             .collect(Collectors.toList());
 
-    ProjectDatabaseHelper.saveChecksumMap(projectRootPath, map);
+    boolean b = ProjectDatabaseHelper.saveChecksumMap(projectRootPath, map);
     log.debug("remove unmodified {} to {}", sourceFiles.size(), fileList.size());
     log.trace("modified : {}", fileList);
     return fileList;

@@ -72,9 +72,11 @@ class MemberCacheLoader extends CacheLoader<String, List<MemberDescriptor>>
                   .containsClassIndex(innerFQCN)
                   .ifPresent(
                       wrapIOConsumer(
-                          index ->
-                              ProjectDatabaseHelper.saveMemberDescriptors(
-                                  index.getRawDeclaration(), list)));
+                          index -> {
+                            boolean b =
+                                ProjectDatabaseHelper.saveMemberDescriptors(
+                                    index.getRawDeclaration(), list);
+                          }));
               return true;
             });
   }
@@ -148,7 +150,7 @@ class MemberCacheLoader extends CacheLoader<String, List<MemberDescriptor>>
     final RemovalCause cause = notification.getCause();
     if (cause.equals(RemovalCause.EXPLICIT)) {
       final String key = notification.getKey();
-      ProjectDatabaseHelper.deleteMemberDescriptors(key);
+      boolean b = ProjectDatabaseHelper.deleteMemberDescriptors(key);
     }
   }
 }

@@ -28,7 +28,7 @@ class JavaSourceLoader extends CacheLoader<File, Source> implements RemovalListe
   }
 
   private void deleteSource(final Source source) throws Exception {
-    ProjectDatabaseHelper.deleteSource(source.getStoreId());
+    boolean b = ProjectDatabaseHelper.deleteSource(source.getStoreId());
   }
 
   private Optional<Source> loadSource(final File sourceFile) throws Exception {

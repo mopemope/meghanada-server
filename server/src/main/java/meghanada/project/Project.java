@@ -879,7 +879,7 @@ public abstract class Project implements Serializable, Storable {
   }
 
   public synchronized void writeCaller() throws IOException {
-    ProjectDatabaseHelper.saveCallerMap(this.projectRootPath, this.callerMap);
+    boolean b = ProjectDatabaseHelper.saveCallerMap(this.projectRootPath, this.callerMap);
   }
 
   private void loadCaller() throws IOException {
