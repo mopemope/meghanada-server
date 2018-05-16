@@ -14,10 +14,16 @@ public class FuzzyMatcherTest {
     ClassIndex c = new ClassIndex("Main", Collections.emptyList(), Collections.emptyList());
     boolean b = matcher.match(c);
     assertFalse(b);
+  }
 
-    matcher = new FuzzyMatcher("Map");
-    c = new ClassIndex("MallocParser", Collections.emptyList(), Collections.emptyList());
-    b = matcher.match(c);
+  @Test
+  public void match2() {
+    CompletionMatcher matcher = new FuzzyMatcher("Map");
+    ClassIndex c = new ClassIndex("MallocParser", Collections.emptyList(), Collections.emptyList());
+    boolean b = matcher.match(c);
     assertTrue(b);
+    c = new ClassIndex("AbstractMap", Collections.emptyList(), Collections.emptyList());
+    b = matcher.match(c);
+    assertFalse(b);
   }
 }

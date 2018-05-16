@@ -482,7 +482,7 @@ public class Source implements Serializable, Storable, SearchIndexable {
 
       log.debug("search unknown class : '{}' ...", searchWord);
       final Collection<? extends CandidateUnit> findUnits =
-          reflector.searchClasses(searchWord, false, false);
+          reflector.searchClasses(searchWord, true);
       log.debug("find candidate units : {}", findUnits);
 
       if (findUnits.size() == 0) {

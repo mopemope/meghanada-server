@@ -51,28 +51,11 @@ public class CachedASMReflectorTest extends GradleTestBase {
     assertTrue(9055 <= cachedASMReflector.getGlobalClassIndex().size());
   }
 
-  @Ignore
-  @Test
-  public void testSearchMap() throws Exception {
-    final CachedASMReflector cachedASMReflector = CachedASMReflector.getInstance();
-    boolean isOpenJDK = System.getProperty("java.home").contains("openjdk");
-
-    Stopwatch stopwatch = Stopwatch.createStarted();
-    Collection<? extends CandidateUnit> candidateUnits = cachedASMReflector.searchClasses("Map");
-    System.out.println(stopwatch.stop());
-    candidateUnits.forEach(u -> System.out.println(u.getDeclaration()));
-    if (isOpenJDK) {
-      assertEquals(245, candidateUnits.size());
-    } else {
-      assertEquals(265, candidateUnits.size());
-    }
-  }
-
   @Test
   public void testSearchClasses01() throws Exception {
     final CachedASMReflector cachedASMReflector = CachedASMReflector.getInstance();
     final Collection<? extends CandidateUnit> candidateUnits =
-        cachedASMReflector.searchClasses("Map", false, false);
+        cachedASMReflector.searchClasses("Map", false);
     candidateUnits.forEach(c -> System.out.println(c));
     assertEquals(1, candidateUnits.size());
   }

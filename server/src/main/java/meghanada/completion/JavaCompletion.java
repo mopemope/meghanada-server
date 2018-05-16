@@ -20,7 +20,7 @@ import java.util.Set;
 import java.util.SortedMap;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import javax.annotation.Nonnull;
 import meghanada.analyze.AccessSymbol;
 import meghanada.analyze.ClassScope;
 import meghanada.analyze.MethodCall;
@@ -28,6 +28,9 @@ import meghanada.analyze.Source;
 import meghanada.analyze.TypeScope;
 import meghanada.analyze.Variable;
 import meghanada.cache.GlobalCache;
+import meghanada.completion.matcher.CompletionMatcher;
+import meghanada.completion.matcher.DefaultMatcher;
+import meghanada.completion.matcher.FuzzyMatcher;
 import meghanada.config.Config;
 import meghanada.index.IndexDatabase;
 import meghanada.project.Project;
@@ -56,28 +59,54 @@ public class JavaCompletion {
     this.statisticsTable = createStatisticsTable();
   }
 
+  @Nonnull
   private static Collection<? extends CandidateUnit> annotationCompletion(
       final Source source, final int line, final int column, final String prefix) {
-    final boolean useFuzzySearch = Config.load().useClassFuzzySearch();
     String classPrefix = prefix.substring(1);
-    List<ClassIndex> result;
-    if (useFuzzySearch) {
-      result = CachedASMReflector.getInstance().fuzzySearchAnnotations(classPrefix.toLowerCase());
-
-    } else {
-      result = CachedASMReflector.getInstance().searchAnnotations(classPrefix.toLowerCase());
-    }
-    return result
-        .stream()
-        .sorted(comparing(prefix))
+    CompletionMatcher matcher = getClassCompletionMatcher(classPrefix);
+    CachedASMReflector reflector = CachedASMReflector.getInstance();
+    return reflector
+        .allClassStream()
+        .filter(
+            c -> {
+              if (!c.isAnnotation()) {
+                return false;
+              }
+              return matcher.match(c);
+            })
+        .map(c -> cloneClassIndex(c))
+        .sorted(matcher.comparator())
         .peek(
-            classIndex -> {
-              final String name =
-                  ClassNameUtils.getSimpleName(
-                      ClassNameUtils.replaceInnerMark(classIndex.getName()));
-              classIndex.setName('@' + name);
+            c -> {
+              String name =
+                  ClassNameUtils.getSimpleName(ClassNameUtils.replaceInnerMark(c.getName()));
+              c.setName('@' + name);
             })
         .collect(Collectors.toList());
+  }
+
+  private static ClassIndex cloneClassIndex(final ClassIndex c) {
+    ClassIndex clone = c.clone();
+    if (clone.isInnerClass()) {
+      String p = clone.getPackage();
+      if (!p.isEmpty()) {
+        String declaration = clone.getDisplayDeclaration();
+        String clazzName = declaration.substring(p.length() + 1);
+        clone.setName(clazzName);
+      }
+    }
+    return clone;
+  }
+
+  private static CompletionMatcher getClassCompletionMatcher(final String prefix) {
+    CompletionMatcher matcher;
+    boolean useFuzzySearch = Config.load().useClassFuzzySearch();
+    if (useFuzzySearch) {
+      matcher = new FuzzyMatcher(prefix);
+    } else {
+      matcher = new DefaultMatcher(prefix.toLowerCase(), true);
+    }
+    return matcher;
   }
 
   private static List<MemberDescriptor> doReflect(String fqcn) {
@@ -103,105 +132,6 @@ public class JavaCompletion {
         .orElse(Collections.emptyList());
   }
 
-  private static boolean publicFilter(
-      final CandidateUnit cu,
-      final boolean isStatic,
-      final boolean withCONSTRUCTOR,
-      final String target) {
-
-    final String name = cu.getName();
-    final boolean matched = StringUtils.getInstance().isMatch(name, target);
-    if (!target.isEmpty() && !matched) {
-      return false;
-    }
-
-    final String declaration = cu.getDeclaration();
-    if (!declaration.contains("public")) {
-      return false;
-    }
-    if (!isStatic) {
-      if (withCONSTRUCTOR) {
-        return !declaration.contains(STATIC);
-      }
-      return !declaration.contains(STATIC) && !cu.getType().equals("CONSTRUCTOR");
-    }
-    return declaration.contains(STATIC);
-  }
-
-  private static boolean publicFilter(final CandidateUnit cu, final String target) {
-
-    final String name = cu.getName();
-    final boolean matched = StringUtils.getInstance().isMatch(name, target);
-    if (!target.isEmpty() && !matched) {
-      return false;
-    }
-    if (cu.getType().equals("CONSTRUCTOR")) {
-      return false;
-    }
-
-    final String declaration = cu.getDeclaration();
-    return declaration.contains("public");
-  }
-
-  private static boolean packageFilter(
-      final CandidateUnit cu,
-      final boolean isStatic,
-      final boolean withCONSTRUCTOR,
-      final String target) {
-    final String name = cu.getName().toLowerCase();
-    final boolean matched = StringUtils.getInstance().isMatch(name, target);
-    if (!target.isEmpty() && !matched) {
-      return false;
-    }
-    final String declaration = cu.getDeclaration();
-    if (declaration.contains("private")) {
-      return false;
-    }
-    if (!isStatic) {
-      if (withCONSTRUCTOR) {
-        return !declaration.contains(STATIC);
-      }
-      return !declaration.contains(STATIC) && !cu.getType().equals("CONSTRUCTOR");
-    }
-    return declaration.contains(STATIC);
-  }
-
-  private static boolean privateFilter(
-      final CandidateUnit cu,
-      final boolean isStatic,
-      final boolean withCONSTRUCTOR,
-      final String target) {
-
-    final String name = cu.getName();
-    if (cu.getType().equals("FIELD") && name.startsWith("this$")) {
-      return false;
-    }
-
-    final boolean matched = StringUtils.getInstance().isMatch(name, target);
-    if (!target.isEmpty() && !matched) {
-      return false;
-    }
-
-    final String declaration = cu.getDeclaration();
-    if (!isStatic) {
-      if (withCONSTRUCTOR) {
-        return !declaration.contains(STATIC);
-      }
-      return !declaration.contains(STATIC) && !cu.getType().equals("CONSTRUCTOR");
-    }
-    return declaration.contains(STATIC);
-  }
-
-  private static boolean privateFilter(
-      final CandidateUnit cu, final boolean withCONSTRUCTOR, final String target) {
-
-    final String name = cu.getName();
-    final boolean matched = StringUtils.getInstance().isMatch(name, target);
-    return !(cu.getType().equals("FIELD") && name.startsWith("this$"))
-        && !(!target.isEmpty() && !matched)
-        && (withCONSTRUCTOR || !cu.getType().equals("CONSTRUCTOR"));
-  }
-
   private static Collection<? extends CandidateUnit> publicReflect(
       final String fqcn,
       final boolean isStatic,
@@ -209,7 +139,7 @@ public class JavaCompletion {
       final String target) {
     return doReflect(fqcn)
         .stream()
-        .filter(md -> JavaCompletion.publicFilter(md, isStatic, withCONSTRUCTOR, target))
+        .filter(md -> CompletionFilters.publicMemberFilter(md, isStatic, withCONSTRUCTOR, target))
         .collect(Collectors.toSet());
   }
 
@@ -220,7 +150,7 @@ public class JavaCompletion {
       final String target) {
     return doReflect(fqcn)
         .stream()
-        .filter(md -> JavaCompletion.packageFilter(md, noStatic, withCONSTRUCTOR, target))
+        .filter(md -> CompletionFilters.packageMemberFilter(md, noStatic, withCONSTRUCTOR, target))
         .collect(Collectors.toSet());
   }
 
@@ -323,12 +253,26 @@ public class JavaCompletion {
     if (Character.isUpperCase(prefix.charAt(0))) {
       // completion
       CachedASMReflector reflector = CachedASMReflector.getInstance();
-      boolean fuzzySearch = Config.load().useClassFuzzySearch();
-      if (fuzzySearch) {
-        result.addAll(reflector.fuzzySearchClasses(prefix));
-      } else {
-        result.addAll(reflector.searchClasses(prefix.toLowerCase()));
-      }
+      CompletionMatcher matcher = getClassCompletionMatcher(prefix);
+      List<ClassIndex> classes =
+          reflector
+              .allClassStream()
+              .filter(
+                  c -> {
+                    if (prefix.isEmpty()) {
+                      return true;
+                    }
+                    if (c.isAnnotation()) {
+                      return false;
+                    }
+                    return matcher.match(c);
+                  })
+              .map(
+                  c -> {
+                    return cloneClassIndex(c);
+                  })
+              .collect(Collectors.toList());
+      result.addAll(classes);
     }
     result.addAll(searchStaticMembers(result, prefix));
     List<CandidateUnit> list = new ArrayList<>(result);
@@ -353,14 +297,14 @@ public class JavaCompletion {
       final String fqcn, final boolean withConstructor, final String prefix) {
     return doReflect(fqcn)
         .stream()
-        .filter(md -> JavaCompletion.privateFilter(md, withConstructor, prefix))
+        .filter(md -> CompletionFilters.privateMemberFilter(md, withConstructor, prefix))
         .collect(Collectors.toSet());
   }
 
   private static Collection<MemberDescriptor> reflectWithFQCN(String fqcn, String prefix) {
     return doReflect(fqcn)
         .stream()
-        .filter(md -> JavaCompletion.publicFilter(md, prefix))
+        .filter(md -> CompletionFilters.publicMemberFilter(md, prefix))
         .collect(Collectors.toSet());
   }
 
@@ -579,37 +523,23 @@ public class JavaCompletion {
   }
 
   private static List<ClassIndex> completionImport(final String searchWord) {
-
-    final Config config = Config.load();
-    final boolean useFuzzySearch = config.useClassFuzzySearch();
     final int idx = searchWord.lastIndexOf(':');
-    final Stream<ClassIndex> stream;
     final CachedASMReflector reflector = CachedASMReflector.getInstance();
-
     if (idx > 0) {
       final String classPrefix = searchWord.substring(idx + 1, searchWord.length());
-      if (useFuzzySearch) {
-        stream = reflector.fuzzySearchClassesStream(classPrefix, false);
-        return stream
-            .map(
-                cl -> {
-                  cl.setMemberType(CandidateUnit.MemberType.IMPORT);
-                  return cl;
-                })
-            .collect(Collectors.toList());
-      } else {
-        stream = reflector.searchClassesStream(classPrefix.toLowerCase(), true, false);
-        return stream
-            .map(
-                cl -> {
-                  cl.setMemberType(CandidateUnit.MemberType.IMPORT);
-                  return cl;
-                })
-            .sorted(comparing(classPrefix))
-            .collect(Collectors.toList());
-      }
+      CompletionMatcher matcher = getClassCompletionMatcher(classPrefix);
+      return reflector
+          .allClassStream()
+          .filter(c -> matcher.match(c))
+          .map(
+              c -> {
+                ClassIndex ci = cloneClassIndex(c);
+                ci.setMemberType(CandidateUnit.MemberType.IMPORT);
+                return ci;
+              })
+          .sorted(matcher.comparator())
+          .collect(Collectors.toList());
     }
-
     return Collections.emptyList();
   }
 
@@ -792,20 +722,18 @@ public class JavaCompletion {
 
   private Collection<? extends CandidateUnit> completionNewKeyword(
       Source source, String searchWord) {
-    final boolean useFuzzySearch = Config.load().useClassFuzzySearch();
     // list all classes
     final int idx = searchWord.lastIndexOf(':');
     if (idx > 0) {
-      final List<ClassIndex> result;
       final String classPrefix = searchWord.substring(idx + 1, searchWord.length());
       CachedASMReflector reflector = CachedASMReflector.getInstance();
-      if (useFuzzySearch) {
-        result = reflector.fuzzySearchClasses(classPrefix);
-      } else {
-        result = reflector.searchClasses(classPrefix.toLowerCase());
-        result.sort(comparing(source, classPrefix));
-      }
-      return result;
+      CompletionMatcher matcher = getClassCompletionMatcher(classPrefix);
+      return reflector
+          .allClassStream()
+          .filter(c -> matcher.match(c))
+          .map(c -> cloneClassIndex(c))
+          .sorted(matcher.comparator())
+          .collect(Collectors.toList());
     }
 
     return JavaCompletion.completionNewKeyword(source)
