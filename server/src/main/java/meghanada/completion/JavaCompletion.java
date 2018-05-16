@@ -237,7 +237,11 @@ public class JavaCompletion {
       String k = e.getKey();
       Variable v = e.getValue();
       log.debug("check variable name:{}", k);
-      if (k.startsWith(prefix)) {
+      boolean matched =
+          useCamelCaseCompletion
+              ? StringUtils.isMatchCamelCase(k, prefix)
+              : k.startsWith(prefix);
+      if (matched) {
         log.debug("match variable name:{}", k);
         if (!v.isField) {
           result.add(v.toCandidateUnit());
