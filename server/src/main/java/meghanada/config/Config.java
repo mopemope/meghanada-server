@@ -2,8 +2,13 @@ package meghanada.config;
 
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
+import static meghanada.config.Config.CompletionType.CAMEL_CASE;
+import static meghanada.config.Config.CompletionType.CONTAINS;
+import static meghanada.config.Config.CompletionType.FUZZY;
+import static meghanada.config.Config.CompletionType.PREFIX;
 
 import com.google.common.base.Stopwatch;
+import com.google.common.base.Strings;
 import com.typesafe.config.ConfigFactory;
 import com.typesafe.config.ConfigValueFactory;
 import java.io.File;
@@ -31,6 +36,11 @@ public class Config {
   public static final String MEGHANADA_DIR = ".meghanada";
   public static final String DEFAULT_JAVAC_ARG = "-Xlint:all";
   public static final String PROJECT_ROOT_KEY = "project.root";
+
+  private static final String COMPLETION_TYPE_PREFIX = "prefix";
+  private static final String COMPLETION_TYPE_CONTAINS = "contains";
+  private static final String COMPLETION_TYPE_FUZZY = "fuzzy";
+  private static final String COMPLETION_TYPE_CAME_CASE = "camel-case";
 
   private static final Logger log = LogManager.getLogger(Config.class);
   private static Config config;
@@ -317,10 +327,6 @@ public class Config {
     return c.getBoolean("fast-boot");
   }
 
-  public boolean useClassFuzzySearch() {
-    return c.getBoolean("class-fuzzy-search");
-  }
-
   public boolean useSourceCache() {
     return c.getBoolean("source-cache");
   }
@@ -410,10 +416,6 @@ public class Config {
     return c.getBoolean("full-text-search");
   }
 
-  public boolean useCamelCaseCompletion() {
-    return c.getBoolean("camel-case-completion");
-  }
-
   public List<String> searchStaticMethodClasses() {
     final String classes = c.getString("search-static-method-classes");
     final String[] split = StringUtils.split(classes, ",");
@@ -423,15 +425,67 @@ public class Config {
     return Arrays.stream(split).map(String::trim).collect(Collectors.toList());
   }
 
+  public CompletionType completionMatcher() {
+    String m = c.getString("completion-matcher");
+    if (Strings.isNullOrEmpty(m)) {
+      return PREFIX;
+    }
+    return getCompletionType(m);
+  }
+
+  public CompletionType classCompletionMatcher() {
+    String m = c.getString("class-completion-matcher");
+    if (Strings.isNullOrEmpty(m)) {
+      return PREFIX;
+    }
+    return getCompletionType(m);
+  }
+
+  private Config.CompletionType getCompletionType(String m) {
+    switch (m) {
+      case COMPLETION_TYPE_PREFIX:
+        return PREFIX;
+      case COMPLETION_TYPE_CONTAINS:
+        return CONTAINS;
+      case COMPLETION_TYPE_FUZZY:
+        return FUZZY;
+      case COMPLETION_TYPE_CAME_CASE:
+        return CAMEL_CASE;
+      default:
+        log.warn("invalid matcher: '{}'. use default 'prefix' matcher", m);
+        return PREFIX;
+    }
+  }
+
   @FunctionalInterface
   public interface SimpleSupplier<R> {
-
     R get() throws Exception;
   }
 
   @FunctionalInterface
   public interface SimpleConsumer {
-
     void accept() throws IOException;
+  }
+
+  public enum CompletionType {
+    PREFIX(COMPLETION_TYPE_PREFIX),
+    CONTAINS(COMPLETION_TYPE_CONTAINS),
+    FUZZY(COMPLETION_TYPE_FUZZY),
+    CAMEL_CASE(COMPLETION_TYPE_CAME_CASE);
+
+    private final String typeName;
+
+    CompletionType(final String typeName) {
+      this.typeName = typeName;
+    }
+
+    @Override
+    public String toString() {
+      return this.typeName;
+    }
+
+    public String type() {
+      return this.typeName;
+    }
   }
 }

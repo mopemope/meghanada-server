@@ -12,19 +12,19 @@ import meghanada.utils.ClassNameUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class DefaultMatcher implements CompletionMatcher {
+public class PrefixMatcher implements CompletionMatcher {
 
-  private static final Logger log = LogManager.getLogger(DefaultMatcher.class);
+  private static final Logger log = LogManager.getLogger(PrefixMatcher.class);
 
   private final String query;
   private final boolean partial;
   private Source source;
 
-  public DefaultMatcher(String query, boolean partial) {
+  public PrefixMatcher(String query, boolean partial) {
     this(query, partial, null);
   }
 
-  public DefaultMatcher(String query, boolean partial, Source source) {
+  public PrefixMatcher(String query, boolean partial, Source source) {
     this.query = query;
     this.partial = partial;
     this.source = source;

@@ -16,7 +16,7 @@ public class CamelCaseMatcher implements CompletionMatcher {
 
   public CamelCaseMatcher(String query) {
     this.query = query;
-    this.baseMatcher = new DefaultMatcher(query, true);
+    this.baseMatcher = new PrefixMatcher(query, true);
   }
 
   @Override

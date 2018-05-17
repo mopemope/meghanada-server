@@ -31,8 +31,9 @@ import meghanada.analyze.Variable;
 import meghanada.cache.GlobalCache;
 import meghanada.completion.matcher.CamelCaseMatcher;
 import meghanada.completion.matcher.CompletionMatcher;
-import meghanada.completion.matcher.DefaultMatcher;
+import meghanada.completion.matcher.ContainsMatcher;
 import meghanada.completion.matcher.FuzzyMatcher;
+import meghanada.completion.matcher.PrefixMatcher;
 import meghanada.config.Config;
 import meghanada.index.IndexDatabase;
 import meghanada.project.Project;
@@ -87,26 +88,55 @@ public class JavaCompletion {
   }
 
   private static CompletionMatcher getClassCompletionMatcher(final String prefix) {
+    Config.CompletionType type = Config.load().classCompletionMatcher();
+    return createClassCompletionMatcher(prefix, type);
+  }
+
+  private static CompletionMatcher getCompletionMatcher(final String prefix) {
+    Config.CompletionType type = Config.load().completionMatcher();
+    return createCompletionMatcher(prefix, type);
+  }
+
+  private static CompletionMatcher createCompletionMatcher(
+      final String prefix, final Config.CompletionType type) {
     CompletionMatcher matcher;
-    boolean useFuzzySearch = Config.load().useClassFuzzySearch();
-    boolean useCamelCaseCompletion = Config.load().useCamelCaseCompletion();
-    if (useFuzzySearch) {
-      matcher = new FuzzyMatcher(prefix);
-    } else if (useCamelCaseCompletion) {
-      matcher = new CamelCaseMatcher(prefix);
-    } else {
-      matcher = new DefaultMatcher(prefix, true);
+    switch (type) {
+      case PREFIX:
+        matcher = new PrefixMatcher(prefix, true);
+        break;
+      case CONTAINS:
+        matcher = new ContainsMatcher(prefix, true);
+        break;
+      case FUZZY:
+        matcher = new FuzzyMatcher(prefix, 1.8);
+        break;
+      case CAMEL_CASE:
+        matcher = new CamelCaseMatcher(prefix);
+        break;
+      default:
+        matcher = new PrefixMatcher(prefix, true);
     }
     return matcher;
   }
 
-  private static CompletionMatcher getCompletionMatcher(final String prefix) {
+  private static CompletionMatcher createClassCompletionMatcher(
+      final String prefix, final Config.CompletionType type) {
     CompletionMatcher matcher;
-    boolean useCamelCaseCompletion = Config.load().useCamelCaseCompletion();
-    if (useCamelCaseCompletion) {
-      matcher = new CamelCaseMatcher(prefix);
-    } else {
-      matcher = new DefaultMatcher(prefix, true);
+    switch (type) {
+      case PREFIX:
+        matcher = new PrefixMatcher(prefix, true);
+        break;
+      case CONTAINS:
+        matcher = new ContainsMatcher(prefix, true);
+        break;
+      case FUZZY:
+        matcher = new FuzzyMatcher(prefix);
+        break;
+      case CAMEL_CASE:
+        matcher = new CamelCaseMatcher(prefix);
+        break;
+      default:
+        matcher = new PrefixMatcher(prefix, true);
     }
     return matcher;
   }

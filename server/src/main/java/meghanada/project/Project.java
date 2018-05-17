@@ -1145,7 +1145,10 @@ public abstract class Project implements Serializable, Storable {
       sb.append(String.format("home: %s\n", config.getHomeDir()));
       sb.append(String.format("userHome: %s\n", config.getUserHomeDir()));
       sb.append(String.format("useFastBoot: %s\n", config.useFastBoot()));
-      sb.append(String.format("useClassFuzzySearch: %s\n", config.useClassFuzzySearch()));
+      sb.append(
+          String.format(
+              "classCompletionMatcher: %s\n", config.classCompletionMatcher().toString()));
+      sb.append(String.format("completionMatcher: %s\n", config.completionMatcher().toString()));
       sb.append(
           String.format("useJavaVersion: %s\n", System.getProperty("java.specification.version")));
       sb.append(String.format("javacArg: %s\n", config.getJavacArg()));
