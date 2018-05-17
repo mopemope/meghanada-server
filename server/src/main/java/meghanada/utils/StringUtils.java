@@ -15,7 +15,6 @@ public class StringUtils {
   private static final String PatternForAnything = ".*";
   private static final String PatternForSplitByUpper = "(?=\\p{Upper})";
   private static final Map<String, Pattern> cachedPatterns = new HashMap<>(500);
-  private static final Map<Integer, Boolean> cachedResult = new HashMap<>(500);
 
   public static String replace(final String string, final String target, final String replacement) {
     final StringBuilder sb = new StringBuilder(string);
@@ -43,30 +42,23 @@ public class StringUtils {
     if (org.apache.commons.lang3.StringUtils.isEmpty(target)) {
       matched = true;
     } else {
-      Integer key = name.hashCode() / 2 + target.hashCode() / 2;
-      Boolean result = cachedResult.get(key);
-      if (!isNull(result)) {
-        matched = result;
-      } else {
-        if (hasUpperCase(target)) {
-          Pattern pattern = fromCacheOrCompile(target);
-          if (isNull(pattern)) {
-            matched = name.contains(target);
-          } else {
-            matched = matchAndUpdateCache(pattern, name, key);
-          }
+      if (hasUpperCase(target)) {
+        Pattern pattern = fromCacheOrCompile(target);
+        if (isNull(pattern)) {
+          matched = name.contains(target);
         } else {
-          matched = matchWhenAllLowerCaseLetters(name, target);
+          matched = matchAndUpdateCache(pattern, name);
         }
+      } else {
+        matched = matchWhenAllLowerCaseLetters(name, target);
       }
     }
     return matched;
   }
 
-  private static Boolean matchAndUpdateCache(Pattern p, String name, Integer key) {
+  private static Boolean matchAndUpdateCache(Pattern p, String name) {
     Matcher m = p.matcher(name);
     boolean matched = m.matches();
-    cachedResult.put(key, matched);
     return matched;
   }
 

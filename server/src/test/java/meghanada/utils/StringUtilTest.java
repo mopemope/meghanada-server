@@ -8,6 +8,7 @@ public class StringUtilTest {
 
   @Test
   public void testIsMatchCamelCase() {
+    assertTrue(StringUtils.isMatchCamelCase("HashMap", "H"));
     assertTrue(StringUtils.isMatchCamelCase("charAt", "cA"));
     assertFalse(StringUtils.isMatchCamelCase("codePointAt", "cA"));
     assertTrue(StringUtils.isMatchCamelCase("codePointAt", "codPoA"));
