@@ -78,6 +78,16 @@ java -XX:+UseConcMarkSweepGC -XX:SoftRefLRUPolicyMSPerMB=50 -Xverify:none -Xms25
 
 Meghanada-Server is required JDK 8 or later (not JRE). It used Compiler API.
 
+## Contributing
+
+Contributions are extremely welcome!
+
+Please check execute the following command before contributing. then please push PR to `dev` branch.
+
+```
+./gradlew clean goJF check
+```
+
 ## Project
 
 ### Gradle
