@@ -606,6 +606,7 @@ public class JavaCompletion {
       return Collections.emptyList();
     }
     String s = Joiner.on(" OR ").join(classes);
+    CompletionMatcher matcher = getCompletionMatcher(name);
     try {
       members =
           IndexDatabase.getInstance()
@@ -613,9 +614,9 @@ public class JavaCompletion {
                   IndexDatabase.paren(s),
                   IndexDatabase.doubleQuote("public static"),
                   "(\"METHOD\" OR \"FIELD\")",
-                  name + "*")
+                  "")
               .stream()
-              .filter(m -> !result.contains(m))
+              .filter(m -> !result.contains(m) && matcher.match(m))
               .peek(
                   m -> {
                     m.setExtra("static-import " + m.getDeclaringClass());
