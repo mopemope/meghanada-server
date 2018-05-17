@@ -28,3 +28,4 @@ bazel-*
 */bin
 *.log
 .vscode
+.#*.*

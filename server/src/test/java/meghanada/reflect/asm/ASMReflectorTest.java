@@ -56,8 +56,13 @@ public class ASMReflectorTest extends GradleTestBase {
     Map<ClassIndex, File> classIndex = timeIt(() -> asmReflector.getClasses(jar));
     Config config = Config.load();
 
-    if (config.isJava8()) {
+    String osName = System.getProperty("os.name").toLowerCase();
+    boolean isMacOs = osName.startsWith("mac os x");
+
+    if (config.isJava8() && !isMacOs) {
       assertEquals(4105, classIndex.size());
+    } else if (config.isJava8() && isMacOs) {
+      assertEquals(4353, classIndex.size());
     } else {
       assertEquals(6940, classIndex.size());
     }
