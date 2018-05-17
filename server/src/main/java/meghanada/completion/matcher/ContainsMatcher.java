@@ -31,7 +31,7 @@ public class ContainsMatcher implements CompletionMatcher {
 
   @Override
   public boolean match(CandidateUnit c) {
-    return CachedASMReflector.containsKeyword(this.query, this.partial, c);
+    return CachedASMReflector.containsKeyword(this.query, this.partial, c, true);
   }
 
   @Override

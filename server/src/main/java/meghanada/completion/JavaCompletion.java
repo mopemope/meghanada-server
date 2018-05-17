@@ -2,6 +2,7 @@ package meghanada.completion;
 
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
+import static meghanada.reflect.asm.CachedASMReflector.cloneClassIndex;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.TreeBasedTable;
@@ -49,7 +50,6 @@ import org.apache.logging.log4j.Logger;
 public class JavaCompletion {
 
   private static final Logger log = LogManager.getLogger(JavaCompletion.class);
-  private static final String STATIC = "static ";
   private final TreeBasedTable<File, CandidateUnit, Integer> statisticsTable;
 
   private Project project;
@@ -86,19 +86,6 @@ public class JavaCompletion {
         .collect(Collectors.toList());
   }
 
-  private static ClassIndex cloneClassIndex(final ClassIndex c) {
-    ClassIndex clone = c.clone();
-    if (clone.isInnerClass()) {
-      String p = clone.getPackage();
-      if (!p.isEmpty()) {
-        String declaration = clone.getDisplayDeclaration();
-        String clazzName = declaration.substring(p.length() + 1);
-        clone.setName(clazzName);
-      }
-    }
-    return clone;
-  }
-
   private static CompletionMatcher getClassCompletionMatcher(final String prefix) {
     CompletionMatcher matcher;
     boolean useFuzzySearch = Config.load().useClassFuzzySearch();
@@ -108,7 +95,18 @@ public class JavaCompletion {
     } else if (useCamelCaseCompletion) {
       matcher = new CamelCaseMatcher(prefix);
     } else {
-      matcher = new DefaultMatcher(prefix.toLowerCase(), true);
+      matcher = new DefaultMatcher(prefix, true);
+    }
+    return matcher;
+  }
+
+  private static CompletionMatcher getCompletionMatcher(final String prefix) {
+    CompletionMatcher matcher;
+    boolean useCamelCaseCompletion = Config.load().useCamelCaseCompletion();
+    if (useCamelCaseCompletion) {
+      matcher = new CamelCaseMatcher(prefix);
+    } else {
+      matcher = new DefaultMatcher(prefix, true);
     }
     return matcher;
   }
@@ -141,9 +139,14 @@ public class JavaCompletion {
       final boolean isStatic,
       final boolean withCONSTRUCTOR,
       final String target) {
+    // normal completion matcher
+    final CompletionMatcher matcher = getCompletionMatcher(target);
     return doReflect(fqcn)
         .stream()
-        .filter(md -> CompletionFilters.publicMemberFilter(md, isStatic, withCONSTRUCTOR, target))
+        .filter(
+            md ->
+                CompletionFilters.publicMemberFilter(
+                    md, isStatic, withCONSTRUCTOR, matcher, target))
         .collect(Collectors.toSet());
   }
 
@@ -152,9 +155,14 @@ public class JavaCompletion {
       final boolean noStatic,
       final boolean withCONSTRUCTOR,
       final String target) {
+    // normal completion matcher
+    final CompletionMatcher matcher = getCompletionMatcher(target);
     return doReflect(fqcn)
         .stream()
-        .filter(md -> CompletionFilters.packageMemberFilter(md, noStatic, withCONSTRUCTOR, target))
+        .filter(
+            md ->
+                CompletionFilters.packageMemberFilter(
+                    md, noStatic, withCONSTRUCTOR, matcher, target))
         .collect(Collectors.toSet());
   }
 
@@ -181,7 +189,7 @@ public class JavaCompletion {
   }
 
   private static Collection<? extends CandidateUnit> completionSymbols(
-      Source source, int line, String prefix) {
+      final Source source, final int line, final String prefix) {
     Set<CandidateUnit> result = new HashSet<>(32);
 
     // prefix search
@@ -193,14 +201,12 @@ public class JavaCompletion {
     }
     String fqcn = typeScope.get().getFQCN();
 
+    final CompletionMatcher matcher = getCompletionMatcher(prefix);
+    final CompletionMatcher classMatcher = getClassCompletionMatcher(prefix);
     // add this member
-    boolean useCamelCaseCompletion = Config.load().useCamelCaseCompletion();
     for (MemberDescriptor c : JavaCompletion.reflectSelf(fqcn, true, prefix)) {
       String name = c.getName();
-      final boolean matched =
-          useCamelCaseCompletion
-              ? StringUtils.isMatchCamelCase(name, prefix)
-              : name.startsWith(prefix);
+      final boolean matched = matcher.match(c);
       if (matched) {
         result.add(c);
       }
@@ -217,10 +223,7 @@ public class JavaCompletion {
         parentClass = parentClass.substring(0, i);
         for (MemberDescriptor c : JavaCompletion.reflectSelf(parentClass, true, prefix)) {
           String name = c.getName();
-          boolean matched =
-              useCamelCaseCompletion
-                  ? StringUtils.isMatchCamelCase(name, prefix)
-                  : StringUtils.contains(name, prefix);
+          boolean matched = matcher.match(c);
           if (matched) {
             result.add(c);
           }
@@ -237,12 +240,12 @@ public class JavaCompletion {
       String k = e.getKey();
       Variable v = e.getValue();
       log.debug("check variable name:{}", k);
-      boolean matched =
-          useCamelCaseCompletion ? StringUtils.isMatchCamelCase(k, prefix) : k.startsWith(prefix);
+      CandidateUnit c = v.toCandidateUnit();
+      boolean matched = matcher.match(c);
       if (matched) {
         log.debug("match variable name:{}", k);
         if (!v.isField) {
-          result.add(v.toCandidateUnit());
+          result.add(c);
         }
       }
     }
@@ -251,8 +254,9 @@ public class JavaCompletion {
     for (Map.Entry<String, String> e : source.getImportedClassMap().entrySet()) {
       String k = e.getKey();
       String v = e.getValue();
-      if (k.startsWith(prefix)) {
-        result.add(ClassIndex.createClass(v));
+      ClassIndex classIndex = ClassIndex.createClass(v);
+      if (classMatcher.match(classIndex)) {
+        result.add(classIndex);
       }
     }
     // static import
@@ -260,7 +264,7 @@ public class JavaCompletion {
       String methodName = e.getKey();
       String clazz = e.getValue();
       for (MemberDescriptor md : JavaCompletion.reflectWithFQCN(clazz, methodName)) {
-        if (md.getName().equals(methodName)) {
+        if (matcher.match(md)) {
           result.add(md);
         }
       }
@@ -270,7 +274,6 @@ public class JavaCompletion {
     if (Character.isUpperCase(prefix.charAt(0))) {
       // completion
       CachedASMReflector reflector = CachedASMReflector.getInstance();
-      CompletionMatcher matcher = getClassCompletionMatcher(prefix);
       List<ClassIndex> classes =
           reflector
               .allClassStream()
@@ -282,7 +285,7 @@ public class JavaCompletion {
                     if (c.isAnnotation()) {
                       return false;
                     }
-                    return matcher.match(c);
+                    return classMatcher.match(c);
                   })
               .map(
                   c -> {
@@ -312,16 +315,20 @@ public class JavaCompletion {
 
   private static Collection<MemberDescriptor> reflectSelf(
       final String fqcn, final boolean withConstructor, final String prefix) {
+    final CompletionMatcher matcher = getCompletionMatcher(prefix);
+    // normal completion matcher
     return doReflect(fqcn)
         .stream()
-        .filter(md -> CompletionFilters.privateMemberFilter(md, withConstructor, prefix))
+        .filter(md -> CompletionFilters.privateMemberFilter(md, withConstructor, matcher, prefix))
         .collect(Collectors.toSet());
   }
 
   private static Collection<MemberDescriptor> reflectWithFQCN(String fqcn, String prefix) {
+    final CompletionMatcher matcher = getCompletionMatcher(prefix);
+    // normal completion matcher
     return doReflect(fqcn)
         .stream()
-        .filter(md -> CompletionFilters.publicMemberFilter(md, prefix))
+        .filter(md -> CompletionFilters.publicMemberFilter(md, matcher, prefix))
         .collect(Collectors.toSet());
   }
 
@@ -544,10 +551,11 @@ public class JavaCompletion {
     final CachedASMReflector reflector = CachedASMReflector.getInstance();
     if (idx > 0) {
       final String classPrefix = searchWord.substring(idx + 1, searchWord.length());
+      // use class completion matcher
       CompletionMatcher matcher = getClassCompletionMatcher(classPrefix);
       return reflector
           .allClassStream()
-          .filter(c -> matcher.match(c))
+          .filter(matcher::match)
           .map(
               c -> {
                 ClassIndex ci = cloneClassIndex(c);
@@ -641,24 +649,17 @@ public class JavaCompletion {
     // special command
 
     if (searchWord.startsWith("*import")) {
-
+      // class completion
       return JavaCompletion.completionImport(searchWord);
-
     } else if (searchWord.startsWith("*new")) {
-
+      // class completion
       return completionNewKeyword(source, searchWord);
-
     } else if (searchWord.startsWith("*method")) {
-
+      // normal completion
       return completionMethods(source, line, column, searchWord);
-
     } else if (searchWord.startsWith("*package")) {
       // completion projects package
       return this.completionPackage(source.getFile());
-      //      return this.completionPackage()
-      //          .stream()
-      //          .sorted(Comparator.comparing(CandidateUnit::getName))
-      //          .collect(Collectors.toList());
     }
 
     // search fields or methods
@@ -666,12 +667,14 @@ public class JavaCompletion {
     if (idx > 0) {
       final String var = searchWord.substring(1, idx);
       final String prefix = searchWord.substring(idx + 1);
+      // normal completion
       return JavaCompletion.completionFieldsOrMethods(source, line, var, prefix)
           .stream()
           .sorted(methodComparing(prefix))
           .collect(Collectors.toList());
     }
 
+    // normal completion
     return JavaCompletion.completionFieldsOrMethods(source, line, searchWord.substring(1), "")
         .stream()
         .sorted(defaultComparing())
@@ -683,7 +686,6 @@ public class JavaCompletion {
     final int prefixIdx = searchWord.lastIndexOf('#');
     final int classIdx = searchWord.lastIndexOf(':');
     final String pkg = source.getPackageName();
-
     if (classIdx > 0 && prefixIdx > 0) {
       final String prefix = searchWord.substring(prefixIdx + 1);
       // return methods of prefix class
@@ -743,10 +745,11 @@ public class JavaCompletion {
     if (idx > 0) {
       final String classPrefix = searchWord.substring(idx + 1, searchWord.length());
       CachedASMReflector reflector = CachedASMReflector.getInstance();
+      // use class completion matcher
       CompletionMatcher matcher = getClassCompletionMatcher(classPrefix);
       return reflector
           .allClassStream()
-          .filter(c -> matcher.match(c))
+          .filter(matcher::match)
           .map(c -> cloneClassIndex(c))
           .sorted(matcher.comparator())
           .collect(Collectors.toList());

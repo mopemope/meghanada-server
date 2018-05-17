@@ -37,9 +37,7 @@ public class DefaultMatcher implements CompletionMatcher {
       return false;
     }
     if (partial) {
-      String lowerKeyword = keyword.toLowerCase();
-      String className = name.toLowerCase();
-      return className.startsWith(lowerKeyword);
+      return name.startsWith(keyword);
     } else {
       return name.equals(keyword)
           || name.endsWith('$' + keyword)

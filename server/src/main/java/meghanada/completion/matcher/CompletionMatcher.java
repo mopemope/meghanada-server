@@ -5,6 +5,7 @@ import java.util.function.Predicate;
 import meghanada.reflect.CandidateUnit;
 
 public interface CompletionMatcher {
+
   boolean match(CandidateUnit c);
 
   Predicate<CandidateUnit> filter();
