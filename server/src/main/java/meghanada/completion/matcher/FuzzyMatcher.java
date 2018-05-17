@@ -22,14 +22,22 @@ public class FuzzyMatcher implements CompletionMatcher {
   private final boolean advanced;
   private Source source;
 
-  public FuzzyMatcher(String query) {
+  public FuzzyMatcher(final String query) {
     this(query, false, null);
   }
 
-  public FuzzyMatcher(String query, boolean advanced, Source source) {
+  public FuzzyMatcher(final String query, final Double factor) {
+    this.query = query;
+    this.advanced = false;
+    int len = query.length();
+    this.threshold = (int) (len * factor);
+  }
+
+  public FuzzyMatcher(final String query, final boolean advanced, Source source) {
     this.query = query;
     this.advanced = advanced;
-    this.threshold = (int) (query.length() * SCORE_FACTOR);
+    int len = query.length();
+    this.threshold = (int) (len * SCORE_FACTOR);
     this.source = source;
   }
 

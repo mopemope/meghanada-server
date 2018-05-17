@@ -69,12 +69,19 @@ public class CachedASMReflector {
     return cachedASMReflector;
   }
 
-  public static boolean containsKeyword(String keyword, boolean partial, CandidateUnit c) {
+  public static boolean containsKeyword(
+      final String keyword,
+      final boolean partial,
+      final CandidateUnit c,
+      final boolean caseSensitive) {
     String name = c.getName();
     if (ClassNameUtils.isAnonymousClass(name)) {
       return false;
     }
     if (partial) {
+      if (caseSensitive) {
+        return name.contains(keyword);
+      }
       String lowerKeyword = keyword.toLowerCase();
       String className = name.toLowerCase();
       return className.contains(lowerKeyword);
@@ -300,7 +307,7 @@ public class CachedASMReflector {
         .values()
         .parallelStream()
         .filter(classIndex -> classIndex.getReturnType().startsWith(parent + '$'))
-        .map(this::cloneClassIndex)
+        .map(CachedASMReflector::cloneClassIndex)
         .collect(Collectors.toList());
   }
 
@@ -317,7 +324,7 @@ public class CachedASMReflector {
     return result;
   }
 
-  private ClassIndex cloneClassIndex(ClassIndex c) {
+  public static ClassIndex cloneClassIndex(ClassIndex c) {
     ClassIndex ci = c.clone();
     if (ci.isInnerClass()) {
       String p = ci.getPackage();
@@ -339,9 +346,9 @@ public class CachedASMReflector {
               if (!includeAnnotation && c.isAnnotation()) {
                 return false;
               }
-              return containsKeyword(keyword, false, c);
+              return containsKeyword(keyword, false, c, false);
             })
-        .map(c -> cloneClassIndex(c))
+        .map(CachedASMReflector::cloneClassIndex)
         .collect(Collectors.toList());
   }
 
