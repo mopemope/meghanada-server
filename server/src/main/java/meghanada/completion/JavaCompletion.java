@@ -28,10 +28,10 @@ import meghanada.analyze.Source;
 import meghanada.analyze.TypeScope;
 import meghanada.analyze.Variable;
 import meghanada.cache.GlobalCache;
+import meghanada.completion.matcher.CamelCaseMatcher;
 import meghanada.completion.matcher.CompletionMatcher;
 import meghanada.completion.matcher.DefaultMatcher;
 import meghanada.completion.matcher.FuzzyMatcher;
-import meghanada.completion.matcher.CamelCaseMatcher;
 import meghanada.config.Config;
 import meghanada.index.IndexDatabase;
 import meghanada.project.Project;
@@ -238,9 +238,7 @@ public class JavaCompletion {
       Variable v = e.getValue();
       log.debug("check variable name:{}", k);
       boolean matched =
-          useCamelCaseCompletion
-              ? StringUtils.isMatchCamelCase(k, prefix)
-              : k.startsWith(prefix);
+          useCamelCaseCompletion ? StringUtils.isMatchCamelCase(k, prefix) : k.startsWith(prefix);
       if (matched) {
         log.debug("match variable name:{}", k);
         if (!v.isField) {

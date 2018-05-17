@@ -1,12 +1,11 @@
 package meghanada.completion.matcher;
 
+import java.util.Comparator;
+import java.util.function.Predicate;
 import meghanada.reflect.CandidateUnit;
 import meghanada.utils.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-
-import java.util.Comparator;
-import java.util.function.Predicate;
 
 public class CamelCaseMatcher implements CompletionMatcher {
 
@@ -35,5 +34,4 @@ public class CamelCaseMatcher implements CompletionMatcher {
   public Comparator<CandidateUnit> comparator() {
     return this.baseMatcher.comparator();
   }
-
 }
