@@ -84,8 +84,7 @@ public class JavaAnalyzer {
   private static Set<File> getErrorFiles(
       final List<Diagnostic<? extends JavaFileObject>> diagnostics) {
 
-    final Set<File> temp =
-        Collections.newSetFromMap(new ConcurrentHashMap<File, Boolean>(diagnostics.size()));
+    final Set<File> temp = Collections.newSetFromMap(new ConcurrentHashMap<>(diagnostics.size()));
 
     for (final Diagnostic<? extends JavaFileObject> diagnostic : diagnostics) {
       final Diagnostic.Kind kind = diagnostic.getKind();
@@ -197,9 +196,8 @@ public class JavaAnalyzer {
       this.eventBus.post(new AnalyzedEvent(analyzedMap, isDiagnostics));
 
       final boolean success = errorFiles.size() == 0;
-      final CompileResult result = new CompileResult(success, analyzedMap, diagnostics, errorFiles);
       // ProjectDatabaseHelper.saveCompileResult(result);
-      return result;
+      return new CompileResult(success, analyzedMap, diagnostics, errorFiles);
     }
   }
 
@@ -220,7 +218,7 @@ public class JavaAnalyzer {
       final File sourceFile = new File(sourcePath);
       final JavaFileObject fileObject =
           new JavaSourceFromString(sourceFile.getCanonicalPath(), sourceCode);
-      final List<? extends JavaFileObject> compilationUnits = Arrays.asList(fileObject);
+      final List<? extends JavaFileObject> compilationUnits = Collections.singletonList(fileObject);
       final DiagnosticCollector<JavaFileObject> diagnosticCollector = new DiagnosticCollector<>();
       final List<String> opts =
           Arrays.asList(
@@ -298,7 +296,7 @@ public class JavaAnalyzer {
   }
 
   private static class JavaSourceFromString extends SimpleJavaFileObject {
-    String code;
+    final String code;
 
     JavaSourceFromString(String filePath, String code) {
       super(new File(filePath).toURI(), Kind.SOURCE);

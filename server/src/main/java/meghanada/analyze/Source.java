@@ -87,7 +87,7 @@ public class Source implements Serializable, Storable, SearchIndexable {
   private transient List<LineRange> lineRange;
   private transient LineMap lineMap;
 
-  transient Map<Long, List<IndexableWord>> indexWords = new HashMap<>(4);
+  final transient Map<Long, List<IndexableWord>> indexWords = new HashMap<>(4);
 
   public Source(String filePath) {
     this.filePath = filePath;

@@ -30,7 +30,6 @@ import jetbrains.exodus.entitystore.EntityId;
 import meghanada.cache.GlobalCache;
 import meghanada.index.IndexDatabase;
 import meghanada.index.SearchIndexable;
-import meghanada.module.ModuleHelper;
 import meghanada.reflect.CandidateUnit;
 import meghanada.reflect.ClassIndex;
 import meghanada.reflect.MemberDescriptor;
@@ -216,15 +215,7 @@ public class CachedASMReflector {
         newIndex.setEntityID(entityId);
       }
     }
-    try {
-      if (ModuleHelper.isJrtFsFile(file)) {
-        newIndex.setFilePath(file.getPath());
-      } else {
-        newIndex.setFilePath(file.getCanonicalPath());
-      }
-    } catch (IOException e) {
-      throw new UncheckedIOException(e);
-    }
+    ASMReflector.setFilePath(newIndex, file);
 
     this.globalClassIndex.put(fqcn, newIndex);
   }
@@ -480,29 +471,13 @@ public class CachedASMReflector {
   }
 
   public void scanAllStaticMembers() {
-    ASMReflector reflector = ASMReflector.getInstance();
     IndexDatabase database = IndexDatabase.getInstance();
     try (Stream<File> stream = this.directories.stream().parallel()) {
       stream.forEach(
           file -> {
             ConcurrentLinkedDeque<MemberDescriptor> deque = new ConcurrentLinkedDeque<>();
             try {
-              reflector.scanClasses(
-                  file,
-                  (name, in) -> {
-                    ClassReader read = new ClassReader(in);
-                    ClassAnalyzeVisitor visitor = new ClassAnalyzeVisitor(name, name, false, false);
-                    read.accept(visitor, 0);
-                    List<MemberDescriptor> members =
-                        visitor
-                            .getMembers()
-                            .stream()
-                            .filter(m -> m.isPublic() && m.isStatic())
-                            .collect(Collectors.toList());
-                    if (!members.isEmpty()) {
-                      deque.addAll(members);
-                    }
-                  });
+              scanMembers(file, deque);
               MemberIndex mi = new MemberIndex(file.getCanonicalPath(), deque);
               database.requestIndex(mi, event -> {});
             } catch (IOException e) {
@@ -522,23 +497,7 @@ public class CachedASMReflector {
                   return;
                 }
                 ConcurrentLinkedDeque<MemberDescriptor> deque = new ConcurrentLinkedDeque<>();
-                reflector.scanClasses(
-                    file,
-                    (name, in) -> {
-                      ClassReader read = new ClassReader(in);
-                      ClassAnalyzeVisitor visitor =
-                          new ClassAnalyzeVisitor(name, name, false, false);
-                      read.accept(visitor, 0);
-                      List<MemberDescriptor> members =
-                          visitor
-                              .getMembers()
-                              .stream()
-                              .filter(m -> m.isPublic() && m.isStatic())
-                              .collect(Collectors.toList());
-                      if (!members.isEmpty()) {
-                        deque.addAll(members);
-                      }
-                    });
+                scanMembers(file, deque);
                 final MemberIndex mi = new MemberIndex(file.getCanonicalPath(), deque);
                 database.requestIndex(
                     mi,
@@ -556,14 +515,31 @@ public class CachedASMReflector {
             });
   }
 
+  private void scanMembers(final File file, final ConcurrentLinkedDeque<MemberDescriptor> deque)
+      throws IOException {
+    final ASMReflector reflector = ASMReflector.getInstance();
+    reflector.scanClasses(
+        file,
+        (name, in) -> {
+          ClassReader read = new ClassReader(in);
+          ClassAnalyzeVisitor visitor = new ClassAnalyzeVisitor(name, name, false, false);
+          read.accept(visitor, 0);
+          List<MemberDescriptor> members =
+              visitor
+                  .getMembers()
+                  .stream()
+                  .filter(m -> m.isPublic() && m.isStatic())
+                  .collect(Collectors.toList());
+          if (!members.isEmpty()) {
+            deque.addAll(members);
+          }
+        });
+  }
+
   public void scan(File file, Consumer<String> c) {
     ASMReflector reflector = ASMReflector.getInstance();
     try {
-      reflector.scanClasses(
-          file,
-          (name, in) -> {
-            c.accept(name);
-          });
+      reflector.scanClasses(file, (name, in) -> c.accept(name));
     } catch (IOException e) {
       throw new UncheckedIOException(e);
     }

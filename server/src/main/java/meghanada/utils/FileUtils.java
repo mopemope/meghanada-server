@@ -51,7 +51,7 @@ public final class FileUtils {
   public static final String JAVA_EXT = ".java";
   public static final String JAR_EXT = ".jar";
   public static final String CLASS_EXT = ".class";
-  public static final String PACKAGE_INFO = "package-info.java";
+  private static final String PACKAGE_INFO_JAVA = "package-info.java";
   private static final Logger log = LogManager.getLogger(FileUtils.class);
   private static final String ALGORITHM_SHA_512 = "SHA-512";
 
@@ -278,7 +278,7 @@ public final class FileUtils {
                   try {
                     String fileName = f.getName();
                     final String path = f.getCanonicalPath();
-                    if (!fileName.equals(PACKAGE_INFO)
+                    if (!fileName.equals(PACKAGE_INFO_JAVA)
                         && !FileUtils.hasClassFile(path, sourceRoots, output)) {
                       return true;
                     }
@@ -306,7 +306,7 @@ public final class FileUtils {
 
     boolean b = ProjectDatabaseHelper.saveChecksumMap(projectRootPath, map);
     log.debug("remove unmodified {} to {}", sourceFiles.size(), fileList.size());
-    log.trace("modified : {}", fileList);
+    log.trace("modified : {} {}", fileList, b);
     return fileList;
   }
 
@@ -316,7 +316,7 @@ public final class FileUtils {
   }
 
   public static List<String> readLines(File file) throws IOException {
-    List<String> lines = null;
+    List<String> lines;
     try (InputStream in = new FileInputStream(file)) {
       lines = IOUtils.readLines(in);
     }
@@ -332,7 +332,7 @@ public final class FileUtils {
     try (final BufferedReader br =
         new BufferedReader(
             new InputStreamReader(new FileInputStream(file), Charset.forName("UTF-8")))) {
-      String s = null;
+      String s;
       long i = 0;
       while ((s = br.readLine()) != null) {
         if (start > i) {

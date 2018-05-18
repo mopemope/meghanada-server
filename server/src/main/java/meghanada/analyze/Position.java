@@ -7,8 +7,8 @@ public class Position implements Serializable {
 
   private static final long serialVersionUID = -1827615026831853860L;
 
-  public long line;
-  public long column;
+  public final long line;
+  public final long column;
 
   public Position(final long line, final long column) {
     this.line = line;

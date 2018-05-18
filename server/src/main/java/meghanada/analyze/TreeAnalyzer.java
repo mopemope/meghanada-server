@@ -183,8 +183,7 @@ public class TreeAnalyzer {
   }
 
   private static void analyzeLiteral(
-      SourceContext context, JCTree.JCLiteral literal, int preferredPos, int endPos)
-      throws IOException {
+      SourceContext context, JCTree.JCLiteral literal, int preferredPos, int endPos) {
     Source src = context.getSource();
     Tree.Kind kind = literal.getKind();
     Object value = literal.getValue();
@@ -251,15 +250,11 @@ public class TreeAnalyzer {
       if (markUnUse) {
         // contains
         String name = ClassNameUtils.replaceInnerMark(simpleName);
-        if (src.unused.contains(name)) {
-          src.unused.remove(name);
-        }
+        src.unused.remove(name);
         int i = simpleName.indexOf('$');
         if (i > 0) {
           String parentClass = simpleName.substring(0, i);
-          if (src.unused.contains(parentClass)) {
-            src.unused.remove(parentClass);
-          }
+          src.unused.remove(parentClass);
         }
       }
 
@@ -832,7 +827,7 @@ public class TreeAnalyzer {
               .ifPresent(
                   scope -> {
                     scope.addMethodCall(methodCall);
-                    addMethodCallIndex(src, methodCall);
+                    addUsageIndex(src, methodCall);
                   });
         }
       }
@@ -1316,20 +1311,7 @@ public class TreeAnalyzer {
             .ifPresent(
                 fqcn -> {
                   fa.declaringClass = TreeAnalyzer.markFQCN(src, fqcn);
-                  if (selected instanceof JCTree.JCIdent) {
-                    JCTree.JCIdent ident = (JCTree.JCIdent) selected;
-                    int vStart = ident.getStartPosition();
-                    int vEnd = ident.getEndPosition(context.getEndPosTable());
-                    Range vRange = Range.create(src, vStart, vEnd);
-                    Variable variable = new Variable(selectScope, ident.pos, vRange);
-                    variable.fqcn = fqcn;
-                    src.getCurrentScope()
-                        .ifPresent(
-                            scope -> {
-                              scope.addVariable(variable);
-                              addSymbolIndex(src, scope, variable);
-                            });
-                  }
+                  addVariable(context, src, selected, selectScope, fqcn);
                 });
       }
       if (nonNull(sym.type)) {
@@ -1339,7 +1321,7 @@ public class TreeAnalyzer {
           .ifPresent(
               scope -> {
                 scope.addFieldAccess(fa);
-                addFieldAccessIndex(src, fa);
+                addUsageIndex(src, fa);
               });
 
     } else if (kind.equals(ElementKind.METHOD)) {
@@ -1358,7 +1340,7 @@ public class TreeAnalyzer {
           .ifPresent(
               scope -> {
                 scope.addMethodCall(methodCall);
-                addMethodCallIndex(src, methodCall);
+                addUsageIndex(src, methodCall);
               });
 
     } else if (kind.equals(ElementKind.ENUM)) {
@@ -1388,7 +1370,7 @@ public class TreeAnalyzer {
           .ifPresent(
               scope -> {
                 scope.addFieldAccess(fa);
-                addFieldAccessIndex(src, fa);
+                addUsageIndex(src, fa);
               });
 
     } else if (kind.equals(ElementKind.PACKAGE)) {
@@ -1419,6 +1401,28 @@ public class TreeAnalyzer {
       }
     } else {
       log.warn("other kind:{}", kind);
+    }
+  }
+
+  private static void addVariable(
+      SourceContext context,
+      Source src,
+      JCTree.JCExpression selected,
+      String selectScope,
+      String fqcn) {
+    if (selected instanceof JCTree.JCIdent) {
+      JCTree.JCIdent ident = (JCTree.JCIdent) selected;
+      int vStart = ident.getStartPosition();
+      int vEnd = ident.getEndPosition(context.getEndPosTable());
+      Range vRange = Range.create(src, vStart, vEnd);
+      Variable variable = new Variable(selectScope, ident.pos, vRange);
+      variable.fqcn = fqcn;
+      src.getCurrentScope()
+          .ifPresent(
+              scope -> {
+                scope.addVariable(variable);
+                addSymbolIndex(src, scope, variable);
+              });
     }
   }
 
@@ -1552,8 +1556,7 @@ public class TreeAnalyzer {
   }
 
   private static void analyzeIdent(
-      SourceContext context, JCTree.JCIdent ident, int preferredPos, int endPos)
-      throws IOException {
+      SourceContext context, JCTree.JCIdent ident, int preferredPos, int endPos) {
     if (endPos == -1) {
       return;
     }
@@ -1580,7 +1583,7 @@ public class TreeAnalyzer {
                       .ifPresent(
                           scope -> {
                             scope.addFieldAccess(fa);
-                            addFieldAccessIndex(src, fa);
+                            addUsageIndex(src, fa);
                           });
                 });
 
@@ -1624,15 +1627,17 @@ public class TreeAnalyzer {
 
       String clazz = src.getImportedClassFQCN(nm, null);
       if (nonNull(clazz)) {
-        variable.fqcn = TreeAnalyzer.markFQCN(src, clazz);
-        variable.argumentIndex = context.getArgumentIndex();
-        context.setArgumentFQCN(variable.fqcn);
-        src.getCurrentScope()
-            .ifPresent(
-                scope -> {
-                  scope.addVariable(variable);
-                  addSymbolIndex(src, scope, variable);
-                });
+        {
+          variable.fqcn = TreeAnalyzer.markFQCN(src, clazz);
+          variable.argumentIndex = context.getArgumentIndex();
+          context.setArgumentFQCN(variable.fqcn);
+          src.getCurrentScope()
+              .ifPresent(
+                  scope -> {
+                    scope.addVariable(variable);
+                    addSymbolIndex(src, scope, variable);
+                  });
+        }
         return;
       }
 
@@ -1656,6 +1661,7 @@ public class TreeAnalyzer {
 
       // mark unknown
       String unknown = TreeAnalyzer.markFQCN(src, nm);
+      log.trace("unknwon: {}", unknown);
     }
   }
 
@@ -1799,7 +1805,7 @@ public class TreeAnalyzer {
                 methodCall.setArguments(arguments);
               }
               scope.addMethodCall(methodCall);
-              addMethodCallIndex(src, methodCall);
+              addUsageIndex(src, methodCall);
             });
   }
 
@@ -1873,7 +1879,7 @@ public class TreeAnalyzer {
                     scope -> {
                       mc.setArguments(arguments);
                       scope.addMethodCall(mc);
-                      addMethodCallIndex(src, mc);
+                      addUsageIndex(src, mc);
                     });
           }
 
@@ -1899,7 +1905,7 @@ public class TreeAnalyzer {
                   scope -> {
                     mc.setArguments(arguments);
                     scope.addMethodCall(mc);
-                    addMethodCallIndex(src, mc);
+                    addUsageIndex(src, mc);
                   });
         }
       }
@@ -1948,20 +1954,7 @@ public class TreeAnalyzer {
                 fqcn -> {
                   methodCall.declaringClass = TreeAnalyzer.markFQCN(src, fqcn);
 
-                  if (expression instanceof JCTree.JCIdent) {
-                    JCTree.JCIdent ident = (JCTree.JCIdent) expression;
-                    int vStart = ident.getStartPosition();
-                    int vEndPos = ident.getEndPosition(context.getEndPosTable());
-                    Range vRange = Range.create(src, vStart, vEndPos);
-                    Variable variable = new Variable(selectScope, ident.pos, vRange);
-                    variable.fqcn = fqcn;
-                    src.getCurrentScope()
-                        .ifPresent(
-                            scope -> {
-                              scope.addVariable(variable);
-                              addSymbolIndex(src, scope, variable);
-                            });
-                  }
+                  addVariable(context, src, expression, selectScope, fqcn);
                 });
       }
 
@@ -2006,7 +1999,7 @@ public class TreeAnalyzer {
               scope -> {
                 methodCall.setArguments(arguments);
                 scope.addMethodCall(methodCall);
-                addMethodCallIndex(src, methodCall);
+                addUsageIndex(src, methodCall);
               });
 
     } else {
@@ -2098,20 +2091,11 @@ public class TreeAnalyzer {
     }
   }
 
-  private static void addFieldAccessIndex(final Source src, FieldAccess fa) {
-    long line = fa.range.begin.line;
-    long column = fa.range.begin.column;
-    String name = fa.name;
-    String declaringClass = fa.declaringClass;
-    src.addIndexWord(IndexableWord.Field.USAGE, line, column, name);
-    src.addIndexWord(IndexableWord.Field.DECLARING_CLASS, line, column, declaringClass);
-  }
-
-  private static void addMethodCallIndex(final Source src, MethodCall mc) {
-    long line = mc.range.begin.line;
-    long column = mc.range.begin.column;
-    String name = mc.name;
-    String declaringClass = mc.declaringClass;
+  private static void addUsageIndex(final Source src, AccessSymbol accessSymbol) {
+    long line = accessSymbol.range.begin.line;
+    long column = accessSymbol.range.begin.column;
+    String name = accessSymbol.name;
+    String declaringClass = accessSymbol.declaringClass;
     src.addIndexWord(IndexableWord.Field.USAGE, line, column, name);
     src.addIndexWord(IndexableWord.Field.DECLARING_CLASS, line, column, declaringClass);
   }

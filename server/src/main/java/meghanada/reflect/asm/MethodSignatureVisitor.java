@@ -252,14 +252,7 @@ class MethodSignatureVisitor extends SignatureVisitor {
 
   private TypeInfo getTypeInfo(String typeVariable) {
     log.traceEntry("typeVariable={}", typeVariable);
-    TypeInfo typeInfo;
-    if (isSuper) {
-      typeInfo = new TypeInfo("? super " + typeVariable, "? super " + typeVariable);
-    } else if (isExtends) {
-      typeInfo = new TypeInfo("? extends " + typeVariable, "? extends " + typeVariable);
-    } else {
-      typeInfo = new TypeInfo(typeVariable, typeVariable);
-    }
+    TypeInfo typeInfo = FieldSignatureVisitor.createTypeInfo(typeVariable, isSuper, isExtends);
     return log.traceExit(typeInfo);
   }
 

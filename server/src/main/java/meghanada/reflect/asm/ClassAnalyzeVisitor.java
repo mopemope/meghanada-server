@@ -30,7 +30,6 @@ class ClassAnalyzeVisitor extends ClassVisitor {
   private final boolean classOnly;
   private final boolean includePrivate;
   List<String> classTypeParameters;
-  private int access;
   private ClassIndex classIndex;
   private String classNameWithType;
 
@@ -61,7 +60,6 @@ class ClassAnalyzeVisitor extends ClassVisitor {
       int api, int access, String name, String signature, String superClass, String[] interfaces) {
     // log.debug("Name:{}", name);
     // call class
-    this.access = access;
     final boolean isInterface = (Opcodes.ACC_INTERFACE & access) == Opcodes.ACC_INTERFACE;
     // log.debug("name {} sig {} IF:{}", name, signature, isInterface);
 

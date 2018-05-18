@@ -58,8 +58,7 @@ public class StringUtils {
 
   private static Boolean matchAndUpdateCache(Pattern p, String name) {
     Matcher m = p.matcher(name);
-    boolean matched = m.matches();
-    return matched;
+    return m.matches();
   }
 
   private static boolean hasUpperCase(String target) {

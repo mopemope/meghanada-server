@@ -13,6 +13,7 @@ import meghanada.analyze.Source;
 import meghanada.cache.GlobalCache;
 import meghanada.config.Config;
 import meghanada.project.Project;
+import meghanada.reflect.MemberDescriptor;
 import meghanada.store.ProjectDatabaseHelper;
 import meghanada.utils.FileUtils;
 import org.apache.logging.log4j.LogManager;
@@ -101,7 +102,8 @@ public class SourceCacheSubscriber {
         src.importClasses.forEach(
             impFqcn -> {
               try {
-                globalCache.getMemberDescriptors(impFqcn);
+                List<MemberDescriptor> descriptors = globalCache.getMemberDescriptors(impFqcn);
+                log.trace("cached:{} size:{}", impFqcn, descriptors.size());
               } catch (Exception e) {
                 log.catching(e);
               }

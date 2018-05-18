@@ -24,7 +24,7 @@ public abstract class Scope implements Serializable {
   public final Set<Variable> variables = new HashSet<>(16);
   public final List<FieldAccess> fieldAccesses = new ArrayList<>(16);
   public final List<MethodCall> methodCalls = new ArrayList<>(16);
-  public int pos;
+  public final int pos;
   public Range range;
 
   public Scope(final int pos, final Range range) {

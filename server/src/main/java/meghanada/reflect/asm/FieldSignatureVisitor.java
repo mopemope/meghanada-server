@@ -302,6 +302,10 @@ class FieldSignatureVisitor extends SignatureVisitor {
   }
 
   private TypeInfo getTypeInfo(String typeVariable) {
+    return createTypeInfo(typeVariable, isSuper, isExtends);
+  }
+
+  static TypeInfo createTypeInfo(String typeVariable, boolean isSuper, boolean isExtends) {
     TypeInfo typeInfo;
     if (isSuper) {
       typeInfo = new TypeInfo("? super " + typeVariable, "? super " + typeVariable);

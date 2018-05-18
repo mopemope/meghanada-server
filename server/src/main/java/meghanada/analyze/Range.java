@@ -7,8 +7,8 @@ public class Range implements Serializable {
 
   private static final long serialVersionUID = 4664505910001855783L;
 
-  public Position begin;
-  public Position end;
+  public final Position begin;
+  public final Position end;
 
   public Range(final int beginCol, int beginLine, final int endCol, int endLine) {
     this(new Position(beginCol, beginLine), new Position(endCol, endLine));

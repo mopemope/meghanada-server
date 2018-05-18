@@ -2,6 +2,7 @@ package meghanada.reflect.asm;
 
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
+import static meghanada.utils.ClassNameUtils.replaceDescriptorsType;
 import static meghanada.utils.FunctionUtils.wrapIO;
 import static meghanada.utils.FunctionUtils.wrapIOConsumer;
 
@@ -163,41 +164,14 @@ public class ASMReflector {
     if (allowSuper) {
       isSuper = (Opcodes.ACC_SUPER & access) == Opcodes.ACC_SUPER;
     }
-    if (projectOutput) {
+    if (projectOutput || (isPublic || isProtected || isSuper)) {
       ClassAnalyzeVisitor classAnalyzeVisitor = new ClassAnalyzeVisitor(className, true, false);
       classReader.accept(classAnalyzeVisitor, 0);
       ClassIndex classIndex = classAnalyzeVisitor.getClassIndex();
       classIndex.setInterface(isInterface);
       classIndex.setAnnotation(isAnnotation);
       indexes.put(classIndex, file);
-    } else {
-      if (isPublic || isProtected || isSuper) {
-        ClassAnalyzeVisitor classAnalyzeVisitor = new ClassAnalyzeVisitor(className, true, false);
-        classReader.accept(classAnalyzeVisitor, 0);
-        ClassIndex classIndex = classAnalyzeVisitor.getClassIndex();
-        classIndex.setInterface(isInterface);
-        classIndex.setAnnotation(isAnnotation);
-        indexes.put(classIndex, file);
-      }
     }
-  }
-
-  private static void replaceDescriptorsType(String nameWithTP, List<MemberDescriptor> members) {
-    members.forEach(
-        m -> {
-          Iterator<String> classTypeIterator =
-              ClassNameUtils.parseTypeParameter(nameWithTP).iterator();
-          for (String tp : m.getTypeParameters()) {
-            if (classTypeIterator.hasNext()) {
-              String ct = classTypeIterator.next();
-
-              log.trace("type nameWithoutTP: {} classTP: {} reflectTP: {}", nameWithTP, ct, tp);
-              if (!ct.startsWith(ClassNameUtils.CLASS_TYPE_VARIABLE_MARK)) {
-                m.putTypeParameter(tp, ct);
-              }
-            }
-          }
-        });
   }
 
   private static ClassAnalyzeVisitor readClassFromJar(
@@ -267,19 +241,23 @@ public class ASMReflector {
     classes.forEach(
         (index, f) -> {
           String fqcn = index.getRawDeclaration();
-          try {
-            if (ModuleHelper.isJrtFsFile(f)) {
-              index.setFilePath(f.getPath());
-            } else {
-              index.setFilePath(f.getCanonicalPath());
-            }
-          } catch (IOException e) {
-            throw new UncheckedIOException(e);
-          }
+          setFilePath(index, f);
           result.put(fqcn, index);
         });
 
     return result;
+  }
+
+  static void setFilePath(final ClassIndex index, final File f) {
+    try {
+      if (ModuleHelper.isJrtFsFile(f)) {
+        index.setFilePath(f.getPath());
+      } else {
+        index.setFilePath(f.getCanonicalPath());
+      }
+    } catch (IOException e) {
+      throw new UncheckedIOException(e);
+    }
   }
 
   Map<ClassIndex, File> getClasses(File file) throws IOException {
@@ -530,45 +508,49 @@ public class ASMReflector {
               String nameWithoutTP = ClassNameUtils.removeTypeParameter(nameWithTP);
 
               if (className.equals(nameWithoutTP)) {
-                List<MemberDescriptor> members =
-                    this.cachedMember(
-                        nameWithTP,
-                        () -> {
-                          try (InputStream in = jarFile.getInputStream(jarEntry)) {
-                            ClassReader classReader = new ClassReader(in);
-                            return this.getMemberFromJar(
-                                file, classReader, nameWithoutTP, nameWithTP);
-                          } catch (IOException e) {
-                            throw new UncheckedIOException(e);
-                          }
-                        });
-                if (isSuper) {
-                  replaceDescriptorsType(nameWithTP, members);
+                {
+                  List<MemberDescriptor> members =
+                      this.cachedMember(
+                          nameWithTP,
+                          () -> {
+                            try (InputStream in = jarFile.getInputStream(jarEntry)) {
+                              ClassReader classReader = new ClassReader(in);
+                              return this.getMemberFromJar(
+                                  file, classReader, nameWithoutTP, nameWithTP);
+                            } catch (IOException e) {
+                              throw new UncheckedIOException(e);
+                            }
+                          });
+                  if (isSuper) {
+                    replaceDescriptorsType(nameWithTP, members);
+                  }
+                  results.addAll(members);
+                  classIterator.remove();
                 }
-                results.addAll(members);
-                classIterator.remove();
                 break;
               }
 
               String innerClassName = ClassNameUtils.replaceInnerMark(className);
               if (innerClassName.equals(nameWithoutTP)) {
-                List<MemberDescriptor> members =
-                    this.cachedMember(
-                        nameWithTP,
-                        () -> {
-                          try (InputStream in = jarFile.getInputStream(jarEntry)) {
-                            ClassReader classReader = new ClassReader(in);
-                            return this.getMemberFromJar(
-                                file, classReader, innerClassName, nameWithTP);
-                          } catch (IOException e) {
-                            throw new UncheckedIOException(e);
-                          }
-                        });
-                if (isSuper) {
-                  replaceDescriptorsType(nameWithTP, members);
+                {
+                  List<MemberDescriptor> members =
+                      this.cachedMember(
+                          nameWithTP,
+                          () -> {
+                            try (InputStream in = jarFile.getInputStream(jarEntry)) {
+                              ClassReader classReader = new ClassReader(in);
+                              return this.getMemberFromJar(
+                                  file, classReader, innerClassName, nameWithTP);
+                            } catch (IOException e) {
+                              throw new UncheckedIOException(e);
+                            }
+                          });
+                  if (isSuper) {
+                    replaceDescriptorsType(nameWithTP, members);
+                  }
+                  results.addAll(members);
+                  classIterator.remove();
                 }
-                results.addAll(members);
-                classIterator.remove();
                 break;
               }
             }
