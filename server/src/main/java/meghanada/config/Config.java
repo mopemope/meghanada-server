@@ -102,6 +102,17 @@ public class Config {
     }
   }
 
+  public static void timeIt(final String prefix, final SimpleConsumer consumer) {
+    final Stopwatch stopwatch = Stopwatch.createStarted();
+    try {
+      consumer.accept();
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    } finally {
+      log.info("{} elapsed:{}", prefix, stopwatch.stop());
+    }
+  }
+
   public static <T> T timeItF(final String format, final SimpleSupplier<T> supplier) {
     Stopwatch stopwatch = Stopwatch.createStarted();
     try {

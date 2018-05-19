@@ -234,13 +234,7 @@ public class JavaCompletion {
     final CompletionMatcher matcher = getCompletionMatcher(prefix);
     final CompletionMatcher classMatcher = getClassCompletionMatcher(prefix);
     // add this member
-    for (MemberDescriptor c : JavaCompletion.reflectSelf(fqcn, true, prefix)) {
-      String name = c.getName();
-      final boolean matched = matcher.match(c);
-      if (matched) {
-        result.add(c);
-      }
-    }
+    completionThisMembers(prefix, result, fqcn, matcher);
 
     if (fqcn.contains(ClassNameUtils.INNER_MARK)) {
       // add parent
@@ -251,13 +245,7 @@ public class JavaCompletion {
           break;
         }
         parentClass = parentClass.substring(0, i);
-        for (MemberDescriptor c : JavaCompletion.reflectSelf(parentClass, true, prefix)) {
-          String name = c.getName();
-          boolean matched = matcher.match(c);
-          if (matched) {
-            result.add(c);
-          }
-        }
+        completionThisMembers(prefix, result, parentClass, matcher);
       }
     }
 
@@ -266,6 +254,68 @@ public class JavaCompletion {
     Map<String, Variable> symbols = source.getDeclaratorMap(line);
     log.debug("search variables size:{} result:{}", symbols.size(), symbols);
 
+    // local variable
+    completionFromLocalVariable(result, matcher, symbols);
+
+    // import
+    completionFromImport(source, result, classMatcher);
+
+    // static import
+    completionFromStaticImport(source, result, matcher);
+
+    // Add class
+    if (Character.isUpperCase(prefix.charAt(0))) {
+      // completion
+      completionClass(result, classMatcher);
+    }
+    result.addAll(completionStatcMembers(result, prefix));
+    List<CandidateUnit> list = new ArrayList<>(result);
+    list.sort(comparing(source, prefix));
+    return list;
+  }
+
+  private static void completionClass(Set<CandidateUnit> result, CompletionMatcher classMatcher) {
+    CachedASMReflector reflector = CachedASMReflector.getInstance();
+    List<ClassIndex> classes =
+        reflector
+            .allClassStream()
+            .filter(
+                c -> {
+                  if (c.isAnnotation()) {
+                    return false;
+                  }
+                  return classMatcher.match(c);
+                })
+            .map(CachedASMReflector::cloneClassIndex)
+            .collect(Collectors.toList());
+    result.addAll(classes);
+  }
+
+  private static void completionFromStaticImport(
+      Source source, Set<CandidateUnit> result, CompletionMatcher matcher) {
+    for (Map.Entry<String, String> e : source.staticImportClass.entrySet()) {
+      String methodName = e.getKey();
+      String clazz = e.getValue();
+      for (MemberDescriptor md : JavaCompletion.reflectWithFQCN(clazz, methodName)) {
+        if (matcher.match(md)) {
+          result.add(md);
+        }
+      }
+    }
+  }
+
+  private static void completionFromImport(
+      Source source, Set<CandidateUnit> result, CompletionMatcher classMatcher) {
+    for (String v : source.getImportedClassMap().values()) {
+      ClassIndex classIndex = ClassIndex.createClass(v);
+      if (classMatcher.match(classIndex)) {
+        result.add(classIndex);
+      }
+    }
+  }
+
+  private static void completionFromLocalVariable(
+      Set<CandidateUnit> result, CompletionMatcher matcher, Map<String, Variable> symbols) {
     for (Map.Entry<String, Variable> e : symbols.entrySet()) {
       String k = e.getKey();
       Variable v = e.getValue();
@@ -279,55 +329,17 @@ public class JavaCompletion {
         }
       }
     }
+  }
 
-    // import
-    for (Map.Entry<String, String> e : source.getImportedClassMap().entrySet()) {
-      String k = e.getKey();
-      String v = e.getValue();
-      ClassIndex classIndex = ClassIndex.createClass(v);
-      if (classMatcher.match(classIndex)) {
-        result.add(classIndex);
+  private static void completionThisMembers(
+      String prefix, Set<CandidateUnit> result, String fqcn, CompletionMatcher matcher) {
+    for (MemberDescriptor c : JavaCompletion.reflectSelf(fqcn, true, prefix)) {
+      String name = c.getName();
+      final boolean matched = matcher.match(c);
+      if (matched) {
+        result.add(c);
       }
     }
-    // static import
-    for (Map.Entry<String, String> e : source.staticImportClass.entrySet()) {
-      String methodName = e.getKey();
-      String clazz = e.getValue();
-      for (MemberDescriptor md : JavaCompletion.reflectWithFQCN(clazz, methodName)) {
-        if (matcher.match(md)) {
-          result.add(md);
-        }
-      }
-    }
-
-    // Add class
-    if (Character.isUpperCase(prefix.charAt(0))) {
-      // completion
-      CachedASMReflector reflector = CachedASMReflector.getInstance();
-      List<ClassIndex> classes =
-          reflector
-              .allClassStream()
-              .filter(
-                  c -> {
-                    if (prefix.isEmpty()) {
-                      return true;
-                    }
-                    if (c.isAnnotation()) {
-                      return false;
-                    }
-                    return classMatcher.match(c);
-                  })
-              .map(
-                  c -> {
-                    return cloneClassIndex(c);
-                  })
-              .collect(Collectors.toList());
-      result.addAll(classes);
-    }
-    result.addAll(searchStaticMembers(result, prefix));
-    List<CandidateUnit> list = new ArrayList<>(result);
-    list.sort(comparing(source, prefix));
-    return list;
   }
 
   private static Collection<? extends CandidateUnit> reflect(
@@ -598,7 +610,7 @@ public class JavaCompletion {
     return Collections.emptyList();
   }
 
-  private static List<MemberDescriptor> searchStaticMembers(
+  private static List<MemberDescriptor> completionStatcMembers(
       Set<CandidateUnit> result, final String name) {
     List<MemberDescriptor> members = new ArrayList<>();
     List<String> classes = Config.load().searchStaticMethodClasses();
