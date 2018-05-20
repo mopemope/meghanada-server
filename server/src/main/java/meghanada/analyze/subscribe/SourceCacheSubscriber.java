@@ -70,7 +70,9 @@ public class SourceCacheSubscriber {
 
     final File sourceFile = source.getFile();
     final String path = sourceFile.getCanonicalPath();
-    source.invalidateCache();
+    if (!isDiagnostics) {
+      source.invalidateCache();
+    }
 
     if (!source.hasCompileError) {
       final String md5sum = FileUtils.getChecksum(sourceFile);
@@ -82,8 +84,6 @@ public class SourceCacheSubscriber {
       checksumMap.remove(path);
       if (!isDiagnostics) {
         globalCache.replaceSource(this.project, source);
-      } else {
-        globalCache.invalidateSource(this.project, sourceFile);
       }
     }
   }

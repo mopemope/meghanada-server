@@ -11,15 +11,14 @@ import meghanada.reflect.MemberDescriptor;
 
 public class TypeScope extends MethodScope {
 
-  private static final long serialVersionUID = 6821085908718818633L;
-
-  public final List<MemberDescriptor> memberDescriptors = new ArrayList<>(32);
+  private static final long serialVersionUID = 3241487719205584660L;
   public boolean isInterface;
   public boolean isEnum;
+  private List<MemberDescriptor> members = new ArrayList<>(32);
 
   public TypeScope(
       final String name, @Nullable final Range nameRange, final int pos, final Range range) {
-    super(name, nameRange, pos, range);
+    super(name, name, nameRange, pos, range, false);
     this.returnType = name;
   }
 
@@ -33,23 +32,28 @@ public class TypeScope extends MethodScope {
   }
 
   public MethodScope startMethod(
+      final String declaringClass,
       final String name,
       final Range nameRange,
       final int pos,
       final Range range,
       final boolean isConstructor) {
     // add method
-    final MethodScope scope = new MethodScope(name, nameRange, pos, range, isConstructor);
+    final MethodScope scope =
+        new MethodScope(declaringClass, name, nameRange, pos, range, isConstructor);
     super.startBlock(scope);
     return scope;
   }
 
   public Optional<MethodScope> endMethod() {
-    final Optional<BlockScope> blockScope = super.endBlock();
-    if (blockScope.isPresent()) {
-      final BlockScope blockScope1 = blockScope.get();
-      if (blockScope1 instanceof MethodScope) {
-        return Optional.of((MethodScope) blockScope1);
+    final Optional<BlockScope> optionalScope = super.endBlock();
+    if (optionalScope.isPresent()) {
+      final BlockScope blockScope = optionalScope.get();
+      if (blockScope instanceof MethodScope) {
+        MethodScope methodScope = (MethodScope) blockScope;
+        MemberDescriptor descriptor = methodScope.toMemberDescriptor();
+        this.addMember(descriptor);
+        return Optional.of(methodScope);
       }
     }
     return Optional.empty();
@@ -110,6 +114,10 @@ public class TypeScope extends MethodScope {
   }
 
   public List<MemberDescriptor> getMemberDescriptors() {
-    return memberDescriptors;
+    return members;
+  }
+
+  void addMember(MemberDescriptor descriptor) {
+    this.members.add(descriptor);
   }
 }

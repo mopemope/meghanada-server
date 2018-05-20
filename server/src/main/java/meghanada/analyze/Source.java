@@ -78,6 +78,7 @@ public class Source implements Serializable, Storable, SearchIndexable {
   public final Deque<ClassScope> currentClassScope = new ArrayDeque<>(1);
   public final Set<String> usingClasses = new HashSet<>(8);
   public final String filePath;
+  final transient Map<Long, List<IndexableWord>> indexWords = new HashMap<>(4);
   // temp flag
   public boolean hasCompileError;
   private String packageName = "";
@@ -86,8 +87,6 @@ public class Source implements Serializable, Storable, SearchIndexable {
   private Map<String, String> importMap;
   private transient List<LineRange> lineRange;
   private transient LineMap lineMap;
-
-  final transient Map<Long, List<IndexableWord>> indexWords = new HashMap<>(4);
 
   public Source(String filePath) {
     this.filePath = filePath;
@@ -889,5 +888,16 @@ public class Source implements Serializable, Storable, SearchIndexable {
       words.add(indexableWord);
       this.indexWords.put(line, words);
     }
+  }
+
+  public Map<String, ClassScope> getAllClasses() {
+    Map<String, ClassScope> classMap = new HashMap<>();
+    this.getAllClassScopes()
+        .forEach(
+            cs -> {
+              String fqcn = cs.getFQCN();
+              classMap.put(fqcn, cs);
+            });
+    return classMap;
   }
 }

@@ -213,7 +213,7 @@ public class JavaCompletion {
         .map(
             typeScope -> {
               final String fqcn = typeScope.getFQCN();
-              return JavaCompletion.reflectSelf(fqcn, false, prefix);
+              return JavaCompletion.reflectThis(fqcn, false, prefix);
             })
         .orElse(Collections.emptyList());
   }
@@ -225,16 +225,19 @@ public class JavaCompletion {
     // prefix search
     log.debug("Search variables prefix:{} line:{}", prefix, line);
 
-    Optional<TypeScope> typeScope = source.getTypeScope(line);
-    if (!typeScope.isPresent()) {
+    Optional<TypeScope> optionalScope = source.getTypeScope(line);
+    if (!optionalScope.isPresent()) {
       return result;
     }
-    String fqcn = typeScope.get().getFQCN();
+    TypeScope typeScope = optionalScope.get();
+    Map<String, ClassScope> allClasses = source.getAllClasses();
+    String fqcn = typeScope.getFQCN();
 
     final CompletionMatcher matcher = getCompletionMatcher(prefix);
     final CompletionMatcher classMatcher = getClassCompletionMatcher(prefix);
     // add this member
-    completionThisMembers(prefix, result, fqcn, matcher);
+    completionThisMembers(typeScope, prefix, result, matcher);
+    completionThisMembers(prefix, result, fqcn);
 
     if (fqcn.contains(ClassNameUtils.INNER_MARK)) {
       // add parent
@@ -245,7 +248,11 @@ public class JavaCompletion {
           break;
         }
         parentClass = parentClass.substring(0, i);
-        completionThisMembers(prefix, result, parentClass, matcher);
+        ClassScope classScope = allClasses.get(parentClass);
+        if (nonNull(classScope)) {
+          completionThisMembers(classScope, prefix, result, matcher);
+          completionThisMembers(prefix, result, fqcn);
+        }
       }
     }
 
@@ -332,14 +339,22 @@ public class JavaCompletion {
   }
 
   private static void completionThisMembers(
-      String prefix, Set<CandidateUnit> result, String fqcn, CompletionMatcher matcher) {
-    for (MemberDescriptor c : JavaCompletion.reflectSelf(fqcn, true, prefix)) {
-      String name = c.getName();
-      final boolean matched = matcher.match(c);
-      if (matched) {
+      TypeScope typeScope, String prefix, Set<CandidateUnit> result, CompletionMatcher matcher) {
+    List<MemberDescriptor> descriptors = typeScope.getMemberDescriptors();
+    for (MemberDescriptor c : descriptors) {
+      if (prefix.isEmpty()) {
         result.add(c);
+      } else {
+        final boolean matched = matcher.match(c);
+        if (matched) {
+          result.add(c);
+        }
       }
     }
+  }
+
+  private static void completionThisMembers(String prefix, Set<CandidateUnit> result, String fqcn) {
+    result.addAll(JavaCompletion.reflectThis(fqcn, true, prefix));
   }
 
   private static Collection<? extends CandidateUnit> reflect(
@@ -355,7 +370,7 @@ public class JavaCompletion {
     return JavaCompletion.publicReflect(fqcn, isStatic, withConstructor, prefix);
   }
 
-  private static Collection<MemberDescriptor> reflectSelf(
+  private static Collection<MemberDescriptor> reflectThis(
       final String fqcn, final boolean withConstructor, final String prefix) {
     final CompletionMatcher matcher = getCompletionMatcher(prefix);
     // normal completion matcher
@@ -437,7 +452,7 @@ public class JavaCompletion {
       for (final ClassScope cs : source.getClassScopes()) {
         final String fqcn = cs.getFQCN();
         final Optional<MemberDescriptor> fieldResult =
-            JavaCompletion.reflectSelf(fqcn, true, var)
+            JavaCompletion.reflectThis(fqcn, true, var)
                 .stream()
                 .filter(c -> c instanceof FieldDescriptor && c.getName().equals(var))
                 .findFirst();

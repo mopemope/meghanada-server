@@ -1,5 +1,7 @@
 package meghanada.analyze;
 
+import static java.util.Objects.nonNull;
+
 import java.util.Optional;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -7,12 +9,14 @@ import org.apache.logging.log4j.message.EntryMessage;
 
 public class ExpressionScope extends Scope {
 
-  private static final long serialVersionUID = -7562763157444092301L;
   private static final Logger log = LogManager.getLogger(ExpressionScope.class);
+  private static final long serialVersionUID = 5266844440597025135L;
 
   public AccessSymbol expressionReturn;
   public boolean isField;
   public Scope parent;
+  public String modifier;
+  public String declaringClass;
 
   public ExpressionScope(int pos, Range range) {
     super(pos, range);
@@ -75,10 +79,20 @@ public class ExpressionScope extends Scope {
   }
 
   @Override
-  public void addVariable(Variable variable) {
+  public void addVariable(final Variable variable) {
     assert variable.fqcn != null;
-    if (isField) {
+    if (this.isField) {
       variable.isField = true;
+      if (nonNull(this.declaringClass) && nonNull(this.modifier)) {
+        // member
+        variable.modifier = this.modifier.trim();
+        variable.declaringClass = this.declaringClass.trim();
+        Scope parent = this.parent;
+        if (parent instanceof TypeScope) {
+          TypeScope typeScope = (TypeScope) parent;
+          variable.toMemberDescriptor().ifPresent(typeScope::addMember);
+        }
+      }
     }
     super.addVariable(variable);
   }
