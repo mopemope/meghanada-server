@@ -128,9 +128,12 @@ public class CachedASMReflector {
   }
 
   public void addClasspath(File dep) {
-    if (dep.isDirectory()) {
+    if (!dep.exists() || dep.isDirectory()) {
       this.directories.add(dep);
     } else {
+      if (!dep.canRead()) {
+        return;
+      }
       this.jars.add(dep);
     }
   }
