@@ -841,7 +841,7 @@ public class ASMReflector {
                         }
                         if (!className.endsWith("module-info")) {
                           try (InputStream in = cd.getInputStream()) {
-                            scanner.scan(className, in);
+                            scanner.scan(file, className, in);
                           } catch (IOException e) {
                             throw new UncheckedIOException(e);
                           }
@@ -869,7 +869,7 @@ public class ASMReflector {
               }
               if (!className.endsWith("module-info")) {
                 try (InputStream in = jarFile.getInputStream(jarEntry)) {
-                  scanner.scan(className, in);
+                  scanner.scan(file, className, in);
                 } catch (IOException e) {
                   throw new UncheckedIOException(e);
                 }
@@ -888,7 +888,7 @@ public class ASMReflector {
         return;
       }
       try (InputStream in = new FileInputStream(file)) {
-        scanner.scan(className, in);
+        scanner.scan(file, className, in);
       }
 
     } else if (file.isDirectory()) {
@@ -913,7 +913,7 @@ public class ASMReflector {
               }
               if (!className.endsWith("module-info")) {
                 try (InputStream in = new FileInputStream(classFile)) {
-                  scanner.scan(className, in);
+                  scanner.scan(classFile, className, in);
                 } catch (IOException e) {
                   throw new UncheckedIOException(e);
                 }
@@ -925,7 +925,7 @@ public class ASMReflector {
 
   @FunctionalInterface
   public interface Scanner {
-    void scan(String name, InputStream in) throws IOException;
+    void scan(File file, String name, InputStream in) throws IOException;
   }
 
   public List<String> loadFromInnerCache(

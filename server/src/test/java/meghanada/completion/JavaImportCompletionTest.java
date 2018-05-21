@@ -103,7 +103,7 @@ public class JavaImportCompletionTest extends GradleTestBase {
     assertTrue(res.isPresent());
     Map<String, List<String>> map = res.get();
     assertEquals(1, map.get("class").size());
-    log.info("{}", map);
+    System.out.println(map);
   }
 
   @Ignore
@@ -124,7 +124,7 @@ public class JavaImportCompletionTest extends GradleTestBase {
     Optional<Map<String, List<String>>> res = completion.importAtPoint(file, 5, 5, "assertEquals");
     assertTrue(res.isPresent());
     List<String> methods = res.get().get("method");
-    log.info("{}", methods);
+    System.out.println(methods);
     assertEquals(3, methods.size());
   }
 
@@ -141,5 +141,21 @@ public class JavaImportCompletionTest extends GradleTestBase {
     Optional<Map<String, List<String>>> map =
         completion.importAtPoint(file, 0, 0, "CASE_INSENSITIVE_ORDER");
     assertTrue(map.isPresent());
+    System.out.println(map.get());
+  }
+
+  @Ignore
+  @Test
+  public void testImportAtPoint5() throws Exception {
+    JavaAnalyzer analyzer = getAnalyzer();
+    JavaImportCompletion completion = new JavaImportCompletion(project);
+    String cp = getClasspath();
+    File file =
+        new File(project.getProjectRootPath(), "./src/test/resources/MissingImport6.java")
+            .getCanonicalFile();
+    assertTrue(file.exists());
+    Optional<Map<String, List<String>>> map = completion.importAtPoint(file, 4, 5, "timeIt");
+    assertTrue(map.isPresent());
+    System.out.println(map.get());
   }
 }
