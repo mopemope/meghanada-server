@@ -14,10 +14,11 @@ Some planned and implemented features:
 * `Gradle` and `Maven` project support
 * Run build tool task
 * Compile your project
+* Support annotaion processor
 * Analyze java source (hooks into build)
 * Code completion
 * Optimize import
-* Jump declaration
+* Jump declaration (without source)
 * Run junit test (include test runner)
 * Search references
 * Full-featured text search (default off)
