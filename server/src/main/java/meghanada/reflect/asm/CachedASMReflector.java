@@ -123,6 +123,19 @@ public class CachedASMReflector {
     return members;
   }
 
+  public static ClassIndex cloneClassIndex(ClassIndex c) {
+    ClassIndex ci = c.clone();
+    if (ci.isInnerClass()) {
+      String p = ci.getPackage();
+      if (!p.isEmpty()) {
+        String declaration = ci.getDisplayDeclaration();
+        String clazzName = declaration.substring(p.length() + 1);
+        ci.setName(clazzName);
+      }
+    }
+    return ci;
+  }
+
   public void addClasspath(Collection<File> depends) {
     depends.forEach(this::addClasspath);
   }
@@ -318,19 +331,6 @@ public class CachedASMReflector {
       }
     }
     return result;
-  }
-
-  public static ClassIndex cloneClassIndex(ClassIndex c) {
-    ClassIndex ci = c.clone();
-    if (ci.isInnerClass()) {
-      String p = ci.getPackage();
-      if (!p.isEmpty()) {
-        String declaration = ci.getDisplayDeclaration();
-        String clazzName = declaration.substring(p.length() + 1);
-        ci.setName(clazzName);
-      }
-    }
-    return ci;
   }
 
   public List<ClassIndex> searchClasses(final String keyword, final boolean includeAnnotation) {

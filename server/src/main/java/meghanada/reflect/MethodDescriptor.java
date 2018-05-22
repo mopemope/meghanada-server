@@ -24,9 +24,9 @@ public class MethodDescriptor extends MemberDescriptor {
   private static final long serialVersionUID = 2705480824413845391L;
 
   private final List<MethodParameter> parameters;
-  private String[] exceptions;
   public String formalType;
   public boolean hasVarargs;
+  private String[] exceptions;
 
   public MethodDescriptor(
       final String declaringClass,

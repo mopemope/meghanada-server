@@ -26,7 +26,7 @@ public class ClassIndex implements CandidateUnit, Cloneable, Serializable, Stora
   private final String declaration;
   private final List<String> typeParameters;
   private final List<String> supers;
-
+  public transient boolean loaded;
   private boolean isInterface;
   private boolean isAnnotation;
   private boolean functional;
@@ -34,7 +34,6 @@ public class ClassIndex implements CandidateUnit, Cloneable, Serializable, Stora
   private String filePath;
   private MemberType memberType = MemberType.CLASS;
   private EntityId entityID;
-  public transient boolean loaded;
 
   public ClassIndex(
       final String declaration, final List<String> typeParameters, final List<String> supers) {

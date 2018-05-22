@@ -1,6 +1,7 @@
 package meghanada.reference;
 
 import static java.util.Objects.isNull;
+import static java.util.Objects.nonNull;
 import static meghanada.utils.FileUtils.getSource;
 
 import com.google.common.base.MoreObjects;
@@ -400,7 +401,14 @@ public class ReferenceSearcher {
       return Collections.emptyList();
     }
 
-    return cond.map(ReferenceSearcher::searchReferences).orElse(Collections.emptyList());
+    if (cond.isPresent()) {
+      SearchCondition sc = cond.get();
+      List<Reference> list = ReferenceSearcher.searchReferences(sc);
+      if (nonNull(list)) {
+        return list;
+      }
+    }
+    return Collections.emptyList();
   }
 
   @FunctionalInterface

@@ -39,9 +39,8 @@ public class ProjectDatabaseHelper {
   private static final String BLOB_PROP_MEMBERS = "members";
   private static final String BLOB_PROP_CHECKSUM = "checksum";
   private static final String BLOB_PROP_CALLER = "caller";
-  private static int indexTTL = 60 * 60;
-
   private static final Logger log = LogManager.getLogger(ProjectDatabaseHelper.class);
+  private static int indexTTL = 60 * 60;
 
   public static void saveClassIndexes(Collection<ClassIndex> indexes, boolean allowUpdate) {
     ProjectDatabase projectDatabase = ProjectDatabase.getInstance();

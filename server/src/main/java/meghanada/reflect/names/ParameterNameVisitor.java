@@ -18,9 +18,8 @@ import org.apache.logging.log4j.Logger;
 public class ParameterNameVisitor extends VoidVisitorAdapter<Object> {
 
   private static final Logger log = LogManager.getLogger(ParameterNameVisitor.class);
-
-  String pkg;
   final String originClassName;
+  String pkg;
   String className;
   MethodParameterNames names = new MethodParameterNames();
   List<MethodParameterNames> parameterNamesList = new ArrayList<>();

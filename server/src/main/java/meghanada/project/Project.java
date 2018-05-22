@@ -78,6 +78,7 @@ public abstract class Project implements Serializable, Storable {
   private static final String EXCLUDE_FILE = "exclude-file";
   private static final String JAVA8_JAVAC_ARGS = "java8-javac-args";
   private static final String JAVA9_JAVAC_ARGS = "java9-javac-args";
+  private static final String JAVA10_JAVAC_ARGS = "java10-javac-args";
   private static final String FORMATTER_FILE = "meghanadaFormatter.properties";
   private static final String FORMATTER_FILE_XML = "meghanadaFormatter.xml";
   private static final Pattern SEP_COMPILE = Pattern.compile("/", Pattern.LITERAL);
@@ -611,12 +612,10 @@ public abstract class Project implements Serializable, Storable {
     cp += File.pathSeparator + jarPath;
     cmd.add("-ea");
     cmd.add("-XX:+TieredCompilation");
-    cmd.add("-XX:+UseConcMarkSweepGC");
     cmd.add("-XX:SoftRefLRUPolicyMSPerMB=50");
     cmd.add("-XX:ReservedCodeCacheSize=240m");
     cmd.add("-Dsun.io.useCanonCaches=false");
     cmd.add("-Xms128m");
-    cmd.add("-Xmx750m");
     if (debug) {
       cmd.add("-Xdebug");
       cmd.add(
@@ -796,6 +795,10 @@ public abstract class Project implements Serializable, Storable {
       if (config.hasPath(JAVA9_JAVAC_ARGS) && mainConfig.isJava9()) {
         final List<String> list = config.getStringList(JAVA9_JAVAC_ARGS);
         mainConfig.setJava9JavacArgs(list);
+      }
+      if (config.hasPath(JAVA10_JAVAC_ARGS) && mainConfig.isJava10()) {
+        final List<String> list = config.getStringList(JAVA10_JAVAC_ARGS);
+        mainConfig.setJava10JavacArgs(list);
       }
     }
 
@@ -1175,8 +1178,10 @@ public abstract class Project implements Serializable, Storable {
       sb.append(String.format("compileTarget: %s\n", compileTarget));
       if (config.isJava8()) {
         sb.append(String.format("javac8Args: %s\n", config.getJava8JavacArgs()));
-      } else {
+      } else if (config.isJava9()) {
         sb.append(String.format("javac9Args: %s\n", config.getJava9JavacArgs()));
+      } else if (config.isJava10()) {
+        sb.append(String.format("javac10Args: %s\n", config.getJava10JavacArgs()));
       }
       List<String> cpList = Splitter.on(File.pathSeparator).splitToList(this.cachedClasspath);
       if (cpList.size() > 0) {
