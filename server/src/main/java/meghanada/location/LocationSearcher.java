@@ -180,6 +180,20 @@ public class LocationSearcher {
     return null;
   }
 
+  private static String replaceIgnoreStmt(String s) {
+    Map<String, String> rename = new HashMap<>(8);
+    rename.put(", (0)null", "");
+    rename.put(", (1)null", "");
+    rename.put(", (2)null", "");
+    rename.put(", (3)null", "");
+    String replaced = ClassNameUtils.replaceFromMap(s, rename);
+    rename.put("(0)null", "");
+    rename.put("(1)null", "");
+    rename.put("(2)null", "");
+    rename.put("(3)null", "");
+    return ClassNameUtils.replaceFromMap(replaced, rename);
+  }
+
   private static void copyAndFilter(final File decompiled, final File temp) throws IOException {
     try (final BufferedWriter bw =
             Files.newBufferedWriter(
@@ -189,7 +203,14 @@ public class LocationSearcher {
                 StandardOpenOption.TRUNCATE_EXISTING);
         final Stream<String> stream = Files.lines(decompiled.toPath(), StandardCharsets.UTF_8)) {
       final Map<String, String> rename = new HashMap<>(8);
-
+      rename.put("(0)null", "");
+      rename.put("(1)null", "");
+      rename.put("(2)null", "");
+      rename.put("(3)null", "");
+      rename.put(", (0)null", "");
+      rename.put(", (1)null", "");
+      rename.put(", (2)null", "");
+      rename.put(", (3)null", "");
       stream.forEach(
           wrapIOConsumer(
               s -> {
@@ -201,15 +222,15 @@ public class LocationSearcher {
                   rename.put(' ' + inner + '.', ' ' + innerClass + '.');
                   rename.put('(' + inner + '.', '(' + innerClass + '.');
                   final String replace = StringUtils.replace(s, inner, innerClass);
-                  bw.write(replace);
+                  bw.write(replaceIgnoreStmt(replace));
                   bw.newLine();
                 } else {
                   final boolean match = rename.keySet().stream().anyMatch(s::contains);
                   if (match) {
                     final String replace = ClassNameUtils.replaceFromMap(s, rename);
-                    bw.write(replace);
+                    bw.write(replaceIgnoreStmt(replace));
                   } else {
-                    bw.write(s);
+                    bw.write(replaceIgnoreStmt(s));
                   }
                   bw.newLine();
                 }
