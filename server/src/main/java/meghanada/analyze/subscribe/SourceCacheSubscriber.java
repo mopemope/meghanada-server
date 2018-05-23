@@ -32,6 +32,7 @@ public class SourceCacheSubscriber {
     this.project = project;
     this.callerMap = project.getCallerMap();
     this.checksumMap = ProjectDatabaseHelper.getChecksumMap(project.getProjectRootPath());
+    this.lastCached = System.currentTimeMillis();
   }
 
   private void analyzed(final Source source, final boolean isDiagnostics) throws IOException {

@@ -12,6 +12,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -36,6 +37,7 @@ import meghanada.reflect.MemberDescriptor;
 import meghanada.store.ProjectDatabaseHelper;
 import meghanada.utils.ClassName;
 import meghanada.utils.ClassNameUtils;
+import meghanada.utils.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.lucene.document.Document;
@@ -121,14 +123,30 @@ public class CachedASMReflector {
     return members;
   }
 
+  public static ClassIndex cloneClassIndex(ClassIndex c) {
+    ClassIndex ci = c.clone();
+    if (ci.isInnerClass()) {
+      String p = ci.getPackage();
+      if (!p.isEmpty()) {
+        String declaration = ci.getDisplayDeclaration();
+        String clazzName = declaration.substring(p.length() + 1);
+        ci.setName(clazzName);
+      }
+    }
+    return ci;
+  }
+
   public void addClasspath(Collection<File> depends) {
     depends.forEach(this::addClasspath);
   }
 
   public void addClasspath(File dep) {
-    if (dep.isDirectory()) {
+    if (!dep.exists() || dep.isDirectory()) {
       this.directories.add(dep);
     } else {
+      if (!dep.canRead()) {
+        return;
+      }
       this.jars.add(dep);
     }
   }
@@ -313,19 +331,6 @@ public class CachedASMReflector {
       }
     }
     return result;
-  }
-
-  public static ClassIndex cloneClassIndex(ClassIndex c) {
-    ClassIndex ci = c.clone();
-    if (ci.isInnerClass()) {
-      String p = ci.getPackage();
-      if (!p.isEmpty()) {
-        String declaration = ci.getDisplayDeclaration();
-        String clazzName = declaration.substring(p.length() + 1);
-        ci.setName(clazzName);
-      }
-    }
-    return ci;
   }
 
   public List<ClassIndex> searchClasses(final String keyword, final boolean includeAnnotation) {
@@ -515,14 +520,23 @@ public class CachedASMReflector {
             });
   }
 
-  private void scanMembers(final File file, final ConcurrentLinkedDeque<MemberDescriptor> deque)
+  private void scanMembers(final File root, final ConcurrentLinkedDeque<MemberDescriptor> deque)
       throws IOException {
     final ASMReflector reflector = ASMReflector.getInstance();
     reflector.scanClasses(
-        file,
-        (name, in) -> {
+        root,
+        (file, name, in) -> {
           ClassReader read = new ClassReader(in);
-          ClassAnalyzeVisitor visitor = new ClassAnalyzeVisitor(name, name, false, false);
+          String className = name;
+          if (root.isDirectory()) {
+            // path to package
+            Set<File> roots = Collections.singleton(root);
+            Optional<String> s = FileUtils.convertPathToClass(roots, file);
+            if (s.isPresent()) {
+              className = s.get();
+            }
+          }
+          ClassAnalyzeVisitor visitor = new ClassAnalyzeVisitor(className, name, false, false);
           read.accept(visitor, 0);
           List<MemberDescriptor> members =
               visitor
@@ -536,10 +550,10 @@ public class CachedASMReflector {
         });
   }
 
-  public void scan(File file, Consumer<String> c) {
+  public void scan(File root, Consumer<String> c) {
     ASMReflector reflector = ASMReflector.getInstance();
     try {
-      reflector.scanClasses(file, (name, in) -> c.accept(name));
+      reflector.scanClasses(root, (f, name, in) -> c.accept(name));
     } catch (IOException e) {
       throw new UncheckedIOException(e);
     }

@@ -4,10 +4,10 @@ import static java.util.Objects.isNull;
 
 public class SearchResult {
 
+  final String category;
   private final String filePath;
   private final String lineNumber;
   private final String contents;
-  final String category;
 
   public SearchResult(
       final String filePath, final String lineNumber, final String contents, String category) {

@@ -59,9 +59,8 @@ public class GradleProject extends Project {
   private static final long serialVersionUID = 1L;
   private static final Logger log = LogManager.getLogger(GradleProject.class);
   private static String tempPath;
-
-  private File rootProject;
   transient Map<String, File> allModules;
+  private File rootProject;
   private transient List<String> prepareCompileTask;
   private transient List<String> prepareTestCompileTask;
   private transient ComparableVersion gradleVersion = null;
@@ -121,6 +120,10 @@ public class GradleProject extends Project {
 
   public static String getTempPath() {
     return tempPath;
+  }
+
+  public static long getSerialVersionUID() {
+    return serialVersionUID;
   }
 
   @Override
@@ -549,6 +552,11 @@ public class GradleProject extends Project {
     return super.mergeFromProjectConfig();
   }
 
+  @Override
+  public String getProjectType() {
+    return "gradle";
+  }
+
   private static class VoidResultHandler implements ResultHandler<Void> {
     private final PipedOutputStream outputStream;
     private final PipedInputStream inputStream;
@@ -587,14 +595,5 @@ public class GradleProject extends Project {
         projectConnection.close();
       }
     }
-  }
-
-  public static long getSerialVersionUID() {
-    return serialVersionUID;
-  }
-
-  @Override
-  public String getProjectType() {
-    return "gradle";
   }
 }

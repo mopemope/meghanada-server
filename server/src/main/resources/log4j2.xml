@@ -3,7 +3,7 @@
 <Configuration status="off">
     <Appenders>
         <Console name="STDOUT">
-            <PatternLayout pattern="[%d][%-5.-5p][%-14.-14c{1}:%4L] %-22.-22M - %m%n"/>
+            <PatternLayout pattern="[%d][%-5.-5p][%-10.-10c{1}:%4L] %m%n"/>
         </Console>
     </Appenders>
     <Loggers>

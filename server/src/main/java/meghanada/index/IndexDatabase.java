@@ -36,23 +36,13 @@ public class IndexDatabase {
 
   private static final Logger log = LogManager.getLogger(IndexDatabase.class);
   private static final String QUOTE = "\"";
-
+  private static IndexDatabase indexDatabase;
+  private final ExecutorService executorService;
+  private final EventBus eventBus;
+  public int maxHits = Integer.MAX_VALUE;
   private DocumentSearcher searcher;
   private Environment environment = null;
   private File baseLocation = null;
-  private final ExecutorService executorService;
-  private final EventBus eventBus;
-
-  private static IndexDatabase indexDatabase;
-  public int maxHits = Integer.MAX_VALUE;
-
-  public static synchronized IndexDatabase getInstance() {
-    if (nonNull(indexDatabase)) {
-      return indexDatabase;
-    }
-    indexDatabase = new IndexDatabase();
-    return indexDatabase;
-  }
 
   private IndexDatabase() {
     this.executorService = Executors.newSingleThreadExecutor();
@@ -76,6 +66,28 @@ public class IndexDatabase {
                     log.catching(t);
                   }
                 }));
+  }
+
+  public static synchronized IndexDatabase getInstance() {
+    if (nonNull(indexDatabase)) {
+      return indexDatabase;
+    }
+    indexDatabase = new IndexDatabase();
+    return indexDatabase;
+  }
+
+  public static String doubleQuote(@Nullable final String s) {
+    if (isNull(s)) {
+      return QUOTE + QUOTE;
+    }
+    return QUOTE + s + QUOTE;
+  }
+
+  public static String paren(@Nullable final String s) {
+    if (isNull(s)) {
+      return s;
+    }
+    return "(" + s + ")";
   }
 
   public void shutdown() {
@@ -264,20 +276,6 @@ public class IndexDatabase {
             return Collections.emptyList();
           }
         });
-  }
-
-  public static String doubleQuote(@Nullable final String s) {
-    if (isNull(s)) {
-      return QUOTE + QUOTE;
-    }
-    return QUOTE + s + QUOTE;
-  }
-
-  public static String paren(@Nullable final String s) {
-    if (isNull(s)) {
-      return s;
-    }
-    return "(" + s + ")";
   }
 
   public static class IndexEvent {

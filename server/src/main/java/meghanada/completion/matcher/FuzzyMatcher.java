@@ -41,23 +41,6 @@ public class FuzzyMatcher implements CompletionMatcher {
     this.source = source;
   }
 
-  @Override
-  public boolean match(CandidateUnit c) {
-    String name = c.getName();
-    boolean first = true;
-    if (c instanceof ClassIndex) {
-      ClassIndex index = (ClassIndex) c;
-      String indexPackage = index.getPackage();
-      // TODO allow special class
-    }
-    int score = fuzzyScore(name, this.query, first);
-    boolean result = score > this.threshold;
-    if (!result && advanced) {
-      return name.contains(this.query);
-    }
-    return result;
-  }
-
   private static int fuzzyScore(String term, String query, boolean requireFirstMatch) {
 
     int score = 0;
@@ -99,6 +82,23 @@ public class FuzzyMatcher implements CompletionMatcher {
       }
     }
     return score;
+  }
+
+  @Override
+  public boolean match(CandidateUnit c) {
+    String name = c.getName();
+    boolean first = true;
+    if (c instanceof ClassIndex) {
+      ClassIndex index = (ClassIndex) c;
+      String indexPackage = index.getPackage();
+      // TODO allow special class
+    }
+    int score = fuzzyScore(name, this.query, first);
+    boolean result = score > this.threshold;
+    if (!result && advanced) {
+      return name.contains(this.query);
+    }
+    return result;
   }
 
   @Override

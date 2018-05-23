@@ -33,13 +33,13 @@ public abstract class MemberDescriptor
 
   public String declaringClass;
   public String name;
+  public Map<String, String> typeParameterMap;
+  public transient boolean showStaticClassName;
   MemberType memberType;
   String modifier;
   String returnType;
   boolean hasDefault;
   Set<String> typeParameters;
-  public Map<String, String> typeParameterMap;
-  public transient boolean showStaticClassName;
   private transient String extra = "";
 
   public abstract List<String> getParameters();
@@ -136,6 +136,10 @@ public abstract class MemberDescriptor
     return typeParameters;
   }
 
+  public void setTypeParameters(Set<String> typeParameters) {
+    this.typeParameters = typeParameters;
+  }
+
   public boolean isStatic() {
     return this.modifier.contains("static");
   }
@@ -221,10 +225,6 @@ public abstract class MemberDescriptor
     }
     descriptor.typeParameterMap = new HashMap<>(this.typeParameterMap);
     return descriptor;
-  }
-
-  public void setTypeParameters(Set<String> typeParameters) {
-    this.typeParameters = typeParameters;
   }
 
   public MemberType getMemberType() {

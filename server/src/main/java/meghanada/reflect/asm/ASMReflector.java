@@ -213,6 +213,26 @@ public class ASMReflector {
     return supers;
   }
 
+  static void setFilePath(final ClassIndex index, final File f) {
+    try {
+      if (ModuleHelper.isJrtFsFile(f)) {
+        index.setFilePath(f.getPath());
+      } else {
+        index.setFilePath(f.getCanonicalPath());
+      }
+    } catch (IOException e) {
+      throw new UncheckedIOException(e);
+    }
+  }
+
+  static boolean isJar(File file) {
+    return file.isFile() && file.getName().endsWith("jar");
+  }
+
+  static boolean isClass(File file) {
+    return file.isFile() && file.getName().endsWith(".class");
+  }
+
   private void addAllowClass(String clazz) {
     this.allowClass.add(clazz);
   }
@@ -246,18 +266,6 @@ public class ASMReflector {
         });
 
     return result;
-  }
-
-  static void setFilePath(final ClassIndex index, final File f) {
-    try {
-      if (ModuleHelper.isJrtFsFile(f)) {
-        index.setFilePath(f.getPath());
-      } else {
-        index.setFilePath(f.getCanonicalPath());
-      }
-    } catch (IOException e) {
-      throw new UncheckedIOException(e);
-    }
   }
 
   Map<ClassIndex, File> getClasses(File file) throws IOException {
@@ -820,14 +828,6 @@ public class ASMReflector {
         });
   }
 
-  static boolean isJar(File file) {
-    return file.isFile() && file.getName().endsWith("jar");
-  }
-
-  static boolean isClass(File file) {
-    return file.isFile() && file.getName().endsWith(".class");
-  }
-
   void scanClasses(File file, Scanner scanner) throws IOException {
     if (ModuleHelper.isJrtFsFile(file)) {
       ModuleHelper.walkModule(
@@ -841,7 +841,7 @@ public class ASMReflector {
                         }
                         if (!className.endsWith("module-info")) {
                           try (InputStream in = cd.getInputStream()) {
-                            scanner.scan(className, in);
+                            scanner.scan(file, className, in);
                           } catch (IOException e) {
                             throw new UncheckedIOException(e);
                           }
@@ -869,7 +869,7 @@ public class ASMReflector {
               }
               if (!className.endsWith("module-info")) {
                 try (InputStream in = jarFile.getInputStream(jarEntry)) {
-                  scanner.scan(className, in);
+                  scanner.scan(file, className, in);
                 } catch (IOException e) {
                   throw new UncheckedIOException(e);
                 }
@@ -888,7 +888,7 @@ public class ASMReflector {
         return;
       }
       try (InputStream in = new FileInputStream(file)) {
-        scanner.scan(className, in);
+        scanner.scan(file, className, in);
       }
 
     } else if (file.isDirectory()) {
@@ -913,7 +913,7 @@ public class ASMReflector {
               }
               if (!className.endsWith("module-info")) {
                 try (InputStream in = new FileInputStream(classFile)) {
-                  scanner.scan(className, in);
+                  scanner.scan(classFile, className, in);
                 } catch (IOException e) {
                   throw new UncheckedIOException(e);
                 }
@@ -921,11 +921,6 @@ public class ASMReflector {
             });
       }
     }
-  }
-
-  @FunctionalInterface
-  public interface Scanner {
-    void scan(String name, InputStream in) throws IOException;
   }
 
   public List<String> loadFromInnerCache(
@@ -960,5 +955,10 @@ public class ASMReflector {
   public void clearInnerCache() {
     // shrink
     this.innerCache = new ConcurrentHashMap<>(16);
+  }
+
+  @FunctionalInterface
+  public interface Scanner {
+    void scan(File file, String name, InputStream in) throws IOException;
   }
 }

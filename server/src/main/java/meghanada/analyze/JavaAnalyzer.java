@@ -77,10 +77,6 @@ public class JavaAnalyzer {
                 }));
   }
 
-  public EventBus getEventBus() {
-    return this.eventBus;
-  }
-
   private static Set<File> getErrorFiles(
       final List<Diagnostic<? extends JavaFileObject>> diagnostics) {
 
@@ -100,6 +96,10 @@ public class JavaAnalyzer {
     }
 
     return temp;
+  }
+
+  public EventBus getEventBus() {
+    return this.eventBus;
   }
 
   public CompileResult analyzeAndCompile(final List<File> files, final String classpath, String out)
@@ -171,6 +171,8 @@ public class JavaAnalyzer {
         compileOptions.addAll(config.getJava8JavacArgs());
       } else if (this.compileTarget.equals("1.9") || this.compileTarget.equals("9")) {
         compileOptions.addAll(config.getJava9JavacArgs());
+      } else if (this.compileTarget.equals("1.10") || this.compileTarget.equals("10")) {
+        compileOptions.addAll(config.getJava10JavacArgs());
       }
       compileOptions.addAll(opts);
       final JavaCompiler.CompilationTask compilerTask =
@@ -239,6 +241,8 @@ public class JavaAnalyzer {
         compileOptions.addAll(config.getJava8JavacArgs());
       } else if (this.compileTarget.equals("1.9") || this.compileTarget.equals("9")) {
         compileOptions.addAll(config.getJava9JavacArgs());
+      } else if (this.compileTarget.equals("1.10") || this.compileTarget.equals("10")) {
+        compileOptions.addAll(config.getJava10JavacArgs());
       }
       compileOptions.addAll(opts);
 

@@ -51,6 +51,7 @@ public class Config {
   private List<String> excludeList;
   private List<String> java8JavacArgs = new ArrayList<>(8);
   private List<String> java9JavacArgs = new ArrayList<>(8);
+  private List<String> java10JavacArgs = new ArrayList<>(8);
   private boolean buildWithDependency = true;
 
   private Config() {
@@ -395,24 +396,36 @@ public class Config {
     return getJavaVersion().equals("9");
   }
 
-  public boolean useAOSPStyle() {
-    return c.getBoolean("aosp-style");
+  public boolean isJava10() {
+    return getJavaVersion().equals("10");
   }
 
-  public void setJava8JavacArgs(List<String> lst) {
-    this.java8JavacArgs = lst;
+  public boolean useAOSPStyle() {
+    return c.getBoolean("aosp-style");
   }
 
   public List<String> getJava8JavacArgs() {
     return this.java8JavacArgs;
   }
 
-  public void setJava9JavacArgs(List<String> lst) {
-    this.java9JavacArgs = lst;
+  public void setJava8JavacArgs(List<String> lst) {
+    this.java8JavacArgs = lst;
   }
 
   public List<String> getJava9JavacArgs() {
     return this.java9JavacArgs;
+  }
+
+  public void setJava9JavacArgs(List<String> lst) {
+    this.java9JavacArgs = lst;
+  }
+
+  public List<String> getJava10JavacArgs() {
+    return this.java10JavacArgs;
+  }
+
+  public void setJava10JavacArgs(List<String> lst) {
+    this.java10JavacArgs = lst;
   }
 
   public String getCacheRoot() {
@@ -468,16 +481,6 @@ public class Config {
     }
   }
 
-  @FunctionalInterface
-  public interface SimpleSupplier<R> {
-    R get() throws Exception;
-  }
-
-  @FunctionalInterface
-  public interface SimpleConsumer {
-    void accept() throws IOException;
-  }
-
   public enum CompletionType {
     PREFIX(COMPLETION_TYPE_PREFIX),
     CONTAINS(COMPLETION_TYPE_CONTAINS),
@@ -498,5 +501,15 @@ public class Config {
     public String type() {
       return this.typeName;
     }
+  }
+
+  @FunctionalInterface
+  public interface SimpleSupplier<R> {
+    R get() throws Exception;
+  }
+
+  @FunctionalInterface
+  public interface SimpleConsumer {
+    void accept() throws IOException;
   }
 }

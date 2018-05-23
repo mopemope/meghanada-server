@@ -10,10 +10,9 @@ import java.util.Map;
 public class MethodParameterNames implements Serializable {
 
   private static final long serialVersionUID = 6556924934040150075L;
-
-  public String className;
   // key = methodName: val = Set
   public final Map<String, List<List<ParameterName>>> names = new HashMap<>();
+  public String className;
 
   @Override
   public boolean equals(Object o) {
