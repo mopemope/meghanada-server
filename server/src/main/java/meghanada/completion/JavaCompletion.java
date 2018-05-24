@@ -24,6 +24,7 @@ import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 import meghanada.analyze.AccessSymbol;
 import meghanada.analyze.ClassScope;
+import meghanada.analyze.FieldAccess;
 import meghanada.analyze.MethodCall;
 import meghanada.analyze.Source;
 import meghanada.analyze.TypeScope;
@@ -37,10 +38,7 @@ import meghanada.completion.matcher.PrefixMatcher;
 import meghanada.config.Config;
 import meghanada.index.IndexDatabase;
 import meghanada.project.Project;
-import meghanada.reflect.CandidateUnit;
-import meghanada.reflect.ClassIndex;
-import meghanada.reflect.FieldDescriptor;
-import meghanada.reflect.MemberDescriptor;
+import meghanada.reflect.*;
 import meghanada.reflect.asm.CachedASMReflector;
 import meghanada.utils.ClassNameUtils;
 import meghanada.utils.FileUtils;
@@ -723,13 +721,31 @@ public class JavaCompletion {
     // search fields or methods
     final int idx = searchWord.lastIndexOf('#');
     if (idx > 0) {
-      final String var = searchWord.substring(1, idx);
+      String var = searchWord.substring(1, idx);
+      final int idx2 = var.lastIndexOf('*');
       final String prefix = searchWord.substring(idx + 1);
-      // normal completion
-      return JavaCompletion.completionFieldsOrMethods(source, line, var, prefix)
-          .stream()
-          .sorted(methodComparing(prefix))
-          .collect(Collectors.toList());
+      Collection<? extends CandidateUnit> result;
+      if (idx2 > 0) { // smart completion
+        String typeOrMember = var.substring(idx2 + 1);
+        typeOrMember = getMemberType(source, line, typeOrMember);
+
+        final String var2 = var.substring(0, idx2);
+        final Collection<? extends CandidateUnit> rawResult =
+            JavaCompletion.completionFieldsOrMethods(source, line, var2, prefix);
+        result =
+            rawResult
+                .stream()
+                // .filter(cu -> cu.getReturnType().endsWith(type))
+                .sorted(getComparatorWithType(prefix, typeOrMember))
+                .collect(Collectors.toList());
+      } else {
+        result =
+            JavaCompletion.completionFieldsOrMethods(source, line, var, prefix)
+                .stream()
+                .sorted(methodComparing(prefix))
+                .collect(Collectors.toList());
+      }
+      return result;
     }
 
     // normal completion
@@ -739,20 +755,99 @@ public class JavaCompletion {
         .collect(Collectors.toList());
   }
 
+  private String getMemberType(Source source, int line, String typeOrMember) {
+    if (!ClassNameUtils.isPrimitive(typeOrMember)) {
+      boolean found = false;
+      try {
+        Map<String, Variable> symbols = source.getDeclaratorMap(line);
+        for (Map.Entry<String, Variable> entry : symbols.entrySet()) {
+          if (entry.getKey().equals(typeOrMember)) {
+            typeOrMember = entry.getValue().fqcn;
+            found = true;
+            break;
+          }
+        }
+        if (!found) {
+          Collection<FieldAccess> fields = source.getFieldAccesses();
+          for (FieldAccess field : fields) {
+            if (field.name.equals(typeOrMember)) {
+              found = true;
+              typeOrMember = field.returnType;
+            }
+          }
+        }
+      } catch (Exception ignored) {
+      }
+    }
+    return typeOrMember;
+  }
+
+  private static Comparator<? super CandidateUnit> getComparatorWithType(
+      String keyword, String type) {
+    return (c1, c2) -> {
+      boolean b1 = false, b2 = false;
+      if (c1 instanceof MethodDescriptor) {
+        b1 = c1.getReturnType().endsWith(type);
+      } else if (c1 instanceof FieldDescriptor) {
+        b1 = c1.getType().endsWith(type);
+      }
+      if (c2 instanceof MethodDescriptor) {
+        b2 = c2.getReturnType().endsWith(type);
+      } else if (c2 instanceof FieldDescriptor) {
+        b2 = c2.getType().endsWith(type);
+      }
+      final String o1 = c1.getName();
+      final String o2 = c2.getName();
+
+      if (b1 && !b2) {
+        return -1;
+      } else if (!b1 && b2) {
+        return 1;
+      }
+
+      if (o1.startsWith(keyword) && o2.startsWith(keyword)) {
+        final String d1 = c1.getDisplayDeclaration();
+        final String d2 = c2.getDisplayDeclaration();
+        return Integer.compare(d1.length(), d2.length());
+      }
+
+      if (o1.startsWith(keyword)) {
+        return -1;
+      }
+      if (o2.startsWith(keyword)) {
+        return 1;
+      }
+      return o1.compareTo(o2);
+    };
+  }
+
   private Collection<? extends CandidateUnit> completionMethods(
       Source source, int line, int column, String searchWord) {
     final int prefixIdx = searchWord.lastIndexOf('#');
     final int classIdx = searchWord.lastIndexOf(':');
+    final int typeIdx = searchWord.lastIndexOf('*');
     final String pkg = source.getPackageName();
     if (classIdx > 0 && prefixIdx > 0) {
       final String prefix = searchWord.substring(prefixIdx + 1);
       // return methods of prefix class
       String fqcn = searchWord.substring(classIdx + 1, prefixIdx);
-      fqcn = StringUtils.replace(fqcn, ClassNameUtils.CAPTURE_OF, "");
-      return reflectWithFQCN(fqcn, prefix)
-          .stream()
-          .sorted(methodComparing(prefix))
-          .collect(Collectors.toList());
+      if (typeIdx > 1) { // smart completion
+        fqcn = searchWord.substring(classIdx + 1, typeIdx);
+        String typeOrMember = searchWord.substring(typeIdx + 1, prefixIdx);
+        typeOrMember = getMemberType(source, line, typeOrMember);
+        fqcn = StringUtils.replace(fqcn, ClassNameUtils.CAPTURE_OF, "");
+        return reflectWithFQCN(fqcn, prefix)
+            .stream()
+            // .filter(cu -> cu.getReturnType().endsWith(type))
+            .sorted(getComparatorWithType(prefix, typeOrMember))
+            .collect(Collectors.toList());
+      } else {
+        fqcn = StringUtils.replace(fqcn, ClassNameUtils.CAPTURE_OF, "");
+        return reflectWithFQCN(fqcn, prefix)
+            .stream()
+            .sorted(methodComparing(prefix))
+            .collect(Collectors.toList());
+      }
     }
 
     // chained method completion
