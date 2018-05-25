@@ -787,12 +787,12 @@ public class JavaCompletion {
     return (c1, c2) -> {
       boolean b1 = false, b2 = false;
       if (c1 instanceof MethodDescriptor) {
-        b1 = c1.getReturnType().endsWith(type);
+        b1 = c1.getReturnType().replace(", ", ",").endsWith(type);
       } else if (c1 instanceof FieldDescriptor) {
         b1 = c1.getType().endsWith(type);
       }
       if (c2 instanceof MethodDescriptor) {
-        b2 = c2.getReturnType().endsWith(type);
+        b2 = c2.getReturnType().replace(", ", ",").endsWith(type);
       } else if (c2 instanceof FieldDescriptor) {
         b2 = c2.getType().endsWith(type);
       }
