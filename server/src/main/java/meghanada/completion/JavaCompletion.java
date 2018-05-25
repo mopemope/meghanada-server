@@ -235,7 +235,6 @@ public class JavaCompletion {
     final CompletionMatcher classMatcher = getClassCompletionMatcher(prefix);
     // add this member
     completionThisMembers(typeScope, prefix, result, matcher);
-    completionThisMembers(prefix, result, fqcn);
 
     if (fqcn.contains(ClassNameUtils.INNER_MARK)) {
       // add parent
