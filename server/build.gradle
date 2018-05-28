@@ -87,18 +87,18 @@ bintray {
 dependencies {
 
   compile files("${System.properties['java.home']}/../lib/tools.jar")
-  compile 'com.google.googlejavaformat:google-java-format:1.5'
+  compile 'com.google.googlejavaformat:google-java-format:1.6'
   compile 'org.apache.maven:maven-model-builder:3.5.3'
   compile 'com.leacox.motif:motif:0.1'
   compile 'com.leacox.motif:motif-hamcrest:0.1'
-  compile 'com.github.javaparser:javaparser-core:3.6.5'
+  compile 'com.github.javaparser:javaparser-core:3.6.7'
   compile "org.apache.logging.log4j:log4j-core:$log4jVersion"
   compile "org.apache.logging.log4j:log4j-api:$log4jVersion"
   compile "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
   compile 'commons-cli:commons-cli:1.4'
   compile "org.gradle:gradle-tooling-api:$gradleVersion"
-  compile 'com.google.guava:guava:25.0-jre'
-  compile 'org.ow2.asm:asm:6.1.1'
+  compile 'com.google.guava:guava:25.1-jre'
+  compile 'org.ow2.asm:asm:6.2'
   compile 'com.typesafe:config:1.3.3'
   compile 'org.atteo:evo-inflector:1.2.2'
   compile 'junit:junit:4.12'
