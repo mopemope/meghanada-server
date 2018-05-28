@@ -214,70 +214,71 @@ public class JavaCompletionTest extends GradleTestBase {
   public void testSmartCompletionNoType() throws Exception {
     JavaCompletion completion = getCompletion();
     File file =
-      new File(
-               project.getProjectRootPath(), "./src/main/java/meghanada/analyze/JavaAnalyzer.java")
-      .getCanonicalFile();
+        new File(
+                project.getProjectRootPath(), "./src/main/java/meghanada/analyze/JavaAnalyzer.java")
+            .getCanonicalFile();
     assertTrue(file.exists());
     final Collection<? extends CandidateUnit> units =
-      timeIt(() -> completion.completionAt(file, 88, 6, "*diagnostic*fileObject#"));
+        timeIt(() -> completion.completionAt(file, 88, 6, "*diagnostic*fileObject#"));
     units.forEach(a -> System.out.println(a.getDisplayDeclaration()));
     CandidateUnit unit = (CandidateUnit) (units.toArray())[0];
-    assertEquals(unit.getName(), "getSource");
+    assertEquals("getSource", unit.getName());
   }
 
   @Test
   public void testSmartCompletionWithType() throws Exception {
     JavaCompletion completion = getCompletion();
     File file =
-      new File(
-               project.getProjectRootPath(), "./src/main/java/meghanada/analyze/JavaAnalyzer.java")
-      .getCanonicalFile();
+        new File(
+                project.getProjectRootPath(), "./src/main/java/meghanada/analyze/JavaAnalyzer.java")
+            .getCanonicalFile();
     assertTrue(file.exists());
     final Collection<? extends CandidateUnit> units =
-      timeIt(() -> completion.completionAt(file, 88, 6, "*kind*String#"));
+        timeIt(() -> completion.completionAt(file, 88, 6, "*kind*String#"));
     units.forEach(a -> System.out.println(a.getDisplayDeclaration()));
     Object[] objs = (units.toArray());
     CandidateUnit unit1 = (CandidateUnit) objs[0];
     CandidateUnit unit2 = (CandidateUnit) objs[1];
-    assertEquals(unit1.getName(), "name");
-    assertEquals(unit2.getName(), "toString");
+    assertEquals("name", unit1.getName());
+    assertEquals("toString", unit2.getName());
   }
 
   @Test
   public void testSmartCompletionPrimaryType() throws Exception {
     JavaCompletion completion = getCompletion();
     File file =
-      new File(
-               project.getProjectRootPath(), "./src/main/java/meghanada/analyze/JavaAnalyzer.java")
-      .getCanonicalFile();
+        new File(
+                project.getProjectRootPath(), "./src/main/java/meghanada/analyze/JavaAnalyzer.java")
+            .getCanonicalFile();
     assertTrue(file.exists());
     final Collection<? extends CandidateUnit> units =
-      timeIt(() -> completion.completionAt(file, 304, 4, "*code*int#"));
+        timeIt(() -> completion.completionAt(file, 304, 4, "*code*int#"));
     units.forEach(a -> System.out.println(a.getDisplayDeclaration()));
     Object[] objs = (units.toArray());
     CandidateUnit unit1 = (CandidateUnit) objs[0];
     CandidateUnit unit2 = (CandidateUnit) objs[1];
     CandidateUnit unit3 = (CandidateUnit) objs[2];
     CandidateUnit unit4 = (CandidateUnit) objs[3];
-    assertEquals(unit1.getName(), "length");
-    assertEquals(unit2.getName(), "hashCode");
-    assertEquals(unit3.getName(), "indexOf");
-    assertEquals(unit4.getName(), "lastIndexOf");
+    assertEquals("length", unit1.getName());
+    assertEquals("hashCode", unit2.getName());
+    assertEquals("indexOf", unit3.getName());
+    assertEquals("lastIndexOf", unit4.getName());
   }
 
+  @Test
   public void testSmartCompletionGenericType() throws Exception {
     JavaCompletion completion = getCompletion();
     File file =
-      new File(
-               project.getProjectRootPath(), "./src/main/java/meghanada/analyze/JavaAnalyzer.java")
-      .getCanonicalFile();
+        new File(
+                project.getProjectRootPath(), "./src/main/java/meghanada/analyze/JavaAnalyzer.java")
+            .getCanonicalFile();
     assertTrue(file.exists());
     final Collection<? extends CandidateUnit> units =
-      timeIt(() -> completion.completionAt(file, 192, 22, "a"));
+        timeIt(() -> completion.completionAt(file, 192, 22, "a"));
     units.forEach(a -> System.out.println(a.getDisplayDeclaration()));
     Object[] objs = (units.toArray());
     CandidateUnit unit1 = (CandidateUnit) objs[0];
-    assertEquals(unit1.getName(), "analyze");
+    assertEquals("analyze", unit1.getName());
   }
 
   private JavaCompletion getCompletion() throws Exception {
