@@ -38,7 +38,12 @@ import meghanada.completion.matcher.PrefixMatcher;
 import meghanada.config.Config;
 import meghanada.index.IndexDatabase;
 import meghanada.project.Project;
-import meghanada.reflect.*;
+import meghanada.reflect.CandidateUnit;
+import meghanada.reflect.CandidateUnit.MemberType;
+import meghanada.reflect.ClassIndex;
+import meghanada.reflect.FieldDescriptor;
+import meghanada.reflect.MemberDescriptor;
+import meghanada.reflect.MethodDescriptor;
 import meghanada.reflect.asm.CachedASMReflector;
 import meghanada.utils.ClassNameUtils;
 import meghanada.utils.FileUtils;
@@ -776,6 +781,7 @@ public class JavaCompletion {
           }
         }
       } catch (Exception ignored) {
+        log.catching(ignored);
       }
     }
     return typeOrMember;
