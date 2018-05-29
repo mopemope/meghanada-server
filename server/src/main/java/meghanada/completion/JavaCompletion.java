@@ -759,25 +759,18 @@ public class JavaCompletion {
         .collect(Collectors.toList());
   }
 
-  private String getMemberType(Source source, int line, String typeOrMember) {
+  private String getMemberType(final Source source, final int line, final String typeOrMember) {
     if (!ClassNameUtils.isPrimitive(typeOrMember)) {
-      boolean found = false;
       try {
         Map<String, Variable> symbols = source.getDeclaratorMap(line);
-        for (Map.Entry<String, Variable> entry : symbols.entrySet()) {
-          if (entry.getKey().equals(typeOrMember)) {
-            typeOrMember = entry.getValue().fqcn;
-            found = true;
-            break;
-          }
+        Variable variable = symbols.get(typeOrMember);
+        if (nonNull(variable)) {
+          return variable.fqcn;
         }
-        if (!found) {
-          Collection<FieldAccess> fields = source.getFieldAccesses();
-          for (FieldAccess field : fields) {
-            if (field.name.equals(typeOrMember)) {
-              found = true;
-              typeOrMember = field.returnType;
-            }
+        Collection<FieldAccess> fields = source.getFieldAccesses();
+        for (FieldAccess field : fields) {
+          if (field.name.equals(typeOrMember)) {
+            return field.returnType;
           }
         }
       } catch (Exception ignored) {
