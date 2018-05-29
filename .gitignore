@@ -29,3 +29,4 @@ bazel-*
 *.log
 .vscode
 .#*.*
+/.nb-gradle/
