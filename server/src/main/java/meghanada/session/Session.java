@@ -51,6 +51,7 @@ import meghanada.location.LocationSearcher;
 import meghanada.module.ModuleHelper;
 import meghanada.project.Project;
 import meghanada.project.ProjectDependency;
+import meghanada.project.eclipse.EclipseProject;
 import meghanada.project.gradle.GradleProject;
 import meghanada.project.maven.MavenProject;
 import meghanada.project.meghanada.MeghanadaProject;
@@ -116,6 +117,7 @@ public class Session {
       // challenge
       final File gradle = new File(base, Project.GRADLE_PROJECT_FILE);
       final File mvn = new File(base, Project.MVN_PROJECT_FILE);
+      final File eclipse = new File(base, Project.ECLIPSE_PROJECT_FILE);
       final File meghanada = new File(base, Config.MEGHANADA_CONF_FILE);
 
       if (gradle.exists()) {
@@ -124,6 +126,9 @@ public class Session {
       } else if (mvn.exists()) {
         log.debug("find mvn project {}", mvn);
         return loadProject(base, Project.MVN_PROJECT_FILE, current);
+      } else if (eclipse.exists()) {
+        log.debug("find eclipse project {}", eclipse);
+        return loadProject(base, Project.ECLIPSE_PROJECT_FILE, current);
       } else if (meghanada.exists()) {
         log.debug("find meghanada project {}", meghanada, current);
         return loadProject(base, Config.MEGHANADA_CONF_FILE, current);
@@ -182,6 +187,9 @@ public class Session {
           break;
         case Project.MVN_PROJECT_FILE:
           project = new MavenProject(projectRoot);
+          break;
+        case Project.ECLIPSE_PROJECT_FILE:
+          project = new EclipseProject(projectRoot);
           break;
         default:
           project = new MeghanadaProject(projectRoot);
@@ -242,6 +250,7 @@ public class Session {
       // challenge
       final File gradle = new File(base, Project.GRADLE_PROJECT_FILE);
       final File mvn = new File(base, Project.MVN_PROJECT_FILE);
+      final File eclipse = new File(base, Project.ECLIPSE_PROJECT_FILE);
       final File meghanada = new File(base, Config.MEGHANADA_CONF_FILE);
 
       if (gradle.exists()) {
@@ -249,6 +258,9 @@ public class Session {
         return base;
       } else if (mvn.exists()) {
         log.debug("find mvn project {}", mvn);
+        return base;
+      } else if (eclipse.exists()) {
+        log.debug("find eclipse project {}", eclipse);
         return base;
       } else if (meghanada.exists()) {
         log.debug("find meghanada project {}", meghanada);
@@ -296,6 +308,10 @@ public class Session {
           .orElse(false);
     } else if (currentProject instanceof MavenProject) {
       return loadProject(projectRoot, Project.MVN_PROJECT_FILE, base)
+          .map(project -> setProject(projectRoot, project))
+          .orElse(false);
+    } else if (currentProject instanceof EclipseProject) {
+      return loadProject(projectRoot, Project.ECLIPSE_PROJECT_FILE, base)
           .map(project -> setProject(projectRoot, project))
           .orElse(false);
     }
@@ -725,6 +741,12 @@ public class Session {
               });
     } else if (currentProject instanceof MavenProject) {
       loadProject(projectRoot, Project.MVN_PROJECT_FILE, projectRoot)
+          .ifPresent(
+              project -> {
+                boolean ret = setProject(projectRoot, project);
+              });
+    } else if (currentProject instanceof EclipseProject) {
+      loadProject(projectRoot, Project.ECLIPSE_PROJECT_FILE, projectRoot)
           .ifPresent(
               project -> {
                 boolean ret = setProject(projectRoot, project);

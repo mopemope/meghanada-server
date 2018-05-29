@@ -9,7 +9,7 @@ import meghanada.project.ProjectParseException;
 
 public class MeghanadaProject extends Project {
 
-  private static final long serialVersionUID = 1L;
+  private static final long serialVersionUID = -569328542609074714L;
 
   public MeghanadaProject(File projectRoot) throws IOException {
     super(projectRoot);

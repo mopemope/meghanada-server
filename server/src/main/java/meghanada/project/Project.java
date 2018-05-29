@@ -53,6 +53,7 @@ public abstract class Project implements Serializable, Storable {
 
   public static final String GRADLE_PROJECT_FILE = "build.gradle";
   public static final String MVN_PROJECT_FILE = "pom.xml";
+  public static final String ECLIPSE_PROJECT_FILE = ".project";
 
   // public static final String PROJECT_ROOT_KEY = "project.root";
 
@@ -1183,23 +1184,28 @@ public abstract class Project implements Serializable, Storable {
       } else if (config.isJava10()) {
         sb.append(String.format("javac10Args: %s\n", config.getJava10JavacArgs()));
       }
-      List<String> cpList = Splitter.on(File.pathSeparator).splitToList(this.cachedClasspath);
-      if (cpList.size() > 0) {
-        sb.append("classpath:\n");
-        cpList.forEach(
-            s -> {
-              sb.append(String.format("  %s\n", s));
-            });
-        sb.append("\n");
+      if (nonNull(this.cachedClasspath)) {
+        List<String> cpList = Splitter.on(File.pathSeparator).splitToList(this.cachedClasspath);
+        if (cpList.size() > 0) {
+          sb.append("classpath:\n");
+          cpList.forEach(
+              s -> {
+                sb.append(String.format("  %s\n", s));
+              });
+          sb.append("\n");
+        }
       }
-      List<String> cpAllList = Splitter.on(File.pathSeparator).splitToList(this.cachedAllClasspath);
-      if (cpAllList.size() > 0) {
-        sb.append("allClasspath:\n");
-        cpAllList.forEach(
-            s -> {
-              sb.append(String.format("  %s\n", s));
-            });
-        sb.append("\n");
+      if (nonNull(this.cachedAllClasspath)) {
+        List<String> cpAllList =
+            Splitter.on(File.pathSeparator).splitToList(this.cachedAllClasspath);
+        if (cpAllList.size() > 0) {
+          sb.append("allClasspath:\n");
+          cpAllList.forEach(
+              s -> {
+                sb.append(String.format("  %s\n", s));
+              });
+          sb.append("\n");
+        }
       }
       Properties sysProp = System.getProperties();
       sb.append("SystemProperties:\n");
