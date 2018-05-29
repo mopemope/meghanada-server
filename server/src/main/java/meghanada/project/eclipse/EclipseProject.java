@@ -1,10 +1,15 @@
 package meghanada.project.eclipse;
 
+import static java.util.Objects.nonNull;
+
+import com.google.common.base.Splitter;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
@@ -53,22 +58,33 @@ public class EclipseProject extends Project {
           String kind = reader.getAttributeValue("", "kind");
           String output = reader.getAttributeValue("", "output");
           String path = reader.getAttributeValue("", "path");
+          List<String> paths = Splitter.on(File.separator).splitToList(path);
+          Set<String> set = new HashSet<>(paths);
+
           if (kind.equals("src")) {
             if (path.contains(File.separator + "resources")) {
-              if (output.contains(File.separator + "test")) {
+              if (paths.contains("test")) {
                 this.testResources.add(new File(this.projectRoot, path));
-                this.testOutput = new File(this.projectRoot, output);
+                if (nonNull(output)) {
+                  this.testOutput = new File(this.projectRoot, output);
+                }
               } else {
                 this.resources.add(new File(this.projectRoot, path));
-                this.output = new File(this.projectRoot, output);
+                if (nonNull(output)) {
+                  this.output = new File(this.projectRoot, output);
+                }
               }
             } else {
-              if (output.contains(File.separator + "test")) {
+              if (paths.contains("test")) {
                 this.testSources.add(new File(this.projectRoot, path));
-                this.testOutput = new File(this.projectRoot, output);
+                if (nonNull(output)) {
+                  this.testOutput = new File(this.projectRoot, output);
+                }
               } else {
                 this.sources.add(new File(this.projectRoot, path));
-                this.output = new File(this.projectRoot, output);
+                if (nonNull(output)) {
+                  this.output = new File(this.projectRoot, output);
+                }
               }
             }
           } else if (kind.equals("lib")) {
@@ -80,6 +96,9 @@ public class EclipseProject extends Project {
             ProjectDependency dependency =
                 new ProjectDependency(code, "COMPILE", version, file, type);
             this.dependencies.add(dependency);
+          } else if (kind.equals("output")) {
+            this.output = new File(this.projectRoot, path);
+            this.testOutput = new File(this.projectRoot, path);
           }
         }
         reader.next();
@@ -90,7 +109,7 @@ public class EclipseProject extends Project {
     }
   }
 
-  private String getArtifactVersion(String path) {
+  private String getArtifactVersion(final String path) {
     File file = new File(path);
     String name = file.getName();
     int i = name.lastIndexOf("-");
@@ -101,7 +120,7 @@ public class EclipseProject extends Project {
     return "1.0.0";
   }
 
-  private String getArtifactCode(String path) {
+  private String getArtifactCode(final String path) {
     // ivy or gradle cache
     File file = new File(path);
     File verFile = file.getParentFile().getParentFile();
@@ -110,6 +129,6 @@ public class EclipseProject extends Project {
     String artifactID = artifactFile.getName();
     File groupFile = artifactFile.getParentFile();
     String groupID = groupFile.getName();
-    return groupID + ":" + artifactID + ":" + version;
+    return groupID + ":" + artifactID + ":" + getArtifactVersion(path);
   }
 }
