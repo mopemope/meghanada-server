@@ -20,14 +20,13 @@ import org.apache.logging.log4j.Logger;
 
 public class MavenProject extends Project {
 
-  private static final long serialVersionUID = 1L;
-
   private static final String REPOSITORY = "repository";
   private static final String RESOLVE_TASK = "dependency:resolve";
   private static final String SOURCES_TASK = "dependency:sources";
   private static final String BUILD_CLASSPATH_TASK = "dependency:build-classpath";
 
   private static final Logger log = LogManager.getLogger(MavenProject.class);
+  private static final long serialVersionUID = 5078373387618330618L;
 
   private File pomFile;
   private String mavenCmd = "mvn";
