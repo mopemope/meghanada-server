@@ -70,34 +70,24 @@ public class IdleMonitorSubscriber extends AbstractSubscriber {
 
   @Subscribe
   public synchronized void on(SessionEventBus.IdleEvent event) {
-    long preLastRun = event.getIdleTimer().lastRun;
     CachedASMReflector reflector = CachedASMReflector.getInstance();
     if (isNull(this.jars)) {
       this.jars = new ArrayDeque<>(reflector.getJars());
     }
 
-    // max 5 file
-    int i = 2;
-    while (i-- > 0) {
-      File file = jars.pollFirst();
-      if (nonNull(file)) {
-        reflector.scan(
-            file,
-            name -> {
-              try {
-                List<MemberDescriptor> memberDescriptors =
-                    GlobalCache.getInstance().getMemberDescriptors(name);
-              } catch (ExecutionException e) {
-                log.catching(e);
-                throw new RuntimeException(e);
-              }
-            });
-
-        long lastRun = event.getIdleTimer().lastRun;
-        if (preLastRun != lastRun || this.monitor.getCpuUsage() > CPU_LIMIT) {
-          return;
-        }
-      }
+    File file = this.jars.pollFirst();
+    if (nonNull(file)) {
+      reflector.scan(
+          file,
+          name -> {
+            try {
+              List<MemberDescriptor> memberDescriptors =
+                  GlobalCache.getInstance().getMemberDescriptors(name);
+            } catch (ExecutionException e) {
+              log.catching(e);
+              throw new RuntimeException(e);
+            }
+          });
     }
   }
 

@@ -472,7 +472,7 @@ public class TreeAnalyzer {
     } else {
       try (Stream<? extends CompilationUnitTree> stream =
           StreamSupport.stream(parsed.spliterator(), true)) {
-        // parallel
+        // parallel ?
         stream.forEach(cut -> tryAnalyzeUnit(errorFiles, analyzeMap, cut));
       }
     }

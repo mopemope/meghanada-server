@@ -638,12 +638,12 @@ public class ASMReflector {
     String nameWithoutTP = ClassNameUtils.removeTypeParameter(name);
     if (isJar(file)) {
       try (JarFile jarFile = new JarFile(file);
-          Stream<JarEntry> jarStream = jarFile.stream().parallel();
+          Stream<JarEntry> jarStream = jarFile.stream();
           Stream<JarEntry> stream =
               jarStream
                   .filter(jarEntry -> jarEntry.getName().endsWith(".class"))
                   .collect(Collectors.toList())
-                  .parallelStream()) {
+                  .stream()) {
 
         return stream
             .map(
@@ -849,12 +849,12 @@ public class ASMReflector {
                       }));
     } else if (isJar(file)) {
       try (JarFile jarFile = new JarFile(file);
-          Stream<JarEntry> jarStream = jarFile.stream().parallel();
+          Stream<JarEntry> jarStream = jarFile.stream();
           Stream<JarEntry> stream =
               jarStream
                   .filter(jarEntry -> jarEntry.getName().endsWith(".class"))
                   .collect(Collectors.toList())
-                  .parallelStream()) {
+                  .stream()) {
 
         stream.forEach(
             jarEntry -> {
@@ -898,7 +898,7 @@ public class ASMReflector {
                   .map(Path::toFile)
                   .filter(f -> f.isFile() && f.getName().endsWith(".class"))
                   .collect(Collectors.toList())
-                  .parallelStream()) {
+                  .stream()) {
 
         stream.forEach(
             classFile -> {

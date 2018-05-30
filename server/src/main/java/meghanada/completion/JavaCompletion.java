@@ -202,9 +202,9 @@ public class JavaCompletion {
   private static Collection<? extends CandidateUnit> completionNewKeyword(final Source source) {
     return source
         .importClasses
-        .parallelStream()
+        .stream()
         .map(JavaCompletion::doReflect)
-        .flatMap(Collection::parallelStream)
+        .flatMap(Collection::stream)
         .filter(md -> md.getType().equals(CandidateUnit.MemberType.CONSTRUCTOR.name()))
         .collect(Collectors.toSet());
   }

@@ -339,7 +339,7 @@ public class Session {
     this.sessionEventBus.subscribeFileWatch();
     this.sessionEventBus.subscribeParse();
     this.sessionEventBus.subscribeCache();
-    this.sessionEventBus.subscribeIdle();
+    // this.sessionEventBus.subscribeIdle();
   }
 
   public void start() throws IOException {

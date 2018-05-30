@@ -27,6 +27,7 @@ public class SourceCacheSubscriber {
   private final Map<String, String> checksumMap;
   private final Project project;
   private long lastCached;
+  private boolean importMemberCache = false;
 
   public SourceCacheSubscriber(final Project project) {
     this.project = project;
@@ -46,8 +47,10 @@ public class SourceCacheSubscriber {
     if (isDiagnostics) {
       final long now = System.currentTimeMillis();
       if (now - this.lastCached > 10000) {
-        this.createImportMemberCache(source);
-        this.lastCached = now;
+        if (this.importMemberCache) {
+          this.createImportMemberCache(source);
+          this.lastCached = now;
+        }
       }
     }
 
@@ -120,7 +123,6 @@ public class SourceCacheSubscriber {
     final Map<File, Source> analyzedMap = event.analyzedMap;
     analyzedMap
         .values()
-        .parallelStream()
         .forEach(
             source -> {
               try {
