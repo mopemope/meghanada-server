@@ -205,8 +205,8 @@ public class EmacsServer implements Server {
             .get(
                 args -> {
                   // oi : Optimize Import
-                  // usage: oi <filepath>
-                  handler.optimizeImport(id, args.get(0));
+                  // usage: oi <filepath> <contents-file>
+                  handler.optimizeImport(id, args.get(0), args.get(1));
                   return true;
                 })
             .when(headTail(eq("ia"), any()))

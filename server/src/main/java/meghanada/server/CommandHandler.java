@@ -81,11 +81,11 @@ public class CommandHandler {
     }
   }
 
-  public void diagnostics(final long id, final String sourceFile, final String sourceCodeFile) {
-    File f = new File(sourceCodeFile);
+  public void diagnostics(final long id, final String sourceFile, final String tmpSourceFile) {
+    File f = new File(tmpSourceFile);
     f.deleteOnExit();
     try {
-      String contents = org.apache.commons.io.FileUtils.readFileToString(new File(sourceCodeFile));
+      String contents = org.apache.commons.io.FileUtils.readFileToString(new File(tmpSourceFile));
       final CompileResult compileResult = session.diagnosticString(sourceFile, contents);
       final String out = outputFormatter.diagnostics(id, compileResult, sourceFile);
       writer.write(out);
@@ -187,10 +187,13 @@ public class CommandHandler {
     }
   }
 
-  public void optimizeImport(final long id, final String path) {
+  public void optimizeImport(final long id, final String sourceFile, final String tmpSourceFile) {
+    File f = new File(tmpSourceFile);
+    f.deleteOnExit();
     try {
-      final String canonicalPath = new File(path).getCanonicalPath();
-      session.optimizeImport(canonicalPath);
+      String contents = org.apache.commons.io.FileUtils.readFileToString(new File(tmpSourceFile));
+      final String canonicalPath = f.getCanonicalPath();
+      session.optimizeImport(sourceFile, tmpSourceFile, contents);
       writer.write(outputFormatter.optimizeImport(id, canonicalPath));
       writer.newLine();
     } catch (Throwable t) {

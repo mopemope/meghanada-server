@@ -260,12 +260,12 @@ public class JavaAnalyzer {
 
       final Set<File> errorFiles = JavaAnalyzer.getErrorFiles(diagnostics);
 
+      final Map<File, Source> analyzedMap = analyze(parsedIter, errorFiles);
       Future<?> future =
           this.getExecutorService()
               .submit(
                   () -> {
                     try {
-                      final Map<File, Source> analyzedMap = analyze(parsedIter, errorFiles);
                       if (generate && !Config.load().useExternalBuilder()) {
                         javacTask.generate();
                         CachedASMReflector.getInstance().updateClassIndexFromDirectory();
@@ -276,7 +276,7 @@ public class JavaAnalyzer {
                     }
                   });
       final boolean success = errorFiles.size() == 0;
-      return new CompileResult(success, new HashMap<>(0), diagnostics, errorFiles);
+      return new CompileResult(success, analyzedMap, diagnostics, errorFiles);
     }
   }
 

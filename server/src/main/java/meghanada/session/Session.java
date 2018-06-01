@@ -462,92 +462,92 @@ public class Session {
     return parseJavaSource(file).map(source -> source.addImportIfAbsent(fqcn)).orElse(false);
   }
 
-  public synchronized void optimizeImport(final String path) throws ExecutionException {
+  public synchronized void optimizeImport(String sourceFile, String tmpSourceFile, String code)
+      throws IOException {
     // java file only
-    final File file = normalize(path);
+    final File file = normalize(sourceFile);
     if (!FileUtils.isJavaFile(file)) {
       return;
     }
-    boolean b = this.changeProject(path);
+    boolean b = this.changeProject(sourceFile);
+    CompileResult result = currentProject.compileString(sourceFile, code);
+    Source source = result.getSources().get(file.getCanonicalFile());
+    if (nonNull(source)) {
+      List<String> optimized;
+      try {
+        optimized = source.optimizeImports();
+      } catch (IllegalStateException ex) {
+        log.warn("it can not be optimized:{}", ex.getMessage());
+        return;
+      }
+      boolean addLine = false;
+      final StringBuilder sb = new StringBuilder(1024 * 4);
 
-    parseJavaSource(file)
-        .ifPresent(
-            source -> {
-              List<String> optimized = null;
-              try {
-                optimized = source.optimizeImports();
-              } catch (IllegalStateException ex) {
-                log.warn("it can not be optimized:{}", ex.getMessage());
-                return;
-              }
-              boolean addLine = false;
-              final StringBuilder sb = new StringBuilder(1024 * 4);
+      if (!source.getPackageName().isEmpty()) {
+        try {
+          long end = source.getPackageStartLine();
+          if (end > 0) {
+            end = end - 1;
+            FileUtils.readRangeLines(
+                file,
+                0,
+                end,
+                s -> {
+                  sb.append(s).append("\n");
+                });
+          }
+          sb.append("package ").append(source.getPackageName()).append(";\n");
+        } catch (IOException e) {
+          throw new UncheckedIOException(e);
+        }
+      }
 
-              if (!source.getPackageName().isEmpty()) {
-                try {
-                  long end = source.getPackageStartLine();
-                  if (end > 0) {
-                    end = end - 1;
-                    FileUtils.readRangeLines(
-                        file,
-                        0,
-                        end,
-                        s -> {
-                          sb.append(s).append("\n");
-                        });
+      if (source.staticImportClass.size() > 0) {
+        sb.append('\n');
+        addLine = true;
+        source
+            .staticImportClass
+            .entrySet()
+            .stream()
+            .map(
+                e -> {
+                  final String method = e.getKey();
+                  final String fqcn = e.getValue();
+                  return fqcn + '.' + method;
+                })
+            .sorted(Comparator.naturalOrder())
+            .forEach(s -> sb.append("import static ").append(s).append(";\n"));
+        sb.append('\n');
+      }
+      if (optimized.size() > 0) {
+        if (!addLine) {
+          sb.append('\n');
+        }
+        for (final String fqcn : optimized) {
+          sb.append("import ").append(fqcn).append(";\n");
+        }
+        sb.append('\n');
+      }
+
+      try (final Stream<String> stream = Files.lines(file.toPath(), StandardCharsets.UTF_8)) {
+        long startLine = source.getClassStartLine();
+        stream
+            .skip(startLine)
+            .forEach(
+                s -> {
+                  if (startLine > 0 || !s.contains("package ")) {
+                    sb.append(s).append('\n');
                   }
-                  sb.append("package ").append(source.getPackageName()).append(";\n");
-                } catch (IOException e) {
-                  throw new UncheckedIOException(e);
-                }
-              }
-
-              if (source.staticImportClass.size() > 0) {
-                sb.append('\n');
-                addLine = true;
-                source
-                    .staticImportClass
-                    .entrySet()
-                    .stream()
-                    .map(
-                        e -> {
-                          final String method = e.getKey();
-                          final String fqcn = e.getValue();
-                          return fqcn + '.' + method;
-                        })
-                    .sorted(Comparator.naturalOrder())
-                    .forEach(s -> sb.append("import static ").append(s).append(";\n"));
-                sb.append('\n');
-              }
-              if (optimized.size() > 0) {
-                if (!addLine) {
-                  sb.append('\n');
-                }
-                for (final String fqcn : optimized) {
-                  sb.append("import ").append(fqcn).append(";\n");
-                }
-              }
-
-              try (final Stream<String> stream =
-                  Files.lines(file.toPath(), StandardCharsets.UTF_8)) {
-                long startLine = source.getClassStartLine();
-                stream
-                    .skip(startLine)
-                    .forEach(
-                        s -> {
-                          if (startLine > 0 || !s.contains("package ")) {
-                            sb.append(s).append('\n');
-                          }
-                        });
-                Files.write(
-                    Paths.get(path),
-                    sb.toString().getBytes(StandardCharsets.UTF_8),
-                    StandardOpenOption.WRITE,
-                    StandardOpenOption.TRUNCATE_EXISTING);
-              } catch (final IOException e) {
-                throw new UncheckedIOException(e);
-              }
-            });
+                });
+        Files.write(
+            Paths.get(tmpSourceFile),
+            sb.toString().getBytes(StandardCharsets.UTF_8),
+            StandardOpenOption.WRITE,
+            StandardOpenOption.TRUNCATE_EXISTING);
+      } catch (final IOException e) {
+        throw new UncheckedIOException(e);
+      }
+    }
   }
 
   public synchronized Map<String, List<String>> searchMissingImport(final String path)
