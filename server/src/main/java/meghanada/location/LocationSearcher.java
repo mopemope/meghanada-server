@@ -88,7 +88,13 @@ public class LocationSearcher {
 
   private static Location searchLocationFromFile(
       final SearchContext ctx, final String fqcn, final File targetFile) throws IOException {
-    final CompilationUnit compilationUnit = JavaParser.parse(targetFile, StandardCharsets.UTF_8);
+    CompilationUnit compilationUnit;
+    try {
+      compilationUnit = JavaParser.parse(targetFile, StandardCharsets.UTF_8);
+    } catch (Throwable e) {
+      log.warn(e.getMessage(), e);
+      return new Location(targetFile.getCanonicalPath(), 0, 0);
+    }
     final List<TypeDeclaration<?>> types = compilationUnit.getTypes();
     for (final TypeDeclaration<?> type : types) {
       if (ctx.kind.equals(SearchKind.CLASS)) {
@@ -500,7 +506,7 @@ public class LocationSearcher {
   private Location searchFromSrcZip(final SearchContext context) throws IOException {
 
     final String javaHomeDir = Config.load().getJavaHomeDir();
-    File srcZip = null;
+    File srcZip;
 
     Config config = Config.load();
     if (config.isJava8()) {
