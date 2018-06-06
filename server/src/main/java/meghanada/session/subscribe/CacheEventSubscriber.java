@@ -1,6 +1,5 @@
 package meghanada.session.subscribe;
 
-import static java.util.Objects.nonNull;
 import static meghanada.config.Config.timeItF;
 
 import com.google.common.base.Stopwatch;
@@ -99,10 +98,10 @@ public class CacheEventSubscriber extends AbstractSubscriber {
     log.info("Ready");
     reflector.scanAllStaticMembers();
 
-    String db = System.getProperty("new-project-database");
-    if (nonNull(db) && db.isEmpty()) {
-      createStandardClassCache();
-    }
+    // String db = System.getProperty("new-project-database");
+    // if (nonNull(db) && db.isEmpty()) {
+    //   createStandardClassCache();
+    // }
     // start idle monitor
     this.sessionEventBus.requestIdleMonitor();
   }
