@@ -27,6 +27,7 @@ public class ClassIndex implements CandidateUnit, Cloneable, Serializable, Stora
   private final List<String> typeParameters;
   private final List<String> supers;
   public transient boolean loaded;
+  public transient boolean isAnonymous;
   private boolean isInterface;
   private boolean isAnnotation;
   private boolean functional;

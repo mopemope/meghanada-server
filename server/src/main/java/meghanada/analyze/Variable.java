@@ -58,7 +58,7 @@ public class Variable implements Serializable {
   }
 
   public Optional<MemberDescriptor> toMemberDescriptor() {
-    if (this.isField && nonNull(this.modifier)) {
+    if (this.isField && this.isDef && nonNull(this.modifier)) {
       FieldDescriptor descriptor =
           new FieldDescriptor(this.declaringClass, this.name, this.modifier, this.fqcn);
       descriptor.setTypeParameters(Collections.emptySet());

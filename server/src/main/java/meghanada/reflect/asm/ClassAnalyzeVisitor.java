@@ -62,7 +62,6 @@ class ClassAnalyzeVisitor extends ClassVisitor {
     // call class
     final boolean isInterface = (Opcodes.ACC_INTERFACE & access) == Opcodes.ACC_INTERFACE;
     // log.debug("name {} sig {} IF:{}", name, signature, isInterface);
-
     if (signature != null) {
       // generics
       // log.debug("name {} sig {}", name, signature);
@@ -124,17 +123,22 @@ class ClassAnalyzeVisitor extends ClassVisitor {
     return super.visitMethod(access, name, desc, sig, exceptions);
   }
 
-  //    @Override
-  //    public void visitInnerClass(String name, String outerName, String innerName, int access) {
-  //        log.debug("visitInnerClass {} {} {} {}", this.className, name, outerName, innerName);
-  //        super.visitInnerClass(name, outerName, innerName, access);
-  //    }
+  @Override
+  public void visitInnerClass(String name, String outerName, String innerName, int access) {
+    if (innerName == null) {
+      String s = ClassNameUtils.replaceSlash(name);
+      s = ClassNameUtils.replaceInnerMark(s);
+      if (this.classIndex.getDeclaration().equals(s)) {
+        this.classIndex.isAnonymous = true;
+      }
+    }
+    super.visitInnerClass(name, outerName, innerName, access);
+  }
 
-  //    @Override
-  //    public void visitOuterClass(String s, String s1, String s2) {
-  //        log.debug("visitOuterClass {} {} {} {}", this.className, s, s1, s2);
-  //        super.visitOuterClass(s, s1, s2);
-  //    }
+  @Override
+  public void visitOuterClass(String s, String s1, String s2) {
+    super.visitOuterClass(s, s1, s2);
+  }
 
   @Override
   public FieldVisitor visitField(int access, String name, String desc, String sig, Object o) {
@@ -163,7 +167,7 @@ class ClassAnalyzeVisitor extends ClassVisitor {
   }
 
   ClassIndex getClassIndex() {
-    return classIndex;
+    return this.classIndex;
   }
 
   private Map<String, String> getTypeMap() {

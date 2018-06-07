@@ -58,7 +58,7 @@ public class ReferenceSearcherTest extends GradleTestBase {
     assertTrue(f.exists());
 
     final ReferenceSearcher searcher = getSearcher();
-    final List<Reference> result = timeIt(() -> searcher.searchReference(f, 43, 10, "name"));
+    final List<Reference> result = timeIt(() -> searcher.searchReference(f, 44, 10, "name"));
     assertNotNull(result);
     assertEquals(4, result.size());
   }
@@ -129,7 +129,7 @@ public class ReferenceSearcherTest extends GradleTestBase {
     assertTrue(f.exists());
 
     final ReferenceSearcher searcher = getSearcher();
-    final List<Reference> result = timeIt(() -> searcher.searchReference(f, 85, 47, "toString"));
+    final List<Reference> result = timeIt(() -> searcher.searchReference(f, 86, 47, "toString"));
     assertNotNull(result);
     assertEquals(43, result.size());
   }

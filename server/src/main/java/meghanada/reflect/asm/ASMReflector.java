@@ -168,9 +168,11 @@ public class ASMReflector {
       ClassAnalyzeVisitor classAnalyzeVisitor = new ClassAnalyzeVisitor(className, true, false);
       classReader.accept(classAnalyzeVisitor, 0);
       ClassIndex classIndex = classAnalyzeVisitor.getClassIndex();
-      classIndex.setInterface(isInterface);
-      classIndex.setAnnotation(isAnnotation);
-      indexes.put(classIndex, file);
+      if (!classIndex.isAnonymous) {
+        classIndex.setInterface(isInterface);
+        classIndex.setAnnotation(isAnnotation);
+        indexes.put(classIndex, file);
+      }
     }
   }
 
