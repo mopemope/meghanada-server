@@ -78,17 +78,14 @@ public class SourceCacheSubscriber {
       source.invalidateCache();
     }
 
+    globalCache.replaceSource(this.project, source);
     if (!source.hasCompileError) {
       final String md5sum = FileUtils.getChecksum(sourceFile);
       checksumMap.put(path, md5sum);
-      globalCache.replaceSource(this.project, source);
       ProjectDatabaseHelper.saveSource(source);
     } else {
       // error
       checksumMap.remove(path);
-      if (!isDiagnostics) {
-        globalCache.replaceSource(this.project, source);
-      }
     }
   }
 
