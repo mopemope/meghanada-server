@@ -6,8 +6,6 @@ import static java.util.Objects.nonNull;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Stopwatch;
-import com.google.common.eventbus.AsyncEventBus;
-import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
 import java.io.File;
 import java.io.IOException;
@@ -16,15 +14,12 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import javax.annotation.Nullable;
 import jetbrains.exodus.env.ContextualEnvironment;
 import jetbrains.exodus.env.Environment;
 import jetbrains.exodus.env.Environments;
+import meghanada.event.SystemEventBus;
 import meghanada.reflect.MemberDescriptor;
 import meghanada.store.ProjectDatabase;
 import meghanada.store.Serializer;
@@ -37,35 +32,13 @@ public class IndexDatabase {
   private static final Logger log = LogManager.getLogger(IndexDatabase.class);
   private static final String QUOTE = "\"";
   private static IndexDatabase indexDatabase;
-  private final ExecutorService executorService;
-  private final EventBus eventBus;
   public int maxHits = Integer.MAX_VALUE;
   private DocumentSearcher searcher;
   private Environment environment = null;
   private File baseLocation = null;
 
   private IndexDatabase() {
-    this.executorService = Executors.newSingleThreadExecutor();
-    this.eventBus =
-        new AsyncEventBus(
-            executorService,
-            (throwable, subscriberExceptionContext) -> {
-              if (!(throwable instanceof RejectedExecutionException)) {
-                log.error(throwable.getMessage(), throwable);
-              }
-            });
-
-    this.eventBus.register(this);
-    Runtime.getRuntime()
-        .addShutdownHook(
-            new Thread(
-                () -> {
-                  try {
-                    shutdown();
-                  } catch (Throwable t) {
-                    log.catching(t);
-                  }
-                }));
+    SystemEventBus.getInstance().getEventBus().register(this);
   }
 
   public static synchronized IndexDatabase getInstance() {
@@ -88,15 +61,6 @@ public class IndexDatabase {
       return s;
     }
     return "(" + s + ")";
-  }
-
-  public void shutdown() {
-    this.executorService.shutdown();
-    try {
-      this.executorService.awaitTermination(3, TimeUnit.SECONDS);
-    } catch (InterruptedException e) {
-      log.catching(e);
-    }
   }
 
   private void open() {
@@ -178,17 +142,17 @@ public class IndexDatabase {
 
   public void requestIndex(final SearchIndexable i) {
     final IndexEvent event = new IndexEvent(i);
-    this.eventBus.post(event);
+    SystemEventBus.getInstance().getEventBus().post(event);
   }
 
   public void requestIndex(final SearchIndexable i, final Consumer<IndexEvent> c) {
     final IndexEvent event = new IndexEvent(i, c);
-    this.eventBus.post(event);
+    SystemEventBus.getInstance().getEventBus().post(event);
   }
 
   public void requestIndex(final List<SearchIndexable> i) {
     final IndexEvent event = new IndexEvent(i);
-    this.eventBus.post(event);
+    SystemEventBus.getInstance().getEventBus().post(event);
   }
 
   public synchronized Optional<SearchResults> search(final String query) {

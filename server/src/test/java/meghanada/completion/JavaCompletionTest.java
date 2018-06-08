@@ -234,7 +234,7 @@ public class JavaCompletionTest extends GradleTestBase {
             .getCanonicalFile();
     assertTrue(file.exists());
     final Collection<? extends CandidateUnit> units =
-        timeIt(() -> completion.completionAt(file, 87, 6, "*diagnostic*fileObject#"));
+        timeIt(() -> completion.completionAt(file, 59, 6, "*diagnostic*fileObject#"));
     units.forEach(a -> System.out.println(a.getDisplayDeclaration()));
     CandidateUnit unit = (CandidateUnit) (units.toArray())[0];
     assertEquals("getSource", unit.getName());
@@ -249,7 +249,7 @@ public class JavaCompletionTest extends GradleTestBase {
             .getCanonicalFile();
     assertTrue(file.exists());
     final Collection<? extends CandidateUnit> units =
-        timeIt(() -> completion.completionAt(file, 88, 6, "*kind*String#"));
+        timeIt(() -> completion.completionAt(file, 59, 6, "*kind*String#"));
     units.forEach(a -> System.out.println(a.getDisplayDeclaration()));
     Object[] objs = (units.toArray());
     CandidateUnit unit1 = (CandidateUnit) objs[0];
@@ -267,7 +267,7 @@ public class JavaCompletionTest extends GradleTestBase {
             .getCanonicalFile();
     assertTrue(file.exists());
     final Collection<? extends CandidateUnit> units =
-        timeIt(() -> completion.completionAt(file, 294, 4, "*code*int#"));
+        timeIt(() -> completion.completionAt(file, 261, 4, "*code*int#"));
     units.forEach(a -> System.out.println(a.getDisplayDeclaration()));
     Object[] objs = (units.toArray());
     CandidateUnit unit1 = (CandidateUnit) objs[0];

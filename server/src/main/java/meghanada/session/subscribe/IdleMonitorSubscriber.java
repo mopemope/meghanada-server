@@ -13,6 +13,7 @@ import java.util.Deque;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import meghanada.cache.GlobalCache;
+import meghanada.event.SystemEventBus;
 import meghanada.reflect.MemberDescriptor;
 import meghanada.reflect.asm.CachedASMReflector;
 import meghanada.session.Session;
@@ -58,7 +59,7 @@ public class IdleMonitorSubscriber extends AbstractSubscriber {
       long now = Instant.now().getEpochSecond();
       if (this.isIdle(now)) {
         SessionEventBus.IdleEvent idleEvent = createIdleEvent(event.session, this.idleTimer);
-        this.sessionEventBus.getEventBus().post(idleEvent);
+        SystemEventBus.getInstance().getEventBus().post(idleEvent);
         this.idleTimer.lastRun = now + this.idleTime + 1;
       }
     }

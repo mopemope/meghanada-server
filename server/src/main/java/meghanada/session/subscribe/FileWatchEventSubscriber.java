@@ -72,7 +72,7 @@ public class FileWatchEventSubscriber extends AbstractSubscriber {
   @Subscribe
   public void on(final SessionEventBus.FilesWatchRequest request) throws IOException {
     if (this.fileSystemWatcher == null) {
-      this.fileSystemWatcher = new FileSystemWatcher(super.sessionEventBus.getEventBus());
+      this.fileSystemWatcher = new FileSystemWatcher();
     }
     final List<File> files = request.getFiles();
     this.fileSystemWatcher.start(files);
@@ -81,7 +81,7 @@ public class FileWatchEventSubscriber extends AbstractSubscriber {
   @Subscribe
   public void on(final SessionEventBus.FileWatchRequest request) throws IOException {
     if (this.fileSystemWatcher == null) {
-      this.fileSystemWatcher = new FileSystemWatcher(super.sessionEventBus.getEventBus());
+      this.fileSystemWatcher = new FileSystemWatcher();
       if (!this.fileSystemWatcher.started) {
         this.fileSystemWatcher.start(new ArrayList<>(2));
       }

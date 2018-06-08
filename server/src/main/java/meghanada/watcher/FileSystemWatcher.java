@@ -1,7 +1,6 @@
 package meghanada.watcher;
 
 import com.google.common.base.MoreObjects;
-import com.google.common.eventbus.EventBus;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.FileSystem;
@@ -20,19 +19,18 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import meghanada.event.SystemEventBus;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class FileSystemWatcher {
 
   private static final Logger log = LogManager.getLogger(FileSystemWatcher.class);
-  private final EventBus eventBus;
   public boolean started;
   private boolean abort;
   private WatchKeyHolder watchKeyHolder;
 
-  public FileSystemWatcher(EventBus eventBus) {
-    this.eventBus = eventBus;
+  public FileSystemWatcher() {
     abort = false;
   }
 
@@ -118,7 +116,7 @@ public class FileSystemWatcher {
         // Dispatch
         FileEvent fe = toEvent(watchEvent, path);
         if (fe != null) {
-          this.eventBus.post(fe);
+          SystemEventBus.getInstance().getEventBus().post(fe);
         }
       }
     }

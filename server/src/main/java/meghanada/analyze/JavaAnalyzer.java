@@ -3,8 +3,6 @@ package meghanada.analyze;
 import static java.util.Objects.nonNull;
 import static meghanada.analyze.TreeAnalyzer.analyze;
 
-import com.google.common.eventbus.AsyncEventBus;
-import com.google.common.eventbus.EventBus;
 import com.sun.source.tree.CompilationUnitTree;
 import com.sun.source.util.JavacTask;
 import java.io.File;
@@ -20,11 +18,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.TimeUnit;
 import javax.tools.Diagnostic;
 import javax.tools.DiagnosticCollector;
 import javax.tools.JavaCompiler;
@@ -33,6 +27,7 @@ import javax.tools.SimpleJavaFileObject;
 import javax.tools.StandardJavaFileManager;
 import javax.tools.ToolProvider;
 import meghanada.config.Config;
+import meghanada.event.SystemEventBus;
 import meghanada.reflect.asm.CachedASMReflector;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -42,39 +37,17 @@ public class JavaAnalyzer {
   private static final Logger log = LogManager.getLogger(JavaAnalyzer.class);
 
   private static final JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
-  private final ExecutorService executorService;
 
   private final String compileSource;
   private final String compileTarget;
-  private final EventBus eventBus;
 
   public JavaAnalyzer(String compileSource, String compileTarget) {
     this.compileSource = compileSource;
     this.compileTarget = compileTarget;
-    this.executorService = Executors.newFixedThreadPool(2);
-    this.eventBus =
-        new AsyncEventBus(
-            executorService,
-            (throwable, subscriberExceptionContext) -> {
-              if (!(throwable instanceof RejectedExecutionException)) {
-                log.error(throwable.getMessage(), throwable);
-              }
-            });
-
     log.debug(
         "compiler settings compileSource:{} compileTarget:{}",
         this.compileSource,
         this.compileTarget);
-    Runtime.getRuntime()
-        .addShutdownHook(
-            new Thread(
-                () -> {
-                  try {
-                    shutdown();
-                  } catch (Throwable t) {
-                    log.catching(t);
-                  }
-                }));
   }
 
   private static Set<File> getErrorFiles(
@@ -96,10 +69,6 @@ public class JavaAnalyzer {
     }
 
     return temp;
-  }
-
-  public EventBus getEventBus() {
-    return this.eventBus;
   }
 
   public CompileResult analyzeAndCompile(final List<File> files, final String classpath, String out)
@@ -189,7 +158,9 @@ public class JavaAnalyzer {
         CachedASMReflector.getInstance().updateClassIndexFromDirectory();
       }
 
-      this.eventBus.post(new AnalyzedEvent(analyzedMap, isDiagnostics));
+      SystemEventBus.getInstance()
+          .getEventBus()
+          .post(new AnalyzedEvent(analyzedMap, isDiagnostics));
 
       final boolean success = errorFiles.size() == 0;
       // ProjectDatabaseHelper.saveCompileResult(result);
@@ -249,19 +220,24 @@ public class JavaAnalyzer {
       final Set<File> errorFiles = JavaAnalyzer.getErrorFiles(diagnostics);
 
       final Map<File, Source> analyzedMap = analyze(parsedIter, errorFiles);
+      SystemEventBus systemEventBus = SystemEventBus.getInstance();
       Future<?> future =
-          this.executorService.submit(
-              () -> {
-                try {
-                  if (generate && !Config.load().useExternalBuilder()) {
-                    javacTask.generate();
-                    CachedASMReflector.getInstance().updateClassIndexFromDirectory();
-                  }
-                  this.eventBus.post(new AnalyzedEvent(analyzedMap, isDiagnostics));
-                } catch (IOException e) {
-                  log.catching(e);
-                }
-              });
+          systemEventBus
+              .getExecutorService()
+              .submit(
+                  () -> {
+                    try {
+                      if (generate && !Config.load().useExternalBuilder()) {
+                        javacTask.generate();
+                        CachedASMReflector.getInstance().updateClassIndexFromDirectory();
+                      }
+                      systemEventBus
+                          .getEventBus()
+                          .post(new AnalyzedEvent(analyzedMap, isDiagnostics));
+                    } catch (IOException e) {
+                      log.catching(e);
+                    }
+                  });
       final boolean success = errorFiles.size() == 0;
       return new CompileResult(success, analyzedMap, diagnostics, errorFiles);
     }
@@ -274,15 +250,6 @@ public class JavaAnalyzer {
       compileOptions.addAll(config.getJava9JavacArgs());
     } else if (this.compileTarget.equals("1.10") || this.compileTarget.equals("10")) {
       compileOptions.addAll(config.getJava10JavacArgs());
-    }
-  }
-
-  public void shutdown() {
-    this.executorService.shutdown();
-    try {
-      this.executorService.awaitTermination(3, TimeUnit.SECONDS);
-    } catch (InterruptedException e) {
-      log.catching(e);
     }
   }
 

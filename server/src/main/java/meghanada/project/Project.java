@@ -40,6 +40,7 @@ import meghanada.analyze.Source;
 import meghanada.analyze.subscribe.IndexSubscriber;
 import meghanada.analyze.subscribe.SourceCacheSubscriber;
 import meghanada.config.Config;
+import meghanada.event.SystemEventBus;
 import meghanada.formatter.JavaFormatter;
 import meghanada.store.ProjectDatabaseHelper;
 import meghanada.store.Storable;
@@ -219,9 +220,9 @@ public abstract class Project implements Serializable, Storable {
   private JavaAnalyzer getJavaAnalyzer() {
     if (isNull(this.javaAnalyzer)) {
       this.javaAnalyzer = new JavaAnalyzer(this.compileSource, this.compileTarget);
-      this.javaAnalyzer.getEventBus().register(new SourceCacheSubscriber(this));
+      SystemEventBus.getInstance().getEventBus().register(new SourceCacheSubscriber(this));
       if (Config.load().useFullTextSearch()) {
-        this.javaAnalyzer.getEventBus().register(new IndexSubscriber(this));
+        SystemEventBus.getInstance().getEventBus().register(new IndexSubscriber(this));
       }
     }
     return this.javaAnalyzer;
