@@ -167,13 +167,7 @@ public class JavaAnalyzer {
               "UTF-8");
 
       List<String> compileOptions = new ArrayList<>(16);
-      if (this.compileTarget.equals("1.8")) {
-        compileOptions.addAll(config.getJava8JavacArgs());
-      } else if (this.compileTarget.equals("1.9") || this.compileTarget.equals("9")) {
-        compileOptions.addAll(config.getJava9JavacArgs());
-      } else if (this.compileTarget.equals("1.10") || this.compileTarget.equals("10")) {
-        compileOptions.addAll(config.getJava10JavacArgs());
-      }
+      setJavacArgs(config, compileOptions);
       compileOptions.addAll(opts);
       final JavaCompiler.CompilationTask compilerTask =
           compiler.getTask(
@@ -237,13 +231,7 @@ public class JavaAnalyzer {
               "-encoding",
               "UTF-8");
       List<String> compileOptions = new ArrayList<>(16);
-      if (this.compileTarget.equals("1.8")) {
-        compileOptions.addAll(config.getJava8JavacArgs());
-      } else if (this.compileTarget.equals("1.9") || this.compileTarget.equals("9")) {
-        compileOptions.addAll(config.getJava9JavacArgs());
-      } else if (this.compileTarget.equals("1.10") || this.compileTarget.equals("10")) {
-        compileOptions.addAll(config.getJava10JavacArgs());
-      }
+      setJavacArgs(config, compileOptions);
       compileOptions.addAll(opts);
 
       final JavaCompiler.CompilationTask compilerTask =
@@ -262,26 +250,31 @@ public class JavaAnalyzer {
 
       final Map<File, Source> analyzedMap = analyze(parsedIter, errorFiles);
       Future<?> future =
-          this.getExecutorService()
-              .submit(
-                  () -> {
-                    try {
-                      if (generate && !Config.load().useExternalBuilder()) {
-                        javacTask.generate();
-                        CachedASMReflector.getInstance().updateClassIndexFromDirectory();
-                      }
-                      this.eventBus.post(new AnalyzedEvent(analyzedMap, isDiagnostics));
-                    } catch (IOException e) {
-                      log.catching(e);
-                    }
-                  });
+          this.executorService.submit(
+              () -> {
+                try {
+                  if (generate && !Config.load().useExternalBuilder()) {
+                    javacTask.generate();
+                    CachedASMReflector.getInstance().updateClassIndexFromDirectory();
+                  }
+                  this.eventBus.post(new AnalyzedEvent(analyzedMap, isDiagnostics));
+                } catch (IOException e) {
+                  log.catching(e);
+                }
+              });
       final boolean success = errorFiles.size() == 0;
       return new CompileResult(success, analyzedMap, diagnostics, errorFiles);
     }
   }
 
-  public ExecutorService getExecutorService() {
-    return this.executorService;
+  private void setJavacArgs(Config config, List<String> compileOptions) {
+    if (this.compileTarget.equals("1.8")) {
+      compileOptions.addAll(config.getJava8JavacArgs());
+    } else if (this.compileTarget.equals("1.9") || this.compileTarget.equals("9")) {
+      compileOptions.addAll(config.getJava9JavacArgs());
+    } else if (this.compileTarget.equals("1.10") || this.compileTarget.equals("10")) {
+      compileOptions.addAll(config.getJava10JavacArgs());
+    }
   }
 
   public void shutdown() {
@@ -291,12 +284,6 @@ public class JavaAnalyzer {
     } catch (InterruptedException e) {
       log.catching(e);
     }
-  }
-
-  public interface SourceAnalyzedHandler {
-    void analyzed(Source javaSource) throws IOException;
-
-    void complete() throws IOException;
   }
 
   private static class JavaSourceFromString extends SimpleJavaFileObject {
@@ -313,23 +300,11 @@ public class JavaAnalyzer {
     }
   }
 
-  public static class AsyncRunEvent {
-    public final Runnable runnable;
-
-    public AsyncRunEvent(Runnable runnable) {
-      this.runnable = runnable;
-    }
-  }
-
   public static class AnalyzedEvent {
     public final Map<File, Source> analyzedMap;
     public boolean diagnostics;
 
-    public AnalyzedEvent(Map<File, Source> analyzedMap) {
-      this.analyzedMap = analyzedMap;
-    }
-
-    public AnalyzedEvent(Map<File, Source> analyzedMap, boolean diagnostics) {
+    AnalyzedEvent(Map<File, Source> analyzedMap, boolean diagnostics) {
       this.analyzedMap = analyzedMap;
       this.diagnostics = diagnostics;
     }
