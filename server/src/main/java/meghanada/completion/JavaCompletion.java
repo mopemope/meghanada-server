@@ -463,14 +463,15 @@ public class JavaCompletion {
 
     {
       // completion from field access
-      List<FieldAccess> fieldAccesses = source.getFieldAccess(line);
-      fieldAccesses.forEach(
-          fa -> {
-            if (fa.name.equals(var)) {
-              String fqcn = fa.returnType;
-              res.addAll(reflect(ownPackage, fqcn, prefix));
-            }
-          });
+      source
+          .getFieldAccess(line)
+          .forEach(
+              fa -> {
+                if (fa.name.equals(var)) {
+                  String fqcn = fa.returnType;
+                  res.addAll(reflect(ownPackage, fqcn, prefix));
+                }
+              });
     }
 
     {
@@ -506,9 +507,27 @@ public class JavaCompletion {
           .getTypeScope(line)
           .ifPresent(
               ts -> {
+                // comletion from class
                 res.addAll(
                     doReflect(finalFQCN, CompletionFilters.testPrivateStatic(matcher, prefix))
                         .collect(Collectors.toSet()));
+                // comletion from source
+                ts.getMemberDescriptors()
+                    .forEach(
+                        md -> {
+                          if (md.getMemberType().equals(CandidateUnit.MemberType.FIELD)
+                              && md.getName().equals(var)) {
+                            String returnType = md.getReturnType();
+                            Set<MemberDescriptor> result =
+                                doReflect(
+                                        returnType,
+                                        m -> {
+                                          return m.isPublic() && !m.isStatic();
+                                        })
+                                    .collect(Collectors.toSet());
+                            res.addAll(result);
+                          }
+                        });
               });
 
       final CachedASMReflector reflector = CachedASMReflector.getInstance();
