@@ -415,29 +415,42 @@ public class JavaCompletion {
     final Set<CandidateUnit> res = new HashSet<>(32);
 
     {
-      // completion static method
-      String fqcn = source.getImportedClassFQCN(var, null);
-      if (nonNull(fqcn)) {
-        if (!fqcn.contains(".") && !ownPackage.isEmpty()) {
-          fqcn = ownPackage + '.' + fqcn;
-        }
-
-        final Collection<? extends CandidateUnit> result =
-            reflect(ownPackage, fqcn, true, false, prefix);
-        res.addAll(result);
-
-        // add inner class
-        final Collection<? extends CandidateUnit> inners =
-            CachedASMReflector.getInstance().searchInnerClasses(fqcn);
-        res.addAll(inners);
-
-        if (!res.isEmpty()) {
-          return res;
+      // completion from static import methods
+      Set<String> keys = source.staticImportClass.keySet();
+      for (String key : keys) {
+        if (matcher.matchString(key)) {
+          String fqcn = source.staticImportClass.get(key);
+          Set<MemberDescriptor> result =
+              doReflect(
+                      fqcn,
+                      md -> {
+                        String name = md.getName();
+                        return name.equals(prefix);
+                      })
+                  .collect(Collectors.toSet());
+          res.addAll(result);
         }
       }
     }
 
     {
+      // completion from import class static method
+      String fqcn = source.getImportedClassFQCN(var, null);
+      if (nonNull(fqcn)) {
+        Set<MemberDescriptor> result =
+            doReflect(
+                    fqcn,
+                    md -> {
+                      String name = md.getName();
+                      return md.isPublic() && md.isStatic() && matcher.matchString(name);
+                    })
+                .collect(Collectors.toSet());
+        res.addAll(result);
+      }
+    }
+
+    {
+      // completion from local var
       Map<String, Variable> symbols = source.getDeclaratorMap(line);
       Variable variable = symbols.get(var);
       if (nonNull(variable)) {
@@ -450,6 +463,7 @@ public class JavaCompletion {
     }
 
     {
+      // completion from field access
       List<FieldAccess> fieldAccesses = source.getFieldAccess(line);
       fieldAccesses.forEach(
           fa -> {
@@ -461,11 +475,11 @@ public class JavaCompletion {
     }
 
     {
+      // completion from local field
       for (final ClassScope cs : source.getClassScopes()) {
         String fqcn = cs.getFQCN();
         Optional<MemberDescriptor> fieldResult =
             doReflect(fqcn, CompletionFilters.testThisField(matcher, prefix)).findFirst();
-
         fieldResult.ifPresent(
             md -> {
               String returnType = md.getRawReturnType();
@@ -475,7 +489,7 @@ public class JavaCompletion {
     }
 
     {
-      // java.lang
+      // completion from java.lang statndard method
       final String fqcn = "java.lang." + var;
       final Collection<? extends CandidateUnit> result =
           reflect(ownPackage, fqcn, true, false, prefix);
@@ -483,6 +497,7 @@ public class JavaCompletion {
     }
 
     {
+      // completion from own members (this)
       String fqcn = var;
       if (!ownPackage.isEmpty()) {
         fqcn = ownPackage + '.' + var;
@@ -514,7 +529,6 @@ public class JavaCompletion {
 
     if (line > 0 && res.isEmpty()) {
       List<MethodCall> calls = source.getMethodCall(line - 1);
-
       long lastCol = 0;
       String lastFQCN = null;
       for (MethodCall call : calls) {

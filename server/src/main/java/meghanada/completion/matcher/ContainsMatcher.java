@@ -35,6 +35,11 @@ public class ContainsMatcher implements CompletionMatcher {
   }
 
   @Override
+  public boolean matchString(String s) {
+    return s.contains(this.query);
+  }
+
+  @Override
   public Predicate<CandidateUnit> filter() {
     return this::match;
   }

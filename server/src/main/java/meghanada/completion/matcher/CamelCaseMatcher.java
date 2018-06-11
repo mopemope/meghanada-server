@@ -26,6 +26,11 @@ public class CamelCaseMatcher implements CompletionMatcher {
   }
 
   @Override
+  public boolean matchString(String s) {
+    return StringUtils.isMatchCamelCase(s, this.query);
+  }
+
+  @Override
   public Predicate<CandidateUnit> filter() {
     return this::match;
   }

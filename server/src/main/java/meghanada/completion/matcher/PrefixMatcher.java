@@ -51,6 +51,11 @@ public class PrefixMatcher implements CompletionMatcher {
   }
 
   @Override
+  public boolean matchString(String s) {
+    return s.startsWith(this.query);
+  }
+
+  @Override
   public Predicate<CandidateUnit> filter() {
     return this::match;
   }

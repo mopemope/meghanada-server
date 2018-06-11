@@ -521,7 +521,7 @@ public class TreeAnalyzer {
     int startPos = classDecl.getPreferredPosition();
     int endPos = classDecl.getEndPosition(endPosTable);
 
-    parseModifiers(context, classDecl.getModifiers());
+    final String classModifiers = parseModifiers(context, classDecl.getModifiers());
 
     analyzeParsedTree(context, classDecl.getExtendsClause());
 
@@ -922,12 +922,12 @@ public class TreeAnalyzer {
     log.traceExit(em);
   }
 
-  private static void parseModifiers(SourceContext context, @Nullable JCTree.JCModifiers modifiers)
-      throws IOException {
+  private static String parseModifiers(
+      SourceContext context, @Nullable JCTree.JCModifiers modifiers) throws IOException {
 
     if (nonNull(modifiers)) {
       List<JCTree.JCAnnotation> annotations = modifiers.getAnnotations();
-      if (nonNull(annotations)) {
+      if (nonNull(annotations) && annotations.size() > 0) {
         for (JCTree.JCAnnotation anno : annotations) {
           JCTree annotationType = anno.getAnnotationType();
           if (nonNull(annotationType)) {
@@ -940,8 +940,15 @@ public class TreeAnalyzer {
             }
           }
         }
+
+        String mod = modifiers.toString();
+        int lastIndexOf = mod.lastIndexOf("\n");
+        String modifierStr = mod.substring(lastIndexOf + 1);
+        return modifierStr;
       }
+      return modifiers.toString();
     }
+    return "";
   }
 
   private static void analyzeVariableDecl(
@@ -954,8 +961,7 @@ public class TreeAnalyzer {
     JCTree.JCExpression nameExpression = vd.getNameExpression();
     JCTree typeTree = vd.getType();
     JCTree.JCModifiers modifiers = vd.getModifiers();
-    String fieldModfier = modifiers.toString();
-    parseModifiers(context, modifiers);
+    final String fieldModfier = parseModifiers(context, modifiers);
 
     if (nonNull(initializer) || nonNull(nameExpression)) {
       log.trace("init={} name={} tree={}", initializer, nameExpression, typeTree);
@@ -1065,8 +1071,7 @@ public class TreeAnalyzer {
     Source src = context.getSource();
     String name = md.getName().toString();
     JCTree.JCModifiers modifiers = md.getModifiers();
-    final String methodModifier = modifiers.toString();
-    parseModifiers(context, modifiers);
+    final String methodModifier = parseModifiers(context, modifiers);
     Range nameRange = Range.create(src, preferredPos, preferredPos + name.length());
     Range range = Range.create(src, preferredPos, endPos);
 
@@ -1240,7 +1245,7 @@ public class TreeAnalyzer {
     if (modEndPos > 0) {
       modLen = modEndPos - modPos + 1;
     }
-    parseModifiers(context, modifiers);
+    final String classModifiers = parseModifiers(context, modifiers);
 
     analyzeParsedTree(context, classDecl.getExtendsClause());
     analyzeSimpleExpressions(context, classDecl.getImplementsClause());

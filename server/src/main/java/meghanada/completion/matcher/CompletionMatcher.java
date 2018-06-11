@@ -8,6 +8,8 @@ public interface CompletionMatcher {
 
   boolean match(CandidateUnit c);
 
+  boolean matchString(String s);
+
   Predicate<CandidateUnit> filter();
 
   Comparator<CandidateUnit> comparator();
