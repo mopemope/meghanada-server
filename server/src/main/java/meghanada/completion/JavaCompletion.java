@@ -518,9 +518,40 @@ public class JavaCompletion {
       }
     }
 
-    if (line > 0 && res.isEmpty()) {
-      // require ?
-      //   List<MethodCall> calls = source.getMethodCall(line - 1);
+    {
+      if (line > 0 && res.isEmpty()) {
+        Optional<AccessSymbol> expressionReturn = source.getExpressionReturn(line);
+        expressionReturn.ifPresent(
+            as -> {
+              String fqcn = as.returnType;
+              Set<MemberDescriptor> result =
+                  doReflect(
+                          fqcn,
+                          md -> {
+                            return md.isPublic();
+                          })
+                      .collect(Collectors.toSet());
+              res.addAll(result);
+            });
+      }
+    }
+
+    {
+      if (line > 0 && res.isEmpty()) {
+        Optional<AccessSymbol> expressionReturn = source.getExpressionReturn(line - 1);
+        expressionReturn.ifPresent(
+            as -> {
+              String fqcn = as.returnType;
+              Set<MemberDescriptor> result =
+                  doReflect(
+                          fqcn,
+                          md -> {
+                            return md.isPublic();
+                          })
+                      .collect(Collectors.toSet());
+              res.addAll(result);
+            });
+      }
     }
     return res;
   }
