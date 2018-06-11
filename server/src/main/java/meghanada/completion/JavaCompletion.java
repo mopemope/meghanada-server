@@ -27,7 +27,6 @@ import javax.annotation.Nonnull;
 import meghanada.analyze.AccessSymbol;
 import meghanada.analyze.ClassScope;
 import meghanada.analyze.FieldAccess;
-import meghanada.analyze.MethodCall;
 import meghanada.analyze.Source;
 import meghanada.analyze.TypeScope;
 import meghanada.analyze.Variable;
@@ -505,19 +504,11 @@ public class JavaCompletion {
       final String finalFQCN = fqcn;
       source
           .getTypeScope(line)
-          .map(
+          .ifPresent(
               ts -> {
                 res.addAll(
                     doReflect(finalFQCN, CompletionFilters.testPrivateStatic(matcher, prefix))
                         .collect(Collectors.toSet()));
-                // dummy
-                return true;
-              })
-          .orElseGet(
-              () -> {
-                res.addAll(reflect(ownPackage, finalFQCN, true, false, prefix));
-                // dummy
-                return true;
               });
 
       final CachedASMReflector reflector = CachedASMReflector.getInstance();
@@ -528,21 +519,8 @@ public class JavaCompletion {
     }
 
     if (line > 0 && res.isEmpty()) {
-      List<MethodCall> calls = source.getMethodCall(line - 1);
-      long lastCol = 0;
-      String lastFQCN = null;
-      for (MethodCall call : calls) {
-        long col = call.nameRange.begin.column;
-        String name = ClassNameUtils.getSimpleName(call.name);
-        if (name.equals(var) && col > lastCol) {
-          lastFQCN = call.returnType;
-          lastCol = col;
-        }
-      }
-
-      if (nonNull(lastFQCN)) {
-        res.addAll(reflectWithFQCN(lastFQCN, ""));
-      }
+      // require ?
+      //   List<MethodCall> calls = source.getMethodCall(line - 1);
     }
     return res;
   }
@@ -1031,7 +1009,7 @@ public class JavaCompletion {
               SortedMap<CandidateUnit, Integer> map = this.statisticsTable.row(f);
               map.forEach(
                   (c, i) -> {
-                    log.info("{} {} {}", f.getName(), c.getDisplayDeclaration(), i);
+                    log.debug("{} {} {}", f.getName(), c.getDisplayDeclaration(), i);
                   });
             });
   }
