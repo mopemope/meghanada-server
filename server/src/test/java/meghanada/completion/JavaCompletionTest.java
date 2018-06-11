@@ -267,7 +267,7 @@ public class JavaCompletionTest extends GradleTestBase {
             .getCanonicalFile();
     assertTrue(file.exists());
     final Collection<? extends CandidateUnit> units =
-        timeIt(() -> completion.completionAt(file, 261, 4, "*code*int#"));
+        timeIt(() -> completion.completionAt(file, 247, 4, "*code*int#"));
     units.forEach(a -> System.out.println(a.getDisplayDeclaration()));
     Object[] objs = (units.toArray());
     CandidateUnit unit1 = (CandidateUnit) objs[0];

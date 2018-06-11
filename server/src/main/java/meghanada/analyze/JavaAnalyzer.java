@@ -18,7 +18,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Future;
 import javax.tools.Diagnostic;
 import javax.tools.DiagnosticCollector;
 import javax.tools.JavaCompiler;
@@ -218,26 +217,13 @@ public class JavaAnalyzer {
           diagnosticCollector.getDiagnostics();
 
       final Set<File> errorFiles = JavaAnalyzer.getErrorFiles(diagnostics);
-
       final Map<File, Source> analyzedMap = analyze(parsedIter, errorFiles);
+      if (generate && !Config.load().useExternalBuilder()) {
+        javacTask.generate();
+        CachedASMReflector.getInstance().updateClassIndexFromDirectory();
+      }
       SystemEventBus systemEventBus = SystemEventBus.getInstance();
-      Future<?> future =
-          systemEventBus
-              .getExecutorService()
-              .submit(
-                  () -> {
-                    try {
-                      if (generate && !Config.load().useExternalBuilder()) {
-                        javacTask.generate();
-                        CachedASMReflector.getInstance().updateClassIndexFromDirectory();
-                      }
-                      systemEventBus
-                          .getEventBus()
-                          .post(new AnalyzedEvent(analyzedMap, isDiagnostics));
-                    } catch (IOException e) {
-                      log.catching(e);
-                    }
-                  });
+      systemEventBus.getEventBus().post(new AnalyzedEvent(analyzedMap, isDiagnostics));
       final boolean success = errorFiles.size() == 0;
       return new CompileResult(success, analyzedMap, diagnostics, errorFiles);
     }
