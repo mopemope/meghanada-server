@@ -547,7 +547,7 @@ public class JavaCompletion {
                   doReflect(
                           fqcn,
                           md -> {
-                            return md.isPublic();
+                            return md.isPublic() && !md.isStatic();
                           })
                       .collect(Collectors.toSet());
               res.addAll(result);
@@ -565,7 +565,7 @@ public class JavaCompletion {
                   doReflect(
                           fqcn,
                           md -> {
-                            return md.isPublic();
+                            return md.isPublic() && !md.isStatic();
                           })
                       .collect(Collectors.toSet());
               res.addAll(result);
