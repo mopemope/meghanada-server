@@ -55,7 +55,7 @@ public class JavaCompletionTest extends GradleTestBase {
     final Collection<? extends CandidateUnit> units =
         timeIt(() -> completion.completionAt(file, 14, 9, "*this"));
     units.forEach(a -> System.out.println(a.getDeclaration()));
-    assertEquals(15, units.size());
+    assertEquals(14, units.size());
   }
 
   @Test

@@ -532,12 +532,26 @@ public class JavaAnalyzerTest extends GradleTestBase {
 
     final String tmp = System.getProperty("java.io.tmpdir");
 
-    timeIt(
-        () -> {
-          final CompileResult compileResult = analyzer.analyzeAndCompile(files, cp, tmp);
-          compileResult.getSources().values().forEach(Source::dump);
-          return compileResult;
-        });
+    CompileResult cr =
+        timeIt(
+            () -> {
+              final CompileResult compileResult = analyzer.analyzeAndCompile(files, cp, tmp);
+              compileResult.getSources().values().forEach(Source::dump);
+              return compileResult;
+            });
+    Source source = cr.getSources().get(file.getCanonicalFile());
+    {
+      Optional<TypeScope> scope = source.getTypeScope(262);
+      assertTrue(scope.isPresent());
+      TypeScope ts = scope.get();
+      assertEquals("meghanada.analyze.JavaAnalyzer$AnalyzedEvent", ts.getFQCN());
+    }
+    {
+      Optional<TypeScope> scope = source.getTypeScope(247);
+      assertTrue(scope.isPresent());
+      TypeScope ts = scope.get();
+      assertEquals("meghanada.analyze.JavaAnalyzer$JavaSourceFromString", ts.getFQCN());
+    }
   }
 
   @Test

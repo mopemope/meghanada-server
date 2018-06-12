@@ -325,11 +325,26 @@ public class Source implements Serializable, Storable, SearchIndexable {
   }
 
   public Optional<TypeScope> getTypeScope(final int line) {
-    final Scope scope = Scope.getScope(line, this.classScopes);
+    final TypeScope scope = getTypeScope(line, this.classScopes);
     if (nonNull(scope)) {
-      return Optional.of((TypeScope) scope);
+      return Optional.of(scope);
     }
     return Optional.empty();
+  }
+
+  private TypeScope getTypeScope(int line, List<ClassScope> classScopes) {
+    for (ClassScope cs : classScopes) {
+      if (cs.contains(line)) {
+        if (cs.classScopes.size() > 0) {
+          TypeScope ts = getTypeScope(line, cs.classScopes);
+          if (nonNull(ts)) {
+            return ts;
+          }
+        }
+        return cs;
+      }
+    }
+    return null;
   }
 
   public Optional<MethodCall> getMethodCall(
