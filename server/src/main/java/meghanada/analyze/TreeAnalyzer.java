@@ -942,9 +942,8 @@ public class TreeAnalyzer {
         }
 
         String mod = modifiers.toString();
-        int lastIndexOf = mod.lastIndexOf("\n");
-        String modifierStr = mod.substring(lastIndexOf + 1);
-        return modifierStr;
+        int lastIndexOf = mod.lastIndexOf('\n');
+        return mod.substring(lastIndexOf + 1);
       }
       return modifiers.toString();
     }
@@ -961,7 +960,7 @@ public class TreeAnalyzer {
     JCTree.JCExpression nameExpression = vd.getNameExpression();
     JCTree typeTree = vd.getType();
     JCTree.JCModifiers modifiers = vd.getModifiers();
-    final String fieldModfier = parseModifiers(context, modifiers);
+    final String fieldModifier = parseModifiers(context, modifiers);
 
     if (nonNull(initializer) || nonNull(nameExpression)) {
       log.trace("init={} name={} tree={}", initializer, nameExpression, typeTree);
@@ -980,7 +979,7 @@ public class TreeAnalyzer {
             if (bs instanceof ClassScope) {
               ClassScope cs = (ClassScope) bs;
               expr.isField = true;
-              expr.modifier = fieldModfier;
+              expr.modifier = fieldModifier;
               expr.declaringClass = cs.getFQCN();
             }
             bs.startExpression(expr);
@@ -996,6 +995,7 @@ public class TreeAnalyzer {
               try {
 
                 Variable variable = new Variable(vName, preferredPos, nameRange);
+                variable.modifier = fieldModifier;
                 if (vd.getTag().equals(JCTree.Tag.VARDEF)) {
                   variable.isDef = true;
                 }

@@ -7,6 +7,7 @@ import static org.junit.Assert.assertTrue;
 import java.io.File;
 import java.util.Collection;
 import meghanada.GradleTestBase;
+import meghanada.analyze.CompileResult;
 import meghanada.config.Config;
 import meghanada.reflect.CandidateUnit;
 import org.apache.logging.log4j.LogManager;
@@ -22,9 +23,12 @@ public class JavaCompletionTest extends GradleTestBase {
 
   @BeforeClass
   public static void setup() throws Exception {
-    GradleTestBase.setupReflector(false);
+    // GradleTestBase.setupReflector(false);
+    GradleTestBase.setupReflector(true);
+    CompileResult compileResult = project.compileJava();
     Config config = Config.load();
     config.update("camel-case-completion", false);
+    Thread.sleep(5 * 1000);
   }
 
   @AfterClass
@@ -220,9 +224,23 @@ public class JavaCompletionTest extends GradleTestBase {
             .getCanonicalFile();
     assertTrue(file.exists());
     final Collection<? extends CandidateUnit> units =
-        timeIt(() -> completion.completionAt(file, 100, 0, "*JavaCompletion#"));
+        timeIt(() -> completion.completionAt(file, 65, 0, "*JavaCompletion#"));
     units.forEach(a -> System.out.println(a.getDeclaration()));
-    assertEquals(34, units.size());
+    assertEquals(37, units.size());
+  }
+
+  @Test
+  public void testCompletion12() throws Exception {
+    JavaCompletion completion = getCompletion();
+    File file =
+        new File(
+                project.getProjectRootPath(), "./src/main/java/meghanada/analyze/JavaAnalyzer.java")
+            .getCanonicalFile();
+    assertTrue(file.exists());
+    final Collection<? extends CandidateUnit> units =
+        timeIt(() -> completion.completionAt(file, 263, 0, "an"));
+    units.forEach(a -> System.out.println(a.getDeclaration()));
+    assertEquals(3, units.size());
   }
 
   @Test

@@ -79,7 +79,7 @@ public class JavaCompletion {
               }
               return matcher.match(c);
             })
-        .map(c -> cloneClassIndex(c))
+        .map(CachedASMReflector::cloneClassIndex)
         .sorted(matcher.comparator())
         .peek(
             c -> {
@@ -415,10 +415,9 @@ public class JavaCompletion {
 
     {
       // completion from static import methods
-      Set<String> keys = source.staticImportClass.keySet();
-      for (String key : keys) {
-        if (matcher.matchString(key)) {
-          String fqcn = source.staticImportClass.get(key);
+      for (Map.Entry<String, String> stringStringEntry : source.staticImportClass.entrySet()) {
+        if (matcher.matchString(stringStringEntry.getKey())) {
+          String fqcn = stringStringEntry.getValue();
           Set<MemberDescriptor> result =
               doReflect(
                       fqcn,
@@ -519,11 +518,7 @@ public class JavaCompletion {
                               && md.getName().equals(var)) {
                             String returnType = md.getReturnType();
                             Set<MemberDescriptor> result =
-                                doReflect(
-                                        returnType,
-                                        m -> {
-                                          return m.isPublic() && !m.isStatic();
-                                        })
+                                doReflect(returnType, m -> m.isPublic() && !m.isStatic())
                                     .collect(Collectors.toSet());
                             res.addAll(result);
                           }
@@ -540,39 +535,28 @@ public class JavaCompletion {
     {
       if (line > 0 && res.isEmpty()) {
         Optional<AccessSymbol> expressionReturn = source.getExpressionReturn(line);
-        expressionReturn.ifPresent(
-            as -> {
-              String fqcn = as.returnType;
-              Set<MemberDescriptor> result =
-                  doReflect(
-                          fqcn,
-                          md -> {
-                            return md.isPublic() && !md.isStatic();
-                          })
-                      .collect(Collectors.toSet());
-              res.addAll(result);
-            });
+        completionFromExpr(res, expressionReturn);
       }
     }
 
     {
       if (line > 0 && res.isEmpty()) {
         Optional<AccessSymbol> expressionReturn = source.getExpressionReturn(line - 1);
-        expressionReturn.ifPresent(
-            as -> {
-              String fqcn = as.returnType;
-              Set<MemberDescriptor> result =
-                  doReflect(
-                          fqcn,
-                          md -> {
-                            return md.isPublic() && !md.isStatic();
-                          })
-                      .collect(Collectors.toSet());
-              res.addAll(result);
-            });
+        completionFromExpr(res, expressionReturn);
       }
     }
     return res;
+  }
+
+  private static void completionFromExpr(
+      Set<CandidateUnit> res, Optional<AccessSymbol> expressionReturn) {
+    expressionReturn.ifPresent(
+        as -> {
+          String fqcn = as.returnType;
+          Set<MemberDescriptor> result =
+              doReflect(fqcn, md -> md.isPublic() && !md.isStatic()).collect(Collectors.toSet());
+          res.addAll(result);
+        });
   }
 
   private static Comparator<? super CandidateUnit> comparing(
@@ -793,7 +777,7 @@ public class JavaCompletion {
       return reflector
           .allClassStream()
           .filter(matcher::match)
-          .map(c -> cloneClassIndex(c))
+          .map(CachedASMReflector::cloneClassIndex)
           .sorted(matcher.comparator())
           .collect(Collectors.toList());
     }
@@ -917,7 +901,7 @@ public class JavaCompletion {
         .collect(Collectors.toList());
   }
 
-  private Collection<? extends CandidateUnit> completionMethods(
+  private static Collection<? extends CandidateUnit> completionMethods(
       Source source, int line, int column, String searchWord) {
     final int prefixIdx = searchWord.lastIndexOf('#');
     final int classIdx = searchWord.lastIndexOf(':');
@@ -994,38 +978,7 @@ public class JavaCompletion {
       if (s.isPresent()) {
         String className = s.get();
         String pkg = ClassNameUtils.getPackage(className);
-        CandidateUnit unit =
-            new CandidateUnit() {
-              @Override
-              public String getName() {
-                return pkg;
-              }
-
-              @Override
-              public String getType() {
-                return MemberType.PACKAGE.name();
-              }
-
-              @Override
-              public String getDeclaration() {
-                return pkg;
-              }
-
-              @Override
-              public String getDisplayDeclaration() {
-                return pkg;
-              }
-
-              @Override
-              public String getReturnType() {
-                return pkg;
-              }
-
-              @Override
-              public String getExtra() {
-                return "";
-              }
-            };
+        CandidateUnit unit = new MyCandidateUnit(pkg);
         return Collections.singletonList(unit);
       }
       return Collections.emptyList();
@@ -1062,5 +1015,43 @@ public class JavaCompletion {
                     log.debug("{} {} {}", f.getName(), c.getDisplayDeclaration(), i);
                   });
             });
+  }
+
+  private static class MyCandidateUnit implements CandidateUnit {
+    private final String pkg;
+
+    MyCandidateUnit(String pkg) {
+      this.pkg = pkg;
+    }
+
+    @Override
+    public String getName() {
+      return pkg;
+    }
+
+    @Override
+    public String getType() {
+      return MemberType.PACKAGE.name();
+    }
+
+    @Override
+    public String getDeclaration() {
+      return pkg;
+    }
+
+    @Override
+    public String getDisplayDeclaration() {
+      return pkg;
+    }
+
+    @Override
+    public String getReturnType() {
+      return pkg;
+    }
+
+    @Override
+    public String getExtra() {
+      return "";
+    }
   }
 }
