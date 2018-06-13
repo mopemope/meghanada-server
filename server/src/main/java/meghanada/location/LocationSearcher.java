@@ -831,5 +831,10 @@ public class LocationSearcher {
 
     @Override
     public void decompilationProcessComplete() {}
+
+    @Override
+    public boolean isCancelled() {
+      return false;
+    }
   }
 }

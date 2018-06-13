@@ -220,7 +220,7 @@ public class LocationSearcherTest extends GradleTestBase {
             .orElse(null);
     assertNotNull(result);
     assertTrue(result.getPath().contains(".java"));
-    assertEquals(103, result.getLine());
+    assertEquals(120, result.getLine());
     assertEquals(31, result.getColumn());
   }
 
