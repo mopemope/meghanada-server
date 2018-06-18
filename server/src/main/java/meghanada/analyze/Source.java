@@ -320,6 +320,15 @@ public class Source implements Serializable, Storable, SearchIndexable {
     return Optional.empty();
   }
 
+  public Optional<ExpressionScope> getExpression(final int line) {
+    final Scope scope = Scope.getScope(line, this.classScopes);
+    if (nonNull(scope) && (scope instanceof TypeScope)) {
+      final TypeScope typeScope = (TypeScope) scope;
+      return typeScope.getExpression(line);
+    }
+    return Optional.empty();
+  }
+
   public List<ClassScope> getClassScopes() {
     return this.classScopes;
   }

@@ -27,6 +27,7 @@ import javax.annotation.Nonnull;
 import meghanada.analyze.AccessSymbol;
 import meghanada.analyze.ClassScope;
 import meghanada.analyze.FieldAccess;
+import meghanada.analyze.MethodCall;
 import meghanada.analyze.Source;
 import meghanada.analyze.TypeScope;
 import meghanada.analyze.Variable;
@@ -532,31 +533,62 @@ public class JavaCompletion {
       }
     }
 
-    {
-      if (line > 0 && res.isEmpty()) {
-        Optional<AccessSymbol> expressionReturn = source.getExpressionReturn(line);
-        completionFromExpr(res, expressionReturn);
+    if (line > 0) {
+      List<MethodCall> calls = source.getMethodCall(line);
+      if (calls.isEmpty()) {
+        calls = source.getMethodCall(line - 1);
+      }
+
+      long lastCol = -1;
+      MethodCall lastCall = null;
+      for (MethodCall call : calls) {
+        long column = call.range.begin.column;
+        if (column > lastCol) {
+          lastCol = column;
+          lastCall = call;
+        }
+      }
+      if (nonNull(lastCall) && lastCall.name.equals(var)) {
+        String returnType = lastCall.returnType;
+        if (nonNull(returnType)) {
+          Set<MemberDescriptor> result =
+              doReflect(returnType, m -> m.isPublic() && !m.isStatic()).collect(Collectors.toSet());
+          res.addAll(result);
+        }
       }
     }
 
     {
-      if (line > 0 && res.isEmpty()) {
-        Optional<AccessSymbol> expressionReturn = source.getExpressionReturn(line - 1);
-        completionFromExpr(res, expressionReturn);
+      {
+        if (line > 0 && res.isEmpty()) {
+          Optional<AccessSymbol> expressionReturn = source.getExpressionReturn(line);
+          expressionReturn.ifPresent(
+              expr -> {
+                completionFromExprReturn(res, expr);
+              });
+        }
+      }
+
+      {
+        if (line > 0 && res.isEmpty()) {
+          Optional<AccessSymbol> expressionReturn = source.getExpressionReturn(line - 1);
+          expressionReturn.ifPresent(
+              expr -> {
+                completionFromExprReturn(res, expr);
+              });
+        }
       }
     }
     return res;
   }
 
-  private static void completionFromExpr(
-      Set<CandidateUnit> res, Optional<AccessSymbol> expressionReturn) {
-    expressionReturn.ifPresent(
-        as -> {
-          String fqcn = as.returnType;
-          Set<MemberDescriptor> result =
-              doReflect(fqcn, md -> md.isPublic() && !md.isStatic()).collect(Collectors.toSet());
-          res.addAll(result);
-        });
+  private static void completionFromExprReturn(Set<CandidateUnit> res, AccessSymbol expr) {
+    String fqcn = expr.returnType;
+    if (nonNull(fqcn)) {
+      Set<MemberDescriptor> result =
+          doReflect(fqcn, md -> md.isPublic() && !md.isStatic()).collect(Collectors.toSet());
+      res.addAll(result);
+    }
   }
 
   private static Comparator<? super CandidateUnit> comparing(
