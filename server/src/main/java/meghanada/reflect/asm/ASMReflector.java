@@ -361,7 +361,7 @@ public class ASMReflector {
     return indexes;
   }
 
-  public List<MemberDescriptor> reflectAll(InheritanceInfo info) {
+  public List<MemberDescriptor> reflectAll(final InheritanceInfo info) {
 
     Map<String, List<MemberDescriptor>> collect =
         info.classFileMap
@@ -391,7 +391,7 @@ public class ASMReflector {
                     MethodDescriptor mDesc = (MethodDescriptor) desc;
                     String name = mDesc.getName();
                     List<String> parameters = mDesc.getParameters();
-                    String pKey = name + "#" + parameters.size();
+                    String pKey = name + '#' + parameters.size();
                     List<String> cached = paramMemo.get(pKey);
                     String nameKey = name + "::" + parameters.toString();
                     if (isNull(cached)) {
@@ -424,7 +424,7 @@ public class ASMReflector {
   private List<MemberDescriptor> reflectAll(File file, String topClass, List<String> classes)
       throws IOException {
     List<MemberDescriptor> results = new ArrayList<>(64);
-    List<String> targetClasses = loadFromInnerCache(topClass, classes, results);
+    final List<String> targetClasses = loadFromInnerCache(topClass, classes, results);
     if (targetClasses.isEmpty()) {
       return results;
     }
@@ -821,7 +821,7 @@ public class ASMReflector {
     info.inherit.add(name);
     info.classFileMap.get(file).add(name);
 
-    List<String> supers = ASMReflector.replaceSuperClassTypeParameters(name, classIndex);
+    List<String> supers = replaceSuperClassTypeParameters(name, classIndex);
 
     Collections.reverse(supers);
     supers.forEach(
@@ -925,7 +925,7 @@ public class ASMReflector {
     }
   }
 
-  public List<String> loadFromInnerCache(
+  private List<String> loadFromInnerCache(
       String mainClass, List<String> targets, List<MemberDescriptor> results) {
     for (Iterator<String> it = targets.iterator(); it.hasNext(); ) {
       String nameWithTP = it.next();

@@ -3,14 +3,19 @@ package meghanada.reflect.asm;
 import static org.junit.Assert.assertEquals;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import meghanada.GradleTestBase;
 import meghanada.module.ModuleHelper;
 import meghanada.reflect.ClassIndex;
@@ -212,6 +217,18 @@ public class ClassSignatureVisitorTest extends GradleTestBase {
             });
   }
 
+  @org.junit.Test
+  public void testSuperClass4() throws Exception {
+    String fqcn = "meghanada.IF3";
+    File out = getTestOutput();
+    ClassSignatureVisitor visitor = doAnalyze(out, fqcn);
+    String name = visitor.getName();
+    ClassIndex index = visitor.getClassIndex();
+    List<String> supers = index.getSupers();
+    System.out.println(supers);
+    assertEquals(2, supers.size());
+  }
+
   private ClassSignatureVisitor doAnalyze(File file, String fqcn) throws IOException {
 
     if (ModuleHelper.isJrtFsFile(file)) {
@@ -240,7 +257,7 @@ public class ClassSignatureVisitorTest extends GradleTestBase {
               })
           .orElse(null);
 
-    } else {
+    } else if (isJar(file)) {
       try (final JarFile jarFile = new JarFile(file)) {
         final Enumeration<JarEntry> entries = jarFile.entries();
 
@@ -260,6 +277,34 @@ public class ClassSignatureVisitorTest extends GradleTestBase {
                 classReader.accept(testVisitor, 0);
                 return testVisitor.getVisitor();
               }
+            }
+          }
+        }
+      }
+    } else if (file.isDirectory()) {
+      try (Stream<Path> pathStream = Files.walk(file.toPath())) {
+        List<File> files =
+            pathStream
+                .map(Path::toFile)
+                .filter(f -> f.isFile() && f.getName().endsWith(".class"))
+                .collect(Collectors.toList());
+        for (File classFile : files) {
+          String entryName = classFile.getName();
+          if (!entryName.endsWith(".class")) {
+            continue;
+          }
+          //                  String className =
+          //                      ClassNameUtils.replaceSlash(entryName.substring(0,
+          // entryName.length() - 6));
+          try (InputStream in = new FileInputStream(classFile)) {
+            ClassReader classReader = new ClassReader(in);
+            String className = classReader.getClassName().replace("/", ".");
+
+            if (className.equals(fqcn)) {
+              final int access = classReader.getAccess();
+              TestVisitor testVisitor = new TestVisitor(className);
+              classReader.accept(testVisitor, 0);
+              return testVisitor.getVisitor();
             }
           }
         }
@@ -295,5 +340,9 @@ public class ClassSignatureVisitorTest extends GradleTestBase {
     ClassSignatureVisitor getVisitor() {
       return visitor;
     }
+  }
+
+  static boolean isJar(File file) {
+    return file.isFile() && file.getName().endsWith("jar");
   }
 }

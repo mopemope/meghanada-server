@@ -176,6 +176,9 @@ class ClassSignatureVisitor extends SignatureVisitor {
         this.superClasses.add(this.current);
       }
     }
+    if (this.current != null) {
+      this.current.endTypeParameter();
+    }
     this.hasTypeParameter = false;
     super.visitEnd();
   }
@@ -209,7 +212,7 @@ class ClassSignatureVisitor extends SignatureVisitor {
   static class ClassInfo {
 
     private final String name;
-    private final boolean typeVariable;
+    private boolean typeVariable;
     private List<String> formalTypeParameters;
     private List<ClassInfo> typeParameters;
 
@@ -229,7 +232,7 @@ class ClassSignatureVisitor extends SignatureVisitor {
       this.formalTypeParameters.add(p);
     }
 
-    void addTypeParameter(ClassInfo c) {
+    void addTypeParameter(final ClassInfo c) {
       if (this.typeParameters == null) {
         this.typeParameters = new ArrayList<>(2);
       }
@@ -241,6 +244,13 @@ class ClassSignatureVisitor extends SignatureVisitor {
         }
       }
       this.typeParameters.add(c);
+    }
+
+    void endTypeParameter() {
+      if (this.typeParameters != null && this.typeParameters.size() > 0) {
+        ClassInfo last = this.typeParameters.get(this.typeParameters.size() - 1);
+        last.typeVariable = true;
+      }
     }
 
     public String getName() {
@@ -268,22 +278,18 @@ class ClassSignatureVisitor extends SignatureVisitor {
 
     @Override
     public boolean equals(Object o) {
-      if (this == o) {
-        return true;
-      }
-      if (o == null || getClass() != o.getClass()) {
-        return false;
-      }
+      if (this == o) return true;
+      if (o == null || getClass() != o.getClass()) return false;
       ClassInfo classInfo = (ClassInfo) o;
       return typeVariable == classInfo.typeVariable
-          && com.google.common.base.Objects.equal(name, classInfo.name)
+          && Objects.equal(name, classInfo.name)
           && Objects.equal(formalTypeParameters, classInfo.formalTypeParameters)
           && Objects.equal(typeParameters, classInfo.typeParameters);
     }
 
     @Override
     public int hashCode() {
-      return Objects.hashCode(name, formalTypeParameters, typeParameters, typeVariable);
+      return Objects.hashCode(name, typeVariable, formalTypeParameters, typeParameters);
     }
   }
 }

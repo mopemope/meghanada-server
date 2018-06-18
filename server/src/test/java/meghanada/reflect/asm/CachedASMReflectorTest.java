@@ -1,5 +1,6 @@
 package meghanada.reflect.asm;
 
+import static meghanada.config.Config.debugIt;
 import static meghanada.config.Config.timeIt;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -29,7 +30,8 @@ public class CachedASMReflectorTest extends GradleTestBase {
   public static void setup() throws Exception {
     System.setProperty("meghanada.full.text.search", "false");
     GradleTestBase.setupReflector(false);
-    CompileResult result = project.compileJava(true);
+    CompileResult result1 = project.compileJava(true);
+    CompileResult result2 = project.compileTestJava(true);
     CachedASMReflector cachedASMReflector = CachedASMReflector.getInstance();
     addClasspath(cachedASMReflector);
     cachedASMReflector.createClassIndexes();
@@ -413,6 +415,37 @@ public class CachedASMReflectorTest extends GradleTestBase {
       // memberDescriptors.forEach(m -> System.out.println(m.getDisplayDeclaration()));
       assertEquals(20, memberDescriptors.size());
     }
+  }
+
+  @Test
+  public void testLocalReflect11() throws Exception {
+    CachedASMReflector cachedASMReflector = CachedASMReflector.getInstance();
+    cachedASMReflector.addClasspath(getOutput());
+    cachedASMReflector.addClasspath(getTestOutput());
+    cachedASMReflector.createClassIndexes();
+
+    {
+      String fqcn = "meghanada.IF3";
+      List<MemberDescriptor> memberDescriptors =
+          debugIt(
+              () -> {
+                return cachedASMReflector.reflect(fqcn);
+              });
+      memberDescriptors.forEach(m -> System.out.println(m.getDisplayDeclaration()));
+      assertEquals(14, memberDescriptors.size());
+    }
+
+    //    {
+    //      String fqcn = "meghanada.Gen13";
+    //      List<MemberDescriptor> memberDescriptors =
+    //          debugIt(
+    //              () -> {
+    //                return cachedASMReflector.reflect(fqcn);
+    //              });
+    //      memberDescriptors.forEach(m -> System.out.println(m.getDisplayDeclaration()));
+    //      assertEquals(15, memberDescriptors.size());
+    //    }
+
   }
 
   @Test

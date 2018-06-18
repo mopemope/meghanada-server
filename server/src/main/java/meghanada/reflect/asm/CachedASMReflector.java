@@ -520,8 +520,8 @@ public class CachedASMReflector {
             });
   }
 
-  private void scanMembers(final File root, final ConcurrentLinkedDeque<MemberDescriptor> deque)
-      throws IOException {
+  private static void scanMembers(
+      final File root, final ConcurrentLinkedDeque<MemberDescriptor> deque) throws IOException {
     final ASMReflector reflector = ASMReflector.getInstance();
     reflector.scanClasses(
         root,
@@ -550,7 +550,7 @@ public class CachedASMReflector {
         });
   }
 
-  public void scan(File root, Consumer<String> c) {
+  public static void scan(File root, Consumer<String> c) {
     ASMReflector reflector = ASMReflector.getInstance();
     try {
       reflector.scanClasses(root, (f, name, in) -> c.accept(name));
@@ -584,7 +584,7 @@ public class CachedASMReflector {
           .map(
               desc -> {
                 Document doc = desc.toDocument();
-                doc.add(new Field(SearchIndexable.GROUP_ID, getIndexGroupId(), YES, NOT_ANALYZED));
+                doc.add(new Field(SearchIndexable.GROUP_ID, this.path, YES, NOT_ANALYZED));
                 return doc;
               })
           .collect(Collectors.toList());

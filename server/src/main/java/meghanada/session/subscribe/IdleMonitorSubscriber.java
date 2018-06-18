@@ -78,7 +78,7 @@ public class IdleMonitorSubscriber extends AbstractSubscriber {
 
     File file = this.jars.pollFirst();
     if (nonNull(file)) {
-      reflector.scan(
+      CachedASMReflector.scan(
           file,
           name -> {
             try {

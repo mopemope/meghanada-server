@@ -131,7 +131,7 @@ class FieldSignatureVisitor extends SignatureVisitor {
 
     final TypeInfo typeInfo = new TypeInfo("?", "?");
     final TypeInfo current = this.currentType.peek();
-    if (current.typeParameters == null) {
+    if (current != null && current.typeParameters == null) {
       current.typeParameters = new ArrayList<>(4);
     }
     current.typeParameters.add(typeInfo);

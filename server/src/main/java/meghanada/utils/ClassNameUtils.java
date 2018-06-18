@@ -537,6 +537,9 @@ public class ClassNameUtils {
       if (ClassNameUtils.isArray(paramStr) != ClassNameUtils.isArray(realArgStr)) {
         return false;
       }
+      if (paramStr.startsWith(ClassNameUtils.CLASS_TYPE_VARIABLE_MARK)) {
+        continue;
+      }
       ClassName paramClass = new ClassName(paramStr);
       ClassName argClass = new ClassName(realArgStr);
       String paramClassName = autoBoxing(paramClass.getName());

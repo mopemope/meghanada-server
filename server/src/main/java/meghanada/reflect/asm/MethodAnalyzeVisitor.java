@@ -253,10 +253,14 @@ class MethodAnalyzeVisitor extends MethodVisitor {
       }
 
       final MethodParameterNames mn = Serializer.readObject(in, MethodParameterNames.class);
+      if (mn == null) {
+        return false;
+      }
       final List<List<ParameterName>> pmsList = mn.names.get(name);
       if (pmsList == null) {
         return false;
       }
+
       return this.searchParameterNames(pmsList);
       // fallback
     } catch (Exception e) {
