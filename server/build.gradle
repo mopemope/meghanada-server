@@ -17,7 +17,7 @@ ext {
   longVersion = "$serverVersion-${buildVersion}"
   date = new Date().format("yyyy-MM-dd'T'HH:mm:ssZ")
 
-  gradleVersion = '4.8'
+  gradleVersion = '4.8.1'
   log4jVersion = '2.11.0'
   xodusVersion = '1.2.3'
 }
@@ -87,10 +87,10 @@ dependencies {
 
   compile files("${System.properties['java.home']}/../lib/tools.jar")
   compile 'com.google.googlejavaformat:google-java-format:1.6'
-  compile 'org.apache.maven:maven-model-builder:3.5.3'
+  compile 'org.apache.maven:maven-model-builder:3.5.4'
   compile 'com.leacox.motif:motif:0.1'
   compile 'com.leacox.motif:motif-hamcrest:0.1'
-  compile 'com.github.javaparser:javaparser-core:3.6.7'
+  compile 'com.github.javaparser:javaparser-core:3.6.10'
   compile "org.apache.logging.log4j:log4j-core:$log4jVersion"
   compile "org.apache.logging.log4j:log4j-api:$log4jVersion"
   compile "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
