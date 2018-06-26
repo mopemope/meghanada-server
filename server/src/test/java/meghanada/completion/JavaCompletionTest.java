@@ -244,6 +244,21 @@ public class JavaCompletionTest extends GradleTestBase {
   }
 
   @Test
+  public void testCompletion13() throws Exception {
+    JavaCompletion completion = getCompletion();
+    File file =
+        new File(
+                project.getProjectRootPath(),
+                "./src/main/java/meghanada/completion/JavaCompletion.java")
+            .getCanonicalFile();
+    assertTrue(file.exists());
+    final Collection<? extends CandidateUnit> units =
+        timeIt(() -> completion.completionAt(file, 172, 10, "*map#"));
+    units.forEach(a -> System.out.println(a.getDeclaration()));
+    assertEquals(18, units.size());
+  }
+
+  @Test
   public void testSmartCompletionNoType() throws Exception {
     JavaCompletion completion = getCompletion();
     File file =

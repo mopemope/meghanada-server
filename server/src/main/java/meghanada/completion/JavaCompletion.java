@@ -535,20 +535,18 @@ public class JavaCompletion {
 
     if (line > 0) {
       List<MethodCall> calls = source.getMethodCall(line);
-      if (calls.isEmpty()) {
-        calls = source.getMethodCall(line - 1);
-      }
+      calls.addAll(source.getMethodCall(line - 1));
 
       long lastCol = -1;
       MethodCall lastCall = null;
       for (MethodCall call : calls) {
-        long column = call.range.begin.column;
-        if (column > lastCol) {
+        long column = call.range.end.column;
+        if (column > lastCol && call.name.equals(var)) {
           lastCol = column;
           lastCall = call;
         }
       }
-      if (nonNull(lastCall) && lastCall.name.equals(var)) {
+      if (nonNull(lastCall)) {
         String returnType = lastCall.returnType;
         if (nonNull(returnType)) {
           Set<MemberDescriptor> result =
