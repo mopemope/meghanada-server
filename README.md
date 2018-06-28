@@ -11,7 +11,7 @@ A Java IDE Server for your editor. Java IDE-like features to your favourite text
 Some planned and implemented features:
 
 * Server supports a network connection
-* `Gradle` and `Maven` project support
+* `Gradle` and `Maven` and `Eclipse` project support
 * Run build tool task
 * Compile your project
 * Support annotaion processor
