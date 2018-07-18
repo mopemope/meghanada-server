@@ -1,10 +1,10 @@
 plugins {
   id 'com.gradle.build-scan' version '1.12.1'
-  id 'com.github.ben-manes.versions' version '0.17.0'
-  id 'com.jfrog.bintray' version '1.8.2'
+  id 'com.github.ben-manes.versions' version '0.20.0'
+  id 'com.jfrog.bintray' version '1.8.4'
   id 'org.ajoberstar.grgit' version '2.2.1'
-  id 'net.ltgt.errorprone' version '0.0.14'
-  id 'com.github.sherter.google-java-format' version '0.6'
+  id 'net.ltgt.errorprone' version '0.0.15'
+  id 'com.github.sherter.google-java-format' version '0.7.1'
 }
 
 allprojects {
@@ -16,10 +16,12 @@ allprojects {
     toolVersion = '1.6'
     exclude 'server/src/test/resources/*'
     exclude 'server/out/*'
+    exclude 'src/test/resources/*'
+    exclude 'out/*'
   }
 
-  configurations.errorprone {
-    resolutionStrategy.force 'com.google.errorprone:error_prone_core:2.3.1'
+  dependencies {
+    errorprone 'com.google.errorprone:error_prone_core:2.3.1'
   }
 
   repositories {
