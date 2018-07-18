@@ -1,0 +1,34 @@
+version: 2
+jobs:
+  build:
+
+    working_directory: ~/meghanada
+
+    docker:
+      - image: circleci/openjdk:8-jdk-browsers
+        environment:
+          JAVA_HOME: /usr/lib/jvm/java-8-openjdk-amd64
+    steps:
+
+      - checkout
+
+      - run: java -version
+
+      - run: sudo apt-get -y install openjdk-8-source
+
+      - restore_cache:
+          key: meghanada-{{ checksum "build.gradle" }}
+
+      - run: env
+
+      - run: ./gradlew clean compileTestJava
+
+      - save_cache:
+          paths:
+            - ~/.gradle
+          key: meghanada-{{ checksum "build.gradle" }}
+
+      - run: ./gradlew clean check
+
+      - store_test_results:
+          path: ./server/build/test-results/test/
