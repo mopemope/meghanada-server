@@ -1,3 +1,7 @@
+# Version 1.0.8 (2018-07-18)
+
+* Update libs.
+
 # Version 1.0.7 (2018-06-28)
 
 * Fix chained completion.
