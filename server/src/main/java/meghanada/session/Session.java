@@ -632,7 +632,7 @@ public class Session {
 
   public InputStream runJUnit(String path, String test, boolean debug) throws IOException {
     boolean b = this.changeProject(path);
-    return currentProject.runJUnit(debug, test);
+    return currentProject.runJUnit(debug, path, test);
   }
 
   public Optional<String> switchTest(final String path) throws IOException {

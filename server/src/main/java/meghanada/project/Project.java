@@ -585,17 +585,22 @@ public abstract class Project implements Serializable, Storable {
 
   public abstract InputStream runTask(List<String> args) throws IOException;
 
-  public InputStream runJUnit(boolean debug, String test) throws IOException {
+  public InputStream runJUnit(boolean debug, String path, String test) throws IOException {
     try {
-      return runUnitTest(debug, test);
+      return runUnitTest(debug, path, test);
     } finally {
       Config.setProjectRoot(this.projectRootPath);
     }
   }
 
-  private InputStream runUnitTest(boolean debug, String... tests) throws IOException {
+  private InputStream runUnitTest(boolean debug, String path, String... tests) throws IOException {
     if (tests[0].isEmpty()) {
       tests = this.prevTest;
+    } else {
+      Optional<String> target = FileUtils.convertPathToClass(this.getAllSources(), new File(path));
+      if (target.isPresent()) {
+        tests = new String[] {target.get()};
+      }
     }
     log.debug("runUnit test:{} prevTest:{}", tests, prevTest);
 
