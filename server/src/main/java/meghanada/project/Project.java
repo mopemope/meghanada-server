@@ -44,6 +44,7 @@ import meghanada.event.SystemEventBus;
 import meghanada.formatter.JavaFormatter;
 import meghanada.store.ProjectDatabaseHelper;
 import meghanada.store.Storable;
+import meghanada.utils.ClassNameUtils;
 import meghanada.utils.FileUtils;
 import meghanada.utils.StringUtils;
 import org.apache.logging.log4j.LogManager;
@@ -597,9 +598,26 @@ public abstract class Project implements Serializable, Storable {
     if (tests[0].isEmpty()) {
       tests = this.prevTest;
     } else {
-      Optional<String> target = FileUtils.convertPathToClass(this.getAllSources(), new File(path));
+      File srcFile = new File(path);
+      Optional<String> target = FileUtils.convertPathToClass(this.getAllSources(), srcFile);
       if (target.isPresent()) {
-        tests = new String[] {target.get()};
+        String fqcn = target.get();
+        String className = ClassNameUtils.getSimpleName(fqcn);
+        for (int i = 0; i < tests.length; i++) {
+          String test = tests[i];
+          if (test.contains("#")) {
+            List<String> strings = Splitter.on("#").splitToList(test);
+            String testClass = strings.get(0);
+            String testMethod = strings.get(1);
+            if (testClass.equals(className)) {
+              tests[i] = fqcn + "#" + testMethod;
+            }
+          } else {
+            if (test.equals(className)) {
+              tests[i] = fqcn;
+            }
+          }
+        }
       }
     }
     log.debug("runUnit test:{} prevTest:{}", tests, prevTest);
