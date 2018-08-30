@@ -233,6 +233,23 @@ public class CommandHandler {
     }
   }
 
+  public void jumpSymbol(
+      final long id, final String path, final String line, final String col, final String symbol) {
+    final int lineInt = Integer.parseInt(line);
+    final int columnInt = Integer.parseInt(col);
+    try {
+      final Location location =
+          session
+              .jumpSymbol(path, lineInt, columnInt, symbol)
+              .orElseGet(() -> new Location(path, lineInt, columnInt));
+      final String out = outputFormatter.jumpDeclaration(id, location);
+      writer.write(out);
+      writer.newLine();
+    } catch (Throwable t) {
+      writeError(id, t);
+    }
+  }
+
   public void jumpDeclaration(
       final long id, final String path, final String line, final String col, final String symbol) {
     final int lineInt = Integer.parseInt(line);

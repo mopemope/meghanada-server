@@ -690,6 +690,23 @@ public class Session {
     return Optional.empty();
   }
 
+  public synchronized Optional<Location> jumpSymbol(
+      final String path, final int line, final int column, final String symbol)
+      throws ExecutionException, IOException {
+    final Optional<Location> location = this.getLocationSearcher().searchSymbol(symbol);
+
+    location.ifPresent(
+        a -> {
+          Location backLocation = new Location(path, line, column);
+          this.jumpDecHistory.addLast(backLocation);
+        });
+
+    if (!location.isPresent()) {
+      log.warn("can't find symbol={}.", symbol);
+    }
+    return location;
+  }
+
   public synchronized Optional<Location> jumpDeclaration(
       final String path, final int line, final int column, final String symbol)
       throws ExecutionException, IOException {
