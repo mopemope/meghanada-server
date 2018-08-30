@@ -690,6 +690,10 @@ public class Session {
     return Optional.empty();
   }
 
+  public synchronized Set<String> listSymbols() throws ExecutionException, IOException {
+    return CachedASMReflector.getInstance().getGlobalClassIndex().keySet();
+  }
+
   public synchronized Optional<Location> jumpSymbol(
       final String path, final int line, final int column, final String symbol)
       throws ExecutionException, IOException {
