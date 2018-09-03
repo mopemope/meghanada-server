@@ -690,8 +690,23 @@ public class Session {
     return Optional.empty();
   }
 
-  public synchronized Set<String> listSymbols() throws ExecutionException, IOException {
-    return CachedASMReflector.getInstance().getGlobalClassIndex().keySet();
+  public synchronized Collection<String> listSymbols(final boolean global)
+      throws ExecutionException, IOException {
+
+    return CachedASMReflector.getInstance()
+        .getGlobalClassIndex()
+        .values()
+        .parallelStream()
+        .filter(
+            c -> {
+              if (global) {
+                return true;
+              }
+              return !c.getFilePath().endsWith(".jar");
+            })
+        .map(c -> c.getRawDeclaration())
+        .sorted()
+        .collect(Collectors.toList());
   }
 
   public synchronized Optional<Location> jumpSymbol(

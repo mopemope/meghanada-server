@@ -234,12 +234,11 @@ public class CommandHandler {
     }
   }
 
-  public void listSymbols(final long id) {
+  public void listSymbols(final long id, final boolean global) {
     try {
       String out =
           outputFormatter.listSymbols(
-              id, session.listSymbols().stream().collect(Collectors.joining("\n")));
-      log.info(out);
+              id, session.listSymbols(global).stream().collect(Collectors.joining("\n")));
       writer.write(out);
       writer.newLine();
     } catch (Throwable t) {

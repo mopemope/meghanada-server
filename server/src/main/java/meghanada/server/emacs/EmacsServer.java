@@ -254,7 +254,7 @@ public class EmacsServer implements Server {
                 args -> {
                   // ls : List Symbols
                   // usage: ls
-                  handler.listSymbols(id);
+                  handler.listSymbols(id, false);
                   return true;
                 })
             .when(headTail(eq("sd"), any()))
