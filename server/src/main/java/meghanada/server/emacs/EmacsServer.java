@@ -241,6 +241,22 @@ public class EmacsServer implements Server {
                   handler.jumpDeclaration(id, args.get(0), args.get(1), args.get(2), args.get(3));
                   return true;
                 })
+            .when(headTail(eq("js"), any()))
+            .get(
+                args -> {
+                  // js : Jump Symbol
+                  // usage: js <filepath> <line> <column> <symbol>
+                  handler.jumpSymbol(id, args.get(0), args.get(1), args.get(2), args.get(3));
+                  return true;
+                })
+            .when(headTail(eq("ls"), any()))
+            .get(
+                args -> {
+                  // ls : List Symbols
+                  // usage: ls
+                  handler.listSymbols(id);
+                  return true;
+                })
             .when(headTail(eq("sd"), any()))
             .get(
                 args -> {

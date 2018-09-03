@@ -15,6 +15,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import meghanada.analyze.CompileResult;
 import meghanada.completion.LocalVariable;
 import meghanada.docs.declaration.Declaration;
@@ -226,6 +227,36 @@ public class CommandHandler {
   public void ping(final long id) {
     try {
       final String out = outputFormatter.ping(id, "pong");
+      writer.write(out);
+      writer.newLine();
+    } catch (Throwable t) {
+      writeError(id, t);
+    }
+  }
+
+  public void listSymbols(final long id) {
+    try {
+      String out =
+          outputFormatter.listSymbols(
+              id, session.listSymbols().stream().collect(Collectors.joining("\n")));
+      log.info(out);
+      writer.write(out);
+      writer.newLine();
+    } catch (Throwable t) {
+      writeError(id, t);
+    }
+  }
+
+  public void jumpSymbol(
+      final long id, final String path, final String line, final String col, final String symbol) {
+    final int lineInt = Integer.parseInt(line);
+    final int columnInt = Integer.parseInt(col);
+    try {
+      final Location location =
+          session
+              .jumpSymbol(path, lineInt, columnInt, symbol)
+              .orElseGet(() -> new Location(path, lineInt, columnInt));
+      final String out = outputFormatter.jumpDeclaration(id, location);
       writer.write(out);
       writer.newLine();
     } catch (Throwable t) {

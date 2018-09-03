@@ -233,6 +233,11 @@ public class SexpOutputFormatter implements OutputFormatter {
   }
 
   @Override
+  public String listSymbols(Long id, String s) {
+    return success(doubleQuote(s));
+  }
+
+  @Override
   public String jumpDeclaration(final long id, final Location loc) {
     final String result =
         LPAREN

@@ -333,6 +333,10 @@ public class LocationSearcher {
     this.project = project;
   }
 
+  public Optional<Location> searchSymbol(final String symbol) {
+    return Optional.<Location>ofNullable(this.getFQCNLocation(symbol));
+  }
+
   public Optional<Location> searchDeclarationLocation(
       final File file, final int line, final int column, final String symbol)
       throws ExecutionException, IOException {

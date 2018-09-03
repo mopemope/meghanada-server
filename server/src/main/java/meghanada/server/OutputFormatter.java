@@ -34,6 +34,8 @@ public interface OutputFormatter {
 
   String switchTest(long id, String openPath);
 
+  String listSymbols(Long id, String s);
+
   String jumpDeclaration(long id, Location location);
 
   String clearCache(long id, boolean result);
