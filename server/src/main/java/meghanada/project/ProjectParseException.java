@@ -13,4 +13,8 @@ public class ProjectParseException extends IOException {
   public ProjectParseException(Throwable cause) {
     super(cause);
   }
+
+  public ProjectParseException(String message, Throwable cause) {
+    super(message, cause);
+  }
 }

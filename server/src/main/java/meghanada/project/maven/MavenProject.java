@@ -1,5 +1,7 @@
 package meghanada.project.maven;
 
+import static java.util.Objects.isNull;
+
 import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
 import com.google.common.io.Files;
@@ -7,6 +9,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -30,6 +33,7 @@ public class MavenProject extends Project {
 
   private File pomFile;
   private String mavenCmd = "mvn";
+  private boolean depSources;
 
   public MavenProject(final File projectRoot) throws IOException {
     super(projectRoot);
@@ -68,15 +72,29 @@ public class MavenProject extends Project {
       final File logFile = File.createTempFile("meghanada-maven-classpath", ".log");
       logFile.deleteOnExit();
       final String logPath = logFile.getCanonicalPath();
-      log.info("running maven. resolve dependencies ...");
-      if (this.runMvn(
-              RESOLVE_TASK,
-              SOURCES_TASK,
-              BUILD_CLASSPATH_TASK,
-              String.format("-Dmdep.outputFile=%s", logPath))
-          != 0) {
-        throw new ProjectParseException(
-            "Could not resolve dependencies. please try 'mvn dependency:resolve' or 'mvn install'");
+
+      log.info("running maven. build classpath ...");
+      File outFile = File.createTempFile("maven-run-", ".log");
+      if (this.depSources) {
+        if (this.runMvn(
+                outFile,
+                RESOLVE_TASK,
+                SOURCES_TASK,
+                BUILD_CLASSPATH_TASK,
+                String.format("-Dmdep.outputFile=%s", logPath))
+            != 0) {
+          throw new ProjectParseException(
+              String.format(
+                  "MEGHANADA_FAILED maven build classpath. Please check FILE:%s", outFile));
+        }
+      } else {
+        if (this.runMvn(
+                outFile, BUILD_CLASSPATH_TASK, String.format("-Dmdep.outputFile=%s", logPath))
+            != 0) {
+          throw new ProjectParseException(
+              String.format(
+                  "MEGHANADA_FAILED maven build classpath. Please check FILE:%s", outFile));
+        }
       }
       final String cpTxt = Files.asCharSource(logFile, StandardCharsets.UTF_8).readFirstLine();
       if (cpTxt != null && !cpTxt.isEmpty()) {
@@ -144,7 +162,8 @@ public class MavenProject extends Project {
     return super.runProcess(mvnCmd);
   }
 
-  private int runMvn(final String... args) throws IOException, InterruptedException {
+  private int runMvn(final File logFile, final String... args)
+      throws IOException, InterruptedException {
     final List<String> cmd = new ArrayList<>(4);
     cmd.add(this.mavenCmd);
     Collections.addAll(cmd, args);
@@ -153,14 +172,22 @@ public class MavenProject extends Project {
     processBuilder.directory(this.projectRoot);
     final String cmdString = String.join(" ", cmd);
 
-    log.debug("RUN cmd: {}", cmdString);
+    log.info("run mvn: {}", cmdString);
 
     processBuilder.redirectErrorStream(true);
     final Process process = processBuilder.start();
-    try (InputStream in = process.getInputStream()) {
-      byte[] buf = new byte[8192];
-      while (in.read(buf) != -1) {}
+
+    if (isNull(logFile)) {
+      try (InputStream in = process.getInputStream()) {
+        byte[] buf = new byte[8192];
+        while (in.read(buf) != -1) {}
+      }
+    } else {
+      try (InputStream in = process.getInputStream()) {
+        java.nio.file.Files.copy(in, logFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+      }
     }
+
     process.waitFor();
     return process.exitValue();
   }
