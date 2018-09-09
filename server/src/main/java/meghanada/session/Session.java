@@ -98,12 +98,17 @@ public class Session {
     return createSession(new File(root));
   }
 
-  private static Session createSession(File root) throws IOException {
-    root = root.getCanonicalFile();
-    final Optional<Project> result = findProject(root);
+  private static Session createSession(final File root) throws IOException {
+    final File canRoot = root.getCanonicalFile();
+    final Optional<Project> result = findProject(canRoot);
     return result
         .map(Session::new)
-        .orElseThrow(() -> new IllegalArgumentException("Project Not Found"));
+        .orElseThrow(
+            () ->
+                new IllegalArgumentException(
+                    "Project not found. it searched from "
+                        + canRoot.toString()
+                        + ", but it was not found project"));
   }
 
   public static Optional<Project> findProject(File base) throws IOException {
