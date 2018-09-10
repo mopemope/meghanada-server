@@ -1099,8 +1099,8 @@ public class TreeAnalyzer {
                   Symbol.MethodSymbol sym = md.sym;
                   if (nonNull(sym) && nonNull(sym.owner) && nonNull(sym.owner.type)) {
                     Type type = sym.owner.type;
-                    methodName = getTypeString(src, type).orElse(name);
-                    returnFQCN = methodName;
+                    returnFQCN = getTypeString(src, type).orElse(name);
+                    methodName = ClassNameUtils.getSimpleName(returnFQCN);
                   }
                 }
                 MethodScope scope =

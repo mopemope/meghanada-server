@@ -106,6 +106,24 @@ public class ReferenceSearcherTest extends GradleTestBase {
   }
 
   @Test
+  public void testSearchConstructor01() throws Exception {
+    File f =
+        new File(
+                project.getProjectRootPath(),
+                "./src/main/java/meghanada/project/ProjectParseException.java")
+            .getCanonicalFile();
+    assertTrue(f.exists());
+
+    final ReferenceSearcher searcher = getSearcher();
+    final List<Reference> result =
+        timeIt(() -> searcher.searchReference(f, 9, 9, "ProjectParseException"));
+    assertNotNull(result);
+    assertEquals(4, result.size());
+    //    Reference reference = result.get(0);
+    //    assertEquals(769, reference.getLine());
+  }
+
+  @Test
   public void testSearchClass01() throws Exception {
     File f =
         new File(project.getProjectRootPath(), "./src/main/java/meghanada/utils/FileUtils.java")
