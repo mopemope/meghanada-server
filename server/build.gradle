@@ -17,7 +17,7 @@ ext {
   longVersion = "$serverVersion-${buildVersion}"
   date = new Date().format("yyyy-MM-dd'T'HH:mm:ssZ")
 
-  gradleVersion = '4.10'
+  gradleVersion = '4.10.2'
   log4jVersion = '2.11.1'
   xodusVersion = '1.2.3'
 }
@@ -90,7 +90,7 @@ dependencies {
   compile 'org.apache.maven:maven-model-builder:3.5.4'
   compile 'com.leacox.motif:motif:0.1'
   compile 'com.leacox.motif:motif-hamcrest:0.1'
-  compile 'com.github.javaparser:javaparser-core:3.6.20'
+  compile 'com.github.javaparser:javaparser-core:3.6.23'
   compile "org.apache.logging.log4j:log4j-core:$log4jVersion"
   compile "org.apache.logging.log4j:log4j-api:$log4jVersion"
   compile "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
@@ -106,7 +106,7 @@ dependencies {
   compile 'org.jboss.windup.decompiler:decompiler-api:4.1.0.Final'
   compile 'org.jboss.windup.decompiler:decompiler-fernflower:4.1.0.Final'
   compile 'com.google.code.findbugs:jsr305:3.0.2'
-  compile 'org.eclipse.jdt:org.eclipse.jdt.core:3.14.0'
+  compile 'org.eclipse.jdt:org.eclipse.jdt.core:3.15.0'
   compile 'de.ruedigermoeller:fst:2.56'
   compile "org.jetbrains.xodus:xodus-query:$xodusVersion"
   compile "org.jetbrains.xodus:xodus-openAPI:$xodusVersion"
