@@ -493,6 +493,7 @@ public class LocationSearcher {
                           return new Location(
                               path, match.getBeginLine(), match.getNameRange().begin.column);
                         })
+                    .filter(Objects::nonNull)
                     .findFirst();
               } catch (Exception e) {
                 throw new UncheckedExecutionException(e);
