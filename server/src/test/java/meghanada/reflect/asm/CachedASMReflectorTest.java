@@ -254,7 +254,7 @@ public class CachedASMReflectorTest extends GradleTestBase {
 
       Config config = Config.load();
       if (config.isJava8()) {
-        assertEquals(37, memberDescriptors.size());
+        assertEquals(38, memberDescriptors.size());
       } else {
         assertEquals(43, memberDescriptors.size());
       }

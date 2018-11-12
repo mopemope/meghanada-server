@@ -1,11 +1,13 @@
 package meghanada.junit;
 
+import static com.google.common.io.Files.*;
 import static java.util.Objects.nonNull;
+import static org.junit.platform.engine.discovery.DiscoverySelectors.selectClass;
+import static org.junit.platform.engine.discovery.DiscoverySelectors.selectMethod;
 
 import com.google.common.base.Splitter;
 import com.google.common.base.Stopwatch;
 import com.google.common.base.Strings;
-import com.google.common.io.Files;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -15,22 +17,24 @@ import meghanada.reflect.asm.CachedASMReflector;
 import meghanada.store.ProjectDatabaseHelper;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.junit.runner.JUnitCore;
-import org.junit.runner.Request;
-import org.junit.runner.Result;
-import org.junit.runner.notification.Failure;
+import org.junit.platform.launcher.Launcher;
+import org.junit.platform.launcher.LauncherDiscoveryRequest;
+import org.junit.platform.launcher.core.LauncherDiscoveryRequestBuilder;
+import org.junit.platform.launcher.core.LauncherFactory;
+import org.junit.platform.launcher.listeners.SummaryGeneratingListener;
+import org.junit.platform.launcher.listeners.TestExecutionSummary;
 
 public class TestRunner {
 
-  public static final String TEMP_PROJECT_SETTING_DIR = "meghanada.temp.project.setting.dir";
+  private static final String TEMP_PROJECT_SETTING_DIR = "meghanada.temp.project.setting.dir";
   private static Logger log = LogManager.getLogger(TestRunner.class);
-  private int runCnt;
-  private int failureCnt;
-  private int ignoreCnt;
+  private long runCnt;
+  private long failureCnt;
+  private long ignoreCnt;
 
-  public TestRunner() throws IOException {
+  private TestRunner() throws IOException {
 
-    final File tempDir = Files.createTempDir();
+    final File tempDir = createTempDir();
     tempDir.deleteOnExit();
     final String path = tempDir.getCanonicalPath();
     System.setProperty(TEMP_PROJECT_SETTING_DIR, path);
@@ -76,43 +80,47 @@ public class TestRunner {
     return classes;
   }
 
-  public void runTests(String... args) throws ClassNotFoundException {
+  private void runTests(String... args) throws ClassNotFoundException {
 
     for (String arg : args) {
-      List<Request> requests = collectTests(arg);
+      List<LauncherDiscoveryRequest> requests = collectTests(arg);
       if (requests.isEmpty()) {
         log.warn("test not found {}", (Object[]) args);
       }
-      for (Request request : requests) {
+      for (LauncherDiscoveryRequest request : requests) {
         this.runJunit(arg, request);
       }
     }
     System.exit(0);
   }
 
-  private void runJunit(String arg, Request request) {
+  private void runJunit(String arg, LauncherDiscoveryRequest request) {
     Stopwatch stopwatch = Stopwatch.createStarted();
     System.out.println(String.format("Running %s", arg));
-    System.out.println("");
-    JUnitCore jUnitCore = new JUnitCore();
-    Result result = jUnitCore.run(request);
+    System.out.println();
 
-    this.runCnt += result.getRunCount();
-    this.failureCnt += result.getFailureCount();
-    this.ignoreCnt += result.getIgnoreCount();
-    System.out.println("");
+    Launcher launcher = LauncherFactory.create();
+    SummaryGeneratingListener listener = new SummaryGeneratingListener();
+    launcher.execute(request, listener);
+    TestExecutionSummary summary = listener.getSummary();
+    this.runCnt += summary.getTestsFoundCount();
+    this.failureCnt += summary.getTestsFailedCount();
+    this.ignoreCnt += summary.getTestsSkippedCount();
+    this.ignoreCnt += summary.getTestsSkippedCount();
 
-    if (result.getFailureCount() > 0) {
+    System.out.println();
+
+    if (summary.getTestsFailedCount() > 0) {
       System.out.println(
           String.format(
               "FAIL Tests run: %d, Failures: %d, Ignore: %d, Time elapsed: %s",
-              result.getRunCount(),
-              result.getFailureCount(),
-              result.getIgnoreCount(),
+              summary.getTestsFoundCount(),
+              summary.getTestsFailedCount(),
+              summary.getTestsSkippedCount(),
               stopwatch.stop()));
       System.out.println("Failures:");
-      for (Failure failure : result.getFailures()) {
-        System.out.println(failure.getDescription());
+      for (TestExecutionSummary.Failure failure : summary.getFailures()) {
+        System.out.println(failure.getTestIdentifier().getDisplayName());
         failure.getException().printStackTrace();
         System.out.println("");
       }
@@ -120,9 +128,9 @@ public class TestRunner {
       System.out.println(
           String.format(
               "Tests run: %d, Failures: %d, Ignore: %d, Time elapsed: %s",
-              result.getRunCount(),
-              result.getFailureCount(),
-              result.getIgnoreCount(),
+              summary.getTestsFoundCount(),
+              summary.getTestsFailedCount(),
+              summary.getTestsSkippedCount(),
               stopwatch.stop()));
       System.out.println("Success");
     }
@@ -130,20 +138,24 @@ public class TestRunner {
     System.out.println(Strings.repeat("-", 80));
   }
 
-  private List<Request> collectTests(String arg) throws ClassNotFoundException {
-    List<Request> requests = new ArrayList<>(1);
+  private List<LauncherDiscoveryRequest> collectTests(String arg) throws ClassNotFoundException {
+    List<LauncherDiscoveryRequest> requests = new ArrayList<>(1);
 
     if (arg.contains("#")) {
       List<String> strings = Splitter.on("#").splitToList(arg);
       List<Class<?>> classes = getTestClass(strings.get(0));
       for (Class<?> cls : classes) {
-        Request request = Request.method(cls, strings.get(1));
+        LauncherDiscoveryRequest request =
+            LauncherDiscoveryRequestBuilder.request()
+                .selectors(selectMethod(cls, strings.get(1)))
+                .build();
         requests.add(request);
       }
     } else {
       List<Class<?>> classes = getTestClass(arg);
       for (Class<?> cls : classes) {
-        Request request = Request.aClass(cls);
+        LauncherDiscoveryRequest request =
+            LauncherDiscoveryRequestBuilder.request().selectors(selectClass(cls)).build();
         requests.add(request);
       }
     }
