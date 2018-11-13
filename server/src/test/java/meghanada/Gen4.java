@@ -9,6 +9,7 @@ public class Gen4 extends Gen2<Long> {
     super(name, value);
     List<Long> longList = new ArrayList<>();
     longList.add(0, 10L);
+    longList.get(0);
   }
 
   public void receive(Gen4 gen4) {

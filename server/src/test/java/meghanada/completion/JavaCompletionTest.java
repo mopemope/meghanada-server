@@ -269,7 +269,7 @@ public class JavaCompletionTest extends GradleTestBase {
     final Collection<? extends CandidateUnit> units =
         timeIt(() -> completion.completionAt(file, 59, 6, "*diagnostic*fileObject#"));
     units.forEach(a -> System.out.println(a.getDisplayDeclaration()));
-    CandidateUnit unit = (CandidateUnit) (units.toArray())[0];
+    CandidateUnit unit = (CandidateUnit) units.toArray()[0];
     assertEquals("getSource", unit.getName());
   }
 

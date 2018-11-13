@@ -32,7 +32,7 @@ public class LocalVariable {
     if (this == o) {
       return true;
     }
-    if (o == null || getClass() != o.getClass()) {
+    if (!(o instanceof LocalVariable)) {
       return false;
     }
     LocalVariable that = (LocalVariable) o;

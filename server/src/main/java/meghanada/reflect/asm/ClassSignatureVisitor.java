@@ -279,7 +279,7 @@ class ClassSignatureVisitor extends SignatureVisitor {
     @Override
     public boolean equals(Object o) {
       if (this == o) return true;
-      if (o == null || getClass() != o.getClass()) return false;
+      if (!(o instanceof ClassInfo)) return false;
       ClassInfo classInfo = (ClassInfo) o;
       return typeVariable == classInfo.typeVariable
           && Objects.equal(name, classInfo.name)

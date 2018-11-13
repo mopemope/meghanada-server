@@ -118,7 +118,7 @@ public class ClassIndex implements CandidateUnit, Cloneable, Serializable, Stora
     if (this == o) {
       return true;
     }
-    if (isNull(o) || getClass() != o.getClass()) {
+    if (isNull(o) || !(o instanceof ClassIndex)) {
       return false;
     }
     ClassIndex that = (ClassIndex) o;

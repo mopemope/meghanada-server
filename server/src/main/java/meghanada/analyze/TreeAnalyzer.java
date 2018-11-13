@@ -108,7 +108,7 @@ public class TreeAnalyzer {
 
         List<JCTree.JCExpression> typeArguments = typeApply.getTypeArguments();
         if (nonNull(typeArguments)) {
-          java.util.List<String> temp = new ArrayList<>(typeArguments.length());
+
           for (JCTree.JCExpression e : typeArguments) {
             getExpressionType(src, e)
                 .ifPresent(

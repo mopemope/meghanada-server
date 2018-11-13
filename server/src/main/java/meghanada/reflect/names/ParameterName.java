@@ -16,7 +16,7 @@ public class ParameterName implements Serializable {
     if (this == o) {
       return true;
     }
-    if (o == null || getClass() != o.getClass()) {
+    if (!(o instanceof ParameterName)) {
       return false;
     }
     ParameterName that = (ParameterName) o;

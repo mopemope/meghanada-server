@@ -19,7 +19,7 @@ public class MethodParameterNames implements Serializable {
     if (this == o) {
       return true;
     }
-    if (o == null || getClass() != o.getClass()) {
+    if (!(o instanceof MethodParameterNames)) {
       return false;
     }
     MethodParameterNames that = (MethodParameterNames) o;

@@ -7,9 +7,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
@@ -59,7 +57,6 @@ public class EclipseProject extends Project {
           String output = reader.getAttributeValue("", "output");
           String path = reader.getAttributeValue("", "path");
           List<String> paths = Splitter.on(File.separator).splitToList(path);
-          Set<String> set = new HashSet<>(paths);
 
           if (kind.equals("src")) {
             if (path.contains(File.separator + "resources")) {

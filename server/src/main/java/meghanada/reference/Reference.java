@@ -46,7 +46,7 @@ public class Reference {
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
+    if (!(o instanceof Reference)) return false;
     Reference reference = (Reference) o;
     return line == reference.line && Objects.equal(path, reference.path);
   }
