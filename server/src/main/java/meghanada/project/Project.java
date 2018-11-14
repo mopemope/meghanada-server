@@ -1233,8 +1233,11 @@ public abstract class Project implements Serializable, Storable {
       }
       Properties sysProp = System.getProperties();
       sb.append("SystemProperties:\n");
-      sysProp.forEach(
-          (key, value) -> {
+      List<String> keys = new ArrayList<>(sysProp.stringPropertyNames());
+      keys.sort(String.CASE_INSENSITIVE_ORDER);
+      keys.forEach(
+          key -> {
+            String value = sysProp.getProperty(key);
             sb.append(String.format("  %s: %s\n", key, value));
           });
       sb.append("\n");
