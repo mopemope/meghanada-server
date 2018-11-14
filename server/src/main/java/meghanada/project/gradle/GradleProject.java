@@ -214,6 +214,13 @@ public class GradleProject extends Project {
       this.isAndroidProject = true;
       this.androidApiVersion = androidProject.getApiVersion();
       this.androidModelVersion = androidProject.getModelVersion();
+      log.info(
+          "detect android project {}. api {} model {}",
+          name,
+          androidApiVersion,
+          androidModelVersion);
+      System.setProperty("meghanada.android.project", "true");
+      System.setProperty("meghanada.android.project.name", name);
       final AndroidSupport androidSupport = new AndroidSupport(this);
       androidSupport.parseAndroidProject(androidProject);
     } else {
