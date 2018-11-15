@@ -82,6 +82,7 @@ public abstract class Project implements Serializable, Storable {
   private static final String JAVA8_JAVAC_ARGS = "java8-javac-args";
   private static final String JAVA9_JAVAC_ARGS = "java9-javac-args";
   private static final String JAVA10_JAVAC_ARGS = "java10-javac-args";
+  private static final String JAVA_EXEC_ARGS = "java-exec-args";
   private static final String FORMATTER_FILE = "meghanadaFormatter.properties";
   private static final String FORMATTER_FILE_XML = "meghanadaFormatter.xml";
   private static final Pattern SEP_COMPILE = Pattern.compile("/", Pattern.LITERAL);
@@ -825,6 +826,10 @@ public abstract class Project implements Serializable, Storable {
         final List<String> list = config.getStringList(JAVA10_JAVAC_ARGS);
         mainConfig.setJava10JavacArgs(list);
       }
+      if (config.hasPath(JAVA_EXEC_ARGS)) {
+        final List<String> list = config.getStringList(JAVA_EXEC_ARGS);
+        mainConfig.setJavaExecArgs(list);
+      }
     }
 
     // guard
@@ -1042,6 +1047,7 @@ public abstract class Project implements Serializable, Storable {
 
     final Config config = Config.load();
     final List<String> cmd = new ArrayList<>(16);
+    final List<String> execArgs = config.getJavaExecArgs();
     final String binJava =
         SEP_COMPILE.matcher("/bin/java").replaceAll(Matcher.quoteReplacement(File.separator));
 
@@ -1053,6 +1059,7 @@ public abstract class Project implements Serializable, Storable {
     final String jarPath = Config.getInstalledPath().getCanonicalPath();
 
     cp += File.pathSeparator + jarPath;
+    cmd.addAll(execArgs);
     cmd.add("-ea");
     cmd.add("-XX:+TieredCompilation");
     cmd.add("-XX:+UseConcMarkSweepGC");
@@ -1208,6 +1215,7 @@ public abstract class Project implements Serializable, Storable {
       } else if (config.isJava10()) {
         sb.append(String.format("javac10Args: %s\n", config.getJava10JavacArgs()));
       }
+      sb.append(String.format("javaExecArgs: %s\n", config.getJavaExecArgs()));
       if (nonNull(this.cachedClasspath)) {
         List<String> cpList = Splitter.on(File.pathSeparator).splitToList(this.cachedClasspath);
         if (cpList.size() > 0) {
