@@ -234,6 +234,7 @@ public class CachedASMReflectorTest extends GradleTestBase {
     }
   }
 
+  @Ignore
   @Test
   public void testReflect3() throws Exception {
     CachedASMReflector cachedASMReflector = CachedASMReflector.getInstance();
