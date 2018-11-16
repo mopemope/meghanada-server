@@ -1,3 +1,9 @@
+# Version 1.0.10 (2018-11-16)
+
+* Support junit5 and junit4. (thanks @roman)
+* Add extra arguments to exec/debug main commands. (thanks @roman)
+* Fix some bugs and improve stability.
+
 # Version 1.0.9 (2018-09-10)
 
 * Add jump-symbol. (thanks @iocanel)
