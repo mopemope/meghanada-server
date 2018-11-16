@@ -21,7 +21,7 @@ public class ReferenceSearcherTest extends GradleTestBase {
     GradleTestBase.setupReflector(true);
     CompileResult compileResult1 = project.compileJava();
     CompileResult compileResult2 = project.compileTestJava();
-    Thread.sleep(1000 * 5);
+    Thread.sleep(1000 * 7);
   }
 
   @AfterClass
