@@ -247,10 +247,10 @@ public class CachedASMReflectorTest extends GradleTestBase {
             final String name2 = o2.getName();
             return name1.compareTo(name2);
           });
-      //      memberDescriptors.forEach(
-      //          md -> {
-      //            System.out.println(md.getDeclaringClass() + " # " + md.getDeclaration());
-      //          });
+      memberDescriptors.forEach(
+          md -> {
+            System.out.println(md.getDeclaringClass() + " # " + md.getDeclaration());
+          });
 
       Config config = Config.load();
       if (config.isJava8()) {
