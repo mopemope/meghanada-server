@@ -1,7 +1,9 @@
 package meghanada.utils;
 
 import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
+import java.io.IOException;
 import org.junit.Test;
 
 public class StringUtilsTest {
@@ -47,5 +49,12 @@ public class StringUtilsTest {
     assertTrue(StringUtils.contains("acceptCase", "a"));
     assertFalse(StringUtils.contains("StringUtils", "sU"));
     assertTrue(StringUtils.contains("AbstractConsumerConnection", "SU"));
+  }
+
+  @Test
+  public void testGetChecksum() throws IOException {
+    assertEquals(
+        "b5d4045c3f466fa91fe2cc6abe79232a1a57cdf104f7a26e716e0a1e2789df78",
+        StringUtils.getChecksum("ABC"));
   }
 }

@@ -3,6 +3,13 @@ package meghanada.utils;
 import static java.util.Objects.isNull;
 
 import com.google.common.base.Splitter;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.security.DigestInputStream;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -15,6 +22,7 @@ public class StringUtils {
   private static final String PatternForAnything = ".*";
   private static final String PatternForSplitByUpper = "(?=\\p{Upper})";
   private static final Map<String, Pattern> cachedPatterns = new HashMap<>(500);
+  private static final String ALGORITHM_SHA_256 = "SHA-256";
 
   public static String replace(final String string, final String target, final String replacement) {
     final StringBuilder sb = new StringBuilder(string);
@@ -92,5 +100,31 @@ public class StringUtils {
       }
     }
     return pattern;
+  }
+
+  public static String getChecksum(final String s) throws IOException {
+    try {
+
+      final MessageDigest md = MessageDigest.getInstance(ALGORITHM_SHA_256);
+      try (final InputStream is = new ByteArrayInputStream(s.getBytes(StandardCharsets.UTF_8));
+          DigestInputStream dis = new DigestInputStream(is, md)) {
+
+        final byte[] buf = new byte[4096];
+
+        while (dis.read(buf) != -1) {}
+
+        final byte[] digest = md.digest();
+
+        final StringBuilder sb = new StringBuilder(64);
+        for (final int b : digest) {
+          sb.append(Character.forDigit(b >> 4 & 0xF, 16));
+          sb.append(Character.forDigit(b & 0xF, 16));
+        }
+
+        return sb.toString();
+      }
+    } catch (NoSuchAlgorithmException e) {
+      throw new IOException(e);
+    }
   }
 }
