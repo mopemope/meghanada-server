@@ -52,6 +52,7 @@ public class Config {
   private List<String> java8JavacArgs = new ArrayList<>(8);
   private List<String> java9JavacArgs = new ArrayList<>(8);
   private List<String> java10JavacArgs = new ArrayList<>(8);
+  private List<String> javaExecArgs = new ArrayList<>(8);
   private boolean buildWithDependency = true;
 
   private Config() {
@@ -426,6 +427,14 @@ public class Config {
 
   public void setJava10JavacArgs(List<String> lst) {
     this.java10JavacArgs = lst;
+  }
+
+  public List<String> getJavaExecArgs() {
+    return this.javaExecArgs;
+  }
+
+  public void setJavaExecArgs(List<String> lst) {
+    this.javaExecArgs = lst;
   }
 
   public String getCacheRoot() {
