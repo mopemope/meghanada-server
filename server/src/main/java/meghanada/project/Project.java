@@ -82,6 +82,7 @@ public abstract class Project implements Serializable, Storable {
   private static final String JAVA8_JAVAC_ARGS = "java8-javac-args";
   private static final String JAVA9_JAVAC_ARGS = "java9-javac-args";
   private static final String JAVA10_JAVAC_ARGS = "java10-javac-args";
+  private static final String JAVA11_JAVAC_ARGS = "java11-javac-args";
   private static final String JAVA_EXEC_ARGS = "java-exec-args";
   private static final String FORMATTER_FILE = "meghanadaFormatter.properties";
   private static final String FORMATTER_FILE_XML = "meghanadaFormatter.xml";
@@ -825,6 +826,10 @@ public abstract class Project implements Serializable, Storable {
       if (config.hasPath(JAVA10_JAVAC_ARGS) && mainConfig.isJava10()) {
         final List<String> list = config.getStringList(JAVA10_JAVAC_ARGS);
         mainConfig.setJava10JavacArgs(list);
+      }
+      if (config.hasPath(JAVA11_JAVAC_ARGS) && mainConfig.isJava11()) {
+        final List<String> list = config.getStringList(JAVA11_JAVAC_ARGS);
+        mainConfig.setJava11JavacArgs(list);
       }
       if (config.hasPath(JAVA_EXEC_ARGS)) {
         final List<String> list = config.getStringList(JAVA_EXEC_ARGS);
