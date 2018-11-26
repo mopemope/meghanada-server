@@ -10,7 +10,7 @@ import org.apache.logging.log4j.message.EntryMessage;
 public class ExpressionScope extends Scope {
 
   private static final Logger log = LogManager.getLogger(ExpressionScope.class);
-  private static final long serialVersionUID = 5266844440597025135L;
+  private static final long serialVersionUID = 7636554668294969221L;
 
   public AccessSymbol expressionReturn;
   public boolean isField;

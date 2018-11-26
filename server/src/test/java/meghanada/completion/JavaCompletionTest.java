@@ -101,12 +101,12 @@ public class JavaCompletionTest extends GradleTestBase {
             .getCanonicalFile();
     assertTrue(file.exists());
     final Collection<? extends CandidateUnit> staticLog =
-        timeIt(() -> completion.completionAt(file, 16, 4, "lo"));
+        timeIt(() -> completion.completionAt(file, 15, 4, "lo"));
     staticLog.forEach(a -> System.out.println(a.getDeclaration()));
     assertEquals(1, staticLog.size());
 
     final Collection<? extends CandidateUnit> pos =
-        timeIt(() -> completion.completionAt(file, 22, 8, "po"));
+        timeIt(() -> completion.completionAt(file, 25, 8, "po"));
     pos.forEach(a -> System.out.println(a.getDeclaration()));
     assertEquals(1, pos.size());
   }

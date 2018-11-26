@@ -739,14 +739,22 @@ public class JavaCompletion {
     if (!ClassNameUtils.isPrimitive(typeOrMember)) {
       try {
         Map<String, Variable> symbols = source.getDeclaratorMap(line);
+        for (Map.Entry<String, Variable> e : symbols.entrySet()) {
+          if (e.getValue().isAssign) {
+            return e.getKey();
+          }
+        }
         Variable variable = symbols.get(typeOrMember);
         if (nonNull(variable)) {
           return variable.fqcn;
         }
         Collection<FieldAccess> fields = source.getFieldAccesses();
-        for (FieldAccess field : fields) {
-          if (field.name.equals(typeOrMember)) {
-            return field.returnType;
+        for (FieldAccess fa : fields) {
+          if (fa.isAssign) {
+            return fa.returnType;
+          }
+          if (fa.name.equals(typeOrMember)) {
+            return fa.returnType;
           }
         }
       } catch (Exception ignored) {

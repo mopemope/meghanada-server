@@ -3,10 +3,11 @@ package meghanada.analyze;
 import com.google.common.base.MoreObjects;
 import java.io.Serializable;
 
-public abstract class AccessSymbol implements Serializable {
+public abstract class AccessSymbol implements Serializable, Symbol {
 
   static final int SCOPE_LIMIT = 32;
-  private static final long serialVersionUID = -1404691982810815085L;
+  private static final long serialVersionUID = -135641377128159037L;
+
   public String declaringClass;
   public String scope = "";
   public String name;
@@ -42,4 +43,9 @@ public abstract class AccessSymbol implements Serializable {
   }
 
   public abstract boolean match(int line, int column);
+
+  @Override
+  public String getFQCN() {
+    return this.returnType;
+  }
 }

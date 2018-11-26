@@ -729,7 +729,9 @@ public class TreeAnalyzer {
       JCTree.JCExpression expression = assign.getExpression();
       JCTree.JCExpression variable = assign.getVariable();
 
+      context.setAssign(true);
       analyzeParsedTree(context, variable);
+      context.setAssign(false);
 
       analyzeParsedTree(context, expression);
 
@@ -1469,7 +1471,9 @@ public class TreeAnalyzer {
                 if (expressionKind.equals(Tree.Kind.ASSIGNMENT)) {
 
                   JCTree.JCAssign assign = (JCTree.JCAssign) expressionTree;
+                  context.setAssign(true);
                   analyzeParsedTree(context, assign.lhs);
+                  context.setAssign(false);
                   analyzeParsedTree(context, assign.rhs);
 
                 } else if (expressionKind.equals(Tree.Kind.METHOD_INVOCATION)) {
@@ -1522,7 +1526,9 @@ public class TreeAnalyzer {
                     JCTree.JCAssignOp assignOp = (JCTree.JCAssignOp) expressionTree;
                     JCTree.JCExpression lhs = assignOp.lhs;
                     JCTree.JCExpression rhs = assignOp.rhs;
+                    context.setAssign(true);
                     analyzeParsedTree(context, lhs);
+                    context.setAssign(false);
                     analyzeParsedTree(context, rhs);
 
                   } else {
@@ -1587,6 +1593,7 @@ public class TreeAnalyzer {
                 fqcn -> {
                   setReturnTypeAndArgType(context, src, sym.type, fa);
                   fa.declaringClass = TreeAnalyzer.markFQCN(src, fqcn);
+                  fa.isAssign = context.isAssign();
                   src.getCurrentScope()
                       .ifPresent(
                           scope -> {
@@ -1603,7 +1610,9 @@ public class TreeAnalyzer {
                 fqcn -> {
                   variable.fqcn = TreeAnalyzer.markFQCN(src, fqcn);
                   variable.argumentIndex = context.getArgumentIndex();
+                  variable.isAssign = context.isAssign();
                   context.setArgumentFQCN(variable.fqcn);
+
                   src.getCurrentScope()
                       .ifPresent(
                           scope -> {

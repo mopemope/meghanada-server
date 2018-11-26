@@ -5,6 +5,7 @@ import com.sun.tools.javac.tree.EndPosTable;
 public class SourceContext {
 
   private final Source source;
+  private boolean assign;
   private boolean isParameter;
   private boolean isArgument;
   private String argumentFQCN;
@@ -68,5 +69,13 @@ public class SourceContext {
 
   public void incrArgumentIndex() {
     this.argumentIndex++;
+  }
+
+  public boolean isAssign() {
+    return assign;
+  }
+
+  public void setAssign(boolean assign) {
+    this.assign = assign;
   }
 }

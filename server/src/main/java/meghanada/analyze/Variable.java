@@ -12,9 +12,9 @@ import meghanada.reflect.MemberDescriptor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class Variable implements Serializable {
+public class Variable implements Serializable, Symbol {
 
-  private static final long serialVersionUID = -6232129655957867573L;
+  private static final long serialVersionUID = 456932034908443221L;
   private static Logger log = LogManager.getLogger(Variable.class);
 
   public String name;
@@ -25,6 +25,7 @@ public class Variable implements Serializable {
   public boolean isDef;
   public boolean isParameter;
   public boolean isField;
+  public boolean isAssign;
   public int argumentIndex = -1;
   public String modifier;
   public String declaringClass;
@@ -65,5 +66,10 @@ public class Variable implements Serializable {
       return Optional.of(descriptor);
     }
     return Optional.empty();
+  }
+
+  @Override
+  public String getFQCN() {
+    return this.fqcn;
   }
 }
