@@ -2,7 +2,7 @@ plugins {
   id 'com.gradle.build-scan' version '1.16'
   id 'com.github.ben-manes.versions' version '0.20.0'
   id 'com.jfrog.bintray' version '1.8.4'
-  id 'org.ajoberstar.grgit' version '2.2.1'
+  id 'org.ajoberstar.grgit' version '3.0.0'
   id 'net.ltgt.errorprone' version '0.0.16'
   id 'com.github.sherter.google-java-format' version '0.7.1'
 }
@@ -35,9 +35,4 @@ allprojects {
     jcenter()
   }
 
-}
-
-buildScan {
-  licenseAgreementUrl = 'https://gradle.com/terms-of-service'
-  licenseAgree = 'yes'
 }
