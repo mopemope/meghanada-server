@@ -726,15 +726,35 @@ public class TreeAnalyzer {
     } else if (tree instanceof JCTree.JCAssign) {
 
       JCTree.JCAssign assign = (JCTree.JCAssign) tree;
+      // rhs
       JCTree.JCExpression expression = assign.getExpression();
+      // lhs
       JCTree.JCExpression variable = assign.getVariable();
 
-      context.setAssign(true);
-      analyzeParsedTree(context, variable);
-      context.setAssign(false);
+      if (endPos > 0) {
 
-      analyzeParsedTree(context, expression);
-
+        Source source = context.getSource();
+        Optional<BlockScope> cb = source.getCurrentBlock();
+        cb.ifPresent(
+            bs -> {
+              try {
+                Range range = Range.create(source, preferredPos, endPos);
+                ExpressionScope expr = new ExpressionScope(preferredPos, range);
+                bs.startExpression(expr);
+                expr.isAssign = true;
+                analyzeParsedTree(context, variable);
+                expr.isAssign = false;
+                analyzeParsedTree(context, expression);
+              } catch (IOException e) {
+                throw new UncheckedIOException(e);
+              } finally {
+                bs.endExpression();
+              }
+            });
+      } else {
+        analyzeParsedTree(context, variable);
+        analyzeParsedTree(context, expression);
+      }
     } else if (tree instanceof JCTree.JCNewArray) {
 
       JCTree.JCNewArray newArray = (JCTree.JCNewArray) tree;
@@ -891,8 +911,26 @@ public class TreeAnalyzer {
     } else if (tree instanceof JCTree.JCAssignOp) {
 
       JCTree.JCAssignOp assignOp = (JCTree.JCAssignOp) tree;
-      JCTree.JCExpression expression = assignOp.getExpression();
-      analyzeParsedTree(context, expression);
+      JCTree.JCExpression lhs = assignOp.getVariable();
+      JCTree.JCExpression rhs = assignOp.getExpression();
+      Source source = context.getSource();
+      Optional<BlockScope> cb = source.getCurrentBlock();
+      cb.ifPresent(
+          bs -> {
+            try {
+              Range range = Range.create(source, preferredPos, endPos);
+              ExpressionScope expr = new ExpressionScope(preferredPos, range);
+              bs.startExpression(expr);
+              expr.isAssign = true;
+              analyzeParsedTree(context, lhs);
+              expr.isAssign = false;
+              analyzeParsedTree(context, rhs);
+            } catch (IOException e) {
+              throw new UncheckedIOException(e);
+            } finally {
+              bs.endExpression();
+            }
+          });
 
     } else if (tree instanceof JCTree.JCAnnotation) {
 
@@ -1461,8 +1499,8 @@ public class TreeAnalyzer {
         .ifPresent(
             bs -> {
               try {
-                Range range = Range.create(src, preferredPos, endPos);
-                ExpressionScope expr = new ExpressionScope(preferredPos, range);
+                final Range range = Range.create(src, preferredPos, endPos);
+                final ExpressionScope expr = new ExpressionScope(preferredPos, range);
                 if (bs instanceof ClassScope) {
                   expr.isField = true;
                 }
@@ -1471,9 +1509,9 @@ public class TreeAnalyzer {
                 if (expressionKind.equals(Tree.Kind.ASSIGNMENT)) {
 
                   JCTree.JCAssign assign = (JCTree.JCAssign) expressionTree;
-                  context.setAssign(true);
+                  expr.isAssign = true;
                   analyzeParsedTree(context, assign.lhs);
-                  context.setAssign(false);
+                  expr.isAssign = false;
                   analyzeParsedTree(context, assign.rhs);
 
                 } else if (expressionKind.equals(Tree.Kind.METHOD_INVOCATION)) {
@@ -1526,9 +1564,9 @@ public class TreeAnalyzer {
                     JCTree.JCAssignOp assignOp = (JCTree.JCAssignOp) expressionTree;
                     JCTree.JCExpression lhs = assignOp.lhs;
                     JCTree.JCExpression rhs = assignOp.rhs;
-                    context.setAssign(true);
+                    expr.isAssign = true;
                     analyzeParsedTree(context, lhs);
-                    context.setAssign(false);
+                    expr.isAssign = false;
                     analyzeParsedTree(context, rhs);
 
                   } else {
@@ -1562,9 +1600,10 @@ public class TreeAnalyzer {
                   log.warn("expressionKind:{} tree:{}", expressionKind, expressionTree.getClass());
                 }
 
-                bs.endExpression();
               } catch (IOException e) {
                 throw new UncheckedIOException(e);
+              } finally {
+                bs.endExpression();
               }
             });
   }
@@ -1593,7 +1632,6 @@ public class TreeAnalyzer {
                 fqcn -> {
                   setReturnTypeAndArgType(context, src, sym.type, fa);
                   fa.declaringClass = TreeAnalyzer.markFQCN(src, fqcn);
-                  fa.isAssign = context.isAssign();
                   src.getCurrentScope()
                       .ifPresent(
                           scope -> {
@@ -1610,7 +1648,6 @@ public class TreeAnalyzer {
                 fqcn -> {
                   variable.fqcn = TreeAnalyzer.markFQCN(src, fqcn);
                   variable.argumentIndex = context.getArgumentIndex();
-                  variable.isAssign = context.isAssign();
                   context.setArgumentFQCN(variable.fqcn);
 
                   src.getCurrentScope()

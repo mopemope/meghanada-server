@@ -10,13 +10,15 @@ import org.apache.logging.log4j.message.EntryMessage;
 public class ExpressionScope extends Scope {
 
   private static final Logger log = LogManager.getLogger(ExpressionScope.class);
-  private static final long serialVersionUID = 7636554668294969221L;
+  private static final long serialVersionUID = 969635826413488177L;
 
-  public AccessSymbol expressionReturn;
-  public boolean isField;
+  private AccessSymbol expressionReturn;
+  boolean isField;
   public Scope parent;
   public String modifier;
   public String declaringClass;
+  public boolean isAssign;
+  public Symbol assignSymbol;
 
   public ExpressionScope(int pos, Range range) {
     super(pos, range);
@@ -35,6 +37,9 @@ public class ExpressionScope extends Scope {
 
   @Override
   public void addFieldAccess(FieldAccess fa) {
+    if (this.isAssign) {
+      this.assignSymbol = fa;
+    }
     final long endCol = super.range.end.column;
     final long endLine = super.range.end.line;
     final Position mcsEnd = fa.range.end;
@@ -78,8 +83,15 @@ public class ExpressionScope extends Scope {
     return log.traceExit(em, aReturn);
   }
 
+  public Optional<Symbol> getAssign() {
+    return Optional.ofNullable(this.assignSymbol);
+  }
+
   @Override
   public void addVariable(final Variable variable) {
+    if (this.isAssign) {
+      this.assignSymbol = variable;
+    }
     assert variable.fqcn != null;
     if (this.isField) {
       variable.isField = true;

@@ -26,9 +26,11 @@ import java.util.stream.Stream;
 import javax.annotation.Nonnull;
 import meghanada.analyze.AccessSymbol;
 import meghanada.analyze.ClassScope;
+import meghanada.analyze.ExpressionScope;
 import meghanada.analyze.FieldAccess;
 import meghanada.analyze.MethodCall;
 import meghanada.analyze.Source;
+import meghanada.analyze.Symbol;
 import meghanada.analyze.TypeScope;
 import meghanada.analyze.Variable;
 import meghanada.cache.GlobalCache;
@@ -602,7 +604,7 @@ public class JavaCompletion {
 
       if (n1.startsWith(keyword) && n2.startsWith(keyword)) {
         if (imps.contains(d1) && imps.contains(d2)) {
-          return Integer.compare(n1.length(), n2.length());
+          return n1.compareTo(n2);
         }
 
         if (imps.contains(d1)) {
@@ -612,7 +614,7 @@ public class JavaCompletion {
           return 1;
         }
 
-        return Integer.compare(n1.length(), n2.length());
+        return n1.compareTo(n2);
       }
 
       if (n1.startsWith(keyword)) {
@@ -631,7 +633,7 @@ public class JavaCompletion {
       final String o2 = c2.getName();
 
       if (o1.startsWith(keyword) && o2.startsWith(keyword)) {
-        return Integer.compare(o1.length(), o2.length());
+        return o1.compareTo(o2);
       }
       if (o1.startsWith(keyword)) {
         return -1;
@@ -647,13 +649,7 @@ public class JavaCompletion {
     return (c1, c2) -> {
       final String o1 = c1.getName();
       final String o2 = c2.getName();
-      final int i = o1.compareTo(o2);
-      if (i == 0) {
-        final String d1 = c1.getDisplayDeclaration();
-        final String d2 = c2.getDisplayDeclaration();
-        return Integer.compare(d1.length(), d2.length());
-      }
-      return i;
+      return o1.compareTo(o2);
     };
   }
 
@@ -666,9 +662,7 @@ public class JavaCompletion {
       final String o2 = c2.getName();
 
       if (o1.startsWith(keyword) && o2.startsWith(keyword)) {
-        final String d1 = c1.getDisplayDeclaration();
-        final String d2 = c2.getDisplayDeclaration();
-        return Integer.compare(d1.length(), d2.length());
+        return o1.compareTo(o2);
       }
 
       if (o1.startsWith(keyword)) {
@@ -738,21 +732,20 @@ public class JavaCompletion {
       final Source source, final int line, final String typeOrMember) {
     if (!ClassNameUtils.isPrimitive(typeOrMember)) {
       try {
-        Map<String, Variable> symbols = source.getDeclaratorMap(line);
-        for (Map.Entry<String, Variable> e : symbols.entrySet()) {
-          if (e.getValue().isAssign) {
-            return e.getKey();
+        Optional<ExpressionScope> expr = source.getExpression(line);
+        if (expr.isPresent()) {
+          Optional<Symbol> assign = expr.get().getAssign();
+          if (assign.isPresent()) {
+            return assign.get().getFQCN();
           }
         }
+        Map<String, Variable> symbols = source.getDeclaratorMap(line);
         Variable variable = symbols.get(typeOrMember);
         if (nonNull(variable)) {
           return variable.fqcn;
         }
         Collection<FieldAccess> fields = source.getFieldAccesses();
         for (FieldAccess fa : fields) {
-          if (fa.isAssign) {
-            return fa.returnType;
-          }
           if (fa.name.equals(typeOrMember)) {
             return fa.returnType;
           }
@@ -767,30 +760,34 @@ public class JavaCompletion {
   private static Comparator<? super CandidateUnit> getComparatorWithType(
       String keyword, String type) {
     return (c1, c2) -> {
-      boolean b1 = false, b2 = false;
+      boolean b1 = false;
+      boolean b2 = false;
+
       if (c1 instanceof MethodDescriptor) {
         b1 = StringUtils.replace(c1.getReturnType(), ", ", ",").endsWith(type);
       } else if (c1 instanceof FieldDescriptor) {
-        b1 = c1.getType().endsWith(type);
+        b1 = c1.getReturnType().endsWith(type);
+      } else if (c1 instanceof ClassIndex) {
+        b1 = c1.getReturnType().endsWith(type);
       }
       if (c2 instanceof MethodDescriptor) {
         b2 = StringUtils.replace(c2.getReturnType(), ", ", ",").endsWith(type);
       } else if (c2 instanceof FieldDescriptor) {
-        b2 = c2.getType().endsWith(type);
+        b2 = c2.getReturnType().endsWith(type);
+      } else if (c2 instanceof ClassIndex) {
+        b2 = c2.getReturnType().endsWith(type);
       }
-      final String o1 = c1.getName();
-      final String o2 = c2.getName();
-
       if (b1 && !b2) {
         return -1;
       } else if (!b1 && b2) {
         return 1;
       }
 
+      String o1 = c1.getName();
+      String o2 = c2.getName();
+
       if (o1.startsWith(keyword) && o2.startsWith(keyword)) {
-        final String d1 = c1.getDisplayDeclaration();
-        final String d2 = c2.getDisplayDeclaration();
-        return Integer.compare(d1.length(), d2.length());
+        return o1.compareTo(o2);
       }
 
       if (o1.startsWith(keyword)) {
@@ -804,7 +801,7 @@ public class JavaCompletion {
   }
 
   private static Collection<? extends CandidateUnit> completionNewKeyword(
-      Source source, String searchWord) {
+      Source source, int line, int column, String searchWord) {
     // list all classes
     final int idx = searchWord.lastIndexOf(':');
     if (idx > 0) {
@@ -812,11 +809,20 @@ public class JavaCompletion {
       CachedASMReflector reflector = CachedASMReflector.getInstance();
       // use class completion matcher
       CompletionMatcher matcher = getClassCompletionMatcher(classPrefix);
+      Comparator<? super CandidateUnit> cmp = matcher.comparator();
+      Optional<ExpressionScope> expr = source.getExpression(line);
+      if (expr.isPresent()) {
+        Optional<Symbol> assign = expr.get().getAssign();
+        if (assign.isPresent()) {
+          String assignType = assign.get().getFQCN();
+          cmp = getComparatorWithType(classPrefix, assignType);
+        }
+      }
       return reflector
           .allClassStream()
           .filter(matcher::match)
           .map(CachedASMReflector::cloneClassIndex)
-          .sorted(matcher.comparator())
+          .sorted(cmp)
           .collect(Collectors.toList());
     }
 
@@ -893,7 +899,7 @@ public class JavaCompletion {
       return completionImport(searchWord);
     } else if (searchWord.startsWith("*new")) {
       // class completion
-      return completionNewKeyword(source, searchWord);
+      return completionNewKeyword(source, line, column, searchWord);
     } else if (searchWord.startsWith("*method")) {
       // normal completion
       return completionMethods(source, line, column, searchWord);

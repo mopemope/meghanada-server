@@ -120,4 +120,14 @@ public class TypeScope extends MethodScope {
   void addMember(MemberDescriptor descriptor) {
     this.members.add(descriptor);
   }
+
+  @Override
+  public Optional<ExpressionScope> getExpression(final int line) {
+    Scope sc = getScope(line, super.scopes);
+    if (nonNull(sc) && (sc instanceof BlockScope)) {
+      BlockScope bs = (BlockScope) sc;
+      return bs.getExpression(line);
+    }
+    return Optional.empty();
+  }
 }

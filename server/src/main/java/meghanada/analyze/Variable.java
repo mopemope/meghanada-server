@@ -25,7 +25,6 @@ public class Variable implements Serializable, Symbol {
   public boolean isDef;
   public boolean isParameter;
   public boolean isField;
-  public boolean isAssign;
   public int argumentIndex = -1;
   public String modifier;
   public String declaringClass;

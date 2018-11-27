@@ -75,10 +75,9 @@ public class PrefixMatcher implements CompletionMatcher {
       String n2 = c2.getName();
       String d1 = c1.getDeclaration();
       String d2 = c2.getDeclaration();
-
       if (n1.startsWith(k) && n2.startsWith(k)) {
         if (imps.contains(d1) && imps.contains(d2)) {
-          return Integer.compare(n1.length(), n2.length());
+          return n1.compareTo(n2);
         }
 
         if (imps.contains(d1)) {
@@ -87,8 +86,7 @@ public class PrefixMatcher implements CompletionMatcher {
         if (imps.contains(d2)) {
           return 1;
         }
-
-        return Integer.compare(n1.length(), n2.length());
+        return n1.compareTo(n2);
       }
 
       if (n1.startsWith(k)) {
@@ -105,9 +103,11 @@ public class PrefixMatcher implements CompletionMatcher {
     return (c1, c2) -> {
       String o1 = c1.getName();
       String o2 = c2.getName();
+      Integer i1 = o1.length();
+      Integer i2 = o2.length();
 
       if (o1.startsWith(k) && o2.startsWith(k)) {
-        return Integer.compare(o1.length(), o2.length());
+        return i1.compareTo(i2);
       }
       if (o1.startsWith(k)) {
         return -1;

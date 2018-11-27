@@ -47,7 +47,7 @@ public class ReferenceSearcherTest extends GradleTestBase {
     final ReferenceSearcher searcher = getSearcher();
     final List<Reference> result = timeIt(() -> searcher.searchReference(f, 145, 45, "scopes"));
     assertNotNull(result);
-    assertEquals(29, result.size());
+    assertEquals(30, result.size());
   }
 
   @Test
@@ -73,7 +73,7 @@ public class ReferenceSearcherTest extends GradleTestBase {
     final ReferenceSearcher searcher = getSearcher();
     final List<Reference> result = timeIt(() -> searcher.searchReference(f, 22, 33, "scopes"));
     assertNotNull(result);
-    assertEquals(29, result.size());
+    assertEquals(30, result.size());
   }
 
   @Test
