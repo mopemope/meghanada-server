@@ -24,7 +24,7 @@ import org.apache.logging.log4j.Logger;
 public class IdleMonitorSubscriber extends AbstractSubscriber {
 
   private static final Logger log = LogManager.getLogger(IdleMonitorSubscriber.class);
-  private static final double CPU_LIMIT = 0.25;
+  private static final double CPU_LIMIT = 0.3;
   private static final long IDLE_CHECK_INTERVAL = 1000;
   private static final long WARMUP_INTERVAL = 15000;
 
@@ -88,6 +88,7 @@ public class IdleMonitorSubscriber extends AbstractSubscriber {
 
     File file = this.jars.pollFirst();
     if (nonNull(file)) {
+      log.info("create cache {}", file);
       CachedASMReflector.scan(
           file,
           name -> {

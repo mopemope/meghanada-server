@@ -1201,6 +1201,7 @@ public abstract class Project implements Serializable, Storable {
       sb.append(String.format("useAOSPStyleFormat: %s\n", config.useAOSPStyle()));
       sb.append(String.format("mavenLocalRepository: %s\n", config.getMavenLocalRepository()));
       sb.append(String.format("useFullTextSearch: %s\n", config.useFullTextSearch()));
+      sb.append(String.format("enableIdleCache: %s\n", config.enableIdleCache()));
       sb.append("\n");
     }
 
