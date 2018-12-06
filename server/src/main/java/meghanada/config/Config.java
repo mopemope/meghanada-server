@@ -462,6 +462,10 @@ public class Config {
     return c.getBoolean("full-text-search");
   }
 
+  public boolean enableIdleCache() {
+    return c.getBoolean("idle-cache");
+  }
+
   public List<String> searchStaticMethodClasses() {
     final String classes = c.getString("search-static-method-classes");
     final String[] split = StringUtils.split(classes, ",");

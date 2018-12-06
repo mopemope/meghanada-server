@@ -220,7 +220,7 @@ public class Session {
     Config config = Config.load();
 
     if (config.isJava8()) {
-      final String javaHome = Config.load().getJavaHomeDir();
+      final String javaHome = config.getJavaHomeDir();
       final File jvmDir = new File(javaHome);
       final String toolsJarPath = Joiner.on(File.separator).join("..", "lib", "tools.jar");
       final File toolsJar = new File(jvmDir, toolsJarPath);
@@ -344,7 +344,9 @@ public class Session {
     this.sessionEventBus.subscribeFileWatch();
     this.sessionEventBus.subscribeParse();
     this.sessionEventBus.subscribeCache();
-    // this.sessionEventBus.subscribeIdle();
+    if (Config.load().enableIdleCache()) {
+      this.sessionEventBus.subscribeIdle();
+    }
   }
 
   public void start() throws IOException {

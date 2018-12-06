@@ -24,8 +24,11 @@ import org.apache.logging.log4j.Logger;
 public class IdleMonitorSubscriber extends AbstractSubscriber {
 
   private static final Logger log = LogManager.getLogger(IdleMonitorSubscriber.class);
-  private static final double CPU_LIMIT = 0.3;
-  private int idleTime = 5;
+  private static final double CPU_LIMIT = 0.25;
+  private static final long IDLE_CHECK_INTERVAL = 1000;
+  private static final long WARMUP_INTERVAL = 15000;
+
+  private int idleTime = 10;
   private Deque<File> jars;
   private SessionEventBus.IdleTimer idleTimer;
   private boolean started;
@@ -49,9 +52,16 @@ public class IdleMonitorSubscriber extends AbstractSubscriber {
       return;
     }
     this.started = true;
+    try {
+      Thread.sleep(WARMUP_INTERVAL);
+    } catch (InterruptedException e) {
+      log.catching(e);
+      throw new RuntimeException(e);
+    }
+
     while (this.started) {
       try {
-        Thread.sleep(1000);
+        Thread.sleep(IDLE_CHECK_INTERVAL);
       } catch (InterruptedException e) {
         log.catching(e);
         throw new RuntimeException(e);
