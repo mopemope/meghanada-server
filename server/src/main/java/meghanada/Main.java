@@ -77,11 +77,12 @@ public class Main {
     if (cmd.hasOption("v")) {
       Object ctx = LogManager.getContext(false);
       if (ctx instanceof LoggerContext) {
-        LoggerContext context = (LoggerContext) ctx;
-        Configuration configuration = context.getConfiguration();
-        LoggerConfig loggerConfig = configuration.getLoggerConfig(LogManager.ROOT_LOGGER_NAME);
-        loggerConfig.setLevel(Level.DEBUG);
-        context.updateLoggers();
+        try (LoggerContext context = (LoggerContext) ctx) {
+          Configuration configuration = context.getConfiguration();
+          LoggerConfig loggerConfig = configuration.getLoggerConfig(LogManager.ROOT_LOGGER_NAME);
+          loggerConfig.setLevel(Level.DEBUG);
+          context.updateLoggers();
+        }
       }
       System.setProperty("log-level", "DEBUG");
       log.debug("set verbose flag(DEBUG)");
@@ -90,11 +91,12 @@ public class Main {
     if (cmd.hasOption("vv")) {
       Object ctx = LogManager.getContext(false);
       if (ctx instanceof LoggerContext) {
-        LoggerContext context = (LoggerContext) ctx;
-        Configuration configuration = context.getConfiguration();
-        LoggerConfig loggerConfig = configuration.getLoggerConfig(LogManager.ROOT_LOGGER_NAME);
-        loggerConfig.setLevel(Level.TRACE);
-        context.updateLoggers();
+        try (LoggerContext context = (LoggerContext) ctx) {
+          Configuration configuration = context.getConfiguration();
+          LoggerConfig loggerConfig = configuration.getLoggerConfig(LogManager.ROOT_LOGGER_NAME);
+          loggerConfig.setLevel(Level.TRACE);
+          context.updateLoggers();
+        }
       }
       System.setProperty("log-level", "TRACE");
       log.debug("set verbose flag(TRACE)");
@@ -137,21 +139,22 @@ public class Main {
     File logFile = new File(tempDir, "meghanada_server.log");
     Object ctx = LogManager.getContext(false);
     if (ctx instanceof LoggerContext) {
-      LoggerContext context = (LoggerContext) ctx;
-      Configuration configuration = context.getConfiguration();
-      LoggerConfig loggerConfig = configuration.getLoggerConfig(LogManager.ROOT_LOGGER_NAME);
-      FileAppender fileAppender =
-          FileAppender.newBuilder()
-              .withName("file")
-              .withLayout(
-                  PatternLayout.newBuilder()
-                      .withPattern("[%d][%-5.-5p][%-14.-14c{1}:%4L] %-22.-22M - %m%n")
-                      .build())
-              .withFileName(logFile.getCanonicalPath())
-              .build();
-      configuration.addAppender(fileAppender);
-      loggerConfig.addAppender(fileAppender, Level.ERROR, null);
-      context.updateLoggers();
+      try (LoggerContext context = (LoggerContext) ctx) {
+        Configuration configuration = context.getConfiguration();
+        LoggerConfig loggerConfig = configuration.getLoggerConfig(LogManager.ROOT_LOGGER_NAME);
+        FileAppender fileAppender =
+            FileAppender.newBuilder()
+                .withName("file")
+                .withLayout(
+                    PatternLayout.newBuilder()
+                        .withPattern("[%d][%-5.-5p][%-14.-14c{1}:%4L] %-22.-22M - %m%n")
+                        .build())
+                .withFileName(logFile.getCanonicalPath())
+                .build();
+        configuration.addAppender(fileAppender);
+        loggerConfig.addAppender(fileAppender, Level.ERROR, null);
+        context.updateLoggers();
+      }
     }
   }
 
