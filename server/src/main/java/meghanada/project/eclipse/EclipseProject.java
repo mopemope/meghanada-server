@@ -87,7 +87,7 @@ public class EclipseProject extends Project {
           } else if (kind.equals("lib")) {
 
             File file = new File(path);
-            String code = this.getArtifactCode(path);
+            String code = getArtifactCode(path);
             String version = this.getArtifactVersion(path);
             ProjectDependency.Type type = ProjectDependency.getFileType(file);
             ProjectDependency dependency =
@@ -121,10 +121,16 @@ public class EclipseProject extends Project {
     // ivy or gradle cache
     File file = new File(path);
     File verFile = file.getParentFile().getParentFile();
-    String version = verFile.getName();
-    File artifactFile = verFile.getParentFile();
-    String artifactID = artifactFile.getName();
-    File groupFile = artifactFile.getParentFile();
+    if (nonNull(verFile) && verFile.exists()) {
+      String version = verFile.getName();
+      File artifactFile = verFile.getParentFile();
+      String artifactID = artifactFile.getName();
+      File groupFile = artifactFile.getParentFile();
+      String groupID = groupFile.getName();
+      return groupID + ":" + artifactID + ":" + getArtifactVersion(path);
+    }
+    String artifactID = file.getName();
+    File groupFile = file.getParentFile();
     String groupID = groupFile.getName();
     return groupID + ":" + artifactID + ":" + getArtifactVersion(path);
   }
