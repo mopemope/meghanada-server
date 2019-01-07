@@ -25,7 +25,8 @@ public class JavaCompletionTest extends GradleTestBase {
   public static void setup() throws Exception {
     // GradleTestBase.setupReflector(false);
     GradleTestBase.setupReflector(true);
-    CompileResult compileResult = project.compileJava();
+    CompileResult compileResult1 = project.compileJava();
+    CompileResult compileResult2 = project.compileTestJava();
     Config config = Config.load();
     config.update("camel-case-completion", false);
     Thread.sleep(5 * 1000);
@@ -226,7 +227,7 @@ public class JavaCompletionTest extends GradleTestBase {
     final Collection<? extends CandidateUnit> units =
         timeIt(() -> completion.completionAt(file, 65, 0, "*JavaCompletion#"));
     units.forEach(a -> System.out.println(a.getDeclaration()));
-    assertEquals(37, units.size());
+    assertEquals(38, units.size());
   }
 
   @Test
@@ -253,9 +254,22 @@ public class JavaCompletionTest extends GradleTestBase {
             .getCanonicalFile();
     assertTrue(file.exists());
     final Collection<? extends CandidateUnit> units =
-        timeIt(() -> completion.completionAt(file, 162, 10, "*map#"));
+        timeIt(() -> completion.completionAt(file, 163, 10, "*map#"));
     units.forEach(a -> System.out.println(a.getDeclaration()));
     assertEquals(18, units.size());
+  }
+
+  @Test
+  public void testCompletion14() throws Exception {
+    JavaCompletion completion = getCompletion();
+    File file =
+        new File(project.getProjectRootPath(), "./src/test/java/meghanada/Anno.java")
+            .getCanonicalFile();
+    assertTrue(file.exists());
+    final Collection<? extends CandidateUnit> units =
+        timeIt(() -> completion.completionAt(file, 3, 21, "va"));
+    units.forEach(a -> System.out.println(a.getDeclaration()));
+    assertEquals(1, units.size());
   }
 
   @Test

@@ -4,6 +4,7 @@ import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 
 import com.google.common.base.Joiner;
+import com.sun.source.tree.AnnotationTree;
 import com.sun.source.tree.CompilationUnitTree;
 import com.sun.source.tree.ExpressionTree;
 import com.sun.source.tree.ImportTree;
@@ -437,9 +438,8 @@ public class TreeAnalyzer {
     log.trace("file={}", src.getFile());
     EndPosTable endPosTable = ((JCTree.JCCompilationUnit) cut).endPositions;
     context.setEndPosTable(endPosTable);
-
+    analyzePackageAnnotations(cut, src, endPosTable);
     analyzePackageName(cut, src, endPosTable);
-
     analyzeImports(cut, src, endPosTable);
 
     try {
@@ -459,6 +459,38 @@ public class TreeAnalyzer {
     } catch (IOException e) {
       log.catching(e);
       throw new UncheckedIOException(e);
+    }
+  }
+
+  private static void analyzePackageAnnotations(
+      final CompilationUnitTree cut, final Source src, final EndPosTable endPosTable) {
+    java.util.List<? extends AnnotationTree> annotations = cut.getPackageAnnotations();
+    for (final AnnotationTree at : annotations) {
+      analyzeAnnotationTree(src, endPosTable, at);
+    }
+  }
+
+  private static void analyzeAnnotationTree(
+      final Source src, final EndPosTable endPosTable, final AnnotationTree at) {
+    if (at instanceof JCTree.JCAnnotation) {
+      JCTree.JCAnnotation anno = (JCTree.JCAnnotation) at;
+      int startPos = anno.getPreferredPosition();
+      int endPos = anno.getEndPosition(endPosTable);
+      JCTree annotationType = anno.getAnnotationType();
+      int annotationTypeEndPosition = annotationType.getEndPosition(endPosTable);
+      Range range;
+      if (endPos != annotationTypeEndPosition) {
+        startPos = annotationTypeEndPosition;
+      }
+      range = Range.create(src, startPos + 1, endPos);
+      Type type = anno.type;
+      Annotation annotation;
+      if (nonNull(type)) {
+        annotation = new Annotation(type.toString(), startPos, range);
+      } else {
+        annotation = new Annotation(annotationType.toString(), startPos, range);
+      }
+      src.annotationMap.put(range.begin.line, annotation);
     }
   }
 
@@ -520,8 +552,10 @@ public class TreeAnalyzer {
 
     int startPos = classDecl.getPreferredPosition();
     int endPos = classDecl.getEndPosition(endPosTable);
+    JCTree.JCModifiers modifiers = classDecl.getModifiers();
+    List<JCTree.JCAnnotation> annotations = modifiers.getAnnotations();
 
-    final String classModifiers = parseModifiers(context, classDecl.getModifiers());
+    final String classModifiers = parseModifiers(context, modifiers);
 
     analyzeParsedTree(context, classDecl.getExtendsClause());
 
@@ -548,6 +582,7 @@ public class TreeAnalyzer {
     classScope.isEnum = isEnum;
     classScope.isInterface = isInterface;
     log.trace("class={}", classScope);
+    analyzeAnnotations(context, annotations, classScope);
 
     src.startClass(classScope);
 
@@ -558,6 +593,15 @@ public class TreeAnalyzer {
         src, classScope.range.begin.line, classScope.range.begin.column, classScope.getFQCN());
     Optional<ClassScope> endClass = src.endClass();
     log.trace("class={}", endClass);
+  }
+
+  private static void analyzeAnnotations(
+      final SourceContext sc, final List<JCTree.JCAnnotation> annotations, final BlockScope bs) {
+    Source src = sc.getSource();
+    EndPosTable endPosTable = sc.getEndPosTable();
+    for (JCTree.JCAnnotation anno : annotations) {
+      analyzeAnnotationTree(src, endPosTable, anno);
+    }
   }
 
   private static void analyzeSimpleExpressions(
@@ -933,12 +977,23 @@ public class TreeAnalyzer {
           });
 
     } else if (tree instanceof JCTree.JCAnnotation) {
-
-      JCTree.JCAnnotation annotation = (JCTree.JCAnnotation) tree;
-
-      analyzeSimpleExpressions(context, annotation.getArguments());
-
-      JCTree annotationType = annotation.getAnnotationType();
+      Source src = context.getSource();
+      JCTree.JCAnnotation anno = (JCTree.JCAnnotation) tree;
+      List<JCTree.JCExpression> arguments = anno.getArguments();
+      Range range = Range.create(src, startPos + 1, endPos);
+      Type type = anno.type;
+      if (nonNull(type)) {
+        String fqcn = type.toString();
+        Annotation annotation = new Annotation(fqcn, startPos, range);
+        src.annotationMap.put(range.begin.line, annotation);
+      } else {
+        JCTree annotationType = anno.getAnnotationType();
+        String name = annotationType.toString();
+        Annotation annotation = new Annotation(name, startPos, range);
+        src.annotationMap.put(range.begin.line, annotation);
+      }
+      analyzeSimpleExpressions(context, anno.getArguments());
+      JCTree annotationType = anno.getAnnotationType();
       analyzeParsedTree(context, annotationType);
 
     } else if (tree instanceof JCTree.JCSkip) {
@@ -971,6 +1026,7 @@ public class TreeAnalyzer {
         for (JCTree.JCAnnotation anno : annotations) {
           JCTree annotationType = anno.getAnnotationType();
           if (nonNull(annotationType)) {
+
             analyzeParsedTree(context, annotationType);
           }
           List<JCTree.JCExpression> arguments = anno.getArguments();
@@ -1148,7 +1204,7 @@ public class TreeAnalyzer {
                         declaringClass, methodName, nameRange, preferredPos, range, isConstructor);
                 scope.modifier = methodModifier.trim();
                 scope.returnType = TreeAnalyzer.markFQCN(src, returnFQCN);
-
+                analyzeAnnotations(context, modifiers.getAnnotations(), scope);
                 // check method parameter
                 context.setParameter(true);
 

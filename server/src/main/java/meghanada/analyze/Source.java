@@ -66,25 +66,27 @@ public class Source implements Serializable, Storable, SearchIndexable {
   public static final String LINK_FIELD_ACCESS = "fieldAccess";
   public static final String LINK_METHOD_CALL = "methodCall";
   public static final String LINK_SOURCE = "source";
-
   private static final long serialVersionUID = 8712967042785424554L;
   private static final Logger log = LogManager.getLogger(Source.class);
 
   public final Set<String> importClasses = new HashSet<>(16);
   public final Map<String, String> staticImportClass = new HashMap<>(8);
-  public final Set<String> unused = new HashSet<>(8);
-  public final Set<String> unknown = new HashSet<>(8);
-  public final List<ClassScope> classScopes = new ArrayList<>(1);
-  public final Deque<ClassScope> currentClassScope = new ArrayDeque<>(1);
   public final Set<String> usingClasses = new HashSet<>(8);
   public final String filePath;
+  public final Map<Long, Annotation> annotationMap = new HashMap<>(8);
+  final Set<String> unused = new HashSet<>(8);
+  final List<ClassScope> classScopes = new ArrayList<>(1);
   final transient Map<Long, List<IndexableWord>> indexWords = new HashMap<>(4);
+  private final Set<String> unknown = new HashSet<>(8);
+  private final Deque<ClassScope> currentClassScope = new ArrayDeque<>(1);
+
   // temp flag
   public boolean hasCompileError;
   private String packageName = "";
   private long classStartLine;
   private long pkgStartLine;
   private Map<String, String> importMap;
+
   private transient List<LineRange> lineRange;
   private transient LineMap lineMap;
 

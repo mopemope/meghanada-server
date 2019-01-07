@@ -25,6 +25,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.annotation.Nonnull;
 import meghanada.analyze.AccessSymbol;
+import meghanada.analyze.Annotation;
 import meghanada.analyze.ClassScope;
 import meghanada.analyze.ExpressionScope;
 import meghanada.analyze.FieldAccess;
@@ -230,12 +231,18 @@ public class JavaCompletion {
   }
 
   private static Collection<? extends CandidateUnit> completionSymbols(
-      final Source source, final int line, final String prefix) {
+      final Source source, final int line, final int col, final String prefix) {
     Set<CandidateUnit> result = new HashSet<>(32);
 
     // prefix search
     log.debug("Search variables prefix:{} line:{}", prefix, line);
 
+    Optional<List<CandidateUnit>> annotationValue =
+        completionAnnotationValue(source, line, col, prefix);
+    if (annotationValue.isPresent()) {
+      result.addAll(annotationValue.get());
+      return result;
+    }
     Optional<TypeScope> optionalScope = source.getTypeScope(line);
     if (!optionalScope.isPresent()) {
       return result;
@@ -289,6 +296,27 @@ public class JavaCompletion {
     List<CandidateUnit> list = new ArrayList<>(result);
     list.sort(comparing(source, prefix));
     return list;
+  }
+
+  private static Optional<List<CandidateUnit>> completionAnnotationValue(
+      Source source, int line, int col, String prefix) {
+    Annotation annotation = source.annotationMap.get((long) line);
+    if (nonNull(annotation) && annotation.containsColumn(col)) {
+      String fqcn = annotation.getFQCN();
+      String clazz = source.getImportedClassFQCN(ClassNameUtils.getSimpleName(fqcn), fqcn);
+      List<CandidateUnit> descriptors =
+          CachedASMReflector.getInstance()
+              .reflect(clazz)
+              .stream()
+              .filter(
+                  m ->
+                      m.getMemberType() == CandidateUnit.MemberType.METHOD
+                          && m.getName().toLowerCase().startsWith(prefix))
+              .map(m -> new FieldDescriptor(m.declaringClass, m.name, null, m.getRawReturnType()))
+              .collect(Collectors.toList());
+      return Optional.of(descriptors);
+    }
+    return Optional.empty();
   }
 
   private static void completionClass(Set<CandidateUnit> result, CompletionMatcher classMatcher) {
@@ -881,7 +909,7 @@ public class JavaCompletion {
         return annotationCompletion(source, line, column, prefix);
       }
       // search symbol
-      return completionSymbols(source, line, prefix);
+      return completionSymbols(source, line, column, prefix);
 
     } catch (Throwable t) {
       log.catching(t);
@@ -914,7 +942,6 @@ public class JavaCompletion {
       String var = searchWord.substring(1, idx);
       final int idx2 = var.lastIndexOf('*');
       final String prefix = searchWord.substring(idx + 1);
-      Collection<? extends CandidateUnit> result;
       if (idx2 > 0) { // smart completion
         String typeOrMember = var.substring(idx2 + 1);
         typeOrMember = getMemberType(source, line, typeOrMember);
@@ -922,20 +949,16 @@ public class JavaCompletion {
         final String var2 = var.substring(0, idx2);
         final Collection<? extends CandidateUnit> rawResult =
             completionFieldsOrMethods(source, line, var2, prefix);
-        result =
-            rawResult
-                .stream()
-                // .filter(cu -> cu.getReturnType().endsWith(type))
-                .sorted(getComparatorWithType(prefix, typeOrMember))
-                .collect(Collectors.toList());
-      } else {
-        result =
-            completionFieldsOrMethods(source, line, var, prefix)
-                .stream()
-                .sorted(methodComparing(prefix))
-                .collect(Collectors.toList());
+        return rawResult
+            .stream()
+            // .filter(cu -> cu.getReturnType().endsWith(type))
+            .sorted(getComparatorWithType(prefix, typeOrMember))
+            .collect(Collectors.toList());
       }
-      return result;
+      return completionFieldsOrMethods(source, line, var, prefix)
+          .stream()
+          .sorted(methodComparing(prefix))
+          .collect(Collectors.toList());
     }
 
     // normal completion
