@@ -495,7 +495,7 @@ public class Config {
     return getCompletionType(m);
   }
 
-  private Config.CompletionType getCompletionType(String m) {
+  private static Config.CompletionType getCompletionType(String m) {
     switch (m) {
       case COMPLETION_TYPE_PREFIX:
         return PREFIX;

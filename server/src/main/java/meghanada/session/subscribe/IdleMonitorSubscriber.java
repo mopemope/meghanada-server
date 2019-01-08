@@ -42,7 +42,7 @@ public class IdleMonitorSubscriber extends AbstractSubscriber {
     this.monitor = new CpuMonitor();
   }
 
-  private SessionEventBus.IdleEvent createIdleEvent(
+  private static SessionEventBus.IdleEvent createIdleEvent(
       Session session, SessionEventBus.IdleTimer idleTimer) {
     return new SessionEventBus.IdleEvent(session, idleTimer);
   }

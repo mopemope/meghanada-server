@@ -248,8 +248,8 @@ public abstract class MemberDescriptor
 
   private int compareType(MemberDescriptor other, boolean isStatic) {
 
-    if (this.getMemberType() == other.getMemberType()) {
-      if (this.getMemberType() == CandidateUnit.MemberType.FIELD) {
+    if (this.memberType == other.memberType) {
+      if (this.memberType == CandidateUnit.MemberType.FIELD) {
         if (this.isPublic()) {
           return -1;
         }
@@ -257,7 +257,7 @@ public abstract class MemberDescriptor
           return 1;
         }
       }
-      if (isStatic && this.getMemberType() == CandidateUnit.MemberType.METHOD) {
+      if (isStatic && this.memberType == CandidateUnit.MemberType.METHOD) {
         if (this.isPublic()) {
           return -1;
         }
@@ -266,24 +266,24 @@ public abstract class MemberDescriptor
         }
       }
 
-      return this.getName().compareTo(other.getName());
+      return this.name.compareTo(other.name);
     }
 
-    if (this.getMemberType() == CandidateUnit.MemberType.FIELD) {
+    if (this.memberType == CandidateUnit.MemberType.FIELD) {
       return -1;
     }
-    if (other.getMemberType() == CandidateUnit.MemberType.FIELD) {
+    if (other.memberType == CandidateUnit.MemberType.FIELD) {
       return 1;
     }
 
-    if (this.getMemberType() == CandidateUnit.MemberType.CONSTRUCTOR) {
+    if (this.memberType == CandidateUnit.MemberType.CONSTRUCTOR) {
       return -1;
     }
-    if (other.getMemberType() == CandidateUnit.MemberType.CONSTRUCTOR) {
+    if (other.memberType == CandidateUnit.MemberType.CONSTRUCTOR) {
       return 1;
     }
 
-    return this.getName().compareTo(other.getName());
+    return this.name.compareTo(other.name);
   }
 
   @Override
@@ -312,9 +312,9 @@ public abstract class MemberDescriptor
   public Document toDocument() {
     Document doc = new Document();
     doc.add(new Field(C_BINARY.getName(), Serializer.asByte(this)));
-    doc.add(new Field(C_DECLARING_CLASS.getName(), getDeclaringClass(), YES, ANALYZED));
-    doc.add(new Field(C_COMPLETION.getName(), getName(), YES, ANALYZED));
-    doc.add(new Field(C_MEMBER_TYPE.getName(), getMemberType().name(), NO, ANALYZED));
+    doc.add(new Field(C_DECLARING_CLASS.getName(), declaringClass, YES, ANALYZED));
+    doc.add(new Field(C_COMPLETION.getName(), name, YES, ANALYZED));
+    doc.add(new Field(C_MEMBER_TYPE.getName(), memberType.name(), NO, ANALYZED));
     doc.add(new Field(C_MODIFIER.getName(), modifier.trim(), NO, ANALYZED));
     return doc;
   }

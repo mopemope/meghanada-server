@@ -55,18 +55,18 @@ public class TestRunner {
       runner.runTests(args);
     } finally {
       if (nonNull(runner)) {
-        runner.cleanup();
+        TestRunner.cleanup();
       }
     }
   }
 
-  private void cleanup() throws Exception {
+  private static void cleanup() throws Exception {
     ProjectDatabaseHelper.shutdown();
     String p = System.getProperty(TEMP_PROJECT_SETTING_DIR);
     org.apache.commons.io.FileUtils.deleteDirectory(new File(p));
   }
 
-  private List<Class<?>> getTestClass(String testName) throws ClassNotFoundException {
+  private static List<Class<?>> getTestClass(String testName) throws ClassNotFoundException {
     List<Class<?>> classes = new ArrayList<>();
     CachedASMReflector cachedASMReflector = CachedASMReflector.getInstance();
     for (ClassIndex classIndex : cachedASMReflector.getGlobalClassIndex().values()) {
@@ -122,7 +122,7 @@ public class TestRunner {
       for (TestExecutionSummary.Failure failure : summary.getFailures()) {
         System.out.println(failure.getTestIdentifier().getDisplayName());
         failure.getException().printStackTrace();
-        System.out.println("");
+        System.out.println();
       }
     } else {
       System.out.println(

@@ -6,5 +6,5 @@ import org.apache.lucene.document.Document;
 @FunctionalInterface
 public interface DocumentCreator {
 
-  public Document create() throws IOException;
+  Document create() throws IOException;
 }

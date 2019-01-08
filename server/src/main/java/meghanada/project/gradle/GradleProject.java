@@ -351,10 +351,10 @@ public class GradleProject extends Project {
 
       final ProjectConnection projectConnection = getProjectConnection();
       final BuildLauncher build = projectConnection.newBuild();
-      this.setBuildJVMArgs(build);
-      build.forTasks(tasks.toArray(new String[tasks.size()]));
+      GradleProject.setBuildJVMArgs(build);
+      build.forTasks(tasks.toArray(new String[0]));
       if (taskArgs.size() > 0) {
-        build.withArguments(taskArgs.toArray(new String[taskArgs.size()]));
+        build.withArguments(taskArgs.toArray(new String[0]));
       }
 
       final PipedOutputStream outputStream = new PipedOutputStream();
@@ -370,7 +370,7 @@ public class GradleProject extends Project {
     }
   }
 
-  private void setBuildJVMArgs(final BuildLauncher build) throws IOException {
+  private static void setBuildJVMArgs(final BuildLauncher build) throws IOException {
     build.setJvmArguments("-Djava.io.tmpdir=" + getTmpDir());
   }
 
@@ -489,10 +489,10 @@ public class GradleProject extends Project {
     if (!this.prepareCompileTask.isEmpty()) {
       final ProjectConnection connection = this.getProjectConnection();
       try {
-        final String[] tasks = prepareCompileTask.toArray(new String[prepareCompileTask.size()]);
+        final String[] tasks = prepareCompileTask.toArray(new String[0]);
         final BuildLauncher buildLauncher = connection.newBuild();
-        log.info("project {} run tasks:{}", this.name, (Object) tasks);
-        this.setBuildJVMArgs(buildLauncher);
+        log.info("project {} run tasks:{}", this.name, tasks);
+        GradleProject.setBuildJVMArgs(buildLauncher);
         buildLauncher.forTasks(tasks).run();
       } finally {
         connection.close();
@@ -520,11 +520,10 @@ public class GradleProject extends Project {
     if (!this.prepareTestCompileTask.isEmpty()) {
       final ProjectConnection connection = this.getProjectConnection();
       try {
-        final String[] tasks =
-            prepareTestCompileTask.toArray(new String[prepareTestCompileTask.size()]);
+        final String[] tasks = prepareTestCompileTask.toArray(new String[0]);
         final BuildLauncher buildLauncher = connection.newBuild();
-        log.info("project {} run tasks:{}", this.name, (Object) tasks);
-        this.setBuildJVMArgs(buildLauncher);
+        log.info("project {} run tasks:{}", this.name, tasks);
+        GradleProject.setBuildJVMArgs(buildLauncher);
         buildLauncher.forTasks(tasks).run();
       } finally {
         connection.close();

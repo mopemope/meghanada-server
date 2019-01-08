@@ -175,7 +175,7 @@ class AndroidSupport {
       this.project.setTestOutput(this.project.normalize(build));
     }
 
-    Map<String, Set<File>> androidSources = this.getAndroidSources(defaultConfig);
+    Map<String, Set<File>> androidSources = AndroidSupport.getAndroidSources(defaultConfig);
     Set<ProjectDependency> dependencies = this.getAndroidDependencies(androidProject);
 
     this.project.getSources().addAll(androidSources.getOrDefault(SOURCES_KEY, new HashSet<>()));
@@ -383,7 +383,7 @@ class AndroidSupport {
     }
   }
 
-  private void addDependencies(Set<ProjectDependency> dependencies, File jar) {
+  private static void addDependencies(Set<ProjectDependency> dependencies, File jar) {
     String id = jar.getName();
     String version = DEFAULT_VERSION;
     String scope = DEFAULT_SCOPE;
@@ -392,7 +392,7 @@ class AndroidSupport {
     dependencies.add(projectDependency);
   }
 
-  private Map<String, Set<File>> getAndroidSources(ProductFlavorContainer defaultConfig) {
+  private static Map<String, Set<File>> getAndroidSources(ProductFlavorContainer defaultConfig) {
 
     Map<String, Set<File>> sources = new HashMap<>();
     ProductFlavor productFlavor = defaultConfig.getProductFlavor();

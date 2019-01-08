@@ -41,7 +41,7 @@ public class ParameterNamesIndexer {
 
   private ParameterNamesIndexer() {}
 
-  public static void main(String args[]) throws Exception {
+  public static void main(String[] args) throws Exception {
     ParameterNamesIndexer parameterNamesIndexer = new ParameterNamesIndexer();
     File srcZip = new File(System.getProperty("java.home"), "../src.zip");
     parameterNamesIndexer.createIndex(srcZip);
@@ -55,7 +55,7 @@ public class ParameterNamesIndexer {
     Serializer.writeObjectToFile(file, mpn);
   }
 
-  private boolean ignorePackage(String target) {
+  private static boolean ignorePackage(String target) {
     for (String pkg : ParameterNamesIndexer.filterPackage) {
       if (target.startsWith(pkg)) {
         return true;

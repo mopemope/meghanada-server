@@ -27,7 +27,7 @@ public final class ClassName {
     if (typeIndex >= 0) {
       final String fst = name.substring(0, typeIndex);
       if (typeLastIndex > typeIndex) {
-        final String sec = name.substring(typeLastIndex + 1, name.length());
+        final String sec = name.substring(typeLastIndex + 1);
         name = fst + sec;
       } else {
         name = fst;

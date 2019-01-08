@@ -884,15 +884,15 @@ public class Session {
   }
 
   public void killRunningProcess() {
-    getCurrentProject().killRunningProcess();
+    currentProject.killRunningProcess();
   }
 
-  public Optional<SearchResults> searchEverywhere(final String q) {
+  public static Optional<SearchResults> searchEverywhere(final String q) {
     return IndexDatabase.getInstance().search(q);
   }
 
   public String showProject() {
-    return getCurrentProject().toString();
+    return currentProject.toString();
   }
 
   @Override

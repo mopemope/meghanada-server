@@ -571,7 +571,7 @@ public abstract class Project implements Serializable, Storable {
     return process.getInputStream();
   }
 
-  private long getPID(Process process) {
+  private static long getPID(Process process) {
     long pid = -1;
     try {
       if (process.getClass().getName().equals("java.lang.UNIXProcess")) {
@@ -963,7 +963,7 @@ public abstract class Project implements Serializable, Storable {
     org.apache.commons.io.FileUtils.deleteDirectory(projectSettingDir);
   }
 
-  private Optional<Properties> readFormatPropertiesFromFile() {
+  private static Optional<Properties> readFormatPropertiesFromFile() {
     final String val = System.getProperty(FORMATTER_FILE_KEY);
     if (nonNull(val)) {
       final File file = new File(val);
@@ -986,7 +986,7 @@ public abstract class Project implements Serializable, Storable {
     if (this.formatProperties != null) {
       return Optional.of(this.formatProperties);
     }
-    final Optional<Properties> properties = this.readFormatPropertiesFromFile();
+    final Optional<Properties> properties = Project.readFormatPropertiesFromFile();
     return properties.map(
         p -> {
           // merge

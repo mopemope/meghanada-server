@@ -37,13 +37,13 @@ public class JavaImportCompletion {
 
   private List<SearchFunction> createFunctions() {
     List<SearchFunction> list = new ArrayList<>(4);
-    list.add(this::searchMethodCall);
-    list.add(this::searchClassOrInterface);
-    list.add(this::searchFieldAndMethods);
+    list.add(JavaImportCompletion::searchMethodCall);
+    list.add(JavaImportCompletion::searchClassOrInterface);
+    list.add(JavaImportCompletion::searchFieldAndMethods);
     return list;
   }
 
-  private Optional<Map<String, List<String>>> searchFieldAndMethods(
+  private static Optional<Map<String, List<String>>> searchFieldAndMethods(
       Source source, Integer line, Integer col, String name) {
     List<String> results =
         IndexDatabase.getInstance()
@@ -63,7 +63,7 @@ public class JavaImportCompletion {
     return Optional.of(m);
   }
 
-  private Optional<Map<String, List<String>>> searchMethodCall(
+  private static Optional<Map<String, List<String>>> searchMethodCall(
       Source source, Integer line, Integer col, String symbol) {
     Optional<MethodCall> methodCall = source.getMethodCall(line, col, true);
     Optional<List<String>> optionalList =
@@ -99,7 +99,7 @@ public class JavaImportCompletion {
     return Optional.empty();
   }
 
-  private Optional<Map<String, List<String>>> searchClassOrInterface(
+  private static Optional<Map<String, List<String>>> searchClassOrInterface(
       final Source source, final Integer line, final Integer col, final String symbol) {
     CachedASMReflector reflector = CachedASMReflector.getInstance();
     String packageName = source.getPackageName();

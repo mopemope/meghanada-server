@@ -140,17 +140,17 @@ public class IndexDatabase {
     }
   }
 
-  public void requestIndex(final SearchIndexable i) {
+  public static void requestIndex(final SearchIndexable i) {
     final IndexEvent event = new IndexEvent(i);
     SystemEventBus.getInstance().getEventBus().post(event);
   }
 
-  public void requestIndex(final SearchIndexable i, final Consumer<IndexEvent> c) {
+  public static void requestIndex(final SearchIndexable i, final Consumer<IndexEvent> c) {
     final IndexEvent event = new IndexEvent(i, c);
     SystemEventBus.getInstance().getEventBus().post(event);
   }
 
-  public void requestIndex(final List<SearchIndexable> i) {
+  public static void requestIndex(final List<SearchIndexable> i) {
     final IndexEvent event = new IndexEvent(i);
     SystemEventBus.getInstance().getEventBus().post(event);
   }

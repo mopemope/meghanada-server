@@ -106,7 +106,7 @@ public class CacheEventSubscriber extends AbstractSubscriber {
     this.sessionEventBus.requestIdleMonitor();
   }
 
-  private boolean cleanUnusedSource(Project project) {
+  private static boolean cleanUnusedSource(Project project) {
     return ProjectDatabaseHelper.deleteUnunsedSource(project);
   }
 
@@ -130,7 +130,7 @@ public class CacheEventSubscriber extends AbstractSubscriber {
   }
 
   @SuppressWarnings("CheckReturnValue")
-  private void createClassCache(String name) {
+  private static void createClassCache(String name) {
     final CachedASMReflector reflector = CachedASMReflector.getInstance();
     final GlobalCache globalCache = GlobalCache.getInstance();
     reflector

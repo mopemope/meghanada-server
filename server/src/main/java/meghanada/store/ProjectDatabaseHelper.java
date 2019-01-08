@@ -407,10 +407,7 @@ public class ProjectDatabaseHelper {
 
           Long old = (Long) entity.getProperty("lastUpdate");
           Long now = Instant.now().getEpochSecond();
-          if ((now - old) > getIndexTTL()) {
-            return false;
-          }
-          return true;
+          return (now - old) <= indexTTL;
         });
   }
 

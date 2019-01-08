@@ -88,7 +88,7 @@ public class EclipseProject extends Project {
 
             File file = new File(path);
             String code = getArtifactCode(path);
-            String version = this.getArtifactVersion(path);
+            String version = EclipseProject.getArtifactVersion(path);
             ProjectDependency.Type type = ProjectDependency.getFileType(file);
             ProjectDependency dependency =
                 new ProjectDependency(code, "COMPILE", version, file, type);
@@ -106,10 +106,10 @@ public class EclipseProject extends Project {
     }
   }
 
-  private String getArtifactVersion(final String path) {
+  private static String getArtifactVersion(final String path) {
     File file = new File(path);
     String name = file.getName();
-    int i = name.lastIndexOf("-");
+    int i = name.lastIndexOf('-');
     if (i > -1) {
       int length = name.length();
       return name.substring(i + 1, length - 4);

@@ -56,7 +56,7 @@ class MemberCacheLoader extends CacheLoader<String, List<MemberDescriptor>>
     return null;
   }
 
-  private void storeMembers(final String fqcn, final List<MemberDescriptor> list) {
+  private static void storeMembers(final String fqcn, final List<MemberDescriptor> list) {
 
     final CachedASMReflector reflector = CachedASMReflector.getInstance();
     reflector
@@ -124,7 +124,7 @@ class MemberCacheLoader extends CacheLoader<String, List<MemberDescriptor>>
     return members;
   }
 
-  private List<MemberDescriptor> loadFromReflector(String fqcn) {
+  private static List<MemberDescriptor> loadFromReflector(String fqcn) {
     final String initName = ClassNameUtils.getSimpleName(fqcn);
     final ASMReflector asmReflector = ASMReflector.getInstance();
     Map<String, ClassIndex> index = CachedASMReflector.getInstance().getGlobalClassIndex();

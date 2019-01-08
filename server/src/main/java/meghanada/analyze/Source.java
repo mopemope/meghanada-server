@@ -343,7 +343,7 @@ public class Source implements Serializable, Storable, SearchIndexable {
     return Optional.empty();
   }
 
-  private TypeScope getTypeScope(int line, List<ClassScope> classScopes) {
+  private static TypeScope getTypeScope(int line, List<ClassScope> classScopes) {
     for (ClassScope cs : classScopes) {
       if (cs.contains(line)) {
         if (cs.classScopes.size() > 0) {
@@ -630,7 +630,7 @@ public class Source implements Serializable, Storable, SearchIndexable {
 
   public boolean addImportIfAbsent(final String fqcn) {
 
-    int i = fqcn.indexOf("#");
+    int i = fqcn.indexOf('#');
     if (i > 0) {
       // static import
       List<String> imps = Splitter.on("#").splitToList(fqcn);
@@ -745,7 +745,7 @@ public class Source implements Serializable, Storable, SearchIndexable {
     entity.setProperty("fqcn", this.getFQCN());
   }
 
-  private Set<ClassScope> getAllClassScopes(ClassScope classScope) {
+  private static Set<ClassScope> getAllClassScopes(ClassScope classScope) {
     Set<ClassScope> set = new LinkedHashSet<>(8);
     for (ClassScope cs : classScope.getClassScopes()) {
       set.add(cs);
@@ -898,7 +898,7 @@ public class Source implements Serializable, Storable, SearchIndexable {
 
   private Document getBaseDocument(long lineNumber) {
     final Document doc = new Document();
-    doc.add(new Field(SearchIndexable.GROUP_ID, this.getIndexGroupId(), YES, NOT_ANALYZED));
+    doc.add(new Field(SearchIndexable.GROUP_ID, this.filePath, YES, NOT_ANALYZED));
     doc.add(new Field(SearchIndexable.LINE_NUMBER, Long.toString(lineNumber), YES, NOT_ANALYZED));
     return doc;
   }

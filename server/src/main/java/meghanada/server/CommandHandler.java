@@ -450,7 +450,7 @@ public class CommandHandler {
 
   public void searchEverywhere(final long id, final String q) {
     try {
-      final Optional<SearchResults> results = session.searchEverywhere(q);
+      final Optional<SearchResults> results = Session.searchEverywhere(q);
       if (results.isPresent()) {
         final String out = outputFormatter.searchEverywhere(id, results.get());
         writer.write(out);

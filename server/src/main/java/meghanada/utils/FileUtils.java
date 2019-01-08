@@ -416,7 +416,7 @@ public final class FileUtils {
     String path = f.getCanonicalPath();
     if (path.startsWith(rootPath)) {
       String part = path.substring(rootPath.length());
-      int i = part.lastIndexOf(".");
+      int i = part.lastIndexOf('.');
       if (i > 0) {
         part = part.substring(0, i);
       }

@@ -239,9 +239,7 @@ class POMParser {
       final File pom = new File(path, file);
       final boolean exists = pom.exists();
 
-      if (!loaded.contains(pom)) {
-        loaded.add(pom);
-      }
+      loaded.add(pom);
       if (exists) {
         return new FileModelSource(pom);
       }
@@ -264,9 +262,7 @@ class POMParser {
         if (!relativePath.endsWith("pom.xml")) {
           pom = new File(relativePath, "pom.xml");
         }
-        if (!loaded.contains(pom)) {
-          loaded.add(pom);
-        }
+        loaded.add(pom);
         if (pom.exists()) {
           return new FileModelSource(pom);
         }

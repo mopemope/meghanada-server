@@ -334,7 +334,7 @@ public class LocationSearcher {
   }
 
   public Optional<Location> searchSymbol(final String symbol) {
-    return Optional.<Location>ofNullable(this.getFQCNLocation(symbol));
+    return Optional.ofNullable(this.getFQCNLocation(symbol));
   }
 
   public Optional<Location> searchDeclarationLocation(

@@ -48,7 +48,7 @@ public class SourceCacheSubscriber {
       final long now = System.currentTimeMillis();
       if (now - this.lastCached > 10000) {
         if (this.importMemberCache) {
-          this.createImportMemberCache(source);
+          SourceCacheSubscriber.createImportMemberCache(source);
           this.lastCached = now;
         }
       }
@@ -96,7 +96,7 @@ public class SourceCacheSubscriber {
   }
 
   @SuppressWarnings("CheckReturnValue")
-  private void createImportMemberCache(final Source src) {
+  private static void createImportMemberCache(final Source src) {
     if (!src.hasCompileError) {
       try {
         final GlobalCache globalCache = GlobalCache.getInstance();

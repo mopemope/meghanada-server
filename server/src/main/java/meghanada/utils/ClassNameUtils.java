@@ -229,7 +229,7 @@ public class ClassNameUtils {
 
     final int idx = name.lastIndexOf('.');
     if (idx >= 0) {
-      return fqcn.substring(idx + 1, fqcn.length());
+      return fqcn.substring(idx + 1);
     }
     return fqcn;
   }
@@ -256,7 +256,7 @@ public class ClassNameUtils {
     if (tpIdx >= 0) {
       final int last = name.lastIndexOf('>');
       String fst = name.substring(0, tpIdx);
-      String sec = name.substring(last + 1, name.length());
+      String sec = name.substring(last + 1);
       name = fst + sec;
     }
     return name;
@@ -268,7 +268,7 @@ public class ClassNameUtils {
     if (idx >= 0) {
       final int last = name.lastIndexOf(']');
       String fst = name.substring(0, idx);
-      String sec = name.substring(last + 1, name.length());
+      String sec = name.substring(last + 1);
       name = fst + sec;
     }
     return name;

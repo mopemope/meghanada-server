@@ -47,6 +47,6 @@ public class IndexSubscriber {
                 })
             .collect(Collectors.toList());
 
-    IndexDatabase.getInstance().requestIndex(sources);
+    IndexDatabase.requestIndex(sources);
   }
 }

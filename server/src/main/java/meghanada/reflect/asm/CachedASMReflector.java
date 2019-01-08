@@ -484,7 +484,7 @@ public class CachedASMReflector {
             try {
               scanMembers(file, deque);
               MemberIndex mi = new MemberIndex(file.getCanonicalPath(), deque);
-              database.requestIndex(mi, event -> {});
+              IndexDatabase.requestIndex(mi, event -> {});
             } catch (IOException e) {
               throw new UncheckedIOException(e);
             }
@@ -504,7 +504,7 @@ public class CachedASMReflector {
                 ConcurrentLinkedDeque<MemberDescriptor> deque = new ConcurrentLinkedDeque<>();
                 scanMembers(file, deque);
                 final MemberIndex mi = new MemberIndex(file.getCanonicalPath(), deque);
-                database.requestIndex(
+                IndexDatabase.requestIndex(
                     mi,
                     event -> {
                       // store

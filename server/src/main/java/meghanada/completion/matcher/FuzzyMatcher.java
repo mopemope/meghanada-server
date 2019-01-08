@@ -120,7 +120,7 @@ public class FuzzyMatcher implements CompletionMatcher {
     return simpleComparator(this.query);
   }
 
-  public Comparator<CandidateUnit> simpleComparator(final String k) {
+  public static Comparator<CandidateUnit> simpleComparator(final String k) {
     return (o1, o2) -> {
       String name1 = o1.getName();
       String name2 = o2.getName();
@@ -130,7 +130,7 @@ public class FuzzyMatcher implements CompletionMatcher {
     };
   }
 
-  private Comparator<CandidateUnit> sourceComparator(final Source source, final String k) {
+  private static Comparator<CandidateUnit> sourceComparator(final Source source, final String k) {
     final Set<String> imps = new HashSet<>(source.getImportedClassMap().values());
     return (c1, c2) -> {
       String n1 = c1.getName();

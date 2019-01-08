@@ -79,7 +79,7 @@ public class FileSystemWatcher {
       while (!abort) {
         final WatchKey key = watchService.take();
 
-        this.handleEvent(this.watchKeyHolder, key);
+        FileSystemWatcher.handleEvent(this.watchKeyHolder, key);
 
         if (!key.reset()) {
           this.watchKeyHolder.remove(key);
@@ -95,7 +95,8 @@ public class FileSystemWatcher {
     }
   }
 
-  private void handleEvent(final WatchKeyHolder watchKeys, final WatchKey key) throws IOException {
+  private static void handleEvent(final WatchKeyHolder watchKeys, final WatchKey key)
+      throws IOException {
     for (final WatchEvent<?> event : key.pollEvents()) {
       if (event.kind() == StandardWatchEventKinds.OVERFLOW) {
         continue;

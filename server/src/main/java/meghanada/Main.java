@@ -43,7 +43,7 @@ public class Main {
     return version;
   }
 
-  public static void main(String args[]) throws ParseException, IOException {
+  public static void main(String[] args) throws ParseException, IOException {
     final String version = getVersion();
     System.setProperty("meghanada-server.version", version);
 

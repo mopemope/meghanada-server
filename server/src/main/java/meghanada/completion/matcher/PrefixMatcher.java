@@ -68,7 +68,7 @@ public class PrefixMatcher implements CompletionMatcher {
     return simpleComparator(this.query);
   }
 
-  private Comparator<CandidateUnit> sourceComparator(final Source source, final String k) {
+  private static Comparator<CandidateUnit> sourceComparator(final Source source, final String k) {
     final Set<String> imps = new HashSet<>(source.getImportedClassMap().values());
     return (c1, c2) -> {
       String n1 = c1.getName();
@@ -99,7 +99,7 @@ public class PrefixMatcher implements CompletionMatcher {
     };
   }
 
-  private Comparator<CandidateUnit> simpleComparator(final String k) {
+  private static Comparator<CandidateUnit> simpleComparator(final String k) {
     return (c1, c2) -> {
       String o1 = c1.getName();
       String o2 = c2.getName();

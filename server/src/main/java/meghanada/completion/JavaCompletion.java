@@ -707,7 +707,7 @@ public class JavaCompletion {
     final int idx = searchWord.lastIndexOf(':');
     final CachedASMReflector reflector = CachedASMReflector.getInstance();
     if (idx > 0) {
-      final String classPrefix = searchWord.substring(idx + 1, searchWord.length());
+      final String classPrefix = searchWord.substring(idx + 1);
       // use class completion matcher
       CompletionMatcher matcher = getClassCompletionMatcher(classPrefix);
       return reflector
@@ -833,7 +833,7 @@ public class JavaCompletion {
     // list all classes
     final int idx = searchWord.lastIndexOf(':');
     if (idx > 0) {
-      final String classPrefix = searchWord.substring(idx + 1, searchWord.length());
+      final String classPrefix = searchWord.substring(idx + 1);
       CachedASMReflector reflector = CachedASMReflector.getInstance();
       // use class completion matcher
       CompletionMatcher matcher = getClassCompletionMatcher(classPrefix);
@@ -1000,7 +1000,7 @@ public class JavaCompletion {
     // chained method completion
     if (classIdx > 0) {
       // return methods of prefix class
-      String fqcn = searchWord.substring(classIdx + 1, searchWord.length());
+      String fqcn = searchWord.substring(classIdx + 1);
       fqcn = StringUtils.replace(fqcn, ClassNameUtils.CAPTURE_OF, "");
       return reflect(pkg, fqcn, "")
           .stream()

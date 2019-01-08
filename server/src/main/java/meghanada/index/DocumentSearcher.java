@@ -58,11 +58,11 @@ public class DocumentSearcher implements AutoCloseable {
     this(environment, false);
   }
 
-  private Analyzer createAnalyzer() {
+  private static Analyzer createAnalyzer() {
     return new StandardAnalyzer(LUCENE_VERSION);
   }
 
-  private IndexWriterConfig createIndexConfig(Analyzer analyzer) {
+  private static IndexWriterConfig createIndexConfig(Analyzer analyzer) {
     IndexWriterConfig config = new IndexWriterConfig(LUCENE_VERSION, analyzer);
     config.setMergeScheduler(new SerialMergeScheduler());
     config.setMaxThreadStates(2);
@@ -78,7 +78,7 @@ public class DocumentSearcher implements AutoCloseable {
     return indexWriter;
   }
 
-  private IndexReader createIndexReader(Directory directory) throws IOException {
+  private static IndexReader createIndexReader(Directory directory) throws IOException {
     return IndexReader.open(directory);
   }
 
@@ -183,7 +183,7 @@ public class DocumentSearcher implements AutoCloseable {
           try {
             IndexWriter indexWriter =
                 this.createIndexWriter(this.directory, createIndexConfig(this.analyzer));
-            IndexReader indexReader = this.createIndexReader(this.directory);
+            IndexReader indexReader = DocumentSearcher.createIndexReader(this.directory);
             IndexSearcher indexSearcher = this.createIndexSearcher(indexReader);
             return fn.get();
           } catch (IOException ex) {
@@ -201,7 +201,7 @@ public class DocumentSearcher implements AutoCloseable {
     return this.environment.computeInReadonlyTransaction(
         txn -> {
           try {
-            final IndexReader indexReader = this.createIndexReader(this.directory);
+            final IndexReader indexReader = DocumentSearcher.createIndexReader(this.directory);
             IndexSearcher searcher = this.createIndexSearcher(indexReader);
             return fn.get();
           } catch (IOException ex) {
