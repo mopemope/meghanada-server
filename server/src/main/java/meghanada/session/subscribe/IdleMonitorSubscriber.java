@@ -13,6 +13,7 @@ import java.util.Deque;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import meghanada.cache.GlobalCache;
+import meghanada.config.Config;
 import meghanada.event.SystemEventBus;
 import meghanada.reflect.MemberDescriptor;
 import meghanada.reflect.asm.CachedASMReflector;
@@ -24,7 +25,7 @@ import org.apache.logging.log4j.Logger;
 public class IdleMonitorSubscriber extends AbstractSubscriber {
 
   private static final Logger log = LogManager.getLogger(IdleMonitorSubscriber.class);
-  private static final double CPU_LIMIT = 0.3;
+  private static final double CPU_LIMIT = 0.2;
   private static final long IDLE_CHECK_INTERVAL = 1000;
   private static final long WARMUP_INTERVAL = 15000;
 
@@ -58,19 +59,22 @@ public class IdleMonitorSubscriber extends AbstractSubscriber {
       log.catching(e);
       throw new RuntimeException(e);
     }
-
+    Config config = Config.load();
+    this.idleTime = config.getIdleCacheInterval();
+    if (this.idleTime < 1) {
+      this.idleTime = 1;
+    }
     while (this.started) {
       try {
         Thread.sleep(IDLE_CHECK_INTERVAL);
+        long now = Instant.now().getEpochSecond();
+        if (this.isIdle(now)) {
+          SessionEventBus.IdleEvent idleEvent = createIdleEvent(event.session, this.idleTimer);
+          SystemEventBus.getInstance().getEventBus().post(idleEvent);
+          this.idleTimer.lastRun = now + this.idleTime + 1;
+        }
       } catch (InterruptedException e) {
         log.catching(e);
-        throw new RuntimeException(e);
-      }
-      long now = Instant.now().getEpochSecond();
-      if (this.isIdle(now)) {
-        SessionEventBus.IdleEvent idleEvent = createIdleEvent(event.session, this.idleTimer);
-        SystemEventBus.getInstance().getEventBus().post(idleEvent);
-        this.idleTimer.lastRun = now + this.idleTime + 1;
       }
     }
   }
@@ -126,7 +130,7 @@ public class IdleMonitorSubscriber extends AbstractSubscriber {
               / ((double) (systemTime - this.lastSystemTime));
       this.lastSystemTime = systemTime;
       this.lastProcessCpuTime = processCpuTime;
-      return cpuUsage / this.availableProcessors;
+      return cpuUsage;
     }
 
     private void baselineCounters() {
