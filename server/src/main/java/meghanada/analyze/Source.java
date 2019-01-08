@@ -74,11 +74,11 @@ public class Source implements Serializable, Storable, SearchIndexable {
   public final Set<String> usingClasses = new HashSet<>(8);
   public final String filePath;
   public final Map<Long, Annotation> annotationMap = new HashMap<>(8);
-  final Set<String> unused = new HashSet<>(8);
-  final List<ClassScope> classScopes = new ArrayList<>(1);
-  final transient Map<Long, List<IndexableWord>> indexWords = new HashMap<>(4);
-  private final Set<String> unknown = new HashSet<>(8);
-  private final Deque<ClassScope> currentClassScope = new ArrayDeque<>(1);
+  public final Set<String> unused = new HashSet<>(8);
+  public final List<ClassScope> classScopes = new ArrayList<>(1);
+  public final transient Map<Long, List<IndexableWord>> indexWords = new HashMap<>(4);
+  public final Set<String> unknown = new HashSet<>(8);
+  public final Deque<ClassScope> currentClassScope = new ArrayDeque<>(1);
 
   // temp flag
   public boolean hasCompileError;

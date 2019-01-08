@@ -32,10 +32,10 @@ public class JavaImportCompletion {
 
   public JavaImportCompletion(Project project) {
     this.project = project;
-    this.functions = this.createFunctions();
+    this.functions = JavaImportCompletion.createFunctions();
   }
 
-  private List<SearchFunction> createFunctions() {
+  private static List<SearchFunction> createFunctions() {
     List<SearchFunction> list = new ArrayList<>(4);
     list.add(JavaImportCompletion::searchMethodCall);
     list.add(JavaImportCompletion::searchClassOrInterface);

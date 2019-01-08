@@ -19,24 +19,23 @@ class FieldSignatureVisitor extends SignatureVisitor {
 
   private static final Logger log = LogManager.getLogger(FieldSignatureVisitor.class);
 
-  private final List<String> classTypeParameters;
-  private final String name;
-  private final Deque<TypeInfo> currentType = new ArrayDeque<>(2);
+  final List<String> classTypeParameters;
+  final String name;
+  final Deque<TypeInfo> currentType = new ArrayDeque<>(2);
   // isField typeParameters
-  private Set<String> typeParameters;
+  Set<String> typeParameters;
   // main type
-  private TypeInfo typeInfo;
-  private boolean isInstance;
-  private boolean isSuper;
-  private boolean isExtends;
-  private boolean holdArray;
-
-  private Map<String, String> typeMap;
+  TypeInfo typeInfo;
+  boolean isInstance;
+  boolean isSuper;
+  boolean isExtends;
+  boolean holdArray;
+  Map<String, String> typeMap;
 
   // formal
-  private boolean isClassBound;
-  private boolean isInterfaceBound;
-  private FieldSignatureVisitor parent;
+  boolean isClassBound;
+  boolean isInterfaceBound;
+  FieldSignatureVisitor parent;
 
   FieldSignatureVisitor(final String name, final List<String> classTypeParameters) {
     super(Opcodes.ASM5);

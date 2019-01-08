@@ -27,11 +27,11 @@ class ClassAnalyzeVisitor extends ClassVisitor {
 
   final String className;
   final List<MemberDescriptor> members;
-  private final boolean classOnly;
-  private final boolean includePrivate;
+  final boolean classOnly;
+  final boolean includePrivate;
   List<String> classTypeParameters;
-  private ClassIndex classIndex;
-  private String classNameWithType;
+  ClassIndex classIndex;
+  String classNameWithType;
 
   ClassAnalyzeVisitor(
       final String className, final boolean classOnly, final boolean includePrivate) {

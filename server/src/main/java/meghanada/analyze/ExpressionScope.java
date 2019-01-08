@@ -12,8 +12,8 @@ public class ExpressionScope extends Scope {
   private static final Logger log = LogManager.getLogger(ExpressionScope.class);
   private static final long serialVersionUID = 969635826413488177L;
 
-  private AccessSymbol expressionReturn;
-  boolean isField;
+  public AccessSymbol expressionReturn;
+  public boolean isField;
   public Scope parent;
   public String modifier;
   public String declaringClass;

@@ -6,7 +6,7 @@ import meghanada.utils.ClassNameUtils;
 
 class TypeInfo {
 
-  private final String fqcn;
+  final String fqcn;
   String name;
   List<TypeInfo> typeParameters;
   boolean isArray;

@@ -18,13 +18,13 @@ public class MethodScope extends BlockScope {
 
   private static final Logger log = LogManager.getLogger(MethodScope.class);
   private static final long serialVersionUID = -5255555840551352713L;
-  protected final String declaringClass;
-  private final List<String> parameters = new ArrayList<>(3);
+  public final String declaringClass;
+  public final List<String> parameters = new ArrayList<>(3);
   public boolean vararg;
   public String modifier;
-  protected String name;
-  protected String returnType;
-  protected Range nameRange;
+  public String name;
+  public String returnType;
+  public Range nameRange;
 
   private boolean isConstructor;
   private List<String> exceptions = new ArrayList<>();

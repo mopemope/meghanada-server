@@ -15,12 +15,12 @@ class FieldAnalyzeVisitor extends FieldVisitor {
 
   private static final Logger log = LogManager.getLogger(FieldAnalyzeVisitor.class);
 
-  private final ClassAnalyzeVisitor classAnalyzeVisitor;
-  private final int access;
-  private final String name;
-  private final String fieldSignature;
-  private FieldSignatureVisitor fieldSignatureVisitor;
-  private Map<String, String> typeMap;
+  final ClassAnalyzeVisitor classAnalyzeVisitor;
+  final int access;
+  final String name;
+  final String fieldSignature;
+  FieldSignatureVisitor fieldSignatureVisitor;
+  Map<String, String> typeMap;
 
   FieldAnalyzeVisitor(
       ClassAnalyzeVisitor classAnalyzeVisitor, int access, String name, String desc, String sig) {

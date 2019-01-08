@@ -23,18 +23,18 @@ public class ClassIndex implements CandidateUnit, Cloneable, Serializable, Stora
   private static final long serialVersionUID = 4833311903131990013L;
 
   // fqcn
-  private final String declaration;
-  private final List<String> typeParameters;
-  private final List<String> supers;
+  public final String declaration;
+  public final List<String> typeParameters;
+  public final List<String> supers;
   public transient boolean loaded;
   public transient boolean isAnonymous;
-  private boolean isInterface;
-  private boolean isAnnotation;
-  private boolean functional;
-  private String name;
-  private String filePath;
-  private MemberType memberType = MemberType.CLASS;
-  private EntityId entityID;
+  public boolean isInterface;
+  public boolean isAnnotation;
+  public boolean functional;
+  public String name;
+  public String filePath;
+  public MemberType memberType = MemberType.CLASS;
+  public EntityId entityID;
 
   public ClassIndex(
       final String declaration, final List<String> typeParameters, final List<String> supers) {

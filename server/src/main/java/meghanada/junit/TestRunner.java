@@ -138,7 +138,8 @@ public class TestRunner {
     System.out.println(Strings.repeat("-", 80));
   }
 
-  private List<LauncherDiscoveryRequest> collectTests(String arg) throws ClassNotFoundException {
+  private static List<LauncherDiscoveryRequest> collectTests(String arg)
+      throws ClassNotFoundException {
     List<LauncherDiscoveryRequest> requests = new ArrayList<>(1);
 
     if (arg.contains("#")) {

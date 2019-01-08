@@ -32,22 +32,23 @@ class MethodAnalyzeVisitor extends MethodVisitor {
   private static final String CONSTRUCTOR = "<init>";
   private static final String SEP = ", ";
   private static final Logger log = LogManager.getLogger(MethodAnalyzeVisitor.class);
-  private final ClassAnalyzeVisitor classAnalyzeVisitor;
-  private final int access;
-  private final String name;
-  private final String[] exceptions;
-  private final String methodSignature;
-  private final boolean interfaceMethod;
-  private final int[] lvtSlotIndex;
-  private final boolean hasVarargs;
 
-  private boolean hasDefault;
-  private String[] parameterNames;
-  private List<TypeInfo> parameterTypes;
-  private Set<String> typeParameters;
-  private TypeInfo formalType;
-  private TypeInfo returnType;
-  private Map<String, String> typeMap;
+  final ClassAnalyzeVisitor classAnalyzeVisitor;
+  final int access;
+  final String name;
+  final String[] exceptions;
+  final String methodSignature;
+  final boolean interfaceMethod;
+  final int[] lvtSlotIndex;
+  final boolean hasVarargs;
+
+  boolean hasDefault;
+  String[] parameterNames;
+  List<TypeInfo> parameterTypes;
+  Set<String> typeParameters;
+  TypeInfo formalType;
+  TypeInfo returnType;
+  Map<String, String> typeMap;
 
   MethodAnalyzeVisitor(
       final ClassAnalyzeVisitor classAnalyzeVisitor,

@@ -8,6 +8,7 @@ import meghanada.utils.ClassNameUtils;
 public class MethodParameter implements Serializable {
 
   private static final long serialVersionUID = -5993679147139308884L;
+
   public final String type;
   public final String name;
   public final boolean varargs;

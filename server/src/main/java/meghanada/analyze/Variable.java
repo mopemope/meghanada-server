@@ -21,7 +21,6 @@ public class Variable implements Serializable, Symbol {
   public int pos;
   public Range range;
   public String fqcn;
-
   public boolean isDef;
   public boolean isParameter;
   public boolean isField;

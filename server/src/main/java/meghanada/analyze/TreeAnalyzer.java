@@ -185,18 +185,18 @@ public class TreeAnalyzer {
 
   private static void analyzeLiteral(
       SourceContext context, JCTree.JCLiteral literal, int preferredPos, int endPos) {
-    Source src = context.getSource();
+    Source src = context.source;
     Tree.Kind kind = literal.getKind();
     Object value = literal.getValue();
     Range range = Range.create(src, preferredPos, endPos);
     Variable variable = new Variable(kind.toString(), preferredPos, range);
     if (nonNull(value)) {
       variable.fqcn = value.getClass().getCanonicalName();
-      variable.argumentIndex = context.getArgumentIndex();
+      variable.argumentIndex = context.argumentIndex;
       context.setArgumentFQCN(variable.fqcn);
     } else {
       variable.fqcn = "<null>";
-      variable.argumentIndex = context.getArgumentIndex();
+      variable.argumentIndex = context.argumentIndex;
       context.setArgumentFQCN(variable.fqcn);
     }
     src.getCurrentScope()
@@ -434,10 +434,10 @@ public class TreeAnalyzer {
 
   private static void analyzeCompilationUnitTree(SourceContext context, CompilationUnitTree cut) {
 
-    Source src = context.getSource();
+    Source src = context.source;
     log.trace("file={}", src.getFile());
     EndPosTable endPosTable = ((JCTree.JCCompilationUnit) cut).endPositions;
-    context.setEndPosTable(endPosTable);
+    context.endPosTable = endPosTable;
     analyzePackageAnnotations(cut, src, endPosTable);
     analyzePackageName(cut, src, endPosTable);
     analyzeImports(cut, src, endPosTable);
@@ -542,8 +542,8 @@ public class TreeAnalyzer {
 
   private static void analyzeTopLevelClass(SourceContext context, JCTree.JCClassDecl classDecl)
       throws IOException {
-    Source src = context.getSource();
-    EndPosTable endPosTable = context.getEndPosTable();
+    Source src = context.source;
+    EndPosTable endPosTable = context.endPosTable;
 
     Tree.Kind classDeclKind = classDecl.getKind();
 
@@ -597,8 +597,8 @@ public class TreeAnalyzer {
 
   private static void analyzeAnnotations(
       final SourceContext sc, final List<JCTree.JCAnnotation> annotations, final BlockScope bs) {
-    Source src = sc.getSource();
-    EndPosTable endPosTable = sc.getEndPosTable();
+    Source src = sc.source;
+    EndPosTable endPosTable = sc.endPosTable;
     for (JCTree.JCAnnotation anno : annotations) {
       analyzeAnnotationTree(src, endPosTable, anno);
     }
@@ -629,7 +629,7 @@ public class TreeAnalyzer {
     }
     JCDiagnostic.DiagnosticPosition pos = tree.pos();
 
-    EndPosTable endPosTable = context.getEndPosTable();
+    EndPosTable endPosTable = context.endPosTable;
     int startPos = pos.getStartPosition();
     int preferredPos = pos.getPreferredPosition();
     int endPos = pos.getEndPosition(endPosTable);
@@ -658,8 +658,8 @@ public class TreeAnalyzer {
       JCTree.JCTypeCast cast = (JCTree.JCTypeCast) tree;
       JCTree.JCExpression expression = cast.getExpression();
       analyzeParsedTree(context, expression);
-      if (context.isArgument()) {
-        getExpressionType(context.getSource(), cast).ifPresent(context::setArgumentFQCN);
+      if (context.argument) {
+        getExpressionType(context.source, cast).ifPresent(context::setArgumentFQCN);
       }
 
     } else if (tree instanceof JCTree.JCMethodDecl) {
@@ -673,7 +673,7 @@ public class TreeAnalyzer {
     } else if (tree instanceof JCTree.JCBlock) {
 
       JCTree.JCBlock block = (JCTree.JCBlock) tree;
-      int argumentIndex = context.getArgumentIndex();
+      int argumentIndex = context.argumentIndex;
       context.setArgumentIndex(-1);
       analyzeSimpleStatements(context, block.getStatements());
       context.setArgumentIndex(argumentIndex);
@@ -777,7 +777,7 @@ public class TreeAnalyzer {
 
       if (endPos > 0) {
 
-        Source source = context.getSource();
+        Source source = context.source;
         Optional<BlockScope> cb = source.getCurrentBlock();
         cb.ifPresent(
             bs -> {
@@ -813,7 +813,7 @@ public class TreeAnalyzer {
       analyzeSimpleExpressions(context, dimensions);
 
       if (nonNull(newArray.type)) {
-        getTypeString(context.getSource(), newArray.type).ifPresent(context::setArgumentFQCN);
+        getTypeString(context.source, newArray.type).ifPresent(context::setArgumentFQCN);
       }
     } else if (tree instanceof JCTree.JCPrimitiveTypeTree) {
       // skip
@@ -849,7 +849,7 @@ public class TreeAnalyzer {
       analyzeParsedTree(context, typeTree);
 
     } else if (tree instanceof JCTree.JCMemberReference) {
-      Source src = context.getSource();
+      Source src = context.source;
       JCTree.JCMemberReference memberReference = (JCTree.JCMemberReference) tree;
       JCTree.JCExpression expression = memberReference.getQualifierExpression();
       com.sun.tools.javac.util.Name name = memberReference.getName();
@@ -957,7 +957,7 @@ public class TreeAnalyzer {
       JCTree.JCAssignOp assignOp = (JCTree.JCAssignOp) tree;
       JCTree.JCExpression lhs = assignOp.getVariable();
       JCTree.JCExpression rhs = assignOp.getExpression();
-      Source source = context.getSource();
+      Source source = context.source;
       Optional<BlockScope> cb = source.getCurrentBlock();
       cb.ifPresent(
           bs -> {
@@ -977,7 +977,7 @@ public class TreeAnalyzer {
           });
 
     } else if (tree instanceof JCTree.JCAnnotation) {
-      Source src = context.getSource();
+      Source src = context.source;
       JCTree.JCAnnotation anno = (JCTree.JCAnnotation) tree;
       List<JCTree.JCExpression> arguments = anno.getArguments();
       Range range = Range.create(src, startPos + 1, endPos);
@@ -1006,7 +1006,7 @@ public class TreeAnalyzer {
 
     } else {
 
-      Source src = context.getSource();
+      Source src = context.source;
       log.warn(
           "@@ unknown or broken tree class={} expr={} filePath={}",
           tree.getClass(),
@@ -1050,7 +1050,7 @@ public class TreeAnalyzer {
       SourceContext context, JCTree.JCVariableDecl vd, int preferredPos, int endPos)
       throws IOException {
 
-    Source src = context.getSource();
+    Source src = context.source;
     Name name = vd.getName();
     JCTree.JCExpression initializer = vd.getInitializer();
     JCTree.JCExpression nameExpression = vd.getNameExpression();
@@ -1095,7 +1095,7 @@ public class TreeAnalyzer {
                 if (vd.getTag().equals(JCTree.Tag.VARDEF)) {
                   variable.isDef = true;
                 }
-                if (context.isParameter()) {
+                if (context.parameter) {
                   variable.isParameter = true;
                 }
 
@@ -1164,7 +1164,7 @@ public class TreeAnalyzer {
       SourceContext context, final JCTree.JCMethodDecl md, int preferredPos, int endPos)
       throws IOException {
 
-    Source src = context.getSource();
+    Source src = context.source;
     String name = md.getName().toString();
     JCTree.JCModifiers modifiers = md.getModifiers();
     final String methodModifier = parseModifiers(context, modifiers);
@@ -1206,7 +1206,7 @@ public class TreeAnalyzer {
                 scope.returnType = TreeAnalyzer.markFQCN(src, returnFQCN);
                 analyzeAnnotations(context, modifiers.getAnnotations(), scope);
                 // check method parameter
-                context.setParameter(true);
+                context.parameter = true;
 
                 for (JCTree.JCVariableDecl vd : md.getParameters()) {
                   String s = vd.toString();
@@ -1216,7 +1216,7 @@ public class TreeAnalyzer {
                   analyzeParsedTree(context, vd);
                 }
 
-                context.setParameter(false);
+                context.parameter = false;
 
                 // set exceptions
                 List<JCTree.JCExpression> throwsList = md.getThrows();
@@ -1330,13 +1330,13 @@ public class TreeAnalyzer {
       SourceContext context, JCTree.JCClassDecl classDecl, int startPos, int endPos)
       throws IOException {
     // innerClass
-    Source src = context.getSource();
+    Source src = context.source;
     Range range = Range.create(src, startPos, endPos);
     Name simpleName = classDecl.getSimpleName();
 
     JCTree.JCModifiers modifiers = classDecl.getModifiers();
     int modPos = modifiers.pos;
-    int modEndPos = context.getEndPosTable().getEndPos(modifiers);
+    int modEndPos = context.endPosTable.getEndPos(modifiers);
     int modLen = 0;
     if (modEndPos > 0) {
       modLen = modEndPos - modPos + 1;
@@ -1389,7 +1389,7 @@ public class TreeAnalyzer {
       SourceContext context, JCTree.JCFieldAccess fieldAccess, int preferredPos, int endPos)
       throws IOException {
 
-    Source src = context.getSource();
+    Source src = context.source;
     Symbol sym = fieldAccess.sym;
     JCTree.JCExpression selected = fieldAccess.getExpression();
     analyzeParsedTree(context, selected);
@@ -1519,7 +1519,7 @@ public class TreeAnalyzer {
     if (selected instanceof JCTree.JCIdent) {
       JCTree.JCIdent ident = (JCTree.JCIdent) selected;
       int vStart = ident.getStartPosition();
-      int vEnd = ident.getEndPosition(context.getEndPosTable());
+      int vEnd = ident.getEndPosition(context.endPosTable);
       Range vRange = Range.create(src, vStart, vEnd);
       Variable variable = new Variable(selectScope, ident.pos, vRange);
       variable.fqcn = fqcn;
@@ -1539,7 +1539,7 @@ public class TreeAnalyzer {
         .ifPresent(
             fqcn -> {
               as.returnType = TreeAnalyzer.markFQCN(src, fqcn);
-              as.argumentIndex = context.getArgumentIndex();
+              as.argumentIndex = context.argumentIndex;
               context.setArgumentFQCN(as.returnType);
             });
   }
@@ -1547,7 +1547,7 @@ public class TreeAnalyzer {
   private static void analyzeExpressionStatement(
       SourceContext context, JCTree.JCExpressionStatement exprStmt, int preferredPos, int endPos) {
 
-    Source src = context.getSource();
+    Source src = context.source;
     JCTree.JCExpression expression = exprStmt.getExpression();
     Tree.Kind expressionKind = expression.getKind();
     JCTree expressionTree = expression.getTree();
@@ -1671,7 +1671,7 @@ public class TreeAnalyzer {
     }
 
     Symbol sym = ident.sym;
-    Source src = context.getSource();
+    Source src = context.source;
     Range range = Range.create(src, preferredPos, endPos);
     if (nonNull(sym)) {
       Symbol owner = sym.owner;
@@ -1703,7 +1703,7 @@ public class TreeAnalyzer {
             .ifPresent(
                 fqcn -> {
                   variable.fqcn = TreeAnalyzer.markFQCN(src, fqcn);
-                  variable.argumentIndex = context.getArgumentIndex();
+                  variable.argumentIndex = context.argumentIndex;
                   context.setArgumentFQCN(variable.fqcn);
 
                   src.getCurrentScope()
@@ -1723,7 +1723,7 @@ public class TreeAnalyzer {
         String className = currentClass.get().name;
         if (ClassNameUtils.getSimpleName(className).equals(nm)) {
           variable.fqcn = TreeAnalyzer.markFQCN(src, className);
-          variable.argumentIndex = context.getArgumentIndex();
+          variable.argumentIndex = context.argumentIndex;
           context.setArgumentFQCN(variable.fqcn);
           src.getCurrentScope()
               .ifPresent(
@@ -1739,7 +1739,7 @@ public class TreeAnalyzer {
       if (nonNull(clazz)) {
         {
           variable.fqcn = TreeAnalyzer.markFQCN(src, clazz);
-          variable.argumentIndex = context.getArgumentIndex();
+          variable.argumentIndex = context.argumentIndex;
           context.setArgumentFQCN(variable.fqcn);
           src.getCurrentScope()
               .ifPresent(
@@ -1757,7 +1757,7 @@ public class TreeAnalyzer {
               String className = cs.name;
               if (ClassNameUtils.getSimpleName(className).equals(nm)) {
                 variable.fqcn = TreeAnalyzer.markFQCN(src, className);
-                variable.argumentIndex = context.getArgumentIndex();
+                variable.argumentIndex = context.argumentIndex;
                 context.setArgumentFQCN(variable.fqcn);
                 src.getCurrentScope()
                     .ifPresent(
@@ -1862,17 +1862,17 @@ public class TreeAnalyzer {
   private static void analyzeNewClass(
       SourceContext context, JCTree.JCNewClass newClass, int preferredPos, int endPos)
       throws IOException {
-    Source src = context.getSource();
-    EndPosTable endPosTable = context.getEndPosTable();
-    boolean isParameter = context.isParameter();
-    boolean isArgument = context.isArgument();
-    int argumentIndex = context.getArgumentIndex();
+    Source src = context.source;
+    EndPosTable endPosTable = context.endPosTable;
+    boolean isParameter = context.parameter;
+    boolean isArgument = context.argument;
+    int argumentIndex = context.argumentIndex;
 
     List<JCTree.JCExpression> argumentExpressions = newClass.getArguments();
     java.util.List<String> arguments = getArgumentsType(context, argumentExpressions);
 
-    context.setParameter(isParameter);
-    context.setArgument(isArgument);
+    context.parameter = isParameter;
+    context.argument = isArgument;
     context.setArgumentIndex(argumentIndex);
 
     JCTree.JCExpression identifier = newClass.getIdentifier();
@@ -1923,16 +1923,16 @@ public class TreeAnalyzer {
   private static java.util.List<String> getArgumentsType(
       SourceContext context, List<JCTree.JCExpression> arguments) throws IOException {
 
-    SourceContext newContext = new SourceContext(context.getSource(), context.getEndPosTable());
+    SourceContext newContext = new SourceContext(context.source, context.endPosTable);
     newContext.setArgumentIndex(0);
     try {
       java.util.List<String> result = new ArrayList<>(arguments.size());
       for (JCTree.JCExpression expression : arguments) {
-        newContext.setArgument(true);
+        newContext.argument = true;
         analyzeParsedTree(newContext, expression);
         newContext.incrArgumentIndex();
-        newContext.setArgument(false);
-        result.add(newContext.getArgumentFQCN());
+        newContext.argument = false;
+        result.add(newContext.argumentFQCN);
       }
       return result;
     } finally {
@@ -1948,16 +1948,16 @@ public class TreeAnalyzer {
       int endPos)
       throws IOException {
 
-    Source src = context.getSource();
-    EndPosTable endPosTable = context.getEndPosTable();
+    Source src = context.source;
+    EndPosTable endPosTable = context.endPosTable;
     Type returnType = methodInvocation.type;
 
-    boolean isParameter = context.isParameter();
-    int argumentIndex = context.getArgumentIndex();
+    boolean isParameter = context.parameter;
+    int argumentIndex = context.argumentIndex;
     List<JCTree.JCExpression> argumentExpressions = methodInvocation.getArguments();
     java.util.List<String> arguments = getArgumentsType(context, argumentExpressions);
 
-    context.setParameter(isParameter);
+    context.parameter = isParameter;
     context.setArgumentIndex(argumentIndex);
 
     JCTree.JCExpression methodSelect = methodInvocation.getMethodSelect();
@@ -2075,7 +2075,7 @@ public class TreeAnalyzer {
           String clazz = src.getImportedClassFQCN(nm, null);
           if (nonNull(clazz)) {
             methodCall.returnType = TreeAnalyzer.markFQCN(src, clazz);
-            methodCall.argumentIndex = context.getArgumentIndex();
+            methodCall.argumentIndex = context.argumentIndex;
             context.setArgumentFQCN(methodCall.returnType);
           } else {
             if (src.isReportUnknown()) {
@@ -2100,7 +2100,7 @@ public class TreeAnalyzer {
             .ifPresent(
                 fqcn -> {
                   methodCall.returnType = TreeAnalyzer.markFQCN(src, fqcn);
-                  methodCall.argumentIndex = context.getArgumentIndex();
+                  methodCall.argumentIndex = context.argumentIndex;
                   context.setArgumentFQCN(methodCall.returnType);
                 });
       }
@@ -2120,9 +2120,9 @@ public class TreeAnalyzer {
 
   private static void analyzeLambda(SourceContext context, JCTree.JCLambda lambda)
       throws IOException {
-    boolean isParameter = context.isParameter();
-    boolean isArgument = context.isArgument();
-    int argumentIndex = context.getArgumentIndex();
+    boolean isParameter = context.parameter;
+    boolean isArgument = context.argument;
+    int argumentIndex = context.argumentIndex;
 
     java.util.List<? extends VariableTree> parameters = lambda.getParameters();
     if (nonNull(parameters)) {
@@ -2139,14 +2139,14 @@ public class TreeAnalyzer {
       context.setArgumentIndex(argumentIndex);
     }
 
-    context.setParameter(isParameter);
+    context.parameter = isParameter;
     Type lambdaType = lambda.type;
     if (nonNull(lambdaType)) {
-      Source src = context.getSource();
+      Source src = context.source;
       getTypeString(src, lambdaType)
           .ifPresent(
               fqcn -> {
-                context.setArgument(isArgument);
+                context.argument = isArgument;
                 // TODO
                 context.setArgumentFQCN(fqcn);
               });

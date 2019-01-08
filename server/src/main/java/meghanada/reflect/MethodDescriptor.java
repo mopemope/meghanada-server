@@ -23,10 +23,10 @@ public class MethodDescriptor extends MemberDescriptor {
   private static final Logger log = LogManager.getLogger(MethodDescriptor.class);
   private static final long serialVersionUID = 2705480824413845391L;
 
-  private final List<MethodParameter> parameters;
+  public final List<MethodParameter> parameters;
   public String formalType;
   public boolean hasVarargs;
-  private String[] exceptions;
+  public String[] exceptions;
 
   public MethodDescriptor(
       final String declaringClass,

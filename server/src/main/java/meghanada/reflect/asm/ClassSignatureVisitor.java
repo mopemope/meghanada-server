@@ -22,11 +22,11 @@ class ClassSignatureVisitor extends SignatureVisitor {
   private final ClassInfo classInfo;
   private final boolean isInterface;
 
-  private boolean hasTypeParameter;
-  private boolean visitedSuper;
-  private boolean visitedInterface;
-  private char wildcard;
-  private ClassInfo current;
+  boolean hasTypeParameter;
+  boolean visitedSuper;
+  boolean visitedInterface;
+  char wildcard;
+  public ClassInfo current;
 
   ClassSignatureVisitor(String name, boolean isInterface) {
     super(Opcodes.ASM5);

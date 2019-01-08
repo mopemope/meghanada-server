@@ -8,9 +8,9 @@ public final class ClassName {
 
   private static final Logger log = LogManager.getLogger(ClassName.class);
 
-  private final String rawName;
-  private final int typeIndex;
-  private final int typeLastIndex;
+  public final String rawName;
+  public final int typeIndex;
+  public final int typeLastIndex;
 
   public ClassName(String name) {
     this.rawName = ClassNameUtils.vaArgsToArray(name);

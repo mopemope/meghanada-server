@@ -111,7 +111,7 @@ public class CacheEventSubscriber extends AbstractSubscriber {
   }
 
   @SuppressWarnings("CheckReturnValue")
-  private void createStandardClassCache() {
+  private static void createStandardClassCache() {
     final CachedASMReflector reflector = CachedASMReflector.getInstance();
     final GlobalCache globalCache = GlobalCache.getInstance();
     reflector

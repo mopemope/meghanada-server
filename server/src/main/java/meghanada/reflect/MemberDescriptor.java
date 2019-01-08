@@ -35,12 +35,12 @@ public abstract class MemberDescriptor
   public String name;
   public Map<String, String> typeParameterMap;
   public transient boolean showStaticClassName;
-  MemberType memberType;
-  String modifier;
-  String returnType;
-  boolean hasDefault;
-  Set<String> typeParameters;
-  private transient String extra = "";
+  public MemberType memberType;
+  public String modifier;
+  public String returnType;
+  public boolean hasDefault;
+  public Set<String> typeParameters;
+  public transient String extra = "";
 
   public abstract List<String> getParameters();
 

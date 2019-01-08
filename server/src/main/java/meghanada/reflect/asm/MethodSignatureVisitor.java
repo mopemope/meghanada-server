@@ -16,30 +16,31 @@ import org.objectweb.asm.signature.SignatureVisitor;
 class MethodSignatureVisitor extends SignatureVisitor {
 
   private static final Logger log = LogManager.getLogger(MethodSignatureVisitor.class);
-  private final String name;
-  private final List<String> classTypeParameters;
-  // method parameters
-  private List<TypeInfo> parameterTypes;
-  // method typeParameters
-  private Set<String> typeParameters;
 
-  private TypeInfo current;
-  private TypeInfo formalType;
-  private TypeInfo returnType;
-  private boolean isSuper;
-  private boolean isExtends;
-  private boolean isReturn;
-  private boolean isParameter;
-  private boolean hasTypes;
-  private boolean isArray;
+  final String name;
+  final List<String> classTypeParameters;
+  // method parameters
+  List<TypeInfo> parameterTypes;
+  // method typeParameters
+  Set<String> typeParameters;
+
+  TypeInfo current;
+  TypeInfo formalType;
+  TypeInfo returnType;
+  boolean isSuper;
+  boolean isExtends;
+  boolean isReturn;
+  boolean isParameter;
+  boolean hasTypes;
+  boolean isArray;
 
   // formal
-  private boolean isClassBound;
-  private boolean isInterfaceBound;
-  private MethodSignatureVisitor parent;
+  boolean isClassBound;
+  boolean isInterfaceBound;
+  MethodSignatureVisitor parent;
 
-  private Map<String, String> typeMap;
-  private boolean isFormalType;
+  Map<String, String> typeMap;
+  boolean isFormalType;
 
   MethodSignatureVisitor(final String name, final List<String> classTypeParameters) {
     super(Opcodes.ASM5);

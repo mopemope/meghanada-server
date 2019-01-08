@@ -117,7 +117,7 @@ public class EclipseProject extends Project {
     return "1.0.0";
   }
 
-  private String getArtifactCode(final String path) {
+  private static String getArtifactCode(final String path) {
     // ivy or gradle cache
     File file = new File(path);
     File verFile = file.getParentFile().getParentFile();

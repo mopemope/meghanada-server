@@ -12,9 +12,10 @@ import meghanada.reflect.MemberDescriptor;
 public class TypeScope extends MethodScope {
 
   private static final long serialVersionUID = 3241487719205584660L;
+
   public boolean isInterface;
   public boolean isEnum;
-  private List<MemberDescriptor> members = new ArrayList<>(32);
+  public List<MemberDescriptor> members = new ArrayList<>(32);
 
   public TypeScope(
       final String name, @Nullable final Range nameRange, final int pos, final Range range) {
