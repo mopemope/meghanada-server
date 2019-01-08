@@ -43,7 +43,7 @@ public class DocumentSearcher implements AutoCloseable {
   private IndexWriter indexWriter;
   private IndexSearcher indexSearcher;
 
-  public DocumentSearcher(final ContextualEnvironment environment, final boolean withPrefixing)
+  private DocumentSearcher(final ContextualEnvironment environment, final boolean withPrefixing)
       throws IOException {
     this.environment = environment;
     final StoreConfig config =
@@ -54,7 +54,7 @@ public class DocumentSearcher implements AutoCloseable {
     this.analyzer = createAnalyzer();
   }
 
-  public DocumentSearcher(final ContextualEnvironment environment) throws IOException {
+  DocumentSearcher(final ContextualEnvironment environment) throws IOException {
     this(environment, false);
   }
 
@@ -69,8 +69,8 @@ public class DocumentSearcher implements AutoCloseable {
     return config;
   }
 
-  private IndexWriter createIndexWriter(Directory directory, IndexWriterConfig indexConfig)
-      throws IOException {
+  private synchronized IndexWriter createIndexWriter(
+      Directory directory, IndexWriterConfig indexConfig) throws IOException {
     if (nonNull(this.indexWriter)) {
       return this.indexWriter;
     }
@@ -82,7 +82,7 @@ public class DocumentSearcher implements AutoCloseable {
     return IndexReader.open(directory);
   }
 
-  private IndexSearcher createIndexSearcher(IndexReader indexReader) {
+  private synchronized IndexSearcher createIndexSearcher(IndexReader indexReader) {
     if (nonNull(this.indexSearcher)) {
       return this.indexSearcher;
     }
@@ -90,25 +90,33 @@ public class DocumentSearcher implements AutoCloseable {
     return this.indexSearcher;
   }
 
-  public void closeIndexWriter() throws IOException {
+  private synchronized void closeIndexWriter() {
     if (nonNull(this.indexWriter)) {
-      this.indexWriter.close();
+      try {
+        this.indexWriter.close();
+      } catch (IOException e) {
+        log.catching(e);
+      }
     }
     this.indexWriter = null;
   }
 
-  public void closeIndexSearcher() throws IOException {
+  private synchronized void closeIndexSearcher() {
     if (nonNull(this.indexSearcher)) {
-      this.indexSearcher.close();
+      try {
+        this.indexSearcher.close();
+      } catch (IOException e) {
+        log.catching(e);
+      }
     }
     this.indexSearcher = null;
   }
 
-  public void addDocuments(final Collection<Document> docs) throws IOException {
+  void addDocuments(final Collection<Document> docs) throws IOException {
     indexWriter.addDocuments(docs);
   }
 
-  public void deleteDocuments(final String fld, final String idValue) throws IOException {
+  void deleteDocuments(final String fld, final String idValue) throws IOException {
     indexWriter.deleteDocuments(new Term(fld, idValue));
   }
 
@@ -119,7 +127,7 @@ public class DocumentSearcher implements AutoCloseable {
     return queryParser.parse(query);
   }
 
-  List<Document> search(final String field, final String query, final int cnt)
+  synchronized List<Document> search(final String field, final String query, final int cnt)
       throws IOException, ParseException {
     final TopDocs results = indexSearcher.search(getQuery(field, query), cnt);
     return Arrays.stream(results.scoreDocs)
@@ -134,7 +142,7 @@ public class DocumentSearcher implements AutoCloseable {
         .collect(Collectors.toList());
   }
 
-  <T> List<T> search(
+  synchronized <T> List<T> search(
       final String field, final String query, final int cnt, final DocumentConverter<T> converter)
       throws IOException, ParseException {
     final TopDocs results = indexSearcher.search(getQuery(field, query), cnt);
@@ -151,53 +159,56 @@ public class DocumentSearcher implements AutoCloseable {
   }
 
   @SuppressWarnings("CheckReturnValue")
-  void executeInTransaction(final Runnable runnable) {
+  synchronized void executeInTransaction(final Runnable runnable) {
     this.environment.executeInTransaction(
         txn -> {
           try {
-            this.createIndexWriter(this.directory, createIndexConfig(this.analyzer));
+            IndexWriter indexWriter =
+                this.createIndexWriter(this.directory, createIndexConfig(this.analyzer));
             runnable.run();
-            this.closeIndexSearcher();
-            this.closeIndexWriter();
           } catch (IOException ex) {
             txn.abort();
             throw new UncheckedIOException(ex);
+          } finally {
+            this.closeIndexSearcher();
+            this.closeIndexWriter();
           }
         });
   }
 
   @SuppressWarnings("CheckReturnValue")
-  <T> T computeInTransaction(final Supplier<T> fn) {
+  synchronized <T> T computeInTransaction(final Supplier<T> fn) {
     return this.environment.computeInTransaction(
         txn -> {
           try {
-            this.createIndexWriter(this.directory, createIndexConfig(this.analyzer));
-            final IndexReader indexReader = this.createIndexReader(this.directory);
-            this.createIndexSearcher(indexReader);
-            T t = fn.get();
-            this.closeIndexSearcher();
-            this.closeIndexWriter();
-            return t;
+            IndexWriter indexWriter =
+                this.createIndexWriter(this.directory, createIndexConfig(this.analyzer));
+            IndexReader indexReader = this.createIndexReader(this.directory);
+            IndexSearcher indexSearcher = this.createIndexSearcher(indexReader);
+            return fn.get();
           } catch (IOException ex) {
             txn.abort();
             throw new UncheckedIOException(ex);
+          } finally {
+            this.closeIndexSearcher();
+            this.closeIndexWriter();
           }
         });
   }
 
   @SuppressWarnings("CheckReturnValue")
-  <T> T searchInTransaction(final Supplier<T> fn) {
+  synchronized <T> T searchInTransaction(final Supplier<T> fn) {
     return this.environment.computeInReadonlyTransaction(
         txn -> {
           try {
             final IndexReader indexReader = this.createIndexReader(this.directory);
-            this.createIndexSearcher(indexReader);
-            T t = fn.get();
-            this.closeIndexSearcher();
-            return t;
+            IndexSearcher searcher = this.createIndexSearcher(indexReader);
+            return fn.get();
           } catch (IOException ex) {
             txn.abort();
             throw new UncheckedIOException(ex);
+          } finally {
+            this.closeIndexSearcher();
           }
         });
   }

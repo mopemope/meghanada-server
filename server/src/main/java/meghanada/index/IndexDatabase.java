@@ -63,7 +63,7 @@ public class IndexDatabase {
     return "(" + s + ")";
   }
 
-  private void open() {
+  private synchronized void open() {
     final File loc = ProjectDatabase.getInstance().getBaseLocation();
     if (nonNull(this.baseLocation) && !this.baseLocation.equals(loc)) {
       // change database
