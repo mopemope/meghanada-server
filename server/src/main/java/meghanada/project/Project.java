@@ -922,7 +922,6 @@ public abstract class Project implements Serializable, Storable {
 
   private void loadCaller() throws IOException {
 
-    @SuppressWarnings("unchecked")
     final Map<String, Set<String>> map = ProjectDatabaseHelper.getCallerMap(this.projectRootPath);
     this.callerMap = map;
   }

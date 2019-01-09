@@ -84,8 +84,7 @@ class AndroidSupport {
               .model(AndroidProject.class)
               .withArguments("-Pandroid.injected.build.model.only.versioned=3");
       if (nonNull(modelBuilder)) {
-        AndroidProject androidProject = modelBuilder.get();
-        return androidProject;
+        return modelBuilder.get();
       }
       return null;
     } catch (Exception e) {
@@ -385,10 +384,8 @@ class AndroidSupport {
 
   private static void addDependencies(Set<ProjectDependency> dependencies, File jar) {
     String id = jar.getName();
-    String version = DEFAULT_VERSION;
-    String scope = DEFAULT_SCOPE;
     ProjectDependency projectDependency =
-        new ProjectDependency(id, scope, version, jar, ProjectDependency.Type.JAR);
+        new ProjectDependency(id, DEFAULT_SCOPE, DEFAULT_VERSION, jar, ProjectDependency.Type.JAR);
     dependencies.add(projectDependency);
   }
 

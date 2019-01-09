@@ -80,7 +80,7 @@ public class StringUtils {
   private static Pattern compilePattern(List<String> input) {
     Pattern p = null;
     if (input.size() > 0) {
-      StringBuilder sb = new StringBuilder();
+      StringBuilder sb = new StringBuilder(64);
       for (String s : input) {
         sb.append(s).append(PatternForLowerCaseWord);
       }

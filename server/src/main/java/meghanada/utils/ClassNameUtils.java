@@ -540,10 +540,9 @@ public class ClassNameUtils {
       if (paramStr.startsWith(ClassNameUtils.CLASS_TYPE_VARIABLE_MARK)) {
         continue;
       }
-      ClassName paramClass = new ClassName(paramStr);
-      ClassName argClass = new ClassName(realArgStr);
-      String paramClassName = autoBoxing(paramClass.getName());
-      String argClassName = autoBoxing(argClass.getName());
+
+      String paramClassName = autoBoxing(ClassNameUtils.getClassName(paramStr));
+      String argClassName = autoBoxing(ClassNameUtils.getClassName(realArgStr));
 
       if (paramClassName.equals(argClassName)) {
         continue;
@@ -559,7 +558,7 @@ public class ClassNameUtils {
               .getSuperClassStream(argClassName)
               .anyMatch(
                   s -> {
-                    String cls = new ClassName(s).getName();
+                    String cls = ClassNameUtils.getClassName(s);
                     return cls.equals(paramClassName);
                   });
       if (!result) {
@@ -582,10 +581,9 @@ public class ClassNameUtils {
         if (ClassNameUtils.isArray(paramStr) != ClassNameUtils.isArray(realArgStr)) {
           return false;
         }
-        ClassName paramClass = new ClassName(paramStr);
-        ClassName argClass = new ClassName(realArgStr);
-        String paramClassName = autoBoxing(paramClass.getName());
-        String argClassName = autoBoxing(argClass.getName());
+
+        String paramClassName = autoBoxing(ClassNameUtils.getClassName(paramStr));
+        String argClassName = autoBoxing(ClassNameUtils.getClassName(realArgStr));
 
         index++;
         if (paramClassName.equals(argClassName)) {
@@ -604,7 +602,7 @@ public class ClassNameUtils {
                 .getSuperClassStream(argClassName)
                 .anyMatch(
                     s -> {
-                      String cls = new ClassName(s).getName();
+                      String cls = ClassNameUtils.getClassName(s);
                       return cls.equals(paramClassName);
                     });
         if (!result) {
@@ -617,13 +615,10 @@ public class ClassNameUtils {
 
   private static boolean checkVarargs(final Iterator<String> iteratorA, final String paramStr) {
     // base class
-    final ClassName paramClass = new ClassName(paramStr);
-    final String paramClassName = autoBoxing(paramClass.getName());
-
+    final String paramClassName = autoBoxing(ClassNameUtils.getClassName(paramStr));
     while (iteratorA.hasNext()) {
       final String realArgStr = iteratorA.next();
-      final ClassName argClass = new ClassName(realArgStr);
-      final String argClassName = autoBoxing(argClass.getName());
+      final String argClassName = autoBoxing(ClassNameUtils.getClassName(realArgStr));
       if (!paramClassName.equals(argClassName)) {
         return false;
       }
@@ -657,5 +652,27 @@ public class ClassNameUtils {
         }
       }
     }
+  }
+
+  public static String getClassName(final String s) {
+    String rawName = ClassNameUtils.vaArgsToArray(s);
+    int typeIndex = rawName.indexOf('<');
+    int typeLastIndex = rawName.lastIndexOf('>');
+    String name = ClassNameUtils.removeCaptureAndWildCard(rawName);
+    if (typeIndex >= 0) {
+      final String fst = name.substring(0, typeIndex);
+      if (typeLastIndex > typeIndex) {
+        final String sec = name.substring(typeLastIndex + 1);
+        name = fst + sec;
+      } else {
+        name = fst;
+      }
+    }
+
+    final int arrayIndex = name.indexOf('[');
+    if (arrayIndex >= 0) {
+      name = name.substring(0, arrayIndex);
+    }
+    return name;
   }
 }

@@ -4,7 +4,6 @@ import jetbrains.exodus.entitystore.Entity;
 import jetbrains.exodus.entitystore.EntityId;
 import jetbrains.exodus.entitystore.StoreTransaction;
 
-@SuppressWarnings("rawtypes")
 public interface Storable {
 
   default EntityId getEntityId() {

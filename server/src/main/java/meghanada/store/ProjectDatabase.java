@@ -140,7 +140,6 @@ public class ProjectDatabase {
     }
   }
 
-  @SuppressWarnings("rawtypes")
   private static long putObject(Storable s, boolean allowUpdate, StoreTransaction txn) {
 
     String entityType = s.getEntityType();
@@ -358,8 +357,7 @@ public class ProjectDatabase {
         }
         this.entityStore = PersistentEntityStores.newInstance(environment, STORE_NAME);
         String location = this.environment.getLocation();
-        String projectRoot = Config.getProjectRoot();
-        this.projectRoot = projectRoot;
+        this.projectRoot = Config.getProjectRoot();
         this.baseLocation = base;
       }
     } catch (IOException e) {

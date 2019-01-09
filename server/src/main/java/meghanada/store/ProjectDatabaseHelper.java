@@ -189,9 +189,8 @@ public class ProjectDatabaseHelper {
           if (isNull(entity)) {
             return false;
           }
-          boolean result = entity.deleteBlob(BLOB_PROP_MEMBERS);
           // txn.saveEntity(entity);
-          return result;
+          return entity.deleteBlob(BLOB_PROP_MEMBERS);
         });
   }
 

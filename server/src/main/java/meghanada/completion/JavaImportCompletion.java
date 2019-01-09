@@ -113,8 +113,7 @@ public class JavaImportCompletion {
                 .map(
                     ci -> {
                       // same package. imported
-                      List<String> emptyList = Collections.emptyList();
-                      return emptyList;
+                      return Collections.<String>emptyList();
                     })
                 .orElseGet(
                     () ->

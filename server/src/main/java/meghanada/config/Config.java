@@ -386,8 +386,7 @@ public class Config {
   }
 
   public void update(String key, Object newVal) {
-    com.typesafe.config.Config newConfig = c.withValue(key, ConfigValueFactory.fromAnyRef(newVal));
-    this.c = newConfig;
+    this.c = c.withValue(key, ConfigValueFactory.fromAnyRef(newVal));
   }
 
   public boolean isJava8() {

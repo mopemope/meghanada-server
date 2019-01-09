@@ -861,15 +861,13 @@ public class JavaCompletion {
   }
 
   private static TreeBasedTable<File, CandidateUnit, Integer> createStatisticsTable() {
-    TreeBasedTable<File, CandidateUnit, Integer> table =
-        TreeBasedTable.create(
-            Comparator.naturalOrder(),
-            (o1, o2) -> {
-              String name1 = o1.getName();
-              String name2 = o2.getName();
-              return name1.compareTo(name2);
-            });
-    return table;
+    return TreeBasedTable.create(
+        Comparator.naturalOrder(),
+        (o1, o2) -> {
+          String name1 = o1.getName();
+          String name2 = o2.getName();
+          return name1.compareTo(name2);
+        });
   }
 
   public void setProject(Project project) {

@@ -111,7 +111,6 @@ class MemberCacheLoader extends CacheLoader<String, List<MemberDescriptor>>
       }
     }
 
-    @SuppressWarnings("unchecked")
     final List<MemberDescriptor> cachedResult = MemberCacheLoader.getCachedMemberDescriptors(fqcn);
     if (nonNull(cachedResult)) {
       return cachedResult;
