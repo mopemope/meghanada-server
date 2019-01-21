@@ -57,7 +57,7 @@ class MethodAnalyzeVisitor extends MethodVisitor {
       final String desc,
       final String signature,
       final String[] exceptions) {
-    super(Opcodes.ASM5);
+    super(Opcodes.ASM7);
     final EntryMessage entryMessage =
         log.traceEntry(
             "classAnalyzeVisitor={} access={} name={} desc={} signature={} exceptions={}",

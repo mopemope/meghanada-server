@@ -38,7 +38,7 @@ class FieldSignatureVisitor extends SignatureVisitor {
   FieldSignatureVisitor parent;
 
   FieldSignatureVisitor(final String name, final List<String> classTypeParameters) {
-    super(Opcodes.ASM5);
+    super(Opcodes.ASM7);
     final EntryMessage em =
         log.traceEntry("name={} classTypeParameters={}", name, classTypeParameters);
     this.name = name;
@@ -52,7 +52,7 @@ class FieldSignatureVisitor extends SignatureVisitor {
   }
 
   private FieldSignatureVisitor(final String name, final FieldSignatureVisitor parent) {
-    super(Opcodes.ASM5);
+    super(Opcodes.ASM7);
     log.traceEntry("name={} parent={}", name, parent);
     this.name = name;
     this.parent = parent;

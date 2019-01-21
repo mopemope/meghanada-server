@@ -24,7 +24,7 @@ class FieldAnalyzeVisitor extends FieldVisitor {
 
   FieldAnalyzeVisitor(
       ClassAnalyzeVisitor classAnalyzeVisitor, int access, String name, String desc, String sig) {
-    super(Opcodes.ASM5);
+    super(Opcodes.ASM7);
     this.classAnalyzeVisitor = classAnalyzeVisitor;
     this.access = access;
     this.name = name;

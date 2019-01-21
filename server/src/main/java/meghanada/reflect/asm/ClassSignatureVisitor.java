@@ -29,7 +29,7 @@ class ClassSignatureVisitor extends SignatureVisitor {
   public ClassInfo current;
 
   ClassSignatureVisitor(String name, boolean isInterface) {
-    super(Opcodes.ASM5);
+    super(Opcodes.ASM7);
     this.classInfo = new ClassInfo(name);
     this.current = this.classInfo;
     this.isInterface = isInterface;

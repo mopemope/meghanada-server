@@ -43,7 +43,7 @@ class MethodSignatureVisitor extends SignatureVisitor {
   boolean isFormalType;
 
   MethodSignatureVisitor(final String name, final List<String> classTypeParameters) {
-    super(Opcodes.ASM5);
+    super(Opcodes.ASM7);
     final EntryMessage message =
         log.traceEntry("name={} classTypeParameters={}", name, classTypeParameters);
     this.name = name;
@@ -55,7 +55,7 @@ class MethodSignatureVisitor extends SignatureVisitor {
   }
 
   private MethodSignatureVisitor(String name, MethodSignatureVisitor parent) {
-    super(Opcodes.ASM5);
+    super(Opcodes.ASM7);
     final EntryMessage message = log.traceEntry("name={}", name);
     this.name = name;
     this.parent = parent;

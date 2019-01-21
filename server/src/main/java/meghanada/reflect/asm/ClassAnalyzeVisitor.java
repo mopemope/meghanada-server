@@ -35,7 +35,7 @@ class ClassAnalyzeVisitor extends ClassVisitor {
 
   ClassAnalyzeVisitor(
       final String className, final boolean classOnly, final boolean includePrivate) {
-    super(Opcodes.ASM5);
+    super(Opcodes.ASM7);
     this.className = className;
     this.classOnly = classOnly;
     this.includePrivate = includePrivate;

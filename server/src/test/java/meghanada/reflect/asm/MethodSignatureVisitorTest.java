@@ -60,7 +60,7 @@ public class MethodSignatureVisitorTest extends GradleTestBase {
     private String name;
 
     TestVisitor(String name) {
-      super(Opcodes.ASM5);
+      super(Opcodes.ASM7);
       this.name = name;
     }
 
