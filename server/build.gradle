@@ -7,7 +7,7 @@ plugins {
 
 ext {
   group = 'meghanada'
-  serverVersion = '1.0.11'
+  serverVersion = '1.0.12'
   buildVersion = 'release'
 
   def gitFile = new File('./.git')
