@@ -50,8 +50,7 @@ public class JavaImportCompletionTest extends GradleTestBase {
   private String getClasspath() throws IOException {
 
     List<String> classpath =
-        getSystemJars()
-            .stream()
+        getSystemJars().stream()
             .map(
                 file1 -> {
                   try {

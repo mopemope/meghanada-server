@@ -169,8 +169,7 @@ public class BlockScope extends Scope {
               return faList;
             }
           }
-          return bs.fieldAccesses
-              .stream()
+          return bs.fieldAccesses.stream()
               .filter(fa -> fa.range.begin.line == line)
               .collect(Collectors.toList());
         }

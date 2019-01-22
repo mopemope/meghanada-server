@@ -95,11 +95,11 @@ public class ClassSignatureVisitorTest extends GradleTestBase {
   @org.junit.Test
   public void testComplexType1() throws Exception {
     String fqcn = "com.google.common.util.concurrent.AbstractCheckedFuture";
-    File jar = getJar("guava");
-
+    File jar = getJar("com.google.guava:guava:");
     ClassSignatureVisitor visitor = doAnalyze(jar, fqcn);
 
     assertEquals("com.google.common.util.concurrent.AbstractCheckedFuture", visitor.getName());
+
     List<String> expected = new ArrayList<>();
     expected.add("V");
     expected.add("X");

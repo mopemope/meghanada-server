@@ -29,9 +29,7 @@ public class IndexSubscriber {
   public void on(final JavaAnalyzer.AnalyzedEvent event) {
     final Map<File, Source> analyzedMap = event.analyzedMap;
     List<SearchIndexable> sources =
-        analyzedMap
-            .values()
-            .stream()
+        analyzedMap.values().stream()
             .filter(
                 source -> {
                   try {

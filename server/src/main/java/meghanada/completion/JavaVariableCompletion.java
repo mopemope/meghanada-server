@@ -92,8 +92,7 @@ public class JavaVariableCompletion {
     }
 
     final List<String> results =
-        candidates
-            .stream()
+        candidates.stream()
             .map(s -> StringUtils.removePattern(s, "[<> ,$.]"))
             .collect(Collectors.toList());
 

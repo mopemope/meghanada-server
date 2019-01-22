@@ -117,9 +117,7 @@ public class JavaImportCompletion {
                     })
                 .orElseGet(
                     () ->
-                        reflector
-                            .searchClasses(symbol, true)
-                            .stream()
+                        reflector.searchClasses(symbol, true).stream()
                             .map(ClassIndex::getDeclaration)
                             .collect(Collectors.toList()));
         if (results.isEmpty()) {
@@ -130,9 +128,7 @@ public class JavaImportCompletion {
         return Optional.of(m);
       } else {
         List<String> results =
-            reflector
-                .searchClasses(symbol, true)
-                .stream()
+            reflector.searchClasses(symbol, true).stream()
                 .map(ClassIndex::getDeclaration)
                 .collect(Collectors.toList());
         if (results.isEmpty()) {

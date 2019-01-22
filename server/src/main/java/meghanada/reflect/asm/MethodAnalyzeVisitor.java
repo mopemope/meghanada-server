@@ -361,8 +361,7 @@ class MethodAnalyzeVisitor extends MethodVisitor {
         memberType == CandidateUnit.MemberType.CONSTRUCTOR ? methodName : this.returnType.getFQCN();
 
     final List<MethodParameter> methodParameters =
-        this.parameterTypes
-            .stream()
+        this.parameterTypes.stream()
             .map(
                 typeInfo ->
                     new MethodParameter(

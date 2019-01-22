@@ -39,9 +39,7 @@ public class CacheEventSubscriber extends AbstractSubscriber {
     final CachedASMReflector reflector = CachedASMReflector.getInstance();
     reflector.addClasspath(project.getOutput());
     reflector.addClasspath(project.getTestOutput());
-    project
-        .getDependencies()
-        .stream()
+    project.getDependencies().stream()
         .filter(pd -> pd.getType().equals(ProjectDependency.Type.PROJECT))
         .forEach(
             pd -> {

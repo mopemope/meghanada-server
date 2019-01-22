@@ -256,8 +256,7 @@ public class MethodDescriptor extends MemberDescriptor {
     if (isNull(this.parameters)) {
       return Collections.emptyList();
     }
-    return this.parameters
-        .stream()
+    return this.parameters.stream()
         .map(p -> renderTypeParameters(p.getType(), nonNull(formalType)))
         .collect(Collectors.toList());
   }
@@ -265,8 +264,7 @@ public class MethodDescriptor extends MemberDescriptor {
   @Override
   public String getSig() {
     final List<String> plist =
-        this.parameters
-            .stream()
+        this.parameters.stream()
             .map(p -> ClassNameUtils.removeTypeParameter(p.type))
             .collect(Collectors.toList());
 

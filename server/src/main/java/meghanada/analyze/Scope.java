@@ -156,15 +156,13 @@ public abstract class Scope implements Serializable {
   }
 
   public List<MethodCall> getMethodCall(final int line) {
-    return this.methodCalls
-        .stream()
+    return this.methodCalls.stream()
         .filter(mc -> mc.range.begin.line == line || mc.range.end.line == line)
         .collect(Collectors.toList());
   }
 
   public List<FieldAccess> getFieldAccess(final int line) {
-    return this.fieldAccesses
-        .stream()
+    return this.fieldAccesses.stream()
         .filter(fa -> fa.range.begin.line == line)
         .collect(Collectors.toList());
   }

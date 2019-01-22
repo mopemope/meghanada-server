@@ -730,8 +730,7 @@ public class JavaAnalyzerTest extends GradleTestBase {
   private String getClasspath() throws IOException {
 
     final List<String> classpath =
-        getSystemJars()
-            .stream()
+        getSystemJars().stream()
             .map(
                 file1 -> {
                   try {
@@ -762,8 +761,7 @@ public class JavaAnalyzerTest extends GradleTestBase {
   private String getSystemClasspath() throws IOException {
 
     final List<String> classpath =
-        getSystemJars()
-            .stream()
+        getSystemJars().stream()
             .map(
                 file1 -> {
                   try {

@@ -139,8 +139,7 @@ public class ClassIndex implements CandidateUnit, Cloneable, Serializable, Stora
     final CachedASMReflector reflector = CachedASMReflector.getInstance();
 
     final Optional<String> result =
-        this.supers
-            .stream()
+        this.supers.stream()
             .filter(
                 s -> {
                   final String name = ClassNameUtils.removeTypeParameter(s);

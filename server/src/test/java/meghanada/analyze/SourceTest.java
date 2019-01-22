@@ -293,8 +293,7 @@ public class SourceTest extends GradleTestBase {
   private String getClasspath() throws IOException {
 
     final List<String> classpath =
-        getSystemJars()
-            .stream()
+        getSystemJars().stream()
             .map(
                 file1 -> {
                   try {

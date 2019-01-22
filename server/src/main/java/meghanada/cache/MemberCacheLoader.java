@@ -131,8 +131,7 @@ class MemberCacheLoader extends CacheLoader<String, List<MemberDescriptor>>
     final InheritanceInfo info = asmReflector.getReflectInfo(index, fqcn);
     final List<MemberDescriptor> result = asmReflector.reflectAll(info);
 
-    return result
-        .stream()
+    return result.stream()
         .filter(
             md -> {
               if (md.matchType(CandidateUnit.MemberType.CONSTRUCTOR)) {

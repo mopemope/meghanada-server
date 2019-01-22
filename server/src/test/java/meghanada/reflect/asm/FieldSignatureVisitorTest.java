@@ -73,10 +73,7 @@ public class FieldSignatureVisitorTest extends GradleTestBase {
     TestVisitor visitor = doAnalyze(f, fqcn);
     System.out.println(visitor.result.get("lvtSlotIndex"));
     // System.out.println(visitor.classFileMap);
-    visitor
-        .result
-        .entrySet()
-        .stream()
+    visitor.result.entrySet().stream()
         .forEach(
             entry -> {
               System.out.println("" + entry.getKey() + " : " + entry.getValue());
@@ -90,10 +87,7 @@ public class FieldSignatureVisitorTest extends GradleTestBase {
     TestVisitor visitor = doAnalyze(f, fqcn);
 
     System.out.println(visitor.visitor.getTypeParameters());
-    visitor
-        .result
-        .entrySet()
-        .stream()
+    visitor.result.entrySet().stream()
         .forEach(
             entry -> {
               System.out.println("" + entry.getKey() + " : " + entry.getValue());

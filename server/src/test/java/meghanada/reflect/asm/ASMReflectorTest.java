@@ -131,8 +131,7 @@ public class ASMReflectorTest extends GradleTestBase {
         assertEquals(47, memberDescriptors.size());
       }
       stopwatch.reset();
-      memberDescriptors
-          .stream()
+      memberDescriptors.stream()
           .filter(memberDescriptor -> memberDescriptor.getName().equals("entrySet"))
           .forEach(
               memberDescriptor -> {
@@ -202,7 +201,7 @@ public class ASMReflectorTest extends GradleTestBase {
     ASMReflector asmReflector = ASMReflector.getInstance();
 
     String fqcn = "com.google.common.cache.CacheBuilder<Object, Object>";
-    File jar = getJar("guava");
+    File jar = getJar("guava:guava:");
     Map<String, ClassIndex> index = asmReflector.getClassIndexes(jar);
     final InheritanceInfo info = asmReflector.getReflectInfo(index, fqcn);
 
@@ -438,7 +437,7 @@ public class ASMReflectorTest extends GradleTestBase {
     Stopwatch stopwatch = Stopwatch.createUnstarted();
     {
       String fqcn = "com.google.common.eventbus.SubscriberExceptionHandler";
-      File jar = getJar("guava");
+      File jar = getJar("guava:guava:");
       Map<String, ClassIndex> index = asmReflector.getClassIndexes(jar);
       final InheritanceInfo info = asmReflector.getReflectInfo(index, fqcn);
 

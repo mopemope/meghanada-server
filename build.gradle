@@ -13,7 +13,7 @@ allprojects {
   apply plugin: 'com.jfrog.bintray'
 
   googleJavaFormat {
-    toolVersion = '1.6'
+    toolVersion = '1.7'
     exclude 'server/src/test/resources/*'
     exclude 'server/out/*'
     exclude 'src/test/resources/*'

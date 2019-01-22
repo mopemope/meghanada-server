@@ -163,8 +163,7 @@ public class JavaCompletion {
         .map(
             typeScope -> {
               final String fqcn = typeScope.getFQCN();
-              return doReflect(fqcn)
-                  .stream()
+              return doReflect(fqcn).stream()
                   .filter(
                       md ->
                           !md.getDeclaringClass().equals(fqcn)
@@ -182,8 +181,7 @@ public class JavaCompletion {
       final String target) {
     // normal completion matcher
     final CompletionMatcher matcher = getCompletionMatcher(target);
-    return doReflect(fqcn)
-        .stream()
+    return doReflect(fqcn).stream()
         .filter(
             md ->
                 CompletionFilters.publicMemberFilter(
@@ -198,8 +196,7 @@ public class JavaCompletion {
       final String target) {
     // normal completion matcher
     final CompletionMatcher matcher = getCompletionMatcher(target);
-    return doReflect(fqcn)
-        .stream()
+    return doReflect(fqcn).stream()
         .filter(
             md ->
                 CompletionFilters.packageMemberFilter(
@@ -208,9 +205,7 @@ public class JavaCompletion {
   }
 
   private static Collection<? extends CandidateUnit> completionNewKeyword(final Source source) {
-    return source
-        .importClasses
-        .stream()
+    return source.importClasses.stream()
         .map(JavaCompletion::doReflect)
         .flatMap(Collection::stream)
         .filter(md -> md.getType().equals(CandidateUnit.MemberType.CONSTRUCTOR.name()))
@@ -305,9 +300,7 @@ public class JavaCompletion {
       String fqcn = annotation.getFQCN();
       String clazz = source.getImportedClassFQCN(ClassNameUtils.getSimpleName(fqcn), fqcn);
       List<CandidateUnit> descriptors =
-          CachedASMReflector.getInstance()
-              .reflect(clazz)
-              .stream()
+          CachedASMReflector.getInstance().reflect(clazz).stream()
               .filter(
                   m ->
                       m.getMemberType() == CandidateUnit.MemberType.METHOD
@@ -416,8 +409,7 @@ public class JavaCompletion {
   private static Collection<MemberDescriptor> reflectWithFQCN(String fqcn, String prefix) {
     final CompletionMatcher matcher = getCompletionMatcher(prefix);
     // normal completion matcher
-    return doReflect(fqcn)
-        .stream()
+    return doReflect(fqcn).stream()
         .filter(md -> CompletionFilters.publicMemberFilter(md, matcher, prefix))
         .collect(Collectors.toSet());
   }
@@ -854,8 +846,7 @@ public class JavaCompletion {
           .collect(Collectors.toList());
     }
 
-    return completionNewKeyword(source)
-        .stream()
+    return completionNewKeyword(source).stream()
         .sorted(comparing(source, ""))
         .collect(Collectors.toList());
   }
@@ -947,21 +938,18 @@ public class JavaCompletion {
         final String var2 = var.substring(0, idx2);
         final Collection<? extends CandidateUnit> rawResult =
             completionFieldsOrMethods(source, line, var2, prefix);
-        return rawResult
-            .stream()
+        return rawResult.stream()
             // .filter(cu -> cu.getReturnType().endsWith(type))
             .sorted(getComparatorWithType(prefix, typeOrMember))
             .collect(Collectors.toList());
       }
-      return completionFieldsOrMethods(source, line, var, prefix)
-          .stream()
+      return completionFieldsOrMethods(source, line, var, prefix).stream()
           .sorted(methodComparing(prefix))
           .collect(Collectors.toList());
     }
 
     // normal completion
-    return completionFieldsOrMethods(source, line, searchWord.substring(1), "")
-        .stream()
+    return completionFieldsOrMethods(source, line, searchWord.substring(1), "").stream()
         .sorted(defaultComparing())
         .collect(Collectors.toList());
   }
@@ -981,15 +969,13 @@ public class JavaCompletion {
         String typeOrMember = searchWord.substring(typeIdx + 1, prefixIdx);
         typeOrMember = getMemberType(source, line, typeOrMember);
         fqcn = StringUtils.replace(fqcn, ClassNameUtils.CAPTURE_OF, "");
-        return reflectWithFQCN(fqcn, prefix)
-            .stream()
+        return reflectWithFQCN(fqcn, prefix).stream()
             // .filter(cu -> cu.getReturnType().endsWith(type))
             .sorted(getComparatorWithType(prefix, typeOrMember))
             .collect(Collectors.toList());
       } else {
         fqcn = StringUtils.replace(fqcn, ClassNameUtils.CAPTURE_OF, "");
-        return reflectWithFQCN(fqcn, prefix)
-            .stream()
+        return reflectWithFQCN(fqcn, prefix).stream()
             .sorted(methodComparing(prefix))
             .collect(Collectors.toList());
       }
@@ -1000,8 +986,7 @@ public class JavaCompletion {
       // return methods of prefix class
       String fqcn = searchWord.substring(classIdx + 1);
       fqcn = StringUtils.replace(fqcn, ClassNameUtils.CAPTURE_OF, "");
-      return reflect(pkg, fqcn, "")
-          .stream()
+      return reflect(pkg, fqcn, "").stream()
           .sorted(defaultComparing())
           .collect(Collectors.toList());
 
@@ -1024,8 +1009,7 @@ public class JavaCompletion {
         for (AccessSymbol as : targets) {
           if (as.match(line, startColumn) && nonNull(as.returnType)) {
             final String fqcn = StringUtils.replace(as.returnType, ClassNameUtils.CAPTURE_OF, "");
-            return reflect(pkg, fqcn, prefix)
-                .stream()
+            return reflect(pkg, fqcn, prefix).stream()
                 .sorted(methodComparing(prefix))
                 .collect(Collectors.toList());
           }

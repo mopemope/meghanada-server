@@ -512,10 +512,7 @@ public class Session {
       if (source.staticImportClass.size() > 0) {
         sb.append('\n');
         addLine = true;
-        source
-            .staticImportClass
-            .entrySet()
-            .stream()
+        source.staticImportClass.entrySet().stream()
             .map(
                 e -> {
                   final String method = e.getKey();
@@ -621,9 +618,7 @@ public class Session {
   }
 
   public Collection<File> getDependentJars() {
-    return currentProject
-        .getDependencies()
-        .stream()
+    return currentProject.getDependencies().stream()
         .filter(pd -> !pd.getType().equals(ProjectDependency.Type.PROJECT))
         .map(ProjectDependency::getFile)
         .collect(Collectors.toList());

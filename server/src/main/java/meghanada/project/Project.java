@@ -238,8 +238,7 @@ public abstract class Project implements Serializable, Storable {
 
     final Set<String> classpath = new HashSet<>(32);
 
-    this.dependencies
-        .stream()
+    this.dependencies.stream()
         .filter(dependency -> !dependency.getScope().equals("TEST"))
         .map(ProjectDependency::getDependencyFilePath)
         .forEach(classpath::add);
@@ -259,8 +258,7 @@ public abstract class Project implements Serializable, Storable {
     }
 
     final Set<String> classpath = new HashSet<>(32);
-    this.dependencies
-        .stream()
+    this.dependencies.stream()
         .map(ProjectDependency::getDependencyFilePath)
         .forEach(classpath::add);
 
@@ -689,9 +687,7 @@ public abstract class Project implements Serializable, Storable {
 
       // dependencies
       if (config.hasPath(DEPENDENCIES)) {
-        config
-            .getStringList(DEPENDENCIES)
-            .stream()
+        config.getStringList(DEPENDENCIES).stream()
             .map(
                 path -> {
                   File file = new File(path);
@@ -710,9 +706,7 @@ public abstract class Project implements Serializable, Storable {
       }
       // test-dependencies
       if (config.hasPath(TEST_DEPENDENCIES)) {
-        config
-            .getStringList(TEST_DEPENDENCIES)
-            .stream()
+        config.getStringList(TEST_DEPENDENCIES).stream()
             .map(
                 path -> {
                   File file = new File(path);
@@ -732,9 +726,7 @@ public abstract class Project implements Serializable, Storable {
 
       // sources
       if (config.hasPath(SOURCES)) {
-        config
-            .getStringList(SOURCES)
-            .stream()
+        config.getStringList(SOURCES).stream()
             .map(
                 path -> {
                   File file = new File(path);
@@ -748,9 +740,7 @@ public abstract class Project implements Serializable, Storable {
       }
       // sources
       if (config.hasPath(RESOURCES)) {
-        config
-            .getStringList(RESOURCES)
-            .stream()
+        config.getStringList(RESOURCES).stream()
             .map(
                 path -> {
                   File file = new File(path);
@@ -764,9 +754,7 @@ public abstract class Project implements Serializable, Storable {
       }
       // test-sources
       if (config.hasPath(TEST_SOURCES)) {
-        config
-            .getStringList(TEST_SOURCES)
-            .stream()
+        config.getStringList(TEST_SOURCES).stream()
             .map(
                 path -> {
                   File file = new File(path);
@@ -780,9 +768,7 @@ public abstract class Project implements Serializable, Storable {
       }
       // test-resources
       if (config.hasPath(TEST_RESOURCES)) {
-        config
-            .getStringList(TEST_RESOURCES)
-            .stream()
+        config.getStringList(TEST_RESOURCES).stream()
             .map(
                 path -> {
                   File file = new File(path);

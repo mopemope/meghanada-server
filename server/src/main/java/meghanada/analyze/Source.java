@@ -440,9 +440,7 @@ public class Source implements Serializable, Storable, SearchIndexable {
   public Optional<Variable> getVariable(final int line, final int col) {
     final Scope scope = Scope.getInnerScope(line, this.classScopes);
     if (nonNull(scope)) {
-      return scope
-          .getVariables()
-          .stream()
+      return scope.getVariables().stream()
           .filter(
               variable -> variable.range.begin.line == line && variable.range.containsColumn(col))
           .findFirst();
@@ -597,9 +595,7 @@ public class Source implements Serializable, Storable, SearchIndexable {
             });
 
     final List<String> optimized =
-        optimizeMap
-            .values()
-            .stream()
+        optimizeMap.values().stream()
             .map(
                 imports -> {
                   if (imports.size() >= 100000) {
@@ -652,9 +648,7 @@ public class Source implements Serializable, Storable, SearchIndexable {
     if (fqcn.startsWith(this.packageName)) {
       final Map<String, String> packageClasses = reflector.getPackageClasses(this.packageName);
       final boolean find =
-          packageClasses
-              .values()
-              .stream()
+          packageClasses.values().stream()
               .filter(s -> s.equals(fqcn))
               .map(s -> true)
               .findFirst()
@@ -677,8 +671,7 @@ public class Source implements Serializable, Storable, SearchIndexable {
   }
 
   public String getImportedClassFQCN(final String shortName, @Nullable final String defaultValue) {
-    return this.importClasses
-        .stream()
+    return this.importClasses.stream()
         .filter(
             s -> {
               if (s.indexOf('.') > 0) {

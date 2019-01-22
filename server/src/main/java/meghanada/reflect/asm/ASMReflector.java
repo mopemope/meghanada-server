@@ -206,9 +206,7 @@ public class ASMReflector {
     List<String> supers = new ArrayList<>(classIndex.getSupers());
     if (!replace.isEmpty()) {
       supers =
-          classIndex
-              .getSupers()
-              .stream()
+          classIndex.getSupers().stream()
               .map(s -> ClassNameUtils.replaceFromMap(s, replace))
               .collect(Collectors.toList());
     }
@@ -334,11 +332,8 @@ public class ASMReflector {
     } else if (file.isDirectory()) {
       try (Stream<Path> pathStream = Files.walk(file.toPath());
           Stream<File> stream =
-              pathStream
-                  .map(Path::toFile)
-                  .filter(f -> f.isFile() && f.getName().endsWith(".class"))
-                  .collect(Collectors.toList())
-                  .stream()) {
+              pathStream.map(Path::toFile).filter(f -> f.isFile() && f.getName().endsWith(".class"))
+                  .collect(Collectors.toList()).stream()) {
 
         stream.forEach(
             wrapIOConsumer(
@@ -587,11 +582,8 @@ public class ASMReflector {
     } else if (file.isDirectory()) {
       try (Stream<Path> pathStream = Files.walk(file.toPath());
           Stream<File> stream =
-              pathStream
-                  .map(Path::toFile)
-                  .filter(f -> f.isFile() && f.getName().endsWith(".class"))
-                  .collect(Collectors.toList())
-                  .stream()) {
+              pathStream.map(Path::toFile).filter(f -> f.isFile() && f.getName().endsWith(".class"))
+                  .collect(Collectors.toList()).stream()) {
 
         return stream
             .map(
@@ -642,10 +634,8 @@ public class ASMReflector {
       try (JarFile jarFile = new JarFile(file);
           Stream<JarEntry> jarStream = jarFile.stream();
           Stream<JarEntry> stream =
-              jarStream
-                  .filter(jarEntry -> jarEntry.getName().endsWith(".class"))
-                  .collect(Collectors.toList())
-                  .stream()) {
+              jarStream.filter(jarEntry -> jarEntry.getName().endsWith(".class"))
+                  .collect(Collectors.toList()).stream()) {
 
         return stream
             .map(
@@ -730,9 +720,7 @@ public class ASMReflector {
   private void readSuperMembers(File parent, ClassAnalyzeVisitor cv, List<MemberDescriptor> units) {
     ClassIndex classIndex = cv.getClassIndex();
     List<List<MemberDescriptor>> lists =
-        classIndex
-            .getSupers()
-            .stream()
+        classIndex.getSupers().stream()
             .parallel()
             .map(wrapIO(s -> reflect(parent, s)))
             .collect(Collectors.toList());
@@ -853,10 +841,8 @@ public class ASMReflector {
       try (JarFile jarFile = new JarFile(file);
           Stream<JarEntry> jarStream = jarFile.stream();
           Stream<JarEntry> stream =
-              jarStream
-                  .filter(jarEntry -> jarEntry.getName().endsWith(".class"))
-                  .collect(Collectors.toList())
-                  .stream()) {
+              jarStream.filter(jarEntry -> jarEntry.getName().endsWith(".class"))
+                  .collect(Collectors.toList()).stream()) {
 
         stream.forEach(
             jarEntry -> {
@@ -896,11 +882,8 @@ public class ASMReflector {
     } else if (file.isDirectory()) {
       try (Stream<Path> pathStream = Files.walk(file.toPath());
           Stream<File> stream =
-              pathStream
-                  .map(Path::toFile)
-                  .filter(f -> f.isFile() && f.getName().endsWith(".class"))
-                  .collect(Collectors.toList())
-                  .stream()) {
+              pathStream.map(Path::toFile).filter(f -> f.isFile() && f.getName().endsWith(".class"))
+                  .collect(Collectors.toList()).stream()) {
 
         stream.forEach(
             classFile -> {

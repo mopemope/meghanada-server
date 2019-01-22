@@ -161,8 +161,7 @@ public class SexpOutputFormatter implements OutputFormatter {
     final StringBuilder sb = new StringBuilder(LPAREN);
 
     final String s =
-        units
-            .stream()
+        units.stream()
             .map(
                 d ->
                     LPAREN
@@ -208,15 +207,12 @@ public class SexpOutputFormatter implements OutputFormatter {
     sb.append(LPAREN);
 
     final String str =
-        result
-            .values()
-            .stream()
+        result.values().stream()
             .filter(strings -> nonNull(strings) && strings.size() > 0)
             .map(
                 strings ->
                     LPAREN
-                        + strings
-                            .stream()
+                        + strings.stream()
                             .map(SexpOutputFormatter::doubleQuote)
                             .collect(Collectors.joining(LIST_SEP))
                         + RPAREN)
@@ -272,8 +268,7 @@ public class SexpOutputFormatter implements OutputFormatter {
       final String values =
           String.join(
               LIST_SEP,
-              lv.getCandidates()
-                  .stream()
+              lv.getCandidates().stream()
                   .map(SexpOutputFormatter::doubleQuote)
                   .collect(Collectors.toList()));
 
@@ -461,18 +456,14 @@ public class SexpOutputFormatter implements OutputFormatter {
     sb.append(LPAREN);
 
     final String str =
-        result
-            .entrySet()
-            .stream()
+        result.entrySet().stream()
             .filter(entry -> nonNull(entry.getValue()) && entry.getValue().size() > 0)
             .map(
                 entry ->
                     LPAREN
                         + entry.getKey()
                         + LIST_SEP
-                        + entry
-                            .getValue()
-                            .stream()
+                        + entry.getValue().stream()
                             .map(SexpOutputFormatter::doubleQuote)
                             .collect(Collectors.joining(LIST_SEP))
                         + RPAREN)

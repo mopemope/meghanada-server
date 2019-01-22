@@ -212,9 +212,7 @@ public class CachedASMReflector {
 
   private void updateClassIndexes() {
     List<ClassIndex> otherIndexes =
-        globalClassIndex
-            .values()
-            .stream()
+        globalClassIndex.values().stream()
             .filter(classIndex -> !classIndex.getFilePath().endsWith(".jar"))
             .collect(Collectors.toList());
 
@@ -387,8 +385,7 @@ public class CachedASMReflector {
   }
 
   public Stream<MemberDescriptor> reflectMethodStream(String className, String name) {
-    return this.reflect(className)
-        .stream()
+    return this.reflect(className).stream()
         .filter(m -> m.getName().equals(name) && m.matchType(CandidateUnit.MemberType.METHOD));
   }
 
@@ -403,8 +400,7 @@ public class CachedASMReflector {
   }
 
   public Stream<MemberDescriptor> reflectConstructorStream(String className) {
-    return this.reflect(className)
-        .stream()
+    return this.reflect(className).stream()
         .filter(m -> m.matchType(CandidateUnit.MemberType.CONSTRUCTOR));
   }
 
@@ -539,9 +535,7 @@ public class CachedASMReflector {
           ClassAnalyzeVisitor visitor = new ClassAnalyzeVisitor(className, name, false, false);
           read.accept(visitor, 0);
           List<MemberDescriptor> members =
-              visitor
-                  .getMembers()
-                  .stream()
+              visitor.getMembers().stream()
                   .filter(m -> m.isPublic() && m.isStatic())
                   .collect(Collectors.toList());
           if (!members.isEmpty()) {

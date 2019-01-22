@@ -343,8 +343,7 @@ public class LocationSearcher {
     final Source source = getSource(project, file);
     log.trace("search symbol {}", symbol);
 
-    return this.functions
-        .stream()
+    return this.functions.stream()
         .map(f -> f.apply(source, line, column, symbol))
         .filter(Optional::isPresent)
         .findFirst()
@@ -382,8 +381,7 @@ public class LocationSearcher {
     CachedASMReflector reflector = CachedASMReflector.getInstance();
     targets.addAll(reflector.getSuperClass(declaringClass));
 
-    return targets
-        .stream()
+    return targets.stream()
         .map(
             fqcn ->
                 existsFQCN(project.getAllSourcesWithDependencies(), fqcn)
@@ -406,9 +404,7 @@ public class LocationSearcher {
     try {
       Source declaringClassSrc = getSource(project, file);
       String path = declaringClassSrc.getFile().getPath();
-      return declaringClassSrc
-          .getClassScopes()
-          .stream()
+      return declaringClassSrc.getClassScopes().stream()
           .flatMap(ts -> ts.getScopes().stream())
           .filter(
               bs -> {
@@ -480,9 +476,7 @@ public class LocationSearcher {
               try {
                 final Source declaringClassSrc = getSource(project, f);
                 final String path = declaringClassSrc.getFile().getPath();
-                return declaringClassSrc
-                    .getClassScopes()
-                    .stream()
+                return declaringClassSrc.getClassScopes().stream()
                     .filter(cs -> matchClassName(cs, fqcn))
                     .map(
                         cs -> {
@@ -560,9 +554,7 @@ public class LocationSearcher {
       final String androidHome = System.getenv("ANDROID_HOME");
       if (androidHome != null) {
         final Optional<ProjectDependency> dependencyOptional =
-            this.project
-                .getDependencies()
-                .stream()
+            this.project.getDependencies().stream()
                 .filter(dependency -> dependency.getFile().equals(classFile))
                 .findFirst();
         if (dependencyOptional.isPresent()) {
@@ -702,8 +694,7 @@ public class LocationSearcher {
       ZipEntry entry = srcZipFile.getEntry(s);
       if (entry == null) {
         Optional<? extends ZipEntry> zipEntry =
-            srcZipFile
-                .stream()
+            srcZipFile.stream()
                 .filter(
                     e -> {
                       Path p = Paths.get(e.getName());
@@ -758,8 +749,7 @@ public class LocationSearcher {
                   targets.add(declaringClass);
                   CachedASMReflector reflector = CachedASMReflector.getInstance();
                   targets.addAll(reflector.getSuperClass(declaringClass));
-                  return targets
-                      .stream()
+                  return targets.stream()
                       .map(
                           fqcn ->
                               existsFQCN(project.getAllSourcesWithDependencies(), fqcn)
@@ -787,9 +777,7 @@ public class LocationSearcher {
     try {
       final Source declaringClassSrc = getSource(project, file);
       final String path = declaringClassSrc.getFile().getPath();
-      return declaringClassSrc
-          .getClassScopes()
-          .stream()
+      return declaringClassSrc.getClassScopes().stream()
           .map(cs -> getMatchField(cs, fqcn, fieldName))
           .filter(Optional::isPresent)
           .map(

@@ -88,8 +88,7 @@ public class TypeScope extends MethodScope {
     if (nonNull(scope)) {
       return scope.getMethodCall(line);
     }
-    return super.methodCalls
-        .stream()
+    return super.methodCalls.stream()
         .filter(mc -> mc.containsLine(line))
         .collect(Collectors.toList());
   }

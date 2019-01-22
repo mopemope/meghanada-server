@@ -60,21 +60,29 @@ public class GradleTestBase {
     log.info("finish setupProject");
   }
 
-  public static File getJar(String name) {
-    return project
-        .getDependencies()
-        .stream()
+  public static File getJar(String name, boolean partial) {
+    return project.getDependencies().stream()
         .map(
             pd -> {
               System.out.println(pd.getId());
-              if (pd.getId().contains(name)) {
-                return pd.getFile();
+              if (partial) {
+                if (pd.getId().contains(name)) {
+                  return pd.getFile();
+                }
+              } else {
+                if (pd.getId().equals(name)) {
+                  return pd.getFile();
+                }
               }
               return null;
             })
         .filter(Objects::nonNull)
         .findFirst()
         .orElse(null);
+  }
+
+  public static File getJar(String name) {
+    return getJar(name, true);
   }
 
   public static File getRTJar() {
@@ -91,16 +99,13 @@ public class GradleTestBase {
   }
 
   public static Set<File> getJars() {
-    return project
-        .getDependencies()
-        .stream()
+    return project.getDependencies().stream()
         .map(ProjectDependency::getFile)
         .collect(Collectors.toSet());
   }
 
   public static Set<File> getJars(Project tmp) {
-    return tmp.getDependencies()
-        .stream()
+    return tmp.getDependencies().stream()
         .map(ProjectDependency::getFile)
         .collect(Collectors.toSet());
   }
