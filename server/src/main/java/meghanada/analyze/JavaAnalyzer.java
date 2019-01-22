@@ -236,6 +236,8 @@ public class JavaAnalyzer {
       compileOptions.addAll(config.getJava9JavacArgs());
     } else if (this.compileTarget.equals("1.10") || this.compileTarget.equals("10")) {
       compileOptions.addAll(config.getJava10JavacArgs());
+    } else if (this.compileTarget.equals("1.11") || this.compileTarget.equals("11")) {
+      compileOptions.addAll(config.getJava11JavacArgs());
     }
   }
 
