@@ -88,7 +88,7 @@ dependencies {
 
   compile files("${System.properties['java.home']}/../lib/tools.jar")
   compile 'com.google.googlejavaformat:google-java-format:1.6'
-  compile 'org.apache.maven:maven-model-builder:3.5.4'
+  compile 'org.apache.maven:maven-model-builder:3.6.0'
   compile 'com.leacox.motif:motif:0.1'
   compile 'com.leacox.motif:motif-hamcrest:0.1'
   compile 'com.github.javaparser:javaparser-core:3.7.1'
@@ -113,7 +113,7 @@ dependencies {
   compile 'org.jboss.windup.decompiler:decompiler-api:4.2.0.Final'
   compile 'org.jboss.windup.decompiler:decompiler-fernflower:4.2.0.Final'
   compile 'com.google.code.findbugs:jsr305:3.0.2'
-  compile 'org.eclipse.jdt:org.eclipse.jdt.core:3.15.0'
+  compile 'org.eclipse.jdt:org.eclipse.jdt.core:3.16.0'
   compile 'de.ruedigermoeller:fst:2.56'
   compile "org.jetbrains.xodus:xodus-query:$xodusVersion"
   compile "org.jetbrains.xodus:xodus-openAPI:$xodusVersion"
