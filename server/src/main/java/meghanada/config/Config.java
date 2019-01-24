@@ -7,6 +7,7 @@ import static meghanada.config.Config.CompletionType.CONTAINS;
 import static meghanada.config.Config.CompletionType.FUZZY;
 import static meghanada.config.Config.CompletionType.PREFIX;
 
+import com.google.common.base.Splitter;
 import com.google.common.base.Stopwatch;
 import com.google.common.base.Strings;
 import com.typesafe.config.ConfigFactory;
@@ -16,11 +17,8 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -42,6 +40,7 @@ public class Config {
   private static final String COMPLETION_TYPE_FUZZY = "fuzzy";
   private static final String COMPLETION_TYPE_CAME_CASE = "camel-case";
 
+  private static final Splitter commaSplitter = Splitter.on(",");
   private static final Logger log = LogManager.getLogger(Config.class);
   private static Config config;
 
@@ -227,20 +226,12 @@ public class Config {
 
   public List<String> gradlePrepareCompileTask() {
     final String tasks = c.getString(GRADLE_PREPARE_COMPILE_TASK);
-    final String[] split = StringUtils.split(tasks, ",");
-    if (isNull(split)) {
-      return Collections.emptyList();
-    }
-    return Arrays.asList(split);
+    return commaSplitter.trimResults().omitEmptyStrings().splitToList(tasks);
   }
 
   public List<String> gradlePrepareTestCompileTask() {
     final String tasks = c.getString(GRADLE_PREPARE_TEST_COMPILE_TASK);
-    final String[] split = StringUtils.split(tasks, ",");
-    if (isNull(split)) {
-      return Collections.emptyList();
-    }
-    return Arrays.asList(split);
+    return commaSplitter.trimResults().omitEmptyStrings().splitToList(tasks);
   }
 
   private void setDebug() {
@@ -471,11 +462,7 @@ public class Config {
 
   public List<String> searchStaticMethodClasses() {
     final String classes = c.getString("search-static-method-classes");
-    final String[] split = StringUtils.split(classes, ",");
-    if (isNull(split)) {
-      return Collections.emptyList();
-    }
-    return Arrays.stream(split).map(String::trim).collect(Collectors.toList());
+    return commaSplitter.trimResults().omitEmptyStrings().splitToList(classes);
   }
 
   public CompletionType completionMatcher() {

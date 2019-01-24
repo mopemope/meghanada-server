@@ -1,5 +1,6 @@
 package meghanada.completion;
 
+import com.google.common.base.CharMatcher;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -25,6 +26,7 @@ public class JavaVariableCompletion {
   private static final Logger log = LogManager.getLogger(JavaCompletion.class);
 
   private static final String[] pluralClass = new String[] {"List", "Set", "Collections"};
+  private static final CharMatcher removeMatcher = CharMatcher.anyOf("<> ,$.");
 
   private Project project;
 
@@ -92,9 +94,7 @@ public class JavaVariableCompletion {
     }
 
     final List<String> results =
-        candidates.stream()
-            .map(s -> StringUtils.removePattern(s, "[<> ,$.]"))
-            .collect(Collectors.toList());
+        candidates.stream().map(s -> removeMatcher.removeFrom(s)).collect(Collectors.toList());
 
     return Optional.of(new LocalVariable(returnType, results));
   }
@@ -107,7 +107,7 @@ public class JavaVariableCompletion {
     if (i > 0) {
       final String gen = simpleName.substring(i);
       final String cls = simpleName.substring(0, i);
-      String removed = StringUtils.removePattern(gen, "[<> ,$.]");
+      String removed = removeMatcher.removeFrom(gen);
       if (JavaVariableCompletion.isPlural(cls)) {
         removed = StringUtils.uncapitalize(English.plural(removed));
       }

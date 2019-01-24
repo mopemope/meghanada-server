@@ -36,7 +36,7 @@ import meghanada.reflect.asm.CachedASMReflector;
 import meghanada.store.ProjectDatabaseHelper;
 import meghanada.utils.ClassNameUtils;
 import meghanada.utils.FileUtils;
-import org.apache.commons.lang3.StringEscapeUtils;
+import meghanada.utils.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.message.EntryMessage;
@@ -246,7 +246,8 @@ public class ReferenceSearcher {
         Range range = mc.nameRange;
         long line = range.begin.line;
         long column = range.begin.column;
-        String code = StringEscapeUtils.escapeJava(lines.get((int) line - 1));
+
+        String code = StringUtils.escapeJava(lines.get((int) line - 1));
         Reference ref = new Reference(src.filePath, line, column, code);
         result.add(ref);
       }
@@ -258,7 +259,7 @@ public class ReferenceSearcher {
         Range range = fa.range;
         long line = range.begin.line;
         long column = range.begin.column;
-        String code = StringEscapeUtils.escapeJava(lines.get((int) line - 1));
+        String code = StringUtils.escapeJava(lines.get((int) line - 1));
         Reference ref = new Reference(src.filePath, line, column, code);
         result.add(ref);
       }
@@ -283,7 +284,7 @@ public class ReferenceSearcher {
         Range range = mc.nameRange;
         long line = range.begin.line;
         long column = range.begin.column;
-        String code = StringEscapeUtils.escapeJava(lines.get((int) line - 1));
+        String code = StringUtils.escapeJava(lines.get((int) line - 1));
         Reference ref = new Reference(src.filePath, line, column, code);
         result.add(ref);
       }
@@ -305,7 +306,7 @@ public class ReferenceSearcher {
         Range range = fa.range;
         long line = range.begin.line;
         long column = range.begin.column;
-        String code = StringEscapeUtils.escapeJava(lines.get((int) line - 1));
+        String code = StringUtils.escapeJava(lines.get((int) line - 1));
         Reference ref = new Reference(src.filePath, line, column, code);
         result.add(ref);
       }

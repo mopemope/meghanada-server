@@ -3,6 +3,8 @@ package meghanada.utils;
 import static java.util.Objects.isNull;
 
 import com.google.common.base.Splitter;
+import com.google.common.escape.Escaper;
+import com.google.common.escape.Escapers;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -23,6 +25,22 @@ public class StringUtils {
   private static final String PatternForSplitByUpper = "(?=\\p{Upper})";
   private static final Map<String, Pattern> cachedPatterns = new HashMap<>(500);
   private static final String ALGORITHM_SHA_256 = "SHA-256";
+  private static final Escaper javaEscaper;
+
+  static {
+    javaEscaper =
+        Escapers.builder()
+            .addEscape('\'', "\\\'")
+            .addEscape('\"', "\\\"")
+            .addEscape('\\', "\\\\")
+            .addEscape('\t', "\\t")
+            .addEscape('\r', "\\r")
+            .addEscape('\n', "\\n")
+            .addEscape('\f', "\\f")
+            .addEscape('\b', "\\b")
+            .setSafeRange(' ', '~')
+            .build();
+  }
 
   public static String replace(final String string, final String target, final String replacement) {
     final StringBuilder sb = new StringBuilder(string);
@@ -126,5 +144,9 @@ public class StringUtils {
     } catch (NoSuchAlgorithmException e) {
       throw new IOException(e);
     }
+  }
+
+  public static String escapeJava(final String s) {
+    return javaEscaper.escape(s);
   }
 }
