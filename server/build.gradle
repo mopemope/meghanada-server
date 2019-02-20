@@ -18,7 +18,7 @@ ext {
   date = new Date().format("yyyy-MM-dd'T'HH:mm:ssZ")
 
   junitVersion = '5.3.2'
-  gradleVersion = '5.1.1'
+  gradleVersion = '5.2.1'
   log4jVersion = '2.11.1'
   xodusVersion = '1.2.3'
 }
