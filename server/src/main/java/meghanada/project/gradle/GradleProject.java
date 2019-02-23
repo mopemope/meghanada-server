@@ -61,12 +61,18 @@ public class GradleProject extends Project {
   private static String tempPath;
   transient Map<String, File> allModules;
   private File rootProject;
+  private boolean kts;
   private transient List<String> prepareCompileTask;
   private transient List<String> prepareTestCompileTask;
   private transient ComparableVersion gradleVersion = null;
 
   public GradleProject(final File projectRoot) throws IOException {
+    this(projectRoot, false);
+  }
+
+  public GradleProject(final File projectRoot, final boolean kts) throws IOException {
     super(projectRoot);
+    this.kts = kts;
     this.initialize();
   }
 
@@ -98,6 +104,10 @@ public class GradleProject extends Project {
 
       final File gradle = new File(dir, Project.GRADLE_PROJECT_FILE);
       if (!gradle.exists()) {
+        break;
+      }
+      final File gradleKts = new File(dir, Project.GRADLE_KTS_PROJECT_FILE);
+      if (!gradleKts.exists()) {
         break;
       }
       result = dir;
@@ -138,17 +148,22 @@ public class GradleProject extends Project {
 
   @Override
   public Project parseProject(File projectRoot, File current) throws ProjectParseException {
-    final ProjectConnection connection = getProjectConnection();
-    log.info("loading gradle project:{}", new File(this.projectRoot, Project.GRADLE_PROJECT_FILE));
-    try {
+    try (ProjectConnection connection = getProjectConnection()) {
+      if (this.kts) {
+        log.info(
+            "loading gradle project:{}",
+            new File(this.projectRoot, Project.GRADLE_KTS_PROJECT_FILE));
+
+      } else {
+        log.info(
+            "loading gradle project:{}", new File(this.projectRoot, Project.GRADLE_PROJECT_FILE));
+      }
       BuildEnvironment env = connection.getModel(BuildEnvironment.class);
       String version = env.getGradle().getGradleVersion();
       if (isNull(version)) {
         version = GradleVersion.current().getVersion();
       }
-      if (nonNull(version)) {
-        this.gradleVersion = new ComparableVersion(version);
-      }
+      this.gradleVersion = new ComparableVersion(version);
 
       final IdeaProject ideaProject =
           debugTimeItF(
@@ -194,8 +209,6 @@ public class GradleProject extends Project {
       return this;
     } catch (Exception e) {
       throw new ProjectParseException(e);
-    } finally {
-      connection.close();
     }
   }
 
@@ -601,5 +614,9 @@ public class GradleProject extends Project {
         projectConnection.close();
       }
     }
+  }
+
+  public boolean isKTS() {
+    return this.kts;
   }
 }

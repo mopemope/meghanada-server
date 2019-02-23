@@ -121,6 +121,7 @@ public class Session {
 
       // challenge
       final File gradle = new File(base, Project.GRADLE_PROJECT_FILE);
+      final File gradleKts = new File(base, Project.GRADLE_KTS_PROJECT_FILE);
       final File mvn = new File(base, Project.MVN_PROJECT_FILE);
       final File eclipse = new File(base, Project.ECLIPSE_PROJECT_FILE);
       final File meghanada = new File(base, Config.MEGHANADA_CONF_FILE);
@@ -128,6 +129,9 @@ public class Session {
       if (gradle.exists()) {
         log.debug("find gradle project {}", gradle);
         return loadProject(base, Project.GRADLE_PROJECT_FILE, current);
+      } else if (gradleKts.exists()) {
+        log.debug("find gradle(kts) project {}", gradleKts);
+        return loadProject(base, Project.GRADLE_KTS_PROJECT_FILE, current);
       } else if (mvn.exists()) {
         log.debug("find mvn project {}", mvn);
         return loadProject(base, Project.MVN_PROJECT_FILE, current);
@@ -189,6 +193,9 @@ public class Session {
       switch (targetFile) {
         case Project.GRADLE_PROJECT_FILE:
           project = new GradleProject(projectRoot);
+          break;
+        case Project.GRADLE_KTS_PROJECT_FILE:
+          project = new GradleProject(projectRoot, true);
           break;
         case Project.MVN_PROJECT_FILE:
           project = new MavenProject(projectRoot);
@@ -254,12 +261,16 @@ public class Session {
 
       // challenge
       final File gradle = new File(base, Project.GRADLE_PROJECT_FILE);
+      final File gradleKts = new File(base, Project.GRADLE_KTS_PROJECT_FILE);
       final File mvn = new File(base, Project.MVN_PROJECT_FILE);
       final File eclipse = new File(base, Project.ECLIPSE_PROJECT_FILE);
       final File meghanada = new File(base, Config.MEGHANADA_CONF_FILE);
 
       if (gradle.exists()) {
         log.debug("find gradle project {}", gradle);
+        return base;
+      } else if (gradleKts.exists()) {
+        log.debug("find gradle(kts) project {}", gradleKts);
         return base;
       } else if (mvn.exists()) {
         log.debug("find mvn project {}", mvn);
@@ -308,9 +319,17 @@ public class Session {
     }
 
     if (currentProject instanceof GradleProject) {
-      return loadProject(projectRoot, Project.GRADLE_PROJECT_FILE, base)
-          .map(project -> setProject(projectRoot, project))
-          .orElse(false);
+      File buildFile = new File(projectRoot, Project.GRADLE_PROJECT_FILE);
+      if (buildFile.exists()) {
+        return loadProject(projectRoot, Project.GRADLE_PROJECT_FILE, base)
+            .map(project -> setProject(projectRoot, project))
+            .orElse(false);
+      } else {
+        // search kts
+        return loadProject(projectRoot, Project.GRADLE_KTS_PROJECT_FILE, base)
+            .map(project -> setProject(projectRoot, project))
+            .orElse(false);
+      }
     } else if (currentProject instanceof MavenProject) {
       return loadProject(projectRoot, Project.MVN_PROJECT_FILE, base)
           .map(project -> setProject(projectRoot, project))
@@ -772,11 +791,20 @@ public class Session {
     final File projectRoot = currentProject.getProjectRoot();
     this.projects.clear();
     if (currentProject instanceof GradleProject) {
-      loadProject(projectRoot, Project.GRADLE_PROJECT_FILE, projectRoot)
-          .ifPresent(
-              project -> {
-                boolean ret = setProject(projectRoot, project);
-              });
+      File buildFile = new File(projectRoot, Project.GRADLE_PROJECT_FILE);
+      if (buildFile.exists()) {
+        loadProject(projectRoot, Project.GRADLE_PROJECT_FILE, projectRoot)
+            .ifPresent(
+                project -> {
+                  boolean ret = setProject(projectRoot, project);
+                });
+      } else {
+        loadProject(projectRoot, Project.GRADLE_KTS_PROJECT_FILE, projectRoot)
+            .ifPresent(
+                project -> {
+                  boolean ret = setProject(projectRoot, project);
+                });
+      }
     } else if (currentProject instanceof MavenProject) {
       loadProject(projectRoot, Project.MVN_PROJECT_FILE, projectRoot)
           .ifPresent(
