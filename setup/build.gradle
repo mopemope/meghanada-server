@@ -2,7 +2,7 @@ plugins {
   id 'java'
   id 'maven'
   id 'application'
-  id 'com.github.johnrengelman.shadow' version '4.0.2'
+  id 'com.github.johnrengelman.shadow' version '4.0.4'
 }
 
 ext {
