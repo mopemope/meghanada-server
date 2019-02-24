@@ -76,21 +76,21 @@ public class IndexDatabase {
         this.environment = null;
       }
     }
-
-    if (isNull(this.environment)) {
-      File env = new File(loc, "index");
-      this.environment = Environments.newContextualInstance(env);
-      String location = this.environment.getLocation();
+    if (isNull(this.environment) || isNull(this.searcher)) {
+      File indexDir = new File(loc, "index");
+      Environment env = Environments.newContextualInstance(indexDir);
+      String location = env.getLocation();
       log.debug("open index database {}", location);
       try {
-        this.searcher = new DocumentSearcher((ContextualEnvironment) this.environment);
+        this.searcher = new DocumentSearcher((ContextualEnvironment) env);
+        this.environment = env;
       } catch (IOException e) {
         throw new UncheckedIOException(e);
       }
     }
   }
 
-  private synchronized void indexObject(final SearchIndexable s) {
+  synchronized void indexObject(final SearchIndexable s) {
     this.open();
     this.searcher.executeInTransaction(
         () -> {
@@ -98,8 +98,8 @@ public class IndexDatabase {
             Stopwatch stopwatch = Stopwatch.createStarted();
             String id = s.getIndexGroupId();
             List<Document> docs = s.getDocumentIndices();
-            searcher.deleteDocuments(SearchIndexable.GROUP_ID, id);
-            searcher.addDocuments(docs);
+            this.searcher.deleteDocuments(SearchIndexable.GROUP_ID, id);
+            this.searcher.addDocuments(docs);
             log.debug("indexed :{} elapsed:{}", id, stopwatch.stop());
           } catch (Throwable e) {
             log.catching(e);
@@ -107,7 +107,7 @@ public class IndexDatabase {
         });
   }
 
-  private synchronized void indexObjects(final List<SearchIndexable> list) {
+  synchronized void indexObjects(final List<SearchIndexable> list) {
     this.open();
     this.searcher.executeInTransaction(
         () -> {
@@ -116,8 +116,8 @@ public class IndexDatabase {
               if (nonNull(s) && nonNull(s.getIndexGroupId())) {
                 String id = s.getIndexGroupId();
                 List<Document> docs = s.getDocumentIndices();
-                searcher.deleteDocuments(SearchIndexable.GROUP_ID, id);
-                searcher.addDocuments(docs);
+                this.searcher.deleteDocuments(SearchIndexable.GROUP_ID, id);
+                this.searcher.addDocuments(docs);
                 log.debug("indexed :{}", id);
               }
             }
@@ -129,7 +129,9 @@ public class IndexDatabase {
 
   @Subscribe
   public void on(final IndexEvent event) {
-
+    if (isNull(this.searcher)) {
+      return;
+    }
     if (nonNull(event.indexables)) {
       this.indexObjects(event.indexables);
     } else {
@@ -232,7 +234,7 @@ public class IndexDatabase {
                 query,
                 maxHits,
                 d -> {
-                  byte[] b = d.getBinaryValue("binary");
+                  byte[] b = d.getBinaryValue("binary").bytes;
                   return Serializer.asObject(b, MemberDescriptor.class);
                 });
           } catch (Throwable e) {

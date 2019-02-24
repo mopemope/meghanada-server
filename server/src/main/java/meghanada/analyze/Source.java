@@ -3,8 +3,6 @@ package meghanada.analyze;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static meghanada.index.IndexableWord.Field.CODE;
-import static org.apache.lucene.document.Field.Index.ANALYZED;
-import static org.apache.lucene.document.Field.Index.NOT_ANALYZED;
 import static org.apache.lucene.document.Field.Store.NO;
 import static org.apache.lucene.document.Field.Store.YES;
 
@@ -53,7 +51,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.message.EntryMessage;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document.StringField;
+import org.apache.lucene.document.TextField;
 
 public class Source implements Serializable, Storable, SearchIndexable {
 
@@ -849,7 +848,7 @@ public class Source implements Serializable, Storable, SearchIndexable {
       String s;
       while ((s = br.readLine()) != null) {
         final Document doc = getBaseDocument(lineNumber);
-        doc.add(new Field(CODE.getName(), s, YES, ANALYZED));
+        doc.add(new TextField(CODE.getName(), s, YES));
 
         if (this.indexWords.containsKey(lineNumber)) {
 
@@ -866,18 +865,18 @@ public class Source implements Serializable, Storable, SearchIndexable {
             final String name = field.getName();
             if (field.isCategorize()) {
               if (nonNull(name)) {
-                doc.add(new Field(SearchIndexable.CATEGORY, name, YES, NOT_ANALYZED));
+                doc.add(new StringField(SearchIndexable.CATEGORY, name, YES));
               }
             }
             if (nonNull(val) && nonNull(name)) {
-              doc.add(new Field(name, val, NO, ANALYZED));
+              doc.add(new TextField(name, val, NO));
             }
           }
         }
 
         String cat = doc.get(SearchIndexable.CATEGORY);
         if (Strings.isNullOrEmpty(cat)) {
-          doc.add(new Field(SearchIndexable.CATEGORY, CODE.getName(), YES, NOT_ANALYZED));
+          doc.add(new StringField(SearchIndexable.CATEGORY, CODE.getName(), YES));
         }
         documents.add(doc);
         lineNumber++;
@@ -891,8 +890,8 @@ public class Source implements Serializable, Storable, SearchIndexable {
 
   private Document getBaseDocument(long lineNumber) {
     final Document doc = new Document();
-    doc.add(new Field(SearchIndexable.GROUP_ID, this.filePath, YES, NOT_ANALYZED));
-    doc.add(new Field(SearchIndexable.LINE_NUMBER, Long.toString(lineNumber), YES, NOT_ANALYZED));
+    doc.add(new StringField(SearchIndexable.GROUP_ID, this.filePath, YES));
+    doc.add(new StringField(SearchIndexable.LINE_NUMBER, Long.toString(lineNumber), YES));
     return doc;
   }
 

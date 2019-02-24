@@ -13,30 +13,29 @@ import jetbrains.exodus.env.ContextualEnvironment;
 import jetbrains.exodus.env.Environment;
 import jetbrains.exodus.env.StoreConfig;
 import jetbrains.exodus.lucene.ExodusDirectory;
+import jetbrains.exodus.lucene.codecs.Lucene70CodecWithNoFieldCompression;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.SerialMergeScheduler;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.queryParser.ParseException;
-import org.apache.lucene.queryParser.QueryParser;
+import org.apache.lucene.queryparser.classic.ParseException;
+import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.NoLockFactory;
-import org.apache.lucene.util.Version;
 
 public class DocumentSearcher implements AutoCloseable {
 
   private static final Logger log = LogManager.getLogger(DocumentSearcher.class);
 
-  private static final Version LUCENE_VERSION = Version.LUCENE_36;
   private final Environment environment;
   private final Directory directory;
   private final Analyzer analyzer;
@@ -50,7 +49,7 @@ public class DocumentSearcher implements AutoCloseable {
         withPrefixing
             ? StoreConfig.WITHOUT_DUPLICATES_WITH_PREFIXING
             : StoreConfig.WITHOUT_DUPLICATES;
-    this.directory = new ExodusDirectory(environment, config, NoLockFactory.getNoLockFactory());
+    this.directory = new ExodusDirectory(environment, config);
     this.analyzer = createAnalyzer();
   }
 
@@ -59,13 +58,13 @@ public class DocumentSearcher implements AutoCloseable {
   }
 
   private static Analyzer createAnalyzer() {
-    return new StandardAnalyzer(LUCENE_VERSION);
+    return new StandardAnalyzer();
   }
 
   private static IndexWriterConfig createIndexConfig(Analyzer analyzer) {
-    IndexWriterConfig config = new IndexWriterConfig(LUCENE_VERSION, analyzer);
+    IndexWriterConfig config = new IndexWriterConfig(analyzer);
     config.setMergeScheduler(new SerialMergeScheduler());
-    config.setMaxThreadStates(2);
+    config.setCodec(new Lucene70CodecWithNoFieldCompression());
     return config;
   }
 
@@ -79,7 +78,7 @@ public class DocumentSearcher implements AutoCloseable {
   }
 
   private static IndexReader createIndexReader(Directory directory) throws IOException {
-    return IndexReader.open(directory);
+    return DirectoryReader.open(directory);
   }
 
   private synchronized IndexSearcher createIndexSearcher(IndexReader indexReader) {
@@ -101,17 +100,6 @@ public class DocumentSearcher implements AutoCloseable {
     this.indexWriter = null;
   }
 
-  private synchronized void closeIndexSearcher() {
-    if (nonNull(this.indexSearcher)) {
-      try {
-        this.indexSearcher.close();
-      } catch (IOException e) {
-        log.catching(e);
-      }
-    }
-    this.indexSearcher = null;
-  }
-
   void addDocuments(final Collection<Document> docs) throws IOException {
     indexWriter.addDocuments(docs);
   }
@@ -121,7 +109,7 @@ public class DocumentSearcher implements AutoCloseable {
   }
 
   private Query getQuery(final String field, final String query) throws ParseException {
-    final QueryParser queryParser = new QueryParser(LUCENE_VERSION, field, analyzer);
+    final QueryParser queryParser = new QueryParser(field, analyzer);
     queryParser.setAllowLeadingWildcard(true);
     queryParser.setDefaultOperator(QueryParser.Operator.OR);
     return queryParser.parse(query);
@@ -170,7 +158,6 @@ public class DocumentSearcher implements AutoCloseable {
             txn.abort();
             throw new UncheckedIOException(ex);
           } finally {
-            this.closeIndexSearcher();
             this.closeIndexWriter();
           }
         });
@@ -190,7 +177,6 @@ public class DocumentSearcher implements AutoCloseable {
             txn.abort();
             throw new UncheckedIOException(ex);
           } finally {
-            this.closeIndexSearcher();
             this.closeIndexWriter();
           }
         });
@@ -207,8 +193,6 @@ public class DocumentSearcher implements AutoCloseable {
           } catch (IOException ex) {
             txn.abort();
             throw new UncheckedIOException(ex);
-          } finally {
-            this.closeIndexSearcher();
           }
         });
   }
@@ -216,7 +200,6 @@ public class DocumentSearcher implements AutoCloseable {
   @Override
   public void close() {
     try {
-      this.closeIndexSearcher();
       this.closeIndexWriter();
       this.directory.close();
     } catch (Throwable e) {

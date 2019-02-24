@@ -1,12 +1,10 @@
 package meghanada.reflect;
 
 import static java.util.Objects.nonNull;
-import static meghanada.index.IndexableWord.Field.C_BINARY;
 import static meghanada.index.IndexableWord.Field.C_COMPLETION;
 import static meghanada.index.IndexableWord.Field.C_DECLARING_CLASS;
 import static meghanada.index.IndexableWord.Field.C_MEMBER_TYPE;
 import static meghanada.index.IndexableWord.Field.C_MODIFIER;
-import static org.apache.lucene.document.Field.Index.ANALYZED;
 import static org.apache.lucene.document.Field.Store.NO;
 import static org.apache.lucene.document.Field.Store.YES;
 
@@ -19,11 +17,10 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 import javax.annotation.Nonnull;
-import meghanada.store.Serializer;
 import meghanada.utils.ClassNameUtils;
 import meghanada.utils.StringUtils;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document.TextField;
 
 public abstract class MemberDescriptor
     implements CandidateUnit, Cloneable, Comparable<MemberDescriptor>, Serializable {
@@ -311,11 +308,11 @@ public abstract class MemberDescriptor
 
   public Document toDocument() {
     Document doc = new Document();
-    doc.add(new Field(C_BINARY.getName(), Serializer.asByte(this)));
-    doc.add(new Field(C_DECLARING_CLASS.getName(), declaringClass, YES, ANALYZED));
-    doc.add(new Field(C_COMPLETION.getName(), name, YES, ANALYZED));
-    doc.add(new Field(C_MEMBER_TYPE.getName(), memberType.name(), NO, ANALYZED));
-    doc.add(new Field(C_MODIFIER.getName(), modifier.trim(), NO, ANALYZED));
+    // doc.add(new Field(C_BINARY.getName(), Serializer.asByte(this), TextField.TYPE_STORED));
+    doc.add(new TextField(C_DECLARING_CLASS.getName(), declaringClass, YES));
+    doc.add(new TextField(C_COMPLETION.getName(), name, YES));
+    doc.add(new TextField(C_MEMBER_TYPE.getName(), memberType.name(), NO));
+    doc.add(new TextField(C_MODIFIER.getName(), modifier.trim(), NO));
     return doc;
   }
 }

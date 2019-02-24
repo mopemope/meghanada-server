@@ -12,6 +12,10 @@ ext {
 
   def gitFile = new File('./.git')
   if (gitFile.exists()) {
+    branch = grgit.branch.current().name
+    if (!["master", "dev"].contains(branch)) {
+      serverVersion = "$serverVersion-${branch}"
+    }
     buildVersion = grgit.head().abbreviatedId
   }
   longVersion = "$serverVersion-${buildVersion}"
@@ -20,7 +24,7 @@ ext {
   junitVersion = '5.3.2'
   gradleVersion = '5.2.1'
   log4jVersion = '2.11.1'
-  xodusVersion = '1.2.3'
+  xodusVersion = '1.3.0'
 }
 
 mainClassName = "meghanada.Main"
@@ -46,6 +50,7 @@ tasks.withType(JavaCompile) {
 }
 
 shadowJar {
+  mergeServiceFiles()
   baseName = 'meghanada'
   classifier = null
   version = serverVersion
