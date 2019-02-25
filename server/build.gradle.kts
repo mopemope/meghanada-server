@@ -118,7 +118,6 @@ bintray {
         version(delegateClosureOf<BintrayExtension.VersionConfig> {
             name = "$serverVersion"
             desc = "Meghanada Server $serverVersion"
-            released = LocalDateTime.now().toString()
         })
 
     })
