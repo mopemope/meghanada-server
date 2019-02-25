@@ -26,6 +26,11 @@ val longVersion = "$setupVersion-$buildVersion"
 val date: String = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss"))
 val applicationName = "meghanada-setup"
 
+base {
+    archivesBaseName = applicationName
+    version = setupVersion
+}
+
 java {
     sourceCompatibility = JavaVersion.VERSION_1_8
     targetCompatibility = JavaVersion.VERSION_1_8
@@ -68,6 +73,7 @@ bintray {
     })
 }
 
+
 tasks {
 
     val processResources by existing
@@ -75,16 +81,12 @@ tasks {
     val shadowJar by existing
     val clean by existing
 
-    withType<ShadowJar> {
-        baseName = "meghanada-setup"
-        classifier = null
-        version = setupVersion
-    }
+    withType<ShadowJar> {}
 
     val embedVersion = register<Copy>("embedVersion") {
         from("src/main/resources/VERSION")
         into("build/resources/main")
-        expand(Pair("buildDate", date), Pair("version", longVersion), Pair("appName", applicationName))
+        expand(mapOf("buildDate" to date, "version" to longVersion, "appName" to applicationName))
         dependsOn(processResources)
     }
 

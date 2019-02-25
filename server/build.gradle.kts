@@ -37,6 +37,11 @@ val gradleVersion = "5.2.1"
 val log4jVersion = "2.11.2"
 val xodusVersion = "1.3.0"
 
+base {
+    archivesBaseName = applicationName
+    version = serverVersion
+}
+
 java {
     sourceCompatibility = JavaVersion.VERSION_1_8
     targetCompatibility = JavaVersion.VERSION_1_8
@@ -127,10 +132,6 @@ tasks {
 
     withType<ShadowJar> {
         mergeServiceFiles()
-        baseName = "meghanada"
-        classifier = null
-        version = serverVersion
-
         relocate("junit.framework", "meghanada.junit.framework")
         relocate("com.github.javaparser", "meghanada.com.github.javaparser")
         relocate("com.google", "meghanada.com.google")
