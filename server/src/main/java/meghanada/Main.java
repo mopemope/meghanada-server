@@ -144,8 +144,8 @@ public class Main {
         LoggerConfig loggerConfig = configuration.getLoggerConfig(LogManager.ROOT_LOGGER_NAME);
         FileAppender fileAppender =
             FileAppender.newBuilder()
-                .withName("file")
-                .withLayout(
+                .setName("file")
+                .setLayout(
                     PatternLayout.newBuilder()
                         .withPattern("[%d][%-5.-5p][%-14.-14c{1}:%4L] %-22.-22M - %m%n")
                         .build())
