@@ -11,6 +11,7 @@ plugins {
     id("maven")
     id("application")
     id("com.github.johnrengelman.shadow").version("4.0.4")
+    id("com.jfrog.bintray").version("1.8.4")
 }
 
 val group = "meghanada"
@@ -107,4 +108,3 @@ tasks {
         })
     }
 }
-

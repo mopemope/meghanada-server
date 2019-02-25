@@ -4,8 +4,6 @@ plugins {
     id("org.ajoberstar.grgit").version("3.0.0")
     id("com.github.sherter.google-java-format").version("0.8")
     id("net.ltgt.errorprone").version("0.6.1")
-
-    id("com.jfrog.bintray").version("1.8.4").apply(false)
 }
 
 repositories {
@@ -35,6 +33,4 @@ allprojects {
         maven(url = "https://maven.google.com")
         jcenter()
     }
-    apply(plugin = "com.jfrog.bintray")
-
 }
