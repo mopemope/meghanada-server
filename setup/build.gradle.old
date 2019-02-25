@@ -57,9 +57,9 @@ shadowJar {
   version = setupVersion
 }
 
-configurations.errorprone {
-  resolutionStrategy.force 'com.google.errorprone:error_prone_core:2.3.2'
-}
+// configurations.errorprone {
+//   resolutionStrategy.force 'com.google.errorprone:error_prone_core:2.3.2'
+// }
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
 
