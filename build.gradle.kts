@@ -1,9 +1,9 @@
 plugins {
-    id("com.gradle.build-scan").version("2.0.2")
+    id("com.gradle.build-scan").version("2.1")
     id("com.github.ben-manes.versions").version("0.20.0")
     id("org.ajoberstar.grgit").version("3.0.0")
     id("com.github.sherter.google-java-format").version("0.8")
-    id("net.ltgt.errorprone").version("0.6.1")
+    id("net.ltgt.errorprone").version("0.7.1")
 }
 
 repositories {
