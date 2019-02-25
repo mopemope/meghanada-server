@@ -19,9 +19,10 @@ var buildVersion = "release"
 
 val gitFile = File("./.git")
 if (gitFile.exists()) {
-  buildVersion = Grgit.open().head().abbreviatedId
+  val grgit = Grgit.open()
+  buildVersion = grgit.head().abbreviatedId
 }
-val longVersion = "$setupVersion-${buildVersion}"
+val longVersion = "$setupVersion-$buildVersion"
 val date = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss"))
 val applicationName = "meghanada-setup"
 
