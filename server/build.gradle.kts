@@ -15,7 +15,7 @@ plugins {
 }
 
 val group = "meghanada"
-var serverVersion = "1.0.13"
+var serverVersion = "1.0.14"
 var buildVersion = "release"
 
 val gitFile = File("./.git")
