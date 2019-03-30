@@ -379,7 +379,16 @@ public final class FileUtils {
     }
   }
 
-  public static Optional<File> existsFQCN(final Set<File> roots, final String fqcn) {
+  public static Optional<File> existsFQCN(
+      final Project project, final Set<File> roots, final String fqcn) {
+    try {
+      Optional<String> result = GlobalCache.getInstance().getSourceMap(project, fqcn);
+      if (result.isPresent()) {
+        return result.map(File::new);
+      }
+    } catch (ExecutionException ex) {
+      log.catching(ex);
+    }
     return roots
         .parallelStream()
         .map(root -> convertFQCNToFile(root, fqcn))

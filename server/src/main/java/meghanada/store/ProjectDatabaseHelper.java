@@ -39,6 +39,7 @@ public class ProjectDatabaseHelper {
   private static final String BLOB_PROP_MEMBERS = "members";
   private static final String BLOB_PROP_CHECKSUM = "checksum";
   private static final String BLOB_PROP_CALLER = "caller";
+  private static final String BLOB_PROP_SOURCEMAP = "sourceMap";
   private static final Logger log = LogManager.getLogger(ProjectDatabaseHelper.class);
   private static int indexTTL = 60 * 60;
 
@@ -344,9 +345,52 @@ public class ProjectDatabaseHelper {
             txn.abort();
             return false;
           }
-          // txn.saveEntity(entity);
           return true;
         });
+  }
+
+  @Nonnull
+  @SuppressWarnings("unchecked")
+  public static Map<String, String> getSourceMap(String projectRoot) {
+    Optional<Map<String, String>> result =
+        ProjectDatabase.getInstance()
+            .computeInReadonly(
+                txn -> {
+                  EntityIterable entities =
+                      txn.find(Project.ENTITY_TYPE, ID, projectRoot)
+                          .intersect(txn.findWithBlob(Project.ENTITY_TYPE, BLOB_PROP_SOURCEMAP));
+                  Entity entity = entities.getFirst();
+                  if (isNull(entity)) {
+                    return Optional.empty();
+                  }
+                  try (InputStream in = entity.getBlob(BLOB_PROP_SOURCEMAP)) {
+                    return Optional.ofNullable(Serializer.readObject(in, ConcurrentHashMap.class));
+                  } catch (Exception e) {
+                    log.warn(e.getMessage());
+                    return Optional.empty();
+                  }
+                });
+    return result.orElse(new ConcurrentHashMap<>(32));
+  }
+
+  public static boolean saveSourceMap(String projectRoot, Map<String, String> map) {
+    return ProjectDatabase.getInstance()
+        .execute(
+            txn -> {
+              EntityIterable entities = txn.find(Project.ENTITY_TYPE, ID, projectRoot);
+              Entity entity = entities.getFirst();
+              if (isNull(entity)) {
+                return false;
+              }
+              try {
+                ProjectDatabase.setSerializeBlobData(entity, BLOB_PROP_SOURCEMAP, map);
+              } catch (IOException e) {
+                log.catching(e);
+                txn.abort();
+                return false;
+              }
+              return true;
+            });
   }
 
   public static void saveCompileResult(CompileResult result) {

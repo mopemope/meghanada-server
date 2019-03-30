@@ -57,7 +57,10 @@ public class SourceCacheSubscriber {
     final GlobalCache globalCache = GlobalCache.getInstance();
     final List<ClassScope> classScopes = source.getClassScopes();
     for (final ClassScope cs : classScopes) {
+
       final String fqcn = cs.getFQCN();
+      globalCache.replaceSourceMap(this.project, fqcn, source.getFile().getCanonicalPath());
+
       for (String clazz : source.usingClasses) {
         if (this.callerMap.containsKey(clazz)) {
           final Set<String> set = this.callerMap.get(clazz);
@@ -92,6 +95,7 @@ public class SourceCacheSubscriber {
   public void complete() throws IOException {
     boolean b =
         ProjectDatabaseHelper.saveChecksumMap(this.project.getProjectRootPath(), this.checksumMap);
+    GlobalCache.getInstance().saveSourceMap(this.project);
     this.project.writeCaller();
   }
 

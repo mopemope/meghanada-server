@@ -67,9 +67,9 @@ public class LocationSearcher {
 
   private static final String TEMP_FILE_PREFIX = "meghanada-server";
   private static final String TEMP_DECOMPILE_DIR = "meghanada_decompile";
-
   private static final Logger log = LogManager.getLogger(LocationSearcher.class);
   private static final Pattern IMPORT_RE = Pattern.compile("import .*\\d;$");
+
   private final List<LocationSearchFunction> functions;
   private final Map<String, File> copiedSrcFile = new HashMap<>(16);
   private final Map<String, List<String>> decompileFiles = new HashMap<>(16);
@@ -384,7 +384,7 @@ public class LocationSearcher {
     return targets.stream()
         .map(
             fqcn ->
-                existsFQCN(project.getAllSourcesWithDependencies(), fqcn)
+                existsFQCN(this.project, this.project.getAllSourcesWithDependencies(), fqcn)
                     .flatMap(file -> getMethodLocationFromProject(methodName, arguments, file))
                     .orElseGet(
                         wrapIO(
@@ -470,7 +470,7 @@ public class LocationSearcher {
   }
 
   private Location getFQCNLocation(final String fqcn) {
-    return existsFQCN(project.getAllSourcesWithDependencies(), fqcn)
+    return existsFQCN(this.project, this.project.getAllSourcesWithDependencies(), fqcn)
         .flatMap(
             f -> {
               try {
@@ -752,7 +752,10 @@ public class LocationSearcher {
                   return targets.stream()
                       .map(
                           fqcn ->
-                              existsFQCN(project.getAllSourcesWithDependencies(), fqcn)
+                              existsFQCN(
+                                      this.project,
+                                      this.project.getAllSourcesWithDependencies(),
+                                      fqcn)
                                   .flatMap(
                                       file -> getFieldLocationFromProject(fqcn, fieldName, file))
                                   .orElseGet(
