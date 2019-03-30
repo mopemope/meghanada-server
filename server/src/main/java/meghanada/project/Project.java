@@ -662,7 +662,7 @@ public abstract class Project implements Serializable, Storable {
     return this.runProcess(cmd);
   }
 
-  public Project mergeFromProjectConfig() throws ProjectParseException {
+  public Project mergeFromProjectConfig() throws IOException {
     final File configFile = new File(this.projectRoot, Config.MEGHANADA_CONF_FILE);
     if (configFile.exists()) {
       final com.typesafe.config.Config config = ConfigFactory.parseFile(configFile);
@@ -784,12 +784,21 @@ public abstract class Project implements Serializable, Storable {
       // output
       if (config.hasPath(OUTPUT)) {
         String o = config.getString(OUTPUT);
-        this.output = new File(o);
+        File f = new File(o);
+        if (!f.isAbsolute()) {
+          f = new File(this.projectRoot, o);
+        }
+        this.output = f;
       }
+
       // test-output
       if (config.hasPath(TEST_OUTPUT)) {
         String o = config.getString(TEST_OUTPUT);
-        this.testOutput = new File(o);
+        File f = new File(o);
+        if (!f.isAbsolute()) {
+          f = new File(this.projectRoot, o);
+        }
+        this.testOutput = f;
       }
 
       final Config mainConfig = Config.load();
