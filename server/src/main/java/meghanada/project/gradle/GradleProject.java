@@ -208,8 +208,21 @@ public class GradleProject extends Project {
 
       return this;
     } catch (Exception e) {
-      throw new ProjectParseException(e);
+      Throwable cause = findLocationException(e);
+      throw new ProjectParseException(cause);
     }
+  }
+
+  private Throwable findLocationException(Throwable e) {
+    Throwable cause = e.getCause();
+    if (nonNull(cause)) {
+      String name = cause.getClass().getName();
+      if (name.contains("Location")) {
+        return cause;
+      }
+      return findLocationException(cause);
+    }
+    return e;
   }
 
   private void parseIdeaModule(final IdeaModule ideaModule) throws IOException {
