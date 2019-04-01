@@ -123,6 +123,6 @@ public class JavaVariableCompletionTest extends GradleTestBase {
   }
 
   private JavaVariableCompletion getCompilation() throws Exception {
-    return new JavaVariableCompletion(getProject());
+    return new JavaVariableCompletion(GradleTestBase::getProject);
   }
 }

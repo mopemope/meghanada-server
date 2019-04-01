@@ -30,7 +30,7 @@ public class DeclarationSearcherTest extends GradleTestBase {
     if (searcher != null) {
       return searcher;
     }
-    searcher = new DeclarationSearcher(getProject());
+    searcher = new DeclarationSearcher(GradleTestBase::getProject);
     return searcher;
   }
 

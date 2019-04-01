@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
+import java.util.function.Supplier;
 import meghanada.analyze.ClassScope;
 import meghanada.analyze.MethodCall;
 import meghanada.analyze.Source;
@@ -28,11 +29,11 @@ import org.apache.logging.log4j.message.EntryMessage;
 public class DeclarationSearcher {
   private static final Logger log = LogManager.getLogger(DeclarationSearcher.class);
   private final List<DeclarationSearchFunction> functions;
-  private Project project;
+  private Supplier<Project> projectSupplier;
 
-  public DeclarationSearcher(final Project project) {
+  public DeclarationSearcher(final Supplier<Project> supplier) {
     this.functions = DeclarationSearcher.getFunctions();
-    this.project = project;
+    this.projectSupplier = supplier;
   }
 
   private static Optional<Declaration> searchFieldVar(
@@ -240,10 +241,6 @@ public class DeclarationSearcher {
     return result;
   }
 
-  public void setProject(Project project) {
-    this.project = project;
-  }
-
   private Optional<Declaration> execFunctions(
       final Source src, final Integer line, final Integer column, final String symbol) {
 
@@ -264,7 +261,7 @@ public class DeclarationSearcher {
       return Optional.empty();
     }
     log.trace("search symbol={}", symbol);
-    return getSource(project, file).flatMap(src -> execFunctions(src, line, column, symbol));
+    return getSource(file).flatMap(src -> execFunctions(src, line, column, symbol));
   }
 
   @FunctionalInterface

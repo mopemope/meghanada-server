@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import meghanada.analyze.BlockScope;
 import meghanada.analyze.ClassScope;
@@ -45,10 +46,10 @@ public class ReferenceSearcher {
 
   private static final Logger log = LogManager.getLogger(ReferenceSearcher.class);
   private final List<SearchFunction> functions;
-  private Project project;
+  private Supplier<Project> projectSupplier;
 
-  public ReferenceSearcher(Project project) {
-    this.project = project;
+  public ReferenceSearcher(Supplier<Project> supplier) {
+    this.projectSupplier = supplier;
     this.functions = getSearchFunctions();
   }
 
@@ -396,7 +397,7 @@ public class ReferenceSearcher {
     log.trace("search symbol={}", symbol);
 
     Optional<SearchCondition> cond =
-        getSource(this.project, file).flatMap(src -> getSearchCondition(src, line, column, symbol));
+        getSource(file).flatMap(src -> getSearchCondition(src, line, column, symbol));
 
     if (!cond.isPresent()) {
       return Collections.emptyList();

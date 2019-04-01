@@ -21,6 +21,7 @@ import java.util.Set;
 import java.util.SortedMap;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.annotation.Nonnull;
@@ -60,11 +61,11 @@ public class JavaCompletion {
   private static final Logger log = LogManager.getLogger(JavaCompletion.class);
   private final TreeBasedTable<File, CandidateUnit, Integer> statisticsTable;
 
-  private Project project;
+  private Supplier<Project> projectSupplier;
   private Collection<? extends CandidateUnit> hits;
 
-  public JavaCompletion(final Project project) {
-    this.project = project;
+  public JavaCompletion(final Supplier<Project> supplier) {
+    this.projectSupplier = supplier;
     this.statisticsTable = createStatisticsTable();
   }
 
@@ -861,13 +862,9 @@ public class JavaCompletion {
         });
   }
 
-  public void setProject(Project project) {
-    this.project = project;
-  }
-
   private Source getSource(final File file) throws IOException, ExecutionException {
     final GlobalCache globalCache = GlobalCache.getInstance();
-    return globalCache.getSource(project, file.getCanonicalFile());
+    return globalCache.getSource(file.getCanonicalFile());
   }
 
   public Collection<? extends CandidateUnit> completionAt(
@@ -1021,7 +1018,7 @@ public class JavaCompletion {
   }
 
   private Collection<? extends CandidateUnit> completionPackage(File f) {
-    Set<File> allSources = this.project.getAllSources();
+    Set<File> allSources = this.projectSupplier.get().getAllSources();
     try {
       Optional<String> s = FileUtils.convertPathToClass(allSources, f);
       if (s.isPresent()) {

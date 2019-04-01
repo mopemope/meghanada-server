@@ -39,7 +39,6 @@ import meghanada.analyze.Source;
 import meghanada.cache.GlobalCache;
 import meghanada.config.Config;
 import meghanada.formatter.JavaFormatter;
-import meghanada.project.Project;
 import meghanada.store.ProjectDatabaseHelper;
 import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.LogManager;
@@ -379,10 +378,9 @@ public final class FileUtils {
     }
   }
 
-  public static Optional<File> existsFQCN(
-      final Project project, final Set<File> roots, final String fqcn) {
+  public static Optional<File> existsFQCN(final Set<File> roots, final String fqcn) {
     try {
-      Optional<String> result = GlobalCache.getInstance().getSourceMap(project, fqcn);
+      Optional<String> result = GlobalCache.getInstance().getSourceMap(fqcn);
       if (result.isPresent()) {
         return result.map(File::new);
       }
@@ -402,10 +400,9 @@ public final class FileUtils {
     return new File(root, path);
   }
 
-  public static Optional<Source> getSource(final Project project, final File file)
-      throws IOException, ExecutionException {
+  public static Optional<Source> getSource(final File file) throws IOException, ExecutionException {
     final GlobalCache globalCache = GlobalCache.getInstance();
-    return Optional.of(globalCache.getSource(project, file.getCanonicalFile()));
+    return Optional.of(globalCache.getSource(file.getCanonicalFile()));
   }
 
   public static Optional<String> convertPathToClass(final Set<File> roots, final File f)

@@ -36,6 +36,8 @@ import javax.tools.Diagnostic;
 import javax.tools.JavaFileObject;
 import meghanada.analyze.CompileResult;
 import meghanada.analyze.Source;
+import meghanada.analyze.subscribe.IndexSubscriber;
+import meghanada.analyze.subscribe.SourceCacheSubscriber;
 import meghanada.cache.GlobalCache;
 import meghanada.completion.JavaCompletion;
 import meghanada.completion.JavaImportCompletion;
@@ -44,6 +46,7 @@ import meghanada.completion.LocalVariable;
 import meghanada.config.Config;
 import meghanada.docs.declaration.Declaration;
 import meghanada.docs.declaration.DeclarationSearcher;
+import meghanada.event.SystemEventBus;
 import meghanada.index.IndexDatabase;
 import meghanada.index.SearchResults;
 import meghanada.location.Location;
@@ -77,6 +80,7 @@ public class Session {
   private final HashMap<File, Project> projects = new HashMap<>(2);
 
   private Project currentProject;
+
   private JavaCompletion completion;
   private JavaVariableCompletion variableCompletion;
   private JavaImportCompletion importCompletion;
@@ -310,11 +314,6 @@ public class Session {
       log.info("change project {}", this.currentProject.getName());
       String projectRootPath = this.currentProject.getProjectRootPath();
       Config.setProjectRoot(projectRootPath);
-      this.getLocationSearcher().setProject(currentProject);
-      this.getDeclarationSearcher().setProject(this.currentProject);
-      this.getVariableCompletion().setProject(this.currentProject);
-      this.getImportCompletion().setProject(this.currentProject);
-      this.getCompletion().setProject(this.currentProject);
       return true;
     }
 
@@ -350,11 +349,6 @@ public class Session {
     String projectRootPath = this.currentProject.getProjectRootPath();
     Config.setProjectRoot(projectRootPath);
     this.projects.put(projectRoot, this.currentProject);
-    this.getLocationSearcher().setProject(currentProject);
-    this.getDeclarationSearcher().setProject(this.currentProject);
-    this.getVariableCompletion().setProject(currentProject);
-    this.getImportCompletion().setProject(currentProject);
-    this.getCompletion().setProject(currentProject);
     return true;
   }
 
@@ -366,6 +360,15 @@ public class Session {
     if (Config.load().enableIdleCache()) {
       this.sessionEventBus.subscribeIdle();
     }
+    SystemEventBus.getInstance()
+        .getEventBus()
+        .register(new SourceCacheSubscriber(this::getCurrentProject));
+    if (Config.load().useFullTextSearch()) {
+      SystemEventBus.getInstance()
+          .getEventBus()
+          .register(new IndexSubscriber(this::getCurrentProject));
+    }
+    GlobalCache.getInstance().setProjectSupplier(this::getCurrentProject);
   }
 
   public void start() throws IOException {
@@ -405,28 +408,28 @@ public class Session {
 
   private LocationSearcher getLocationSearcher() {
     if (isNull(this.locationSearcher)) {
-      this.locationSearcher = new LocationSearcher(currentProject);
+      this.locationSearcher = new LocationSearcher(this::getCurrentProject);
     }
     return locationSearcher;
   }
 
   private JavaCompletion getCompletion() {
     if (isNull(this.completion)) {
-      this.completion = new JavaCompletion(currentProject);
+      this.completion = new JavaCompletion(this::getCurrentProject);
     }
     return this.completion;
   }
 
   private JavaVariableCompletion getVariableCompletion() {
     if (isNull(this.variableCompletion)) {
-      this.variableCompletion = new JavaVariableCompletion(currentProject);
+      this.variableCompletion = new JavaVariableCompletion(this::getCurrentProject);
     }
     return variableCompletion;
   }
 
   private JavaImportCompletion getImportCompletion() {
     if (isNull(this.importCompletion)) {
-      this.importCompletion = new JavaImportCompletion(this.currentProject);
+      this.importCompletion = new JavaImportCompletion(this::getCurrentProject);
     }
     return this.importCompletion;
   }
@@ -590,7 +593,7 @@ public class Session {
       return Optional.empty();
     }
     final GlobalCache globalCache = GlobalCache.getInstance();
-    return Optional.of(globalCache.getSource(currentProject, file));
+    return Optional.of(globalCache.getSource(file));
   }
 
   public synchronized boolean parseFile(final String path) throws ExecutionException {
@@ -601,7 +604,7 @@ public class Session {
     }
     boolean b = this.changeProject(path);
     final GlobalCache globalCache = GlobalCache.getInstance();
-    globalCache.invalidateSource(currentProject, file);
+    globalCache.invalidateSource(file);
     Optional<Source> source = this.parseJavaSource(file);
     return source.isPresent();
   }
@@ -846,7 +849,7 @@ public class Session {
 
   private DeclarationSearcher getDeclarationSearcher() {
     if (isNull(this.declarationSearcher)) {
-      this.declarationSearcher = new DeclarationSearcher(currentProject);
+      this.declarationSearcher = new DeclarationSearcher(this::getCurrentProject);
     }
     return declarationSearcher;
   }
@@ -878,7 +881,7 @@ public class Session {
 
   private ReferenceSearcher getReferenceSearcher() {
     if (isNull(this.referenceSearcher)) {
-      this.referenceSearcher = new ReferenceSearcher(currentProject);
+      this.referenceSearcher = new ReferenceSearcher(this::getCurrentProject);
     }
     return referenceSearcher;
   }
@@ -893,7 +896,7 @@ public class Session {
 
   private TypeInfoSearcher getTypeInfoSearcher() {
     if (isNull(this.typeinfoSearcher)) {
-      this.typeinfoSearcher = new TypeInfoSearcher(currentProject);
+      this.typeinfoSearcher = new TypeInfoSearcher(this::getCurrentProject);
     }
     return typeinfoSearcher;
   }

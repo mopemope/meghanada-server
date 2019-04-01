@@ -152,7 +152,7 @@ public class JavaAnalyzerTest extends GradleTestBase {
           return analyzer.analyzeAndCompile(files, cp, tmp);
         });
 
-    final DeclarationSearcher searcher = new DeclarationSearcher(getProject());
+    final DeclarationSearcher searcher = new DeclarationSearcher(GradleTestBase::getProject);
     final Optional<Declaration> declaration = searcher.searchDeclaration(file, 9, 22, "value");
     assertNotNull(declaration);
   }

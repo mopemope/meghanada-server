@@ -2,8 +2,10 @@ package meghanada.analyze.subscribe;
 
 import com.google.common.eventbus.Subscribe;
 import java.io.File;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import meghanada.analyze.JavaAnalyzer;
 import meghanada.analyze.Source;
@@ -19,14 +21,28 @@ public class IndexSubscriber {
 
   private static final Logger log = LogManager.getLogger(IndexSubscriber.class);
 
-  private final Map<String, String> checksumMap;
+  private final Map<Project, Map<String, String>> checksums;
+  private final Supplier<Project> projectSupplier;
 
-  public IndexSubscriber(final Project project) {
-    this.checksumMap = ProjectDatabaseHelper.getChecksumMap(project.getProjectRootPath());
+  public IndexSubscriber(final Supplier<Project> projectSupplier) {
+    this.projectSupplier = projectSupplier;
+    this.checksums = new HashMap<>(2);
+  }
+
+  private Map<String, String> getChecksumMap() {
+    Project project = this.projectSupplier.get();
+    if (this.checksums.containsKey(project)) {
+      return this.checksums.get(project);
+    }
+    Map<String, String> checksumMap =
+        ProjectDatabaseHelper.getChecksumMap(project.getProjectRootPath());
+    this.checksums.put(project, checksumMap);
+    return checksumMap;
   }
 
   @Subscribe
   public void on(final JavaAnalyzer.AnalyzedEvent event) {
+    Map<String, String> checksumMap = getChecksumMap();
     final Map<File, Source> analyzedMap = event.analyzedMap;
     List<SearchIndexable> sources =
         analyzedMap.values().stream()

@@ -8,6 +8,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Supplier;
 import meghanada.analyze.CompileResult;
 import meghanada.analyze.Source;
 import meghanada.config.Config;
@@ -21,10 +22,10 @@ class JavaSourceLoader extends CacheLoader<File, Source> implements RemovalListe
 
   private static final Logger log = LogManager.getLogger(JavaSourceLoader.class);
 
-  private final Project project;
+  private final Supplier<Project> projectSupplier;
 
-  public JavaSourceLoader(final Project project) {
-    this.project = project;
+  public JavaSourceLoader(final Supplier<Project> supplier) {
+    this.projectSupplier = supplier;
   }
 
   private static void deleteSource(final Source source) throws Exception {
@@ -43,13 +44,13 @@ class JavaSourceLoader extends CacheLoader<File, Source> implements RemovalListe
     if (!file.exists()) {
       return new Source(file.getPath());
     }
-
+    Project project = this.projectSupplier.get();
     if (!config.useSourceCache()) {
       final CompileResult compileResult = project.parseFile(file);
       return compileResult.getSources().get(file);
     }
 
-    final String projectRootPath = this.project.getProjectRootPath();
+    final String projectRootPath = project.getProjectRootPath();
     final Map<String, String> checksumMap = ProjectDatabaseHelper.getChecksumMap(projectRootPath);
 
     final String path = file.getCanonicalPath();

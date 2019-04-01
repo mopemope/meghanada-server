@@ -27,7 +27,7 @@ public class TypeInfoSearcherTest extends GradleTestBase {
     if (searcher != null) {
       return searcher;
     }
-    searcher = new TypeInfoSearcher(getProject());
+    searcher = new TypeInfoSearcher(GradleTestBase::getProject);
     return searcher;
   }
 
