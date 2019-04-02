@@ -14,7 +14,10 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import meghanada.analyze.subscribe.SourceCacheSubscriber;
+import meghanada.cache.GlobalCache;
 import meghanada.config.Config;
+import meghanada.event.SystemEventBus;
 import meghanada.module.ModuleHelper;
 import meghanada.project.Project;
 import meghanada.project.ProjectDependency;
@@ -50,6 +53,10 @@ public class GradleTestBase {
       File f = new File("./").getCanonicalFile();
       Project newProject = new GradleProject(f);
       project = newProject.parseProject(f, f).mergeFromProjectConfig();
+      SystemEventBus.getInstance()
+          .getEventBus()
+          .register(new SourceCacheSubscriber(GradleTestBase::getProject));
+      GlobalCache.getInstance().setProjectSupplier(GradleTestBase::getProject);
     }
     Config config = Config.load();
     if (useCache) {

@@ -81,7 +81,7 @@ public class JavaImportCompletionTest extends GradleTestBase {
   @Ignore
   @Test
   public void testImportAtPoint1() throws IOException, ExecutionException {
-    JavaImportCompletion completion = new JavaImportCompletion(project);
+    JavaImportCompletion completion = new JavaImportCompletion(GradleTestBase::getProject);
     File file =
         new File(project.getProjectRootPath(), "./src/test/java/meghanada/TopClass.java")
             .getCanonicalFile();
@@ -93,7 +93,7 @@ public class JavaImportCompletionTest extends GradleTestBase {
   @Ignore
   @Test
   public void testImportAtPoint2() throws IOException, ExecutionException {
-    JavaImportCompletion completion = new JavaImportCompletion(project);
+    JavaImportCompletion completion = new JavaImportCompletion(GradleTestBase::getProject);
     File file =
         new File(project.getProjectRootPath(), "./src/test/resources/meghanada/AnnoTest2.java")
             .getCanonicalFile();
@@ -109,7 +109,7 @@ public class JavaImportCompletionTest extends GradleTestBase {
   @Test
   public void testImportAtPoint3() throws Exception {
     JavaAnalyzer analyzer = getAnalyzer();
-    JavaImportCompletion completion = new JavaImportCompletion(project);
+    JavaImportCompletion completion = new JavaImportCompletion(GradleTestBase::getProject);
     String cp = getClasspath();
 
     List<File> files = new ArrayList<>();
@@ -131,7 +131,7 @@ public class JavaImportCompletionTest extends GradleTestBase {
   @Test
   public void testImportAtPoint4() throws Exception {
     JavaAnalyzer analyzer = getAnalyzer();
-    JavaImportCompletion completion = new JavaImportCompletion(project);
+    JavaImportCompletion completion = new JavaImportCompletion(GradleTestBase::getProject);
     String cp = getClasspath();
     File file =
         new File(project.getProjectRootPath(), "./src/test/resources/MissingImport5.java")
@@ -147,7 +147,7 @@ public class JavaImportCompletionTest extends GradleTestBase {
   @Test
   public void testImportAtPoint5() throws Exception {
     JavaAnalyzer analyzer = getAnalyzer();
-    JavaImportCompletion completion = new JavaImportCompletion(project);
+    JavaImportCompletion completion = new JavaImportCompletion(GradleTestBase::getProject);
     String cp = getClasspath();
     File file =
         new File(project.getProjectRootPath(), "./src/test/resources/MissingImport6.java")

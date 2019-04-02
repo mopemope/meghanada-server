@@ -16,6 +16,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import meghanada.analyze.ClassScope;
 import meghanada.analyze.Source;
@@ -32,10 +33,10 @@ import org.apache.logging.log4j.Logger;
 public class TypeInfoSearcher {
 
   private static final Logger log = LogManager.getLogger(TypeInfoSearcher.class);
-  private Project project;
+  private Supplier<Project> projectSupplier;
 
-  public TypeInfoSearcher(Project project) {
-    this.project = project;
+  public TypeInfoSearcher(Supplier<Project> supplier) {
+    this.projectSupplier = supplier;
   }
 
   private static List<MemberDescriptor> getMembers(String fqcn, String clsName) {
@@ -196,7 +197,7 @@ public class TypeInfoSearcher {
   public Optional<TypeInfo> search(File file, int line, int column, String symbol)
       throws ExecutionException, IOException {
 
-    return getSource(this.project, file)
+    return getSource(file)
         .flatMap(
             src -> {
               Optional<String> cond = searchClassCondition(src, line, column, symbol);

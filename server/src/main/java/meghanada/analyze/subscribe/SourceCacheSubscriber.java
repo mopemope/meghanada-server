@@ -3,10 +3,12 @@ package meghanada.analyze.subscribe;
 import com.google.common.eventbus.Subscribe;
 import java.io.File;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Supplier;
 import meghanada.analyze.ClassScope;
 import meghanada.analyze.JavaAnalyzer;
 import meghanada.analyze.Source;
@@ -23,20 +25,34 @@ public class SourceCacheSubscriber {
 
   private static final Logger log = LogManager.getLogger(SourceCacheSubscriber.class);
 
-  private final Map<String, Set<String>> callerMap;
-  private final Map<String, String> checksumMap;
-  private final Project project;
+  private final Map<Project, Map<String, Set<String>>> callers;
+  private final Map<Project, Map<String, String>> checksums;
+
+  private final Supplier<Project> projectSupplier;
   private long lastCached;
   private boolean importMemberCache = false;
 
-  public SourceCacheSubscriber(final Project project) {
-    this.project = project;
-    this.callerMap = project.getCallerMap();
-    this.checksumMap = ProjectDatabaseHelper.getChecksumMap(project.getProjectRootPath());
+  public SourceCacheSubscriber(final Supplier<Project> projectSupplier) {
+    this.projectSupplier = projectSupplier;
+    this.callers = new HashMap<>(2);
+    this.checksums = new HashMap<>(2);
     this.lastCached = System.currentTimeMillis();
   }
 
+  private Map<String, String> getChecksumMap(Project project) {
+    if (this.checksums.containsKey(project)) {
+      return this.checksums.get(project);
+    }
+    Map<String, String> checksumMap =
+        ProjectDatabaseHelper.getChecksumMap(project.getProjectRootPath());
+    this.checksums.put(project, checksumMap);
+    return checksumMap;
+  }
+
   private void analyzed(final Source source, final boolean isDiagnostics) throws IOException {
+    Project project = projectSupplier.get();
+    Map<String, Set<String>> callerMap = project.getCallerMap();
+    Map<String, String> checksumMap = this.getChecksumMap(project);
 
     final Config config = Config.load();
     final boolean useSourceCache = config.useSourceCache();
@@ -59,17 +75,17 @@ public class SourceCacheSubscriber {
     for (final ClassScope cs : classScopes) {
 
       final String fqcn = cs.getFQCN();
-      globalCache.replaceSourceMap(this.project, fqcn, source.getFile().getCanonicalPath());
+      globalCache.replaceSourceMap(fqcn, source.getFile().getCanonicalPath());
 
       for (String clazz : source.usingClasses) {
-        if (this.callerMap.containsKey(clazz)) {
-          final Set<String> set = this.callerMap.get(clazz);
+        if (callerMap.containsKey(clazz)) {
+          final Set<String> set = callerMap.get(clazz);
           set.add(fqcn);
-          this.callerMap.put(clazz, set);
+          callerMap.put(clazz, set);
         } else {
           final Set<String> set = new HashSet<>(16);
           set.add(fqcn);
-          this.callerMap.put(clazz, set);
+          callerMap.put(clazz, set);
         }
       }
       source.usingClasses.clear();
@@ -81,7 +97,7 @@ public class SourceCacheSubscriber {
       source.invalidateCache();
     }
 
-    globalCache.replaceSource(this.project, source);
+    globalCache.replaceSource(source);
     if (!source.hasCompileError) {
       final String md5sum = FileUtils.getChecksum(sourceFile);
       checksumMap.put(path, md5sum);
@@ -93,10 +109,11 @@ public class SourceCacheSubscriber {
   }
 
   public void complete() throws IOException {
-    boolean b =
-        ProjectDatabaseHelper.saveChecksumMap(this.project.getProjectRootPath(), this.checksumMap);
-    GlobalCache.getInstance().saveSourceMap(this.project);
-    this.project.writeCaller();
+    Project project = this.projectSupplier.get();
+    Map<String, String> checksumMap = getChecksumMap(project);
+    boolean b = ProjectDatabaseHelper.saveChecksumMap(project.getProjectRootPath(), checksumMap);
+    GlobalCache.getInstance().saveSourceMap();
+    project.writeCaller();
   }
 
   @SuppressWarnings("CheckReturnValue")

@@ -36,6 +36,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
+import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
@@ -73,17 +74,16 @@ public class LocationSearcher {
   private final List<LocationSearchFunction> functions;
   private final Map<String, File> copiedSrcFile = new HashMap<>(16);
   private final Map<String, List<String>> decompileFiles = new HashMap<>(16);
-  private Project project;
+  private Supplier<Project> projectSupplier;
 
-  public LocationSearcher(final Project project) {
+  public LocationSearcher(final Supplier<Project> supplier) {
     this.functions = this.getFunctions();
-    this.project = project;
+    this.projectSupplier = supplier;
   }
 
-  private static Source getSource(final Project project, final File file)
-      throws IOException, ExecutionException {
+  private static Source getSource(final File file) throws IOException, ExecutionException {
     final GlobalCache globalCache = GlobalCache.getInstance();
-    return globalCache.getSource(project, file.getCanonicalFile());
+    return globalCache.getSource(file.getCanonicalFile());
   }
 
   private static Location searchLocationFromFile(
@@ -329,10 +329,6 @@ public class LocationSearcher {
     return location;
   }
 
-  public void setProject(Project project) {
-    this.project = project;
-  }
-
   public Optional<Location> searchSymbol(final String symbol) {
     return Optional.ofNullable(this.getFQCNLocation(symbol));
   }
@@ -340,8 +336,8 @@ public class LocationSearcher {
   public Optional<Location> searchDeclarationLocation(
       final File file, final int line, final int column, final String symbol)
       throws ExecutionException, IOException {
-    final Source source = getSource(project, file);
-    log.trace("search symbol {}", symbol);
+    final Source source = getSource(file);
+    log.trace("search symbol {} {}", symbol, source.getFile());
 
     return this.functions.stream()
         .map(f -> f.apply(source, line, column, symbol))
@@ -363,7 +359,6 @@ public class LocationSearcher {
     EntryMessage entryMessage = log.traceEntry("line={} col={} symbol={}", line, col, symbol);
     Optional<MethodCall> methodCall = source.getMethodCall(line, col, true);
     Optional<Location> result = methodCall.flatMap(mc -> searchMethodCallLocation(mc));
-
     log.traceExit(entryMessage);
     return result;
   }
@@ -380,11 +375,11 @@ public class LocationSearcher {
 
     CachedASMReflector reflector = CachedASMReflector.getInstance();
     targets.addAll(reflector.getSuperClass(declaringClass));
-
+    Project project = this.projectSupplier.get();
     return targets.stream()
         .map(
             fqcn ->
-                existsFQCN(this.project, this.project.getAllSourcesWithDependencies(), fqcn)
+                existsFQCN(project.getAllSourcesWithDependencies(), fqcn)
                     .flatMap(file -> getMethodLocationFromProject(methodName, arguments, file))
                     .orElseGet(
                         wrapIO(
@@ -402,7 +397,7 @@ public class LocationSearcher {
   private Optional<Location> getMethodLocationFromProject(
       String methodName, List<String> arguments, File file) {
     try {
-      Source declaringClassSrc = getSource(project, file);
+      Source declaringClassSrc = getSource(file);
       String path = declaringClassSrc.getFile().getPath();
       return declaringClassSrc.getClassScopes().stream()
           .flatMap(ts -> ts.getScopes().stream())
@@ -470,11 +465,12 @@ public class LocationSearcher {
   }
 
   private Location getFQCNLocation(final String fqcn) {
-    return existsFQCN(this.project, this.project.getAllSourcesWithDependencies(), fqcn)
+    Project project = this.projectSupplier.get();
+    return existsFQCN(project.getAllSourcesWithDependencies(), fqcn)
         .flatMap(
             f -> {
               try {
-                final Source declaringClassSrc = getSource(project, f);
+                final Source declaringClassSrc = getSource(f);
                 final String path = declaringClassSrc.getFile().getPath();
                 return declaringClassSrc.getClassScopes().stream()
                     .filter(cs -> matchClassName(cs, fqcn))
@@ -554,7 +550,7 @@ public class LocationSearcher {
       final String androidHome = System.getenv("ANDROID_HOME");
       if (androidHome != null) {
         final Optional<ProjectDependency> dependencyOptional =
-            this.project.getDependencies().stream()
+            this.projectSupplier.get().getDependencies().stream()
                 .filter(dependency -> dependency.getFile().equals(classFile))
                 .findFirst();
         if (dependencyOptional.isPresent()) {
@@ -749,13 +745,11 @@ public class LocationSearcher {
                   targets.add(declaringClass);
                   CachedASMReflector reflector = CachedASMReflector.getInstance();
                   targets.addAll(reflector.getSuperClass(declaringClass));
+                  Project project = this.projectSupplier.get();
                   return targets.stream()
                       .map(
                           fqcn ->
-                              existsFQCN(
-                                      this.project,
-                                      this.project.getAllSourcesWithDependencies(),
-                                      fqcn)
+                              existsFQCN(project.getAllSourcesWithDependencies(), fqcn)
                                   .flatMap(
                                       file -> getFieldLocationFromProject(fqcn, fieldName, file))
                                   .orElseGet(
@@ -778,7 +772,7 @@ public class LocationSearcher {
   private Optional<Location> getFieldLocationFromProject(
       final String fqcn, final String fieldName, final File file) {
     try {
-      final Source declaringClassSrc = getSource(project, file);
+      final Source declaringClassSrc = getSource(file);
       final String path = declaringClassSrc.getFile().getPath();
       return declaringClassSrc.getClassScopes().stream()
           .map(cs -> getMatchField(cs, fqcn, fieldName))

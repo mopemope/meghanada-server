@@ -36,7 +36,7 @@ public class FileWatchEventSubscriber extends AbstractSubscriber {
       String filePath = file.getCanonicalPath();
       GlobalCache globalCache = GlobalCache.getInstance();
       Project project = sessionEventBus.getSession().getCurrentProject();
-      globalCache.invalidateSource(project, file);
+      globalCache.invalidateSource(file);
       boolean b = ProjectDatabaseHelper.deleteSource(filePath);
       FileUtils.getClassFile(filePath, project.getSources(), project.getOutput())
           .ifPresent(File::delete);

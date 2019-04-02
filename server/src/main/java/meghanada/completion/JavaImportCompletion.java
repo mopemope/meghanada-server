@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import meghanada.analyze.MethodCall;
 import meghanada.analyze.Source;
@@ -28,10 +29,10 @@ public class JavaImportCompletion {
   private static final Logger log = LogManager.getLogger(JavaImportCompletion.class);
 
   private final List<SearchFunction> functions;
-  private Project project;
+  private Supplier<Project> projectSupplier;
 
-  public JavaImportCompletion(Project project) {
-    this.project = project;
+  public JavaImportCompletion(Supplier<Project> supplier) {
+    this.projectSupplier = supplier;
     this.functions = JavaImportCompletion.createFunctions();
   }
 
@@ -159,12 +160,7 @@ public class JavaImportCompletion {
     if (!file.exists()) {
       return Optional.empty();
     }
-    return FileUtils.getSource(project, file)
-        .flatMap(src -> execFunctions(src, line, column, symbol));
-  }
-
-  public void setProject(Project project) {
-    this.project = project;
+    return FileUtils.getSource(file).flatMap(src -> execFunctions(src, line, column, symbol));
   }
 
   @FunctionalInterface

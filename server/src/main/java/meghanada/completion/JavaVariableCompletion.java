@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import meghanada.analyze.AccessSymbol;
 import meghanada.analyze.Source;
@@ -28,10 +29,10 @@ public class JavaVariableCompletion {
   private static final String[] pluralClass = new String[] {"List", "Set", "Collections"};
   private static final CharMatcher removeMatcher = CharMatcher.anyOf("<> ,$.");
 
-  private Project project;
+  private Supplier<Project> projectSupplier;
 
-  public JavaVariableCompletion(final Project project) {
-    this.project = project;
+  public JavaVariableCompletion(final Supplier<Project> supplier) {
+    this.projectSupplier = supplier;
   }
 
   private static String fromInitial(final String returnType) {
@@ -52,13 +53,9 @@ public class JavaVariableCompletion {
     return log.traceExit(false);
   }
 
-  public void setProject(Project project) {
-    this.project = project;
-  }
-
   private Source getSource(final File file) throws IOException, ExecutionException {
     final GlobalCache globalCache = GlobalCache.getInstance();
-    return globalCache.getSource(project, file.getCanonicalFile());
+    return globalCache.getSource(file.getCanonicalFile());
   }
 
   public Optional<LocalVariable> localVariable(final File file, final int line)
