@@ -55,6 +55,8 @@ java -jar path/to/meghanada.jar --help
 usage: meghanada server
     --gradle-version <arg>   set use gradle version
  -h,--help                   show help
+ -l,--log <arg>              log file location. default:
+                             /tmp/meghanada_server.log
     --output <arg>           output format (sexp, csv, json). default:
                              sexp
  -p,--port <arg>             set server port. default: 55555
