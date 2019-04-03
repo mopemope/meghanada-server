@@ -120,7 +120,7 @@ public class Session {
     while (true) {
       log.debug("finding project from '{}' ...", base);
       if (isNull(base.getParent())) {
-        return Optional.empty();
+        return loadDefaultProject(current);
       }
 
       // challenge
@@ -149,7 +149,7 @@ public class Session {
 
       File parent = base.getParentFile();
       if (isNull(parent)) {
-        return Optional.empty();
+        return loadDefaultProject(current);
       }
       base = base.getParentFile();
     }
@@ -960,5 +960,23 @@ public class Session {
     return getImportCompletion()
         .importAtPoint(file, line, column, symbol)
         .orElse(Collections.emptyMap());
+  }
+
+  private static Optional<Project> loadDefaultProject(File root) throws IOException {
+    root = root.getCanonicalFile();
+    if (!root.isDirectory()) {
+      root = root.getParentFile();
+    }
+    Project project =
+        new MeghanadaProject.Builder(root)
+            .source(root)
+            .resource(root)
+            .output(new File(root, "out"))
+            .testSource(root)
+            .testResource(root)
+            .testOutput(new File(root, "out"))
+            .build();
+
+    return Optional.of(project);
   }
 }

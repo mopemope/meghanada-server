@@ -95,8 +95,8 @@ public abstract class Project implements Serializable, Storable {
   protected Set<File> testSources = new HashSet<>(2);
   protected Set<File> testResources = new HashSet<>(2);
   protected File testOutput;
-  protected String compileSource = "1.8";
-  protected String compileTarget = "1.8";
+  protected String compileSource = System.getProperty("java.specification.version");
+  protected String compileTarget = System.getProperty("java.specification.version");
   protected Boolean isAndroidProject = false;
   protected int androidApiVersion;
   protected String androidModelVersion;
