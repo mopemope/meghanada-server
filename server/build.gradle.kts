@@ -92,7 +92,6 @@ dependencies {
 
     implementation("io.opencensus:opencensus-api:0.20.0")
     implementation("io.opencensus:opencensus-impl:0.20.0")
-    implementation("io.opencensus:opencensus-contrib-agent:0.20.0")
     implementation("io.opencensus:opencensus-contrib-zpages:0.20.0")
 }
 

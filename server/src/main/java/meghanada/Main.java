@@ -1,7 +1,9 @@
 package meghanada;
 
+import io.opencensus.contrib.zpages.ZPageHandlers;
 import java.io.File;
 import java.io.IOException;
+import java.net.Socket;
 import java.util.Objects;
 import meghanada.config.Config;
 import meghanada.server.Server;
@@ -112,6 +114,11 @@ public class Main {
         System.setProperty("meghanada.gradle-version", gradleVersion);
       }
     }
+    if (isDevelop()) {
+      int zpagePort = getFreePort();
+      ZPageHandlers.startHttpServerAndRegisterAll(zpagePort);
+      System.setProperty("zpage.port", Integer.toString(zpagePort));
+    }
 
     String port = "0";
     String projectRoot = "./";
@@ -193,5 +200,14 @@ public class Main {
   public static boolean isDevelop() {
     final String dev = System.getenv("MEGHANADA_DEVELOP");
     return Objects.equals(dev, "1");
+  }
+
+  private static int getFreePort() throws IOException {
+    int port;
+    try (Socket socket = new Socket()) {
+      socket.bind(null);
+      port = socket.getLocalPort();
+    }
+    return port;
   }
 }
