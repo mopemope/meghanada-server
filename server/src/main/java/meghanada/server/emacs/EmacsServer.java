@@ -378,7 +378,7 @@ public class EmacsServer implements Server {
     try {
       this.session = Session.createSession(projectRoot);
       this.session.start();
-      String zpagePort = System.getProperty("zpage.port");
+      String zpagePort = System.getProperty("meghanada.zpage.port");
       if (nonNull(zpagePort)) {
         log.info("zpage tracez handler http://localhost:{}/tracez", zpagePort);
       }
