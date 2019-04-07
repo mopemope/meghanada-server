@@ -77,7 +77,8 @@ public class Main {
 
     System.setProperty("home", Config.getInstalledPath().getParentFile().getCanonicalPath());
 
-    addFileAppender();
+    addFileAppender(
+        cmd.getOptionValue("log", System.getProperty("java.io.tmpdir") + "/meghanada_server.log"));
 
     if (cmd.hasOption("v")) {
       Object ctx = LogManager.getContext(false);
@@ -146,9 +147,8 @@ public class Main {
     server.startServer();
   }
 
-  private static void addFileAppender() throws IOException {
-    String tempDir = System.getProperty("java.io.tmpdir");
-    File logFile = new File(tempDir, "meghanada_server.log");
+  private static void addFileAppender(String logFilename) throws IOException {
+    File logFile = new File(logFilename);
     Object ctx = LogManager.getContext(false);
     if (ctx instanceof LoggerContext) {
       try (LoggerContext context = (LoggerContext) ctx) {
@@ -199,6 +199,9 @@ public class Main {
     options.addOption(gradleVersion);
     final Option clearCache = new Option("c", "clear-cache", false, "clear cache on start");
     options.addOption(clearCache);
+    final Option logFilename =
+        new Option("l", "log", true, "log file location. default: /tmp/meghanada_server.log");
+    options.addOption(logFilename);
     return options;
   }
 
