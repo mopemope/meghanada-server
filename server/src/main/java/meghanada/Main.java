@@ -32,6 +32,7 @@ public class Main {
 
   public static final String VERSION = "1.0.14";
   private static final Logger log = LogManager.getLogger(Main.class);
+  private static int ZPAGE_PORT = 60981;
   private static String version;
 
   public static String getVersion() throws IOException {
@@ -116,20 +117,13 @@ public class Main {
         System.setProperty("meghanada.gradle-version", gradleVersion);
       }
     }
-    if (isDevelop()) {
-      TraceConfig traceConfig = Tracing.getTraceConfig();
-      traceConfig.updateActiveTraceParams(
-          traceConfig
-              .getActiveTraceParams()
-              .toBuilder()
-              .setSampler(Samplers.alwaysSample())
-              .build());
-      // LoggingTraceExporter.register();
-      // int zpagePort = getFreePort();
-      int zpagePort = 60981;
-      ZPageHandlers.startHttpServerAndRegisterAll(zpagePort);
-      System.setProperty("meghanada.zpage.port", Integer.toString(zpagePort));
-    }
+    TraceConfig traceConfig = Tracing.getTraceConfig();
+    traceConfig.updateActiveTraceParams(
+        traceConfig.getActiveTraceParams().toBuilder().setSampler(Samplers.alwaysSample()).build());
+    // LoggingTraceExporter.register();
+    // int zpagePort = getFreePort();
+    ZPageHandlers.startHttpServerAndRegisterAll(ZPAGE_PORT);
+    System.setProperty("meghanada.zpage.port", Integer.toString(ZPAGE_PORT));
 
     String port = "0";
     String projectRoot = "./";
