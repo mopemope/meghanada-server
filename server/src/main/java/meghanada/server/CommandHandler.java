@@ -107,7 +107,7 @@ public class CommandHandler {
   public void diagnostics(long id, String sourceFile, String tmpSourceFile) {
     Span span =
         tracer
-            .spanBuilderWithExplicitParent("Meghanada/diagnostics", null)
+            .spanBuilderWithExplicitParent("Meghanada/diagnostics/2", null)
             .setRecordEvents(true)
             .startSpan();
     try (Scope ss = tracer.withSpan(span)) {
