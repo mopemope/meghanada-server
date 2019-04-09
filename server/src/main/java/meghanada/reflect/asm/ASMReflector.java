@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
@@ -634,8 +635,10 @@ public class ASMReflector {
       try (JarFile jarFile = new JarFile(file);
           Stream<JarEntry> jarStream = jarFile.stream();
           Stream<JarEntry> stream =
-              jarStream.filter(jarEntry -> jarEntry.getName().endsWith(".class"))
-                  .collect(Collectors.toList()).stream()) {
+              jarStream
+                  .filter(jarEntry -> jarEntry.getName().endsWith(".class"))
+                  .collect(Collectors.toList())
+                  .parallelStream()) {
 
         return stream
             .map(
@@ -818,7 +821,8 @@ public class ASMReflector {
         });
   }
 
-  void scanClasses(File file, Scanner scanner) throws IOException {
+  int scanClasses(File file, Scanner scanner) throws IOException {
+    AtomicInteger count = new AtomicInteger(0);
     if (ModuleHelper.isJrtFsFile(file)) {
       ModuleHelper.walkModule(
           path ->
@@ -831,6 +835,7 @@ public class ASMReflector {
                         }
                         if (!className.endsWith("module-info")) {
                           try (InputStream in = cd.getInputStream()) {
+                            count.incrementAndGet();
                             scanner.scan(file, className, in);
                           } catch (IOException e) {
                             throw new UncheckedIOException(e);
@@ -841,8 +846,10 @@ public class ASMReflector {
       try (JarFile jarFile = new JarFile(file);
           Stream<JarEntry> jarStream = jarFile.stream();
           Stream<JarEntry> stream =
-              jarStream.filter(jarEntry -> jarEntry.getName().endsWith(".class"))
-                  .collect(Collectors.toList()).stream()) {
+              jarStream
+                  .filter(jarEntry -> jarEntry.getName().endsWith(".class"))
+                  .collect(Collectors.toList())
+                  .parallelStream()) {
 
         stream.forEach(
             jarEntry -> {
@@ -857,6 +864,7 @@ public class ASMReflector {
               }
               if (!className.endsWith("module-info")) {
                 try (InputStream in = jarFile.getInputStream(jarEntry)) {
+                  count.incrementAndGet();
                   scanner.scan(file, className, in);
                 } catch (IOException e) {
                   throw new UncheckedIOException(e);
@@ -868,14 +876,15 @@ public class ASMReflector {
     } else if (isClass(file)) {
       String entryName = file.getName();
       if (!entryName.endsWith(".class")) {
-        return;
+        return count.get();
       }
       String className =
           ClassNameUtils.replaceSlash(entryName.substring(0, entryName.length() - 6));
       if (this.ignorePackage(className)) {
-        return;
+        return count.get();
       }
       try (InputStream in = new FileInputStream(file)) {
+        count.incrementAndGet();
         scanner.scan(file, className, in);
       }
 
@@ -898,6 +907,7 @@ public class ASMReflector {
               }
               if (!className.endsWith("module-info")) {
                 try (InputStream in = new FileInputStream(classFile)) {
+                  count.incrementAndGet();
                   scanner.scan(classFile, className, in);
                 } catch (IOException e) {
                   throw new UncheckedIOException(e);
@@ -906,6 +916,7 @@ public class ASMReflector {
             });
       }
     }
+    return count.get();
   }
 
   private List<String> loadFromInnerCache(

@@ -543,10 +543,10 @@ public class CachedASMReflector {
         });
   }
 
-  public static void scan(File root, Consumer<String> c) {
+  public static int scan(File root, Consumer<String> c) {
     ASMReflector reflector = ASMReflector.getInstance();
     try {
-      reflector.scanClasses(root, (f, name, in) -> c.accept(name));
+      return reflector.scanClasses(root, (f, name, in) -> c.accept(name));
     } catch (IOException e) {
       throw new UncheckedIOException(e);
     }

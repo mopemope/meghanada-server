@@ -4,6 +4,7 @@ import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static sun.management.ManagementFactoryHelper.getOperatingSystemMXBean;
 
+import com.google.common.base.Stopwatch;
 import com.google.common.eventbus.Subscribe;
 import com.sun.management.OperatingSystemMXBean;
 import java.io.File;
@@ -92,18 +93,20 @@ public class IdleMonitorSubscriber extends AbstractSubscriber {
 
     File file = this.jars.pollFirst();
     if (nonNull(file)) {
-      log.info("create cache {}", file);
-      CachedASMReflector.scan(
-          file,
-          name -> {
-            try {
-              List<MemberDescriptor> memberDescriptors =
-                  GlobalCache.getInstance().getMemberDescriptors(name);
-            } catch (ExecutionException e) {
-              log.catching(e);
-              throw new RuntimeException(e);
-            }
-          });
+      Stopwatch stopWatch = Stopwatch.createStarted();
+      int count =
+          CachedASMReflector.scan(
+              file,
+              name -> {
+                try {
+                  List<MemberDescriptor> memberDescriptors =
+                      GlobalCache.getInstance().getMemberDescriptors(name);
+                } catch (ExecutionException e) {
+                  log.catching(e);
+                  throw new RuntimeException(e);
+                }
+              });
+      log.info("create cache {} size:{} elapsed:{}", file.getName(), count, stopWatch);
     }
   }
 
