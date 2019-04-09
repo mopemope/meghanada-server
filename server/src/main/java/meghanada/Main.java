@@ -1,7 +1,12 @@
 package meghanada;
 
+import io.opencensus.contrib.zpages.ZPageHandlers;
+import io.opencensus.trace.Tracing;
+import io.opencensus.trace.config.TraceConfig;
+import io.opencensus.trace.samplers.Samplers;
 import java.io.File;
 import java.io.IOException;
+import java.net.Socket;
 import java.util.Objects;
 import meghanada.config.Config;
 import meghanada.server.Server;
@@ -26,8 +31,8 @@ import org.apache.logging.log4j.core.layout.PatternLayout;
 public class Main {
 
   public static final String VERSION = "1.0.14";
-
   private static final Logger log = LogManager.getLogger(Main.class);
+  private static int ZPAGE_PORT = 60981;
   private static String version;
 
   public static String getVersion() throws IOException {
@@ -113,6 +118,13 @@ public class Main {
         System.setProperty("meghanada.gradle-version", gradleVersion);
       }
     }
+    TraceConfig traceConfig = Tracing.getTraceConfig();
+    traceConfig.updateActiveTraceParams(
+        traceConfig.getActiveTraceParams().toBuilder().setSampler(Samplers.alwaysSample()).build());
+    // LoggingTraceExporter.register();
+    // int zpagePort = getFreePort();
+    ZPageHandlers.startHttpServerAndRegisterAll(ZPAGE_PORT);
+    System.setProperty("meghanada.zpage.port", Integer.toString(ZPAGE_PORT));
 
     String port = "0";
     String projectRoot = "./";
@@ -196,5 +208,14 @@ public class Main {
   public static boolean isDevelop() {
     final String dev = System.getenv("MEGHANADA_DEVELOP");
     return Objects.equals(dev, "1");
+  }
+
+  private static int getFreePort() throws IOException {
+    int port;
+    try (Socket socket = new Socket()) {
+      socket.bind(null);
+      port = socket.getLocalPort();
+    }
+    return port;
   }
 }

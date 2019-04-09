@@ -89,6 +89,11 @@ dependencies {
     implementation("org.jetbrains.xodus:xodus-environment:$xodusVersion")
     implementation("org.jetbrains.xodus:xodus-entity-store:$xodusVersion")
     implementation("org.jetbrains.xodus:xodus-compress:$xodusVersion")
+
+    implementation("io.opencensus:opencensus-api:0.20.0")
+    implementation("io.opencensus:opencensus-impl:0.20.0")
+    implementation("io.opencensus:opencensus-contrib-zpages:0.20.0")
+
 }
 
 application {
