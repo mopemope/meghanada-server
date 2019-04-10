@@ -6,6 +6,7 @@ import static meghanada.utils.ClassNameUtils.replaceDescriptorsType;
 import static meghanada.utils.FunctionUtils.wrapIO;
 import static meghanada.utils.FunctionUtils.wrapIOConsumer;
 
+import com.google.common.io.ByteStreams;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -144,10 +145,9 @@ public class ASMReflector {
   }
 
   private static void readClassIndex(
-      Map<ClassIndex, File> indexes, InputStream in, File file, boolean allowSuper)
-      throws IOException {
+      Map<ClassIndex, File> indexes, byte[] b, File file, boolean allowSuper) throws IOException {
 
-    ClassReader classReader = new ClassReader(in);
+    ClassReader classReader = new ClassReader(b);
     String className = ClassNameUtils.replaceSlash(classReader.getClassName());
 
     boolean projectOutput = file.isDirectory();
@@ -284,7 +284,8 @@ public class ASMReflector {
                           return;
                         }
                         try (InputStream in = cd.getInputStream()) {
-                          ASMReflector.readClassIndex(indexes, in, file, false);
+                          byte[] bytes = ByteStreams.toByteArray(in);
+                          ASMReflector.readClassIndex(indexes, bytes, file, false);
                         } catch (IOException e) {
                           throw new UncheckedIOException(e);
                         }
@@ -311,7 +312,8 @@ public class ASMReflector {
                     return;
                   }
                   try (InputStream in = jarFile.getInputStream(jarEntry)) {
-                    ASMReflector.readClassIndex(indexes, in, file, false);
+                    byte[] bytes = ByteStreams.toByteArray(in);
+                    ASMReflector.readClassIndex(indexes, bytes, file, false);
                   }
                 }));
       }
@@ -327,7 +329,8 @@ public class ASMReflector {
         return indexes;
       }
       try (InputStream in = new FileInputStream(file)) {
-        ASMReflector.readClassIndex(indexes, in, file, true);
+        byte[] bytes = ByteStreams.toByteArray(in);
+        ASMReflector.readClassIndex(indexes, bytes, file, true);
       }
 
     } else if (file.isDirectory()) {
@@ -349,7 +352,8 @@ public class ASMReflector {
                     return;
                   }
                   try (InputStream in = new FileInputStream(classFile)) {
-                    ASMReflector.readClassIndex(indexes, in, file, true);
+                    byte[] bytes = ByteStreams.toByteArray(in);
+                    ASMReflector.readClassIndex(indexes, bytes, file, true);
                   }
                 }));
       }
@@ -449,7 +453,8 @@ public class ASMReflector {
                                       nameWithTP,
                                       () -> {
                                         try (InputStream in = cd.getInputStream()) {
-                                          ClassReader classReader = new ClassReader(in);
+                                          byte[] bytes = ByteStreams.toByteArray(in);
+                                          ClassReader classReader = new ClassReader(bytes);
                                           return getMemberFromJar(
                                               file, classReader, nameWithoutTP, nameWithTP);
                                         } catch (IOException e) {
@@ -472,7 +477,8 @@ public class ASMReflector {
                                       nameWithTP,
                                       () -> {
                                         try (InputStream in = cd.getInputStream()) {
-                                          ClassReader classReader = new ClassReader(in);
+                                          byte[] bytes = ByteStreams.toByteArray(in);
+                                          ClassReader classReader = new ClassReader(bytes);
                                           return this.getMemberFromJar(
                                               file, classReader, innerClassName, nameWithTP);
                                         } catch (IOException e) {
@@ -520,7 +526,8 @@ public class ASMReflector {
                           nameWithTP,
                           () -> {
                             try (InputStream in = jarFile.getInputStream(jarEntry)) {
-                              ClassReader classReader = new ClassReader(in);
+                              byte[] bytes = ByteStreams.toByteArray(in);
+                              ClassReader classReader = new ClassReader(bytes);
                               return this.getMemberFromJar(
                                   file, classReader, nameWithoutTP, nameWithTP);
                             } catch (IOException e) {
@@ -544,7 +551,8 @@ public class ASMReflector {
                           nameWithTP,
                           () -> {
                             try (InputStream in = jarFile.getInputStream(jarEntry)) {
-                              ClassReader classReader = new ClassReader(in);
+                              byte[] bytes = ByteStreams.toByteArray(in);
+                              ClassReader classReader = new ClassReader(bytes);
                               return this.getMemberFromJar(
                                   file, classReader, innerClassName, nameWithTP);
                             } catch (IOException e) {
@@ -656,7 +664,8 @@ public class ASMReflector {
                       }
                       if (className.equals(nameWithoutTP)) {
                         try (InputStream in = jarFile.getInputStream(jarEntry)) {
-                          ClassReader classReader = new ClassReader(in);
+                          byte[] bytes = ByteStreams.toByteArray(in);
+                          ClassReader classReader = new ClassReader(bytes);
                           return getMemberFromJar(file, classReader, nameWithoutTP, name);
                         }
                       }
@@ -665,7 +674,8 @@ public class ASMReflector {
                       className = ClassNameUtils.replaceInnerMark(className);
                       if (className.equals(nameWithoutTP)) {
                         try (InputStream in = jarFile.getInputStream(jarEntry)) {
-                          ClassReader classReader = new ClassReader(in);
+                          byte[] bytes = ByteStreams.toByteArray(in);
+                          ClassReader classReader = new ClassReader(bytes);
                           return getMemberFromJar(file, classReader, nameWithoutTP, name);
                         }
                       }
@@ -703,7 +713,8 @@ public class ASMReflector {
   private List<MemberDescriptor> getMembersFromClassFile(
       File parent, File file, String fqcn, boolean includeSuper) throws IOException {
     try (InputStream in = new FileInputStream(file)) {
-      ClassReader classReader = new ClassReader(in);
+      byte[] bytes = ByteStreams.toByteArray(in);
+      ClassReader classReader = new ClassReader(bytes);
       String className = ClassNameUtils.replaceSlash(classReader.getClassName());
       if (className.equals(fqcn)) {
         ClassAnalyzeVisitor cv = new ClassAnalyzeVisitor(className, className, false, true);
@@ -836,7 +847,8 @@ public class ASMReflector {
                         if (!className.endsWith("module-info")) {
                           try (InputStream in = cd.getInputStream()) {
                             count.incrementAndGet();
-                            scanner.scan(file, className, in);
+                            byte[] bytes = ByteStreams.toByteArray(in);
+                            scanner.scan(file, className, bytes);
                           } catch (IOException e) {
                             throw new UncheckedIOException(e);
                           }
@@ -865,7 +877,8 @@ public class ASMReflector {
               if (!className.endsWith("module-info")) {
                 try (InputStream in = jarFile.getInputStream(jarEntry)) {
                   count.incrementAndGet();
-                  scanner.scan(file, className, in);
+                  byte[] bytes = ByteStreams.toByteArray(in);
+                  scanner.scan(file, className, bytes);
                 } catch (IOException e) {
                   throw new UncheckedIOException(e);
                 }
@@ -885,7 +898,8 @@ public class ASMReflector {
       }
       try (InputStream in = new FileInputStream(file)) {
         count.incrementAndGet();
-        scanner.scan(file, className, in);
+        byte[] bytes = ByteStreams.toByteArray(in);
+        scanner.scan(file, className, bytes);
       }
 
     } else if (file.isDirectory()) {
@@ -908,7 +922,8 @@ public class ASMReflector {
               if (!className.endsWith("module-info")) {
                 try (InputStream in = new FileInputStream(classFile)) {
                   count.incrementAndGet();
-                  scanner.scan(classFile, className, in);
+                  byte[] bytes = ByteStreams.toByteArray(in);
+                  scanner.scan(classFile, className, bytes);
                 } catch (IOException e) {
                   throw new UncheckedIOException(e);
                 }
@@ -955,6 +970,6 @@ public class ASMReflector {
 
   @FunctionalInterface
   public interface Scanner {
-    void scan(File file, String name, InputStream in) throws IOException;
+    void scan(File file, String name, byte[] bytes) throws IOException;
   }
 }
