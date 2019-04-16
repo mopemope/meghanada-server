@@ -445,7 +445,7 @@ public class ASMReflector {
                             if (className.equals(nameWithoutTP)) {
 
                               List<MemberDescriptor> members =
-                                  this.cachedMember(
+                                  this.cacheMember(
                                       nameWithTP,
                                       () -> {
                                         try (InputStream in = cd.getInputStream()) {
@@ -468,7 +468,7 @@ public class ASMReflector {
                             String innerClassName = ClassNameUtils.replaceInnerMark(className);
                             if (innerClassName.equals(nameWithoutTP)) {
                               List<MemberDescriptor> members =
-                                  this.cachedMember(
+                                  this.cacheMember(
                                       nameWithTP,
                                       () -> {
                                         try (InputStream in = cd.getInputStream()) {
@@ -516,7 +516,7 @@ public class ASMReflector {
               if (className.equals(nameWithoutTP)) {
                 {
                   List<MemberDescriptor> members =
-                      this.cachedMember(
+                      this.cacheMember(
                           nameWithTP,
                           () -> {
                             try (InputStream in = jarFile.getInputStream(jarEntry)) {
@@ -540,7 +540,7 @@ public class ASMReflector {
               if (innerClassName.equals(nameWithoutTP)) {
                 {
                   List<MemberDescriptor> members =
-                      this.cachedMember(
+                      this.cacheMember(
                           nameWithTP,
                           () -> {
                             try (InputStream in = jarFile.getInputStream(jarEntry)) {
@@ -936,7 +936,7 @@ public class ASMReflector {
     return targets;
   }
 
-  public List<MemberDescriptor> cachedMember(
+  private List<MemberDescriptor> cacheMember(
       String key, Supplier<List<MemberDescriptor>> supplier) {
 
     List<MemberDescriptor> list = innerCache.get(key);
