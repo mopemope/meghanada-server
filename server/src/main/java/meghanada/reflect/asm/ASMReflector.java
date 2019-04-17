@@ -441,29 +441,27 @@ public class ASMReflector {
 
                         Iterator<String> classIterator = targetClasses.iterator();
                         while (classIterator.hasNext()) {
-                          String nameWithTP = classIterator.next();
-                          if (nonNull(nameWithTP)) {
-                            boolean isSuper = !topClass.equals(nameWithTP);
-                            String nameWithoutTP = ClassNameUtils.removeTypeParameter(nameWithTP);
+                          String name = classIterator.next();
+                          if (nonNull(name)) {
+                            boolean isSuper = !topClass.equals(name);
+                            String withoutTP = ClassNameUtils.removeTypeParameter(name);
 
-                            if (className.equals(nameWithoutTP)) {
+                            if (className.equals(withoutTP)) {
 
                               List<MemberDescriptor> members =
                                   this.cacheMember(
-                                      nameWithTP,
+                                      name,
                                       () -> {
                                         try (InputStream in = cd.getInputStream()) {
                                           byte[] bytes = ByteStreams.toByteArray(in);
-                                          ClassReader classReader = new ClassReader(bytes);
-                                          return getMemberFromJar(
-                                              file, classReader, nameWithoutTP, nameWithTP);
+                                          return readMember(name, bytes);
                                         } catch (IOException e) {
                                           throw new UncheckedIOException(e);
                                         }
                                       });
 
                               if (isSuper) {
-                                replaceDescriptorsType(nameWithTP, members);
+                                replaceDescriptorsType(name, members);
                               }
                               results.addAll(members);
                               classIterator.remove();
@@ -471,16 +469,14 @@ public class ASMReflector {
                             }
 
                             String innerClassName = ClassNameUtils.replaceInnerMark(className);
-                            if (innerClassName.equals(nameWithoutTP)) {
+                            if (innerClassName.equals(withoutTP)) {
                               List<MemberDescriptor> members =
                                   this.cacheMember(
-                                      nameWithTP,
+                                      name,
                                       () -> {
                                         try (InputStream in = cd.getInputStream()) {
                                           byte[] bytes = ByteStreams.toByteArray(in);
-                                          ClassReader classReader = new ClassReader(bytes);
-                                          return this.getMemberFromJar(
-                                              file, classReader, innerClassName, nameWithTP);
+                                          return readMember(name, bytes);
                                         } catch (IOException e) {
                                           throw new UncheckedIOException(e);
                                         }
@@ -514,28 +510,26 @@ public class ASMReflector {
           Iterator<String> classIterator = targetClasses.iterator();
 
           while (classIterator.hasNext()) {
-            String nameWithTP = classIterator.next();
-            if (nonNull(nameWithTP)) {
-              boolean isSuper = !topClass.equals(nameWithTP);
-              String nameWithoutTP = ClassNameUtils.removeTypeParameter(nameWithTP);
+            String name = classIterator.next();
+            if (nonNull(name)) {
+              boolean isSuper = !topClass.equals(name);
+              String withoutTP = ClassNameUtils.removeTypeParameter(name);
 
-              if (className.equals(nameWithoutTP)) {
+              if (className.equals(withoutTP)) {
                 {
                   List<MemberDescriptor> members =
                       this.cacheMember(
-                          nameWithTP,
+                          name,
                           () -> {
                             try (InputStream in = jarFile.getInputStream(jarEntry)) {
                               byte[] bytes = ByteStreams.toByteArray(in);
-                              ClassReader classReader = new ClassReader(bytes);
-                              return this.getMemberFromJar(
-                                  file, classReader, nameWithoutTP, nameWithTP);
+                              return readMember(name, bytes);
                             } catch (IOException e) {
                               throw new UncheckedIOException(e);
                             }
                           });
                   if (isSuper) {
-                    replaceDescriptorsType(nameWithTP, members);
+                    replaceDescriptorsType(name, members);
                   }
                   results.addAll(members);
                   classIterator.remove();
@@ -544,23 +538,21 @@ public class ASMReflector {
               }
 
               String innerClassName = ClassNameUtils.replaceInnerMark(className);
-              if (innerClassName.equals(nameWithoutTP)) {
+              if (innerClassName.equals(withoutTP)) {
                 {
                   List<MemberDescriptor> members =
                       this.cacheMember(
-                          nameWithTP,
+                          name,
                           () -> {
                             try (InputStream in = jarFile.getInputStream(jarEntry)) {
                               byte[] bytes = ByteStreams.toByteArray(in);
-                              ClassReader classReader = new ClassReader(bytes);
-                              return this.getMemberFromJar(
-                                  file, classReader, innerClassName, nameWithTP);
+                              return readMember(name, bytes);
                             } catch (IOException e) {
                               throw new UncheckedIOException(e);
                             }
                           });
                   if (isSuper) {
-                    replaceDescriptorsType(nameWithTP, members);
+                    replaceDescriptorsType(name, members);
                   }
                   results.addAll(members);
                   classIterator.remove();
@@ -665,8 +657,7 @@ public class ASMReflector {
                       if (className.equals(nameWithoutTP)) {
                         try (InputStream in = jarFile.getInputStream(jarEntry)) {
                           byte[] bytes = ByteStreams.toByteArray(in);
-                          ClassReader classReader = new ClassReader(bytes);
-                          return getMemberFromJar(file, classReader, nameWithoutTP, name);
+                          return readMember(name, bytes);
                         }
                       }
 
@@ -676,7 +667,7 @@ public class ASMReflector {
                         try (InputStream in = jarFile.getInputStream(jarEntry)) {
                           byte[] bytes = ByteStreams.toByteArray(in);
                           ClassReader classReader = new ClassReader(bytes);
-                          return getMemberFromJar(file, classReader, nameWithoutTP, name);
+                          return readMember(name, bytes);
                         }
                       }
 
@@ -739,26 +730,6 @@ public class ASMReflector {
             .map(wrapIO(s -> reflect(parent, s)))
             .collect(Collectors.toList());
     lists.forEach(units::addAll);
-  }
-
-  private List<MemberDescriptor> getMemberFromJar(
-      File file, ClassReader classReader, String nameWithoutTP, String nameWithTP) {
-    return getMemberFromJar(file, classReader, nameWithoutTP, nameWithTP, false);
-  }
-
-  private List<MemberDescriptor> getMemberFromJar(
-      File file,
-      ClassReader classReader,
-      String nameWithoutTP,
-      String nameWithTP,
-      boolean includeSuper) {
-    ClassAnalyzeVisitor cv = readClassFromJar(classReader, nameWithoutTP, nameWithTP);
-    List<MemberDescriptor> members = cv.getMembers();
-
-    if (includeSuper) {
-      this.readSuperMembers(file, cv, members);
-    }
-    return members;
   }
 
   public InheritanceInfo getReflectInfo(Map<String, ClassIndex> index, String fqcn) {
@@ -966,6 +937,15 @@ public class ASMReflector {
   public void clearInnerCache() {
     // shrink
     this.innerCache = new ConcurrentHashMap<>(16);
+  }
+
+  public static List<MemberDescriptor> readMember(String name, byte[] bytes) {
+    String withoutTP = ClassNameUtils.removeTypeParameter(name);
+    ClassReader classReader = new ClassReader(bytes);
+    ClassAnalyzeVisitor classAnalyzeVisitor =
+        new ClassAnalyzeVisitor(withoutTP, name, false, false);
+    classReader.accept(classAnalyzeVisitor, 0);
+    return classAnalyzeVisitor.getMembers();
   }
 
   @FunctionalInterface
