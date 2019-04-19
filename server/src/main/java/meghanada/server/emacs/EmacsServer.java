@@ -362,7 +362,7 @@ public class EmacsServer implements Server {
                 })
             .getMatch();
 
-    log.info("receive command {}. elapsed:{}", argList, stopwatch.stop());
+    log.info("receive {}. elapsed:{}", argList, stopwatch.stop());
     return result;
   }
 
