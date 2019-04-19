@@ -61,9 +61,11 @@ public class ASMReflector {
         "org.jboss.forge.roaster._shade.org.eclipse.core.internal"
       };
   private static final Logger log = LogManager.getLogger(ASMReflector.class);
+  private static final String preloadClassPackage = "java.lang.";
+  private static final Map<String, List<MemberDescriptor>> innerCache =
+      new ConcurrentHashMap<>(256);
   private static ASMReflector asmReflector;
   private final Set<String> allowClass = new HashSet<>(16);
-  private Map<String, List<MemberDescriptor>> innerCache = new ConcurrentHashMap<>(16);
 
   private ASMReflector() {
     Config.load().getAllowClass().forEach(this::addAllowClass);
@@ -166,13 +168,18 @@ public class ASMReflector {
       isSuper = (Opcodes.ACC_SUPER & access) == Opcodes.ACC_SUPER;
     }
     if (projectOutput || (isPublic || isProtected || isSuper)) {
-      ClassAnalyzeVisitor classAnalyzeVisitor = new ClassAnalyzeVisitor(className, true, false);
+      boolean onlyClassName = !className.startsWith(preloadClassPackage);
+      ClassAnalyzeVisitor classAnalyzeVisitor =
+          new ClassAnalyzeVisitor(className, onlyClassName, false);
       classReader.accept(classAnalyzeVisitor, 0);
       ClassIndex classIndex = classAnalyzeVisitor.getClassIndex();
       if (!classIndex.isAnonymous) {
         classIndex.setInterface(isInterface);
         classIndex.setAnnotation(isAnnotation);
         indexes.put(classIndex, file);
+        if (!onlyClassName) {
+          innerCache.put(className, classAnalyzeVisitor.getMembers());
+        }
       }
     }
   }
@@ -946,11 +953,6 @@ public class ASMReflector {
     List<MemberDescriptor> newVal = supplier.get();
     innerCache.put(key, newVal);
     return newVal;
-  }
-
-  public void clearInnerCache() {
-    // shrink
-    this.innerCache = new ConcurrentHashMap<>(16);
   }
 
   @FunctionalInterface

@@ -279,7 +279,7 @@ public class ClassNameUtils {
   }
 
   public static List<String> parseTypeParameter(final String str) {
-    if (str.isEmpty()) {
+    if (isNull(str) || str.isEmpty()) {
       return Collections.emptyList();
     }
     final List<String> result = new ArrayList<>(4);
