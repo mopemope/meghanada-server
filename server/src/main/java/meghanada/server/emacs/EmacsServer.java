@@ -30,7 +30,7 @@ import java.util.stream.Collectors;
 import meghanada.server.CommandHandler;
 import meghanada.server.OutputFormatter;
 import meghanada.server.Server;
-import meghanada.server.formatter.SexpOutputFormatter;
+import meghanada.server.formatter.SExprOutputFormatter;
 import meghanada.session.Session;
 import meghanada.session.SessionEventBus;
 import org.apache.logging.log4j.LogManager;
@@ -472,7 +472,7 @@ public class EmacsServer implements Server {
 
   private OutputFormatter getOutputFormatter() {
     if (this.outputFormat == OUTPUT.SEXP) {
-      return new SexpOutputFormatter();
+      return new SExprOutputFormatter();
     }
     throw new UnsupportedOperationException("not support format");
   }

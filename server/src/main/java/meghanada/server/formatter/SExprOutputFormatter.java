@@ -29,9 +29,9 @@ import meghanada.typeinfo.TypeInfo;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class SexpOutputFormatter implements OutputFormatter {
+public class SExprOutputFormatter implements OutputFormatter {
 
-  private static final Logger log = LogManager.getLogger(SexpOutputFormatter.class);
+  private static final Logger log = LogManager.getLogger(SExprOutputFormatter.class);
 
   private static final String LPAREN = "(";
   private static final String RPAREN = ")";
@@ -213,7 +213,7 @@ public class SexpOutputFormatter implements OutputFormatter {
                 strings ->
                     LPAREN
                         + strings.stream()
-                            .map(SexpOutputFormatter::doubleQuote)
+                            .map(SExprOutputFormatter::doubleQuote)
                             .collect(Collectors.joining(LIST_SEP))
                         + RPAREN)
             .filter(Objects::nonNull)
@@ -260,7 +260,7 @@ public class SexpOutputFormatter implements OutputFormatter {
   public String localVariable(final long id, final LocalVariable lv) {
     final StringBuilder sb = new StringBuilder(1024);
     sb.append(LPAREN);
-    sb.append(SexpOutputFormatter.doubleQuote(lv.getReturnType()));
+    sb.append(SExprOutputFormatter.doubleQuote(lv.getReturnType()));
     if (!lv.getCandidates().isEmpty()) {
       sb.append(LIST_SEP);
       sb.append(LPAREN);
@@ -269,7 +269,7 @@ public class SexpOutputFormatter implements OutputFormatter {
           String.join(
               LIST_SEP,
               lv.getCandidates().stream()
-                  .map(SexpOutputFormatter::doubleQuote)
+                  .map(SExprOutputFormatter::doubleQuote)
                   .collect(Collectors.toList()));
 
       sb.append(values);
@@ -464,7 +464,7 @@ public class SexpOutputFormatter implements OutputFormatter {
                         + entry.getKey()
                         + LIST_SEP
                         + entry.getValue().stream()
-                            .map(SexpOutputFormatter::doubleQuote)
+                            .map(SExprOutputFormatter::doubleQuote)
                             .collect(Collectors.joining(LIST_SEP))
                         + RPAREN)
             .filter(Objects::nonNull)
