@@ -27,7 +27,7 @@ import org.junit.platform.launcher.listeners.TestExecutionSummary;
 public class TestRunner {
 
   private static final String TEMP_PROJECT_SETTING_DIR = "meghanada.temp.project.setting.dir";
-  private static Logger log = LogManager.getLogger(TestRunner.class);
+  private static final Logger log = LogManager.getLogger(TestRunner.class);
   private long runCnt;
   private long failureCnt;
   private long ignoreCnt;
@@ -67,7 +67,7 @@ public class TestRunner {
   }
 
   private static List<Class<?>> getTestClass(String testName) throws ClassNotFoundException {
-    List<Class<?>> classes = new ArrayList<>();
+    List<Class<?>> classes = new ArrayList<>(8);
     CachedASMReflector cachedASMReflector = CachedASMReflector.getInstance();
     for (ClassIndex classIndex : cachedASMReflector.getGlobalClassIndex().values()) {
       String fqcn = classIndex.getReturnType();

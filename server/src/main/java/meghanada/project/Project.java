@@ -86,8 +86,8 @@ public abstract class Project implements Serializable, Storable {
   private static final String FORMATTER_FILE_XML = "meghanadaFormatter.xml";
   private static final Pattern SEP_COMPILE = Pattern.compile("/", Pattern.LITERAL);
 
-  protected File projectRoot;
-  protected Set<ProjectDependency> dependencies = new HashSet<>(16);
+  protected final File projectRoot;
+  protected final Set<ProjectDependency> dependencies = new HashSet<>(16);
   protected String projectRootPath;
   protected Set<File> sources = new HashSet<>(2);
   protected Set<File> resources = new HashSet<>(2);

@@ -12,7 +12,7 @@ public class CamelCaseMatcher implements CompletionMatcher {
   private static final Logger log = LogManager.getLogger(CamelCaseMatcher.class);
 
   private final String query;
-  private CompletionMatcher baseMatcher;
+  private final CompletionMatcher baseMatcher;
 
   public CamelCaseMatcher(String query) {
     this.query = query;

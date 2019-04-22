@@ -32,10 +32,10 @@ public class IndexDatabase {
   private static final Logger log = LogManager.getLogger(IndexDatabase.class);
   private static final String QUOTE = "\"";
   private static IndexDatabase indexDatabase;
-  public int maxHits = Integer.MAX_VALUE;
+  public final int maxHits = Integer.MAX_VALUE;
   private DocumentSearcher searcher;
   private Environment environment = null;
-  private File baseLocation = null;
+  private final File baseLocation = null;
 
   private IndexDatabase() {
     SystemEventBus.getInstance().getEventBus().register(this);

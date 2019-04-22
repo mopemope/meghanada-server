@@ -29,11 +29,7 @@ public class JavaVariableCompletion {
   private static final String[] pluralClass = new String[] {"List", "Set", "Collections"};
   private static final CharMatcher removeMatcher = CharMatcher.anyOf("<> ,$.");
 
-  private Supplier<Project> projectSupplier;
-
-  public JavaVariableCompletion(final Supplier<Project> supplier) {
-    this.projectSupplier = supplier;
-  }
+  public JavaVariableCompletion(final Supplier<Project> supplier) {}
 
   private static String fromInitial(final String returnType) {
     final String simpleName = ClassNameUtils.getSimpleName(returnType);

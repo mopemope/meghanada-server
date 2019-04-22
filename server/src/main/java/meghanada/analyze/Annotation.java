@@ -7,10 +7,10 @@ import java.io.Serializable;
 public class Annotation implements Symbol, Serializable {
 
   private static final long serialVersionUID = 7948194139024600219L;
-  public String name;
-  public int pos;
-  public Range range;
-  public String returnType;
+  public final String name;
+  public final int pos;
+  public final Range range;
+  public final String returnType;
 
   public Annotation(final String name, final int pos, final Range range) {
     this.name = name;

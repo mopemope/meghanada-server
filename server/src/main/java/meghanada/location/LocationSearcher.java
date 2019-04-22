@@ -74,7 +74,7 @@ public class LocationSearcher {
   private final List<LocationSearchFunction> functions;
   private final Map<String, File> copiedSrcFile = new HashMap<>(16);
   private final Map<String, List<String>> decompileFiles = new HashMap<>(16);
-  private Supplier<Project> projectSupplier;
+  private final Supplier<Project> projectSupplier;
 
   public LocationSearcher(final Supplier<Project> supplier) {
     this.functions = this.getFunctions();
@@ -394,7 +394,7 @@ public class LocationSearcher {
         .findFirst();
   }
 
-  private Optional<Location> getMethodLocationFromProject(
+  private static Optional<Location> getMethodLocationFromProject(
       String methodName, List<String> arguments, File file) {
     try {
       Source declaringClassSrc = getSource(file);
@@ -769,7 +769,7 @@ public class LocationSearcher {
     return result;
   }
 
-  private Optional<Location> getFieldLocationFromProject(
+  private static Optional<Location> getFieldLocationFromProject(
       final String fqcn, final String fieldName, final File file) {
     try {
       final Source declaringClassSrc = getSource(file);

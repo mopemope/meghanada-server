@@ -141,9 +141,9 @@ public class ModuleHelper {
 
   public static final class ClassData {
 
-    private String moduleName;
-    private String className;
-    private Path path;
+    private final String moduleName;
+    private final String className;
+    private final Path path;
 
     ClassData(String moduleName, String className, Path path) {
       this.moduleName = moduleName;

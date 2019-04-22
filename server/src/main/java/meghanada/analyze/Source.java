@@ -224,7 +224,7 @@ public class Source implements Serializable, Storable, SearchIndexable {
     }
 
     int last = 1;
-    final List<LineRange> list = new ArrayList<>();
+    final List<LineRange> list = new ArrayList<>(256);
     try (final BufferedReader br =
         new BufferedReader(
             new InputStreamReader(new FileInputStream(file), Charset.forName("UTF-8")))) {
@@ -840,7 +840,7 @@ public class Source implements Serializable, Storable, SearchIndexable {
   }
 
   private Collection<? extends Document> createSourceTextIndices() {
-    final List<Document> documents = new ArrayList<>();
+    final List<Document> documents = new ArrayList<>(128);
     try (final BufferedReader br =
         new BufferedReader(
             new InputStreamReader(new FileInputStream(this.filePath), StandardCharsets.UTF_8))) {
@@ -902,14 +902,14 @@ public class Source implements Serializable, Storable, SearchIndexable {
       words.add(indexableWord);
       this.indexWords.put(line, words);
     } else {
-      List<IndexableWord> words = new ArrayList<>();
+      List<IndexableWord> words = new ArrayList<>(128);
       words.add(indexableWord);
       this.indexWords.put(line, words);
     }
   }
 
   public Map<String, ClassScope> getAllClasses() {
-    Map<String, ClassScope> classMap = new HashMap<>();
+    Map<String, ClassScope> classMap = new HashMap<>(1024);
     this.getAllClassScopes()
         .forEach(
             cs -> {

@@ -930,7 +930,7 @@ public class ASMReflector {
       String mainClass, List<String> targets, List<MemberDescriptor> results) {
     for (Iterator<String> it = targets.iterator(); it.hasNext(); ) {
       String nameWithTP = it.next();
-      List<MemberDescriptor> members = this.innerCache.get(nameWithTP);
+      List<MemberDescriptor> members = innerCache.get(nameWithTP);
       if (nonNull(members)) {
         boolean isSuper = !mainClass.equals(nameWithTP);
         if (isSuper) {

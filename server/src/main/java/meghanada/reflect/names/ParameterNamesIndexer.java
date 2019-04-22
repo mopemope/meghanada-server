@@ -33,7 +33,7 @@ public class ParameterNamesIndexer {
   private static final FSTConfiguration fstConfiguration =
       FSTConfiguration.createDefaultConfiguration();
 
-  private static Logger log = LogManager.getLogger(ParameterNamesIndexer.class);
+  private static final Logger log = LogManager.getLogger(ParameterNamesIndexer.class);
 
   static {
     fstConfiguration.registerClass(ParameterName.class, MethodParameterNames.class);

@@ -22,12 +22,12 @@ public class MethodScope extends BlockScope {
   public final List<String> parameters = new ArrayList<>(3);
   public boolean vararg;
   public String modifier;
-  public String name;
+  public final String name;
   public String returnType;
-  public Range nameRange;
+  public final Range nameRange;
 
-  private boolean isConstructor;
-  private List<String> exceptions = new ArrayList<>();
+  private final boolean isConstructor;
+  private final List<String> exceptions = new ArrayList<>(1);
 
   public MethodScope(
       final String declaringClass,

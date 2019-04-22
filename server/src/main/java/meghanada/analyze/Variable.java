@@ -17,9 +17,9 @@ public class Variable implements Serializable, Symbol {
   private static final long serialVersionUID = 456932034908443221L;
   private static Logger log = LogManager.getLogger(Variable.class);
 
-  public String name;
-  public int pos;
-  public Range range;
+  public final String name;
+  public final int pos;
+  public final Range range;
   public String fqcn;
   public boolean isDef;
   public boolean isParameter;

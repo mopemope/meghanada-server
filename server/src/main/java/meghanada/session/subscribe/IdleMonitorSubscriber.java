@@ -32,9 +32,9 @@ public class IdleMonitorSubscriber extends AbstractSubscriber {
 
   private int idleTime = 10;
   private Deque<File> jars;
-  private SessionEventBus.IdleTimer idleTimer;
+  private final SessionEventBus.IdleTimer idleTimer;
   private boolean started;
-  private CpuMonitor monitor;
+  private final CpuMonitor monitor;
 
   public IdleMonitorSubscriber(
       SessionEventBus sessionEventBus, SessionEventBus.IdleTimer idleTimer) {

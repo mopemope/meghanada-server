@@ -29,7 +29,7 @@ import org.apache.logging.log4j.message.EntryMessage;
 public class DeclarationSearcher {
   private static final Logger log = LogManager.getLogger(DeclarationSearcher.class);
   private final List<DeclarationSearchFunction> functions;
-  private Supplier<Project> projectSupplier;
+  private final Supplier<Project> projectSupplier;
 
   public DeclarationSearcher(final Supplier<Project> supplier) {
     this.functions = DeclarationSearcher.getFunctions();

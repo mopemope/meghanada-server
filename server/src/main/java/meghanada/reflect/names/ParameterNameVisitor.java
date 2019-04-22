@@ -22,7 +22,7 @@ public class ParameterNameVisitor extends VoidVisitorAdapter<Object> {
   String pkg;
   String className;
   MethodParameterNames names = new MethodParameterNames();
-  List<MethodParameterNames> parameterNamesList = new ArrayList<>();
+  final List<MethodParameterNames> parameterNamesList = new ArrayList<>(3);
 
   public ParameterNameVisitor(String className) {
     this.originClassName = className;

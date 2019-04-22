@@ -219,8 +219,8 @@ class POMParser {
 
   static class LocalModelResolver implements ModelResolver {
 
-    private Set<File> loaded = new HashSet<>(8);
-    private File projectRoot;
+    private final Set<File> loaded = new HashSet<>(8);
+    private final File projectRoot;
 
     public LocalModelResolver(final File projectRoot) {
       this.projectRoot = projectRoot;

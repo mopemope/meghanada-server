@@ -30,7 +30,7 @@ public class SourceCacheSubscriber {
 
   private final Supplier<Project> projectSupplier;
   private long lastCached;
-  private boolean importMemberCache = false;
+  private final boolean importMemberCache = false;
 
   public SourceCacheSubscriber(final Supplier<Project> projectSupplier) {
     this.projectSupplier = projectSupplier;

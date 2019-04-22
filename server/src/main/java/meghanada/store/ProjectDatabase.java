@@ -59,9 +59,9 @@ public class ProjectDatabase {
   private static final int BURST_LIMIT = 32;
 
   private static ProjectDatabase projectDatabase;
-  private static AtomicLong seq = new AtomicLong(1);
-  private static int MAX_WORKER = 4;
-  private static long WORKER_DURATION = 2;
+  private static final AtomicLong seq = new AtomicLong(1);
+  private static final int MAX_WORKER = 4;
+  private static final long WORKER_DURATION = 2;
 
   private final BlockingQueue<StoreRequest> blockingQueue = new LinkedBlockingDeque<>();
   private ExecutorService executorService = null;
@@ -69,7 +69,7 @@ public class ProjectDatabase {
   private PersistentEntityStore entityStore = null;
   private String projectRoot;
   private boolean isTerminated;
-  private AtomicInteger extraWorkers = new AtomicInteger(0);
+  private final AtomicInteger extraWorkers = new AtomicInteger(0);
   private Instant lastAddWorker = Instant.now();
   private File baseLocation;
 

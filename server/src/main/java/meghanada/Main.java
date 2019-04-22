@@ -32,7 +32,7 @@ public class Main {
 
   public static final String VERSION = "1.0.14";
   private static final Logger log = LogManager.getLogger(Main.class);
-  private static int ZPAGE_PORT = 60981;
+  private static final int ZPAGE_PORT = 60981;
   private static String version;
 
   public static String getVersion() throws IOException {

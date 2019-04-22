@@ -32,14 +32,14 @@ import org.apache.logging.log4j.Logger;
 public class TypeInfoSearcher {
 
   private static final Logger log = LogManager.getLogger(TypeInfoSearcher.class);
-  private Supplier<Project> projectSupplier;
+  private final Supplier<Project> projectSupplier;
 
   public TypeInfoSearcher(Supplier<Project> supplier) {
     this.projectSupplier = supplier;
   }
 
   private static List<MemberDescriptor> getMembers(String fqcn, String clsName) {
-    List<MemberDescriptor> results = new ArrayList<>();
+    List<MemberDescriptor> results = new ArrayList<>(32);
     CachedASMReflector reflector = CachedASMReflector.getInstance();
     for (MemberDescriptor md : reflector.reflect(fqcn)) {
       CandidateUnit.MemberType type = md.getMemberType();
@@ -70,7 +70,7 @@ public class TypeInfoSearcher {
     Collections.reverse(hierarchy);
 
     List<String> res = new ArrayList<>(hierarchy.size() + 1);
-    final Map<String, MemberDescriptor> members = new HashMap<>();
+    final Map<String, MemberDescriptor> members = new HashMap<>(32);
 
     for (String cls : hierarchy) {
       final String className = ClassNameUtils.removeTypeParameter(cls);
@@ -193,7 +193,7 @@ public class TypeInfoSearcher {
     return result;
   }
 
-  public Optional<TypeInfo> search(File file, int line, int column, String symbol)
+  public static Optional<TypeInfo> search(File file, int line, int column, String symbol)
       throws ExecutionException, IOException {
 
     return getSource(file)

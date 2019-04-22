@@ -95,7 +95,7 @@ public class Session {
     this.sessionEventBus = new SessionEventBus(this);
     this.started = false;
     this.projects.put(currentProject.getProjectRoot(), currentProject);
-    this.setCurrentProject(currentProject);
+    this.currentProject = currentProject;
   }
 
   public static Session createSession(String root) throws IOException {
@@ -303,7 +303,7 @@ public class Session {
   private boolean searchAndChangeProject(final File base) throws IOException {
     final File projectRoot = Session.findProjectRoot(base);
 
-    if (isNull(projectRoot) || this.getCurrentProject().getProjectRoot().equals(projectRoot)) {
+    if (isNull(projectRoot) || this.currentProject.getProjectRoot().equals(projectRoot)) {
       // not change
       return false;
     }
@@ -314,7 +314,7 @@ public class Session {
       log.info("change project {}", project.getName());
       String projectRootPath = project.getProjectRootPath();
       Config.setProjectRoot(projectRootPath);
-      this.setCurrentProject(project);
+      this.currentProject = project;
       return true;
     }
 
@@ -349,7 +349,7 @@ public class Session {
     String projectRootPath = project.getProjectRootPath();
     Config.setProjectRoot(projectRootPath);
     this.projects.put(projectRoot, project);
-    this.setCurrentProject(project);
+    this.currentProject = project;
     return true;
   }
 
@@ -593,7 +593,7 @@ public class Session {
     return parseJavaSource(file).map(Source::searchMissingImport).orElse(Collections.emptyMap());
   }
 
-  private Optional<Source> parseJavaSource(final File file) throws ExecutionException {
+  private static Optional<Source> parseJavaSource(final File file) throws ExecutionException {
     if (!FileUtils.isJavaFile(file)) {
       return Optional.empty();
     }
@@ -610,7 +610,7 @@ public class Session {
     boolean b = this.changeProject(path);
     final GlobalCache globalCache = GlobalCache.getInstance();
     globalCache.invalidateSource(file);
-    Optional<Source> source = this.parseJavaSource(file);
+    Optional<Source> source = Session.parseJavaSource(file);
     return source.isPresent();
   }
 
@@ -795,7 +795,7 @@ public class Session {
   }
 
   public void reloadProject() throws IOException {
-    final Project currentProject = this.getCurrentProject();
+    final Project currentProject = this.currentProject;
     final File projectRoot = currentProject.getProjectRoot();
     this.projects.clear();
     if (currentProject instanceof GradleProject) {
@@ -832,7 +832,7 @@ public class Session {
                 boolean ret = setProject(projectRoot, project);
               });
     }
-    Project current = this.getCurrentProject();
+    Project current = this.currentProject;
     final Set<File> temp = new HashSet<>(current.getSources());
     temp.addAll(current.getTestSources());
     this.sessionEventBus.requestWatchFiles(new ArrayList<>(temp));
@@ -861,7 +861,7 @@ public class Session {
 
   public InputStream execMain(String path, boolean debug) throws Exception {
     boolean b = this.changeProject(path);
-    Optional<Source> source = this.parseJavaSource(new File(path));
+    Optional<Source> source = Session.parseJavaSource(new File(path));
     return source
         .map(
             src -> {
@@ -911,7 +911,7 @@ public class Session {
       throws IOException, ExecutionException {
     boolean b = this.changeProject(path);
     final TypeInfoSearcher searcher = this.getTypeInfoSearcher();
-    return searcher.search(new File(path), line, column, symbol);
+    return TypeInfoSearcher.search(new File(path), line, column, symbol);
   }
 
   public void killRunningProcess() {

@@ -39,7 +39,7 @@ public class TypeInfoSearcherTest extends GradleTestBase {
     assertTrue(f.exists());
 
     TypeInfoSearcher searcher = getSearcher();
-    Optional<TypeInfo> result = searcher.search(f, 20, 10, "");
+    Optional<TypeInfo> result = TypeInfoSearcher.search(f, 20, 10, "");
     TypeInfo typeInfo = result.get();
     assertEquals(6, typeInfo.getHierarchy().size());
   }
@@ -52,7 +52,7 @@ public class TypeInfoSearcherTest extends GradleTestBase {
     assertTrue(f.exists());
 
     TypeInfoSearcher searcher = getSearcher();
-    Optional<TypeInfo> result = searcher.search(f, 23, 50, "ArrayList");
+    Optional<TypeInfo> result = TypeInfoSearcher.search(f, 23, 50, "ArrayList");
 
     TypeInfo typeInfo = result.get();
     assertEquals(4, typeInfo.getHierarchy().size());

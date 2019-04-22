@@ -26,7 +26,7 @@ public class MethodDescriptor extends MemberDescriptor {
   public final List<MethodParameter> parameters;
   public String formalType;
   public boolean hasVarargs;
-  public String[] exceptions;
+  public final String[] exceptions;
 
   public MethodDescriptor(
       final String declaringClass,

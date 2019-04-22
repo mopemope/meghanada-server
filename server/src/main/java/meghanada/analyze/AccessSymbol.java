@@ -10,9 +10,9 @@ public abstract class AccessSymbol implements Serializable, Symbol {
 
   public String declaringClass;
   public String scope = "";
-  public String name;
-  public int pos;
-  public Range range;
+  public final String name;
+  public final int pos;
+  public final Range range;
   public String returnType;
   public int argumentIndex = -1;
 

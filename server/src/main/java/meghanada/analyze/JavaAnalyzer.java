@@ -257,7 +257,7 @@ public class JavaAnalyzer {
 
   public static class AnalyzedEvent {
     public final Map<File, Source> analyzedMap;
-    public boolean diagnostics;
+    public final boolean diagnostics;
 
     AnalyzedEvent(Map<File, Source> analyzedMap, boolean diagnostics) {
       this.analyzedMap = analyzedMap;

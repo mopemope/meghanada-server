@@ -4,11 +4,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class SearchResults {
-  public List<SearchResult> classes = new ArrayList<>();
-  public List<SearchResult> methods = new ArrayList<>();
-  public List<SearchResult> symbols = new ArrayList<>();
-  public List<SearchResult> usages = new ArrayList<>();
-  public List<SearchResult> codes = new ArrayList<>();
+  public final List<SearchResult> classes = new ArrayList<>(8);
+  public final List<SearchResult> methods = new ArrayList<>(8);
+  public final List<SearchResult> symbols = new ArrayList<>(8);
+  public final List<SearchResult> usages = new ArrayList<>(8);
+  public final List<SearchResult> codes = new ArrayList<>(8);
 
   public int size() {
     int i = 0;

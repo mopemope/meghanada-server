@@ -11,7 +11,7 @@ public class MethodCall extends AccessSymbol {
 
   private static final long serialVersionUID = -2434830191914184294L;
   private static final Logger log = LogManager.getLogger(MethodCall.class);
-  public Range nameRange;
+  public final Range nameRange;
   public boolean constructor;
   public List<String> arguments = Collections.emptyList();
 

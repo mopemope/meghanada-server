@@ -213,7 +213,7 @@ public class GradleProject extends Project {
     }
   }
 
-  private Throwable findLocationException(Throwable e) {
+  private static Throwable findLocationException(Throwable e) {
     Throwable cause = e.getCause();
     if (nonNull(cause)) {
       String name = cause.getClass().getName();

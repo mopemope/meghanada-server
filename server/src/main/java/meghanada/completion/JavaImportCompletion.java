@@ -29,10 +29,8 @@ public class JavaImportCompletion {
   private static final Logger log = LogManager.getLogger(JavaImportCompletion.class);
 
   private final List<SearchFunction> functions;
-  private Supplier<Project> projectSupplier;
 
   public JavaImportCompletion(Supplier<Project> supplier) {
-    this.projectSupplier = supplier;
     this.functions = JavaImportCompletion.createFunctions();
   }
 

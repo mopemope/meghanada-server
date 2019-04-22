@@ -61,7 +61,7 @@ public class JavaCompletion {
   private static final Logger log = LogManager.getLogger(JavaCompletion.class);
   private final TreeBasedTable<File, CandidateUnit, Integer> statisticsTable;
 
-  private Supplier<Project> projectSupplier;
+  private final Supplier<Project> projectSupplier;
   private Collection<? extends CandidateUnit> hits;
 
   public JavaCompletion(final Supplier<Project> supplier) {

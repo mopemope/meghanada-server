@@ -59,11 +59,11 @@ class AndroidSupport {
 
   private final GradleProject project;
 
-  private String genSourceTaskName = ":generateDebugSources";
-  private String genUnitTestTaskName = ":prepareDebugUnitTestDependencies";
-  private String genAndroidTestTaskName = ":generateDebugAndroidTestSources";
-  private int apiVersion;
-  private String modelVersion;
+  private final String genSourceTaskName = ":generateDebugSources";
+  private final String genUnitTestTaskName = ":prepareDebugUnitTestDependencies";
+  private final String genAndroidTestTaskName = ":generateDebugAndroidTestSources";
+  private final int apiVersion;
+  private final String modelVersion;
 
   AndroidSupport(final GradleProject project) {
     this.project = project;

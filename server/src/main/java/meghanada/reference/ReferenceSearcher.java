@@ -46,7 +46,7 @@ public class ReferenceSearcher {
 
   private static final Logger log = LogManager.getLogger(ReferenceSearcher.class);
   private final List<SearchFunction> functions;
-  private Supplier<Project> projectSupplier;
+  private final Supplier<Project> projectSupplier;
 
   public ReferenceSearcher(Supplier<Project> supplier) {
     this.projectSupplier = supplier;

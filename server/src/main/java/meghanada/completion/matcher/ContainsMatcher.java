@@ -17,7 +17,7 @@ public class ContainsMatcher implements CompletionMatcher {
 
   private final String query;
   private final boolean partial;
-  private Source source;
+  private final Source source;
 
   public ContainsMatcher(String query, boolean partial) {
     this(query, partial, null);

@@ -174,8 +174,8 @@ class SExprParser {
 
   abstract static class Atom implements SExpr {
 
-    private static final Pattern INTGER = Pattern.compile("^(\\+|-)?\\d+$");
-    private static final Pattern NUMBER = Pattern.compile("^(\\+|-)?\\d+.\\d*$");
+    private static final Pattern INTGER = Pattern.compile("^([+\\-])?\\d+$");
+    private static final Pattern NUMBER = Pattern.compile("^([+\\-])?\\d+.\\d*$");
 
     static Atom makeAtom(String value) {
       log.trace("value {}", value);

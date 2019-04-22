@@ -15,7 +15,7 @@ public class TypeScope extends MethodScope {
 
   public boolean isInterface;
   public boolean isEnum;
-  public List<MemberDescriptor> members = new ArrayList<>(32);
+  public final List<MemberDescriptor> members = new ArrayList<>(32);
 
   public TypeScope(
       final String name, @Nullable final Range nameRange, final int pos, final Range range) {
