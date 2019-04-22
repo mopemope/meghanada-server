@@ -88,13 +88,13 @@ public class TestRunner {
         log.warn("test not found {}", (Object[]) args);
       }
       for (LauncherDiscoveryRequest request : requests) {
-        this.runJunit(arg, request);
+        this.runJUnit(arg, request);
       }
     }
     System.exit(0);
   }
 
-  private void runJunit(String arg, LauncherDiscoveryRequest request) {
+  private void runJUnit(String arg, LauncherDiscoveryRequest request) {
     Stopwatch stopwatch = Stopwatch.createStarted();
     System.out.println(String.format("Running %s", arg));
     System.out.println();
