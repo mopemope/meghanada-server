@@ -19,11 +19,11 @@ import org.apache.logging.log4j.Logger;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.index.ConcurrentMergeScheduler;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.SerialMergeScheduler;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParser;
@@ -63,7 +63,7 @@ public class DocumentSearcher implements AutoCloseable {
 
   private static IndexWriterConfig createIndexConfig(Analyzer analyzer) {
     IndexWriterConfig config = new IndexWriterConfig(analyzer);
-    config.setMergeScheduler(new SerialMergeScheduler());
+    config.setMergeScheduler(new ConcurrentMergeScheduler());
     config.setCodec(new Lucene70CodecWithNoFieldCompression());
     return config;
   }
