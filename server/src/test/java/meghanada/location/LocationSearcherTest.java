@@ -238,7 +238,7 @@ public class LocationSearcherTest extends GradleTestBase {
         timeIt(() -> searcher.searchDeclarationLocation(f, 71, 19, "getAllowClass")).orElse(null);
     assertNotNull(result);
     assertTrue(result.getPath().contains("Config.java"));
-    assertEquals(355, result.getLine());
+    assertEquals(356, result.getLine());
     assertEquals(23, result.getColumn());
   }
 
@@ -309,10 +309,10 @@ public class LocationSearcherTest extends GradleTestBase {
     LocationSearcher searcher = getSearcher();
     GlobalCache.getInstance().invalidateSource(f);
     Location result =
-        timeIt(() -> searcher.searchDeclarationLocation(f, 585, 14, "runUnitTest").orElse(null));
+        timeIt(() -> searcher.searchDeclarationLocation(f, 586, 14, "runUnitTest").orElse(null));
     assertNotNull(result);
     assertTrue(result.getPath().contains("Project.java"));
-    assertEquals(591, result.getLine());
+    assertEquals(592, result.getLine());
     assertEquals(23, result.getColumn());
   }
 

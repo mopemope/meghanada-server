@@ -238,6 +238,8 @@ public class JavaAnalyzer {
       compileOptions.addAll(config.getJava10JavacArgs());
     } else if (this.compileTarget.equals("1.11") || this.compileTarget.equals("11")) {
       compileOptions.addAll(config.getJava11JavacArgs());
+    } else if (this.compileTarget.equals("1.12") || this.compileTarget.equals("12")) {
+      compileOptions.addAll(config.getJava12JavacArgs());
     }
   }
 

@@ -52,6 +52,7 @@ public class Config {
   private List<String> java9JavacArgs = new ArrayList<>(8);
   private List<String> java10JavacArgs = new ArrayList<>(8);
   private List<String> java11JavacArgs = new ArrayList<>(8);
+  private List<String> java12JavacArgs = new ArrayList<>(8);
   private List<String> javaExecArgs = new ArrayList<>(8);
   private boolean buildWithDependency = true;
 
@@ -396,6 +397,10 @@ public class Config {
     return getJavaVersion().equals("11");
   }
 
+  public boolean isJava12() {
+    return getJavaVersion().equals("12");
+  }
+
   public boolean useAOSPStyle() {
     return c.getBoolean("aosp-style");
   }
@@ -430,6 +435,14 @@ public class Config {
 
   public void setJava11JavacArgs(List<String> lst) {
     this.java11JavacArgs = lst;
+  }
+
+  public List<String> getJava12JavacArgs() {
+    return this.java12JavacArgs;
+  }
+
+  public void setJava12JavacArgs(List<String> lst) {
+    this.java12JavacArgs = lst;
   }
 
   public List<String> getJavaExecArgs() {
