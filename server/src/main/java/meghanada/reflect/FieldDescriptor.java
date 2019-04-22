@@ -33,7 +33,7 @@ public class FieldDescriptor extends MemberDescriptor {
 
   public static CandidateUnit createVar(String declaringClass, String name, String returnType) {
     FieldDescriptor descriptor = new FieldDescriptor(declaringClass, name, "", returnType);
-    descriptor.memberType = MemberType.VAR;
+    descriptor.memberType = MemberType.VARIABLE;
     return descriptor;
   }
 

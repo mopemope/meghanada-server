@@ -26,6 +26,7 @@ import meghanada.reference.Reference;
 import meghanada.reflect.CandidateUnit;
 import meghanada.server.OutputFormatter;
 import meghanada.typeinfo.TypeInfo;
+import meghanada.utils.ClassNameUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -163,17 +164,30 @@ public class SExprOutputFormatter implements OutputFormatter {
     final String s =
         units.stream()
             .map(
-                d ->
-                    LPAREN
-                        + String.join(
-                            LIST_SEP,
-                            doubleQuote(d.getType()),
-                            doubleQuote(toSimpleName(d.getName())),
-                            doubleQuote(d.getDisplayDeclaration()),
-                            doubleQuote(d.getDeclaration()),
-                            doubleQuote(d.getReturnType()),
-                            doubleQuote(d.getExtra()))
-                        + RPAREN)
+                d -> {
+                  String type = d.getType();
+                  String returnType = d.getReturnType();
+                  String anno = ClassNameUtils.getSimpleName(returnType) + " (" + d.getType() + ")";
+                  if (type.equals("CLASS")) {
+                    anno = ClassNameUtils.getPackage(d.getDeclaration()) + " (" + d.getType() + ")";
+                  }
+                  String name = toSimpleName(d.getName());
+                  if (type.equals("METHOD")) {
+                    String declaration = d.getDisplayDeclaration();
+                    int i = declaration.indexOf(name);
+                    name = name + declaration.substring(i + name.length());
+                  }
+                  return LPAREN
+                      + String.join(
+                          LIST_SEP,
+                          doubleQuote(d.getType()),
+                          doubleQuote(name),
+                          doubleQuote(anno),
+                          doubleQuote(d.getDeclaration()),
+                          doubleQuote(returnType),
+                          doubleQuote(d.getExtra()))
+                      + RPAREN;
+                })
             .collect(Collectors.joining(LIST_SEP));
     sb.append(s);
     sb.append(')');

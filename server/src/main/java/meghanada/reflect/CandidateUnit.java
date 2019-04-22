@@ -18,7 +18,7 @@ public interface CandidateUnit {
     FIELD,
     METHOD,
     CONSTRUCTOR,
-    VAR,
+    VARIABLE,
     CLASS,
     IMPORT,
     PACKAGE
