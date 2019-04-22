@@ -800,7 +800,7 @@ public abstract class Project implements Serializable, Storable {
         mainConfig.setIncludeList(list);
       }
       if (config.hasPath(EXCLUDE_FILE)) {
-        final List<String> list = config.getStringList(INCLUDE_FILE);
+        final List<String> list = config.getStringList(EXCLUDE_FILE);
         mainConfig.setExcludeList(list);
       }
 
