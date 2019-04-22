@@ -137,7 +137,7 @@ public class MethodDescriptor extends MemberDescriptor {
     final StringBuilder sb = new StringBuilder(ClassNameUtils.getSimpleName(this.returnType));
     sb.append(' ');
     if (showStaticClassName) {
-      sb.append(ClassNameUtils.getSimpleName(getDeclaringClass())).append('.');
+      sb.append(ClassNameUtils.getAllSimpleName(getDeclaringClass())).append('.');
     }
     sb.append(this.name).append('(');
     return appendParameters(sb).append(')').toString();
@@ -198,7 +198,7 @@ public class MethodDescriptor extends MemberDescriptor {
     if (this.typeParameterMap.size() > 0) {
       for (final Map.Entry<String, String> entry : this.typeParameterMap.entrySet()) {
         final String k = entry.getKey();
-        final String v = entry.getValue();
+        final String v = ClassNameUtils.getAllSimpleName(entry.getValue());
         temp = StringUtils.replace(temp, ClassNameUtils.CLASS_TYPE_VARIABLE_MARK + k, v);
         if (formalType) {
           // follow intellij
@@ -210,14 +210,12 @@ public class MethodDescriptor extends MemberDescriptor {
       for (final String entry : this.typeParameters) {
         temp =
             StringUtils.replace(
-                temp, ClassNameUtils.CLASS_TYPE_VARIABLE_MARK + entry, ClassNameUtils.OBJECT_CLASS);
+                temp, ClassNameUtils.CLASS_TYPE_VARIABLE_MARK + entry, ClassNameUtils.OBJECT);
         if (formalType) {
           // follow intellij
           temp =
               StringUtils.replace(
-                  temp,
-                  ClassNameUtils.FORMAL_TYPE_VARIABLE_MARK + entry,
-                  ClassNameUtils.OBJECT_CLASS);
+                  temp, ClassNameUtils.FORMAL_TYPE_VARIABLE_MARK + entry, ClassNameUtils.OBJECT);
         }
       }
 

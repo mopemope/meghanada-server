@@ -22,10 +22,10 @@ val gitFile = File("./.git")
 if (gitFile.exists()) {
     val grgit = Grgit.open()
     val branch = grgit.branch.current().name
-    val branches = listOf("master", "dev")
-    if (!branches.contains(branch)) {
-        serverVersion = "$serverVersion-$branch"
-    }
+    // val branches = listOf("master", "dev")
+    // if (!branches.contains(branch)) {
+    //     serverVersion = "$serverVersion-$branch"
+    // }
     buildVersion = grgit.head().abbreviatedId
 }
 

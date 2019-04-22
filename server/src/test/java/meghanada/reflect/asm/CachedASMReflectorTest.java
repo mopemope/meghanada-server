@@ -283,7 +283,7 @@ public class CachedASMReflectorTest extends GradleTestBase {
       //          });
       Config config = Config.load();
       if (config.isJava8()) {
-        assertEquals(51, memberDescriptors.size());
+        assertEquals(54, memberDescriptors.size());
       } else {
         assertEquals(75, memberDescriptors.size());
       }
@@ -326,7 +326,7 @@ public class CachedASMReflectorTest extends GradleTestBase {
       String fqcn = "meghanada.utils.ClassNameUtils";
       List<MemberDescriptor> memberDescriptors = cachedASMReflector.reflect(fqcn);
       // memberDescriptors.forEach(m -> System.out.println(m.getDisplayDeclaration()));
-      assertEquals(62, memberDescriptors.size());
+      assertEquals(63, memberDescriptors.size());
     }
   }
 

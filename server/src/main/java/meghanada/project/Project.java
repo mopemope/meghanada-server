@@ -867,7 +867,7 @@ public abstract class Project implements Serializable, Storable {
 
   private List<File> getRelatedSources(final Set<File> sourceRoots, final List<File> files) {
 
-    final Set<File> temp = Collections.newSetFromMap(new ConcurrentHashMap<File, Boolean>(16));
+    final Set<File> temp = Collections.newSetFromMap(new ConcurrentHashMap<>(16));
     temp.addAll(files);
     temp.addAll(FileUtils.getPackagePrivateSource(files));
     sourceRoots

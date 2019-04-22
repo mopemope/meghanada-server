@@ -25,7 +25,7 @@ public class MethodParameter implements Serializable {
         String t = ClassNameUtils.removeTypeAndArray(type);
         return t + "... " + this.name;
       }
-      String t = ClassNameUtils.getSimpleName(type);
+      String t = ClassNameUtils.getAllSimpleName(type);
       return t + ' ' + this.name;
     }
     return type + ' ' + name;

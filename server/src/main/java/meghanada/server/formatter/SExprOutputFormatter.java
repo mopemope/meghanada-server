@@ -11,7 +11,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
@@ -26,6 +25,7 @@ import meghanada.reference.Reference;
 import meghanada.reflect.CandidateUnit;
 import meghanada.server.OutputFormatter;
 import meghanada.typeinfo.TypeInfo;
+import meghanada.utils.ClassNameUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -105,7 +105,7 @@ public class SExprOutputFormatter implements OutputFormatter {
     sb.append("error");
     sb.append(LIST_SEP);
 
-    final Map<String, Set<Diagnostic<? extends JavaFileObject>>> res = new HashMap<>();
+    final Map<String, Set<Diagnostic<? extends JavaFileObject>>> res = new HashMap<>(32);
 
     list.forEach(
         wrapIOConsumer(
@@ -122,7 +122,7 @@ public class SExprOutputFormatter implements OutputFormatter {
                 set.add(d);
                 res.put(key, set);
               } else {
-                final Set<Diagnostic<? extends JavaFileObject>> set = new HashSet<>();
+                final Set<Diagnostic<? extends JavaFileObject>> set = new HashSet<>(32);
                 set.add(d);
                 res.put(key, set);
               }
@@ -163,17 +163,31 @@ public class SExprOutputFormatter implements OutputFormatter {
     final String s =
         units.stream()
             .map(
-                d ->
-                    LPAREN
-                        + String.join(
-                            LIST_SEP,
-                            doubleQuote(d.getType()),
-                            doubleQuote(toSimpleName(d.getName())),
-                            doubleQuote(d.getDisplayDeclaration()),
-                            doubleQuote(d.getDeclaration()),
-                            doubleQuote(d.getReturnType()),
-                            doubleQuote(d.getExtra()))
-                        + RPAREN)
+                d -> {
+                  String type = d.getType();
+                  String returnType = d.getReturnType();
+                  String anno =
+                      ClassNameUtils.getAllSimpleName(returnType) + " (" + d.getType() + ")";
+                  if (type.equals("CLASS")) {
+                    anno = ClassNameUtils.getPackage(d.getDeclaration()) + " (" + d.getType() + ")";
+                  }
+                  String name = toSimpleName(d.getName());
+                  if (type.equals("METHOD")) {
+                    String declaration = d.getDisplayDeclaration();
+                    int i = declaration.indexOf(name);
+                    name = name + declaration.substring(i + name.length());
+                  }
+                  return LPAREN
+                      + String.join(
+                          LIST_SEP,
+                          doubleQuote(d.getType()),
+                          doubleQuote(name),
+                          doubleQuote(anno),
+                          doubleQuote(d.getDeclaration()),
+                          doubleQuote(returnType),
+                          doubleQuote(d.getExtra()))
+                      + RPAREN;
+                })
             .collect(Collectors.joining(LIST_SEP));
     sb.append(s);
     sb.append(')');
@@ -216,7 +230,7 @@ public class SExprOutputFormatter implements OutputFormatter {
                             .map(SExprOutputFormatter::doubleQuote)
                             .collect(Collectors.joining(LIST_SEP))
                         + RPAREN)
-            .filter(Objects::nonNull)
+            .filter(obj -> true)
             .collect(Collectors.joining(LIST_SEP));
     sb.append(str);
     sb.append(RPAREN);
@@ -467,7 +481,7 @@ public class SExprOutputFormatter implements OutputFormatter {
                             .map(SExprOutputFormatter::doubleQuote)
                             .collect(Collectors.joining(LIST_SEP))
                         + RPAREN)
-            .filter(Objects::nonNull)
+            .filter(obj -> true)
             .collect(Collectors.joining(LIST_SEP));
     sb.append(str);
     sb.append(RPAREN);

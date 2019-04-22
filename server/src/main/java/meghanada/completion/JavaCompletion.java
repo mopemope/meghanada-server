@@ -771,8 +771,8 @@ public class JavaCompletion {
             return fa.returnType;
           }
         }
-      } catch (Exception ignored) {
-        log.catching(ignored);
+      } catch (Exception ex) {
+        log.catching(ex);
       }
     }
     return typeOrMember;
@@ -862,7 +862,7 @@ public class JavaCompletion {
         });
   }
 
-  private Source getSource(final File file) throws IOException, ExecutionException {
+  private static Source getSource(final File file) throws IOException, ExecutionException {
     final GlobalCache globalCache = GlobalCache.getInstance();
     return globalCache.getSource(file.getCanonicalFile());
   }
@@ -885,7 +885,7 @@ public class JavaCompletion {
       if (!file.exists()) {
         return Collections.emptyList();
       }
-      final Source source = this.getSource(file);
+      final Source source = JavaCompletion.getSource(file);
       // check type
       if (prefix.startsWith("*")) {
         // special command

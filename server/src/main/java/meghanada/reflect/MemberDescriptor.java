@@ -1,5 +1,6 @@
 package meghanada.reflect;
 
+import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static meghanada.index.IndexableWord.Field.C_COMPLETION;
 import static meghanada.index.IndexableWord.Field.C_DECLARING_CLASS;
@@ -80,7 +81,7 @@ public abstract class MemberDescriptor
     if (this.typeParameterMap.size() > 0) {
       for (Map.Entry<String, String> entry : this.typeParameterMap.entrySet()) {
         final String k = entry.getKey();
-        final String v = entry.getValue();
+        final String v = ClassNameUtils.getAllSimpleName(entry.getValue());
         temp = StringUtils.replace(temp, ClassNameUtils.CLASS_TYPE_VARIABLE_MARK + k, v);
         if (formalType) {
           // follow intellij
@@ -91,14 +92,12 @@ public abstract class MemberDescriptor
       for (String entry : this.typeParameters) {
         temp =
             StringUtils.replace(
-                temp, ClassNameUtils.CLASS_TYPE_VARIABLE_MARK + entry, ClassNameUtils.OBJECT_CLASS);
+                temp, ClassNameUtils.CLASS_TYPE_VARIABLE_MARK + entry, ClassNameUtils.OBJECT);
         if (formalType) {
           // follow intellij
           temp =
               StringUtils.replace(
-                  temp,
-                  ClassNameUtils.FORMAL_TYPE_VARIABLE_MARK + entry,
-                  ClassNameUtils.OBJECT_CLASS);
+                  temp, ClassNameUtils.FORMAL_TYPE_VARIABLE_MARK + entry, ClassNameUtils.OBJECT);
         }
       }
 
@@ -173,7 +172,7 @@ public abstract class MemberDescriptor
       for (String entry : this.typeParameters) {
         temp =
             StringUtils.replace(
-                temp, ClassNameUtils.CLASS_TYPE_VARIABLE_MARK + entry, ClassNameUtils.OBJECT_CLASS);
+                temp, ClassNameUtils.CLASS_TYPE_VARIABLE_MARK + entry, ClassNameUtils.OBJECT);
       }
 
       if (!this.modifier.contains("static")) {
@@ -230,7 +229,9 @@ public abstract class MemberDescriptor
 
   @Override
   public int compareTo(@Nonnull MemberDescriptor other) {
-
+    if (isNull(other)) {
+      return -1;
+    }
     if (this.isStatic() && other.isStatic()) {
       return this.compareType(other, true);
     }

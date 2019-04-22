@@ -22,7 +22,7 @@ import org.apache.logging.log4j.Logger;
 public class ClassNameUtils {
 
   public static final String OBJECT_CLASS = "java.lang.Object";
-
+  public static final String OBJECT = "Object";
   public static final String CLASS_TYPE_VARIABLE_MARK = "%%";
   public static final String FORMAL_TYPE_VARIABLE_MARK = "##";
 

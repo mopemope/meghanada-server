@@ -535,7 +535,7 @@ public class CommandHandler {
             .setRecordEvents(true)
             .startSpan();
     try (Scope ss = tracer.withSpan(span)) {
-      InputStream in = null;
+      InputStream in;
       try {
         in = this.session.execMain(path, debug);
         if (isNull(in)) {

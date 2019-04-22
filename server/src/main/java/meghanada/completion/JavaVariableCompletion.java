@@ -53,14 +53,14 @@ public class JavaVariableCompletion {
     return log.traceExit(false);
   }
 
-  private Source getSource(final File file) throws IOException, ExecutionException {
+  private static Source getSource(final File file) throws IOException, ExecutionException {
     final GlobalCache globalCache = GlobalCache.getInstance();
     return globalCache.getSource(file.getCanonicalFile());
   }
 
   public Optional<LocalVariable> localVariable(final File file, final int line)
       throws ExecutionException, IOException {
-    final Source source = this.getSource(file);
+    final Source source = JavaVariableCompletion.getSource(file);
     return source
         .getExpressionReturn(line)
         .filter(as -> as.returnType != null)

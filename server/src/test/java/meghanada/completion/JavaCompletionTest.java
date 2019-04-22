@@ -170,7 +170,7 @@ public class JavaCompletionTest extends GradleTestBase {
     for (CandidateUnit unit : units) {
       if (unit.getName().equals("next")) {
         final String returnType = unit.getReturnType();
-        assertEquals("capture of ? extends com.sun.source.tree.CompilationUnitTree", returnType);
+        assertEquals("CompilationUnitTree", returnType);
       }
     }
   }
@@ -227,7 +227,7 @@ public class JavaCompletionTest extends GradleTestBase {
     final Collection<? extends CandidateUnit> units =
         timeIt(() -> completion.completionAt(file, 65, 0, "*JavaCompletion#"));
     units.forEach(a -> System.out.println(a.getDeclaration()));
-    assertEquals(38, units.size());
+    assertEquals(39, units.size());
   }
 
   @Test
@@ -284,7 +284,7 @@ public class JavaCompletionTest extends GradleTestBase {
         timeIt(() -> completion.completionAt(file, 59, 6, "*diagnostic*fileObject#"));
     units.forEach(a -> System.out.println(a.getDisplayDeclaration()));
     CandidateUnit unit = (CandidateUnit) units.toArray()[0];
-    assertEquals("getSource", unit.getName());
+    assertEquals("equals", unit.getName());
   }
 
   @Test

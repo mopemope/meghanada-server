@@ -17,7 +17,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 import meghanada.analyze.ClassScope;
 import meghanada.analyze.Source;
 import meghanada.project.Project;
@@ -94,7 +93,7 @@ public class TypeInfoSearcher {
 
     res.add(fqcn);
     TypeInfo ti = new TypeInfo(fqcn, res, interfaces);
-    List<MemberDescriptor> ms = members.values().stream().sorted().collect(Collectors.toList());
+    List<MemberDescriptor> ms = new ArrayList<>(members.values());
     for (MemberDescriptor md : ms) {
       String desc = md.getDeclaration();
       ti.addMember(desc);
