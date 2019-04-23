@@ -23,7 +23,7 @@ import meghanada.reflect.ClassIndex;
 import meghanada.reflect.MemberDescriptor;
 import meghanada.reflect.asm.ASMReflector;
 import meghanada.reflect.asm.CachedASMReflector;
-import meghanada.reflect.asm.InheritanceInfo;
+import meghanada.reflect.asm.ReflectTarget;
 import meghanada.store.ProjectDatabaseHelper;
 import meghanada.utils.ClassName;
 import meghanada.utils.ClassNameUtils;
@@ -128,7 +128,7 @@ class MemberCacheLoader extends CacheLoader<String, List<MemberDescriptor>>
     final ASMReflector asmReflector = ASMReflector.getInstance();
     Map<String, ClassIndex> index = CachedASMReflector.getInstance().getGlobalClassIndex();
 
-    final InheritanceInfo info = asmReflector.getReflectInfo(index, fqcn);
+    final ReflectTarget info = asmReflector.getReflectInfo(index, fqcn);
     final List<MemberDescriptor> result = asmReflector.reflectAll(info);
 
     return result.stream()

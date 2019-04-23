@@ -7,13 +7,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class InheritanceInfo {
+public class ReflectTarget {
 
   final String targetClass;
   final Map<File, List<String>> classFileMap = new HashMap<>(8);
   List<String> inherit = new ArrayList<>(8);
 
-  public InheritanceInfo(String targetClass) {
+  public ReflectTarget(String targetClass) {
     this.targetClass = targetClass;
   }
 
