@@ -26,6 +26,7 @@ import meghanada.store.Serializer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.util.BytesRef;
 
 public class IndexDatabase {
 
@@ -175,7 +176,7 @@ public class IndexDatabase {
                         final String line = d.get(SearchIndexable.LINE_NUMBER);
                         final String contents = d.get(codeField);
                         final String cat = d.get(SearchIndexable.CATEGORY);
-                        return new SearchResult(filePath, line, contents, cat);
+                        return Optional.of(new SearchResult(filePath, line, contents, cat));
                       });
 
               result.forEach(
@@ -198,7 +199,7 @@ public class IndexDatabase {
             }
             return Optional.of(results);
           } catch (Throwable e) {
-            log.catching(e);
+            log.warn(e);
             return Optional.empty();
           }
         });
@@ -234,11 +235,18 @@ public class IndexDatabase {
                 query,
                 maxHits,
                 d -> {
-                  byte[] b = d.getBinaryValue("binary").bytes;
-                  return Serializer.asObject(b, MemberDescriptor.class);
+                  BytesRef value = d.getBinaryValue("binary");
+                  if (isNull(value)) {
+                    return Optional.empty();
+                  }
+                  byte[] b = value.bytes;
+                  if (isNull(b)) {
+                    return Optional.empty();
+                  }
+                  return Optional.ofNullable(Serializer.asObject(b, MemberDescriptor.class));
                 });
           } catch (Throwable e) {
-            log.catching(e);
+            log.warn(e);
             return Collections.emptyList();
           }
         });
