@@ -1,23 +1,18 @@
 package meghanada.session.subscribe;
 
-import static java.util.Objects.isNull;
-import static java.util.Objects.nonNull;
 import static sun.management.ManagementFactoryHelper.getOperatingSystemMXBean;
 
-import com.google.common.base.Stopwatch;
 import com.google.common.eventbus.Subscribe;
 import com.sun.management.OperatingSystemMXBean;
-import java.io.File;
 import java.time.Instant;
-import java.util.ArrayDeque;
-import java.util.Deque;
-import java.util.List;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.LinkedHashSet;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
+import meghanada.Executor;
 import meghanada.cache.GlobalCache;
 import meghanada.config.Config;
-import meghanada.event.SystemEventBus;
-import meghanada.reflect.MemberDescriptor;
-import meghanada.reflect.asm.CachedASMReflector;
 import meghanada.session.Session;
 import meghanada.session.SessionEventBus;
 import org.apache.logging.log4j.LogManager;
@@ -31,7 +26,7 @@ public class IdleMonitorSubscriber extends AbstractSubscriber {
   private static final long WARMUP_INTERVAL = 15000;
 
   private int idleTime = 10;
-  private Deque<File> jars;
+  private final Set<String> queue = Collections.synchronizedSet(new LinkedHashSet<>(8));
   private final SessionEventBus.IdleTimer idleTimer;
   private boolean started;
   private final CpuMonitor monitor;
@@ -71,7 +66,7 @@ public class IdleMonitorSubscriber extends AbstractSubscriber {
         long now = Instant.now().getEpochSecond();
         if (this.isIdle(now)) {
           SessionEventBus.IdleEvent idleEvent = createIdleEvent(event.session, this.idleTimer);
-          SystemEventBus.getInstance().getEventBus().post(idleEvent);
+          Executor.getInstance().getEventBus().post(idleEvent);
           this.idleTimer.lastRun = now + this.idleTime + 1;
         }
       } catch (InterruptedException e) {
@@ -86,28 +81,29 @@ public class IdleMonitorSubscriber extends AbstractSubscriber {
 
   @Subscribe
   public synchronized void on(SessionEventBus.IdleEvent event) {
-    CachedASMReflector reflector = CachedASMReflector.getInstance();
-    if (isNull(this.jars)) {
-      this.jars = new ArrayDeque<>(reflector.getJars());
+    Iterator<String> it = this.queue.iterator();
+    int cnt = 20;
+    while (cnt-- > 0) {
+      if (it.hasNext()) {
+        String name = it.next();
+        try {
+          GlobalCache.getInstance().getMemberDescriptors(name);
+        } catch (ExecutionException e) {
+          log.catching(e);
+        } finally {
+          try {
+            it.remove();
+          } catch (Exception e) {
+            //
+          }
+        }
+      }
     }
+  }
 
-    File file = this.jars.pollFirst();
-    if (nonNull(file)) {
-      Stopwatch stopWatch = Stopwatch.createStarted();
-      int count =
-          CachedASMReflector.scan(
-              file,
-              name -> {
-                try {
-                  List<MemberDescriptor> memberDescriptors =
-                      GlobalCache.getInstance().getMemberDescriptors(name);
-                } catch (ExecutionException e) {
-                  log.catching(e);
-                  throw new RuntimeException(e);
-                }
-              });
-      log.info("create cache {} size:{} elapsed:{}", file.getName(), count, stopWatch);
-    }
+  @Subscribe
+  public void on(final SessionEventBus.IdleCacheEvent event) {
+    this.queue.addAll(event.getNames());
   }
 
   private static class CpuMonitor {

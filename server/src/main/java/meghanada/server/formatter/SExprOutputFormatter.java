@@ -159,7 +159,6 @@ public class SExprOutputFormatter implements OutputFormatter {
   @Override
   public String autocomplete(final long id, Collection<? extends CandidateUnit> units) {
     final StringBuilder sb = new StringBuilder(LPAREN);
-
     final String s =
         units.stream()
             .map(
@@ -172,7 +171,7 @@ public class SExprOutputFormatter implements OutputFormatter {
                     anno = ClassNameUtils.getPackage(d.getDeclaration()) + " (" + d.getType() + ")";
                   }
                   String name = toSimpleName(d.getName());
-                  if (type.equals("METHOD")) {
+                  if (type.equals("METHOD") || type.equals("CONSTRUCTOR")) {
                     String declaration = d.getDisplayDeclaration();
                     int i = declaration.indexOf(name);
                     name = name + declaration.substring(i + name.length());
@@ -230,7 +229,6 @@ public class SExprOutputFormatter implements OutputFormatter {
                             .map(SExprOutputFormatter::doubleQuote)
                             .collect(Collectors.joining(LIST_SEP))
                         + RPAREN)
-            .filter(obj -> true)
             .collect(Collectors.joining(LIST_SEP));
     sb.append(str);
     sb.append(RPAREN);
@@ -481,7 +479,6 @@ public class SExprOutputFormatter implements OutputFormatter {
                             .map(SExprOutputFormatter::doubleQuote)
                             .collect(Collectors.joining(LIST_SEP))
                         + RPAREN)
-            .filter(obj -> true)
             .collect(Collectors.joining(LIST_SEP));
     sb.append(str);
     sb.append(RPAREN);

@@ -58,6 +58,7 @@ public class GradleProject extends Project {
 
   private static final long serialVersionUID = 1L;
   private static final Logger log = LogManager.getLogger(GradleProject.class);
+  private static final String[] STRINGS = new String[0];
   private static String tempPath;
   transient Map<String, File> allModules;
   private File rootProject;
@@ -378,9 +379,9 @@ public class GradleProject extends Project {
       final ProjectConnection projectConnection = getProjectConnection();
       final BuildLauncher build = projectConnection.newBuild();
       GradleProject.setBuildJVMArgs(build);
-      build.forTasks(tasks.toArray(new String[0]));
+      build.forTasks(tasks.toArray(STRINGS));
       if (taskArgs.size() > 0) {
-        build.withArguments(taskArgs.toArray(new String[0]));
+        build.withArguments(taskArgs.toArray(STRINGS));
       }
 
       final PipedOutputStream outputStream = new PipedOutputStream();
@@ -515,7 +516,7 @@ public class GradleProject extends Project {
     if (!this.prepareCompileTask.isEmpty()) {
       final ProjectConnection connection = this.getProjectConnection();
       try {
-        final String[] tasks = prepareCompileTask.toArray(new String[0]);
+        final String[] tasks = prepareCompileTask.toArray(STRINGS);
         final BuildLauncher buildLauncher = connection.newBuild();
         log.info("project {} run tasks:{}", this.name, tasks);
         GradleProject.setBuildJVMArgs(buildLauncher);
@@ -546,7 +547,7 @@ public class GradleProject extends Project {
     if (!this.prepareTestCompileTask.isEmpty()) {
       final ProjectConnection connection = this.getProjectConnection();
       try {
-        final String[] tasks = prepareTestCompileTask.toArray(new String[0]);
+        final String[] tasks = prepareTestCompileTask.toArray(STRINGS);
         final BuildLauncher buildLauncher = connection.newBuild();
         log.info("project {} run tasks:{}", this.name, tasks);
         GradleProject.setBuildJVMArgs(buildLauncher);

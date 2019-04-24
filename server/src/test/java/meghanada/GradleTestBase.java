@@ -17,7 +17,6 @@ import java.util.stream.Stream;
 import meghanada.analyze.subscribe.SourceCacheSubscriber;
 import meghanada.cache.GlobalCache;
 import meghanada.config.Config;
-import meghanada.event.SystemEventBus;
 import meghanada.module.ModuleHelper;
 import meghanada.project.Project;
 import meghanada.project.ProjectDependency;
@@ -53,7 +52,7 @@ public class GradleTestBase {
       File f = new File("./").getCanonicalFile();
       Project newProject = new GradleProject(f);
       project = newProject.parseProject(f, f).mergeFromProjectConfig();
-      SystemEventBus.getInstance()
+      Executor.getInstance()
           .getEventBus()
           .register(new SourceCacheSubscriber(GradleTestBase::getProject));
       GlobalCache.getInstance().setProjectSupplier(GradleTestBase::getProject);

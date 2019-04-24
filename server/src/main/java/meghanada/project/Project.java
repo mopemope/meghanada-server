@@ -915,9 +915,7 @@ public abstract class Project implements Serializable, Storable {
   }
 
   private void loadCaller() throws IOException {
-
-    final Map<String, Set<String>> map = ProjectDatabaseHelper.getCallerMap(this.projectRootPath);
-    this.callerMap = map;
+    this.callerMap = ProjectDatabaseHelper.getCallerMap(this.projectRootPath);
   }
 
   @Override

@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
+import meghanada.Executor;
 import meghanada.analyze.ClassScope;
 import meghanada.analyze.JavaAnalyzer;
 import meghanada.analyze.Source;
@@ -16,6 +17,7 @@ import meghanada.cache.GlobalCache;
 import meghanada.config.Config;
 import meghanada.project.Project;
 import meghanada.reflect.MemberDescriptor;
+import meghanada.session.SessionEventBus;
 import meghanada.store.ProjectDatabaseHelper;
 import meghanada.utils.FileUtils;
 import org.apache.logging.log4j.LogManager;
@@ -27,16 +29,12 @@ public class SourceCacheSubscriber {
 
   private final Map<Project, Map<String, Set<String>>> callers;
   private final Map<Project, Map<String, String>> checksums;
-
   private final Supplier<Project> projectSupplier;
-  private long lastCached;
-  private final boolean importMemberCache = false;
 
   public SourceCacheSubscriber(final Supplier<Project> projectSupplier) {
     this.projectSupplier = projectSupplier;
     this.callers = new HashMap<>(2);
     this.checksums = new HashMap<>(2);
-    this.lastCached = System.currentTimeMillis();
   }
 
   private Map<String, String> getChecksumMap(Project project) {
@@ -60,23 +58,13 @@ public class SourceCacheSubscriber {
       return;
     }
 
-    if (isDiagnostics) {
-      final long now = System.currentTimeMillis();
-      if (now - this.lastCached > 10000) {
-        if (this.importMemberCache) {
-          SourceCacheSubscriber.createImportMemberCache(source);
-          this.lastCached = now;
-        }
-      }
-    }
-
+    final File sourceFile = source.getFile();
+    final String path = sourceFile.getCanonicalPath();
     final GlobalCache globalCache = GlobalCache.getInstance();
     final List<ClassScope> classScopes = source.getClassScopes();
     for (final ClassScope cs : classScopes) {
-
       final String fqcn = cs.getFQCN();
-      globalCache.replaceSourceMap(fqcn, source.getFile().getCanonicalPath());
-
+      globalCache.replaceSourceMap(fqcn, path);
       for (String clazz : source.usingClasses) {
         if (callerMap.containsKey(clazz)) {
           final Set<String> set = callerMap.get(clazz);
@@ -90,9 +78,6 @@ public class SourceCacheSubscriber {
       }
       source.usingClasses.clear();
     }
-
-    final File sourceFile = source.getFile();
-    final String path = sourceFile.getCanonicalPath();
     if (!isDiagnostics) {
       source.invalidateCache();
     }
@@ -106,14 +91,18 @@ public class SourceCacheSubscriber {
       // error
       checksumMap.remove(path);
     }
+    SessionEventBus.IdleCacheEvent event = new SessionEventBus.IdleCacheEvent(source.importClasses);
+    Executor.getInstance().getEventBus().post(event);
   }
 
   public void complete() throws IOException {
     Project project = this.projectSupplier.get();
     Map<String, String> checksumMap = getChecksumMap(project);
     boolean b = ProjectDatabaseHelper.saveChecksumMap(project.getProjectRootPath(), checksumMap);
-    GlobalCache.getInstance().saveSourceMap();
-    project.writeCaller();
+    if (b) {
+      GlobalCache.getInstance().saveSourceMap();
+      project.writeCaller();
+    }
   }
 
   @SuppressWarnings("CheckReturnValue")

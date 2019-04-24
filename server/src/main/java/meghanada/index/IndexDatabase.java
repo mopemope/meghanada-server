@@ -19,7 +19,7 @@ import javax.annotation.Nullable;
 import jetbrains.exodus.env.ContextualEnvironment;
 import jetbrains.exodus.env.Environment;
 import jetbrains.exodus.env.Environments;
-import meghanada.event.SystemEventBus;
+import meghanada.Executor;
 import meghanada.reflect.MemberDescriptor;
 import meghanada.store.ProjectDatabase;
 import meghanada.store.Serializer;
@@ -34,12 +34,12 @@ public class IndexDatabase {
   private static final String QUOTE = "\"";
   private static IndexDatabase indexDatabase;
   public final int maxHits = Integer.MAX_VALUE;
+  private static final File baseLocation = null;
   private DocumentSearcher searcher;
   private Environment environment = null;
-  private final File baseLocation = null;
 
   private IndexDatabase() {
-    SystemEventBus.getInstance().getEventBus().register(this);
+    Executor.getInstance().getEventBus().register(this);
   }
 
   public static synchronized IndexDatabase getInstance() {
@@ -145,17 +145,17 @@ public class IndexDatabase {
 
   public static void requestIndex(final SearchIndexable i) {
     final IndexEvent event = new IndexEvent(i);
-    SystemEventBus.getInstance().getEventBus().post(event);
+    Executor.getInstance().getEventBus().post(event);
   }
 
   public static void requestIndex(final SearchIndexable i, final Consumer<IndexEvent> c) {
     final IndexEvent event = new IndexEvent(i, c);
-    SystemEventBus.getInstance().getEventBus().post(event);
+    Executor.getInstance().getEventBus().post(event);
   }
 
   public static void requestIndex(final List<SearchIndexable> i) {
     final IndexEvent event = new IndexEvent(i);
-    SystemEventBus.getInstance().getEventBus().post(event);
+    Executor.getInstance().getEventBus().post(event);
   }
 
   public synchronized Optional<SearchResults> search(final String query) {

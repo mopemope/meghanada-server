@@ -34,6 +34,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.tools.Diagnostic;
 import javax.tools.JavaFileObject;
+import meghanada.Executor;
 import meghanada.analyze.CompileResult;
 import meghanada.analyze.Source;
 import meghanada.analyze.subscribe.IndexSubscriber;
@@ -46,7 +47,6 @@ import meghanada.completion.LocalVariable;
 import meghanada.config.Config;
 import meghanada.docs.declaration.Declaration;
 import meghanada.docs.declaration.DeclarationSearcher;
-import meghanada.event.SystemEventBus;
 import meghanada.index.IndexDatabase;
 import meghanada.index.SearchResults;
 import meghanada.location.Location;
@@ -361,13 +361,11 @@ public class Session {
     if (Config.load().enableIdleCache()) {
       this.sessionEventBus.subscribeIdle();
     }
-    SystemEventBus.getInstance()
+    Executor.getInstance()
         .getEventBus()
         .register(new SourceCacheSubscriber(this::getCurrentProject));
     if (Config.load().useFullTextSearch()) {
-      SystemEventBus.getInstance()
-          .getEventBus()
-          .register(new IndexSubscriber(this::getCurrentProject));
+      Executor.getInstance().getEventBus().register(new IndexSubscriber(this::getCurrentProject));
     }
     GlobalCache.getInstance().setProjectSupplier(this::getCurrentProject);
   }

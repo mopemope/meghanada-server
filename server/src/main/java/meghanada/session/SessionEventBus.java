@@ -2,8 +2,9 @@ package meghanada.session;
 
 import com.google.common.base.MoreObjects;
 import java.io.File;
+import java.util.Collection;
 import java.util.List;
-import meghanada.event.SystemEventBus;
+import meghanada.Executor;
 import meghanada.session.subscribe.CacheEventSubscriber;
 import meghanada.session.subscribe.FileWatchEventSubscriber;
 import meghanada.session.subscribe.IdleMonitorSubscriber;
@@ -24,19 +25,19 @@ public class SessionEventBus {
   }
 
   void subscribeFileWatch() {
-    SystemEventBus.getInstance().getEventBus().register(new FileWatchEventSubscriber(this));
+    Executor.getInstance().getEventBus().register(new FileWatchEventSubscriber(this));
   }
 
   void subscribeParse() {
-    SystemEventBus.getInstance().getEventBus().register(new ParseEventSubscriber(this));
+    Executor.getInstance().getEventBus().register(new ParseEventSubscriber(this));
   }
 
   void subscribeCache() {
-    SystemEventBus.getInstance().getEventBus().register(new CacheEventSubscriber(this));
+    Executor.getInstance().getEventBus().register(new CacheEventSubscriber(this));
   }
 
   void subscribeIdle() {
-    SystemEventBus.getInstance().getEventBus().register(new IdleMonitorSubscriber(this, idleTimer));
+    Executor.getInstance().getEventBus().register(new IdleMonitorSubscriber(this, idleTimer));
   }
 
   void shutdown(int timeout) {}
@@ -46,24 +47,24 @@ public class SessionEventBus {
   }
 
   public void requestCreateCache() {
-    SystemEventBus.getInstance().getEventBus().post(new ClassCacheRequest(this.session));
+    Executor.getInstance().getEventBus().post(new ClassCacheRequest(this.session));
   }
 
   public void requestParse(File file) {
-    SystemEventBus.getInstance().getEventBus().post(new ParseRequest(this.session, file));
+    Executor.getInstance().getEventBus().post(new ParseRequest(this.session, file));
   }
 
   public void requestWatchFiles(final List<File> files) {
-    SystemEventBus.getInstance().getEventBus().post(new FilesWatchRequest(this.session, files));
+    Executor.getInstance().getEventBus().post(new FilesWatchRequest(this.session, files));
   }
 
   public void requestWatchFile(final File file) {
-    SystemEventBus.getInstance().getEventBus().post(new FileWatchRequest(this.session, file));
+    Executor.getInstance().getEventBus().post(new FileWatchRequest(this.session, file));
   }
 
   public void requestIdleMonitor() {
     IdleMonitorEvent event = new IdleMonitorEvent(this.session);
-    SystemEventBus.getInstance().getEventBus().post(event);
+    Executor.getInstance().getEventBus().post(event);
   }
 
   abstract static class IORequest {
@@ -171,6 +172,18 @@ public class SessionEventBus {
 
     public Session getSession() {
       return session;
+    }
+  }
+
+  public static class IdleCacheEvent {
+    private final Collection<String> names;
+
+    public IdleCacheEvent(Collection<String> names) {
+      this.names = names;
+    }
+
+    public Collection<String> getNames() {
+      return names;
     }
   }
 

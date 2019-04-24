@@ -1,10 +1,11 @@
 package meghanada.reflect.asm;
 
+import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
-import static meghanada.utils.FunctionUtils.wrapIOConsumer;
 import static org.apache.lucene.document.Field.Store.YES;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.UncheckedExecutionException;
 import java.io.File;
 import java.io.IOException;
@@ -12,7 +13,6 @@ import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -22,11 +22,11 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ExecutionException;
-import java.util.function.Consumer;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import jetbrains.exodus.entitystore.EntityId;
+import meghanada.Executor;
 import meghanada.cache.GlobalCache;
 import meghanada.index.IndexDatabase;
 import meghanada.index.SearchIndexable;
@@ -47,12 +47,10 @@ public class CachedASMReflector {
 
   private static final int CACHE_SIZE = 1024 * 16;
   private static final Logger log = LogManager.getLogger(CachedASMReflector.class);
-
   private static final Pattern PACKAGE_RE = Pattern.compile("\\.\\*");
   private static CachedASMReflector cachedASMReflector;
 
   private final Map<String, ClassIndex> globalClassIndex = new ConcurrentHashMap<>(CACHE_SIZE);
-
   private final Set<File> jars = new HashSet<>(64);
   private final Set<File> directories = new HashSet<>(8);
   private Map<String, String> standardClasses;
@@ -140,6 +138,9 @@ public class CachedASMReflector {
   }
 
   public void addClasspath(File dep) {
+    if (isNull(dep)) {
+      return;
+    }
     if (!dep.exists() || dep.isDirectory()) {
       this.directories.add(dep);
     } else {
@@ -155,56 +156,60 @@ public class CachedASMReflector {
   }
 
   public void createClassIndexes() {
-    this.jars
-        .parallelStream()
-        .forEach(
-            wrapIOConsumer(
-                root -> {
-                  String name = root.getName();
-                  if (name.endsWith(".jar")
-                      && !name.endsWith("SNAPSHOT.jar")
-                      && ProjectDatabaseHelper.getLoadJar(root.getPath())) {
-                    List<ClassIndex> indexes =
-                        ProjectDatabaseHelper.getClassIndexes(root.getPath());
+    Executor executor = Executor.getInstance();
+    Executor.CompletableFutures<Void> futures = executor.completableFutures(32);
+    for (File jar : this.jars) {
+      futures.runIOAction(
+          () -> {
+            String name = jar.getName();
+            if (name.endsWith(".jar")
+                && !name.endsWith("SNAPSHOT.jar")
+                && ProjectDatabaseHelper.getLoadJar(jar.getPath())) {
+              List<ClassIndex> indexes = ProjectDatabaseHelper.getClassIndexes(jar.getPath());
+              for (ClassIndex index : indexes) {
+                index.loaded = true;
+                String fqcn = index.getRawDeclaration();
+                this.globalClassIndex.put(fqcn, index);
+              }
+            } else {
+              ASMReflector reflector = ASMReflector.getInstance();
+              try {
+                reflector
+                    .getClasses(jar)
+                    .entrySet()
+                    .parallelStream()
+                    .forEach(entry -> addClassIndex(entry.getKey(), entry.getValue()));
+              } catch (IOException e) {
+                log.catching(e);
+              }
+              if (name.endsWith(".jar") && !name.endsWith("SNAPSHOT.jar")) {
+                ProjectDatabaseHelper.saveLoadJar(jar.getPath());
+              }
+            }
+            return null;
+          });
+    }
 
-                    for (ClassIndex index : indexes) {
-                      index.loaded = true;
-                      String fqcn = index.getRawDeclaration();
-                      this.globalClassIndex.put(fqcn, index);
-                    }
-                  } else {
-                    ASMReflector reflector = ASMReflector.getInstance();
-                    reflector
-                        .getClasses(root)
-                        .entrySet()
-                        .parallelStream()
-                        .forEach(entry -> addClassIndex(entry.getKey(), entry.getValue()));
-                    if (name.endsWith(".jar") && !name.endsWith("SNAPSHOT.jar")) {
-                      ProjectDatabaseHelper.saveLoadJar(root.getPath());
-                    }
-                  }
-                }));
-
-    this.updateClassIndexFromDirectory();
-    this.saveAllClassIndexes();
+    futures.whenComplete(
+        (cfs) -> {
+          this.updateClassIndexFromDirectory();
+          this.saveAllClassIndexes();
+        });
   }
 
   private void saveAllClassIndexes() {
     List<ClassIndex> jarIndexes = new ArrayList<>(1024);
     List<ClassIndex> otherIndexes = new ArrayList<>(1024);
-    globalClassIndex
-        .values()
-        .forEach(
-            index -> {
-              if (!index.getFilePath().endsWith(".jar")) {
-                otherIndexes.add(index);
-              } else {
-                if (!index.loaded) {
-                  jarIndexes.add(index);
-                }
-              }
-            });
-
+    Collection<ClassIndex> values = this.globalClassIndex.values();
+    for (ClassIndex index : values) {
+      if (!index.getFilePath().endsWith(".jar")) {
+        otherIndexes.add(index);
+      } else {
+        if (!index.loaded) {
+          jarIndexes.add(index);
+        }
+      }
+    }
     ProjectDatabaseHelper.saveClassIndexes(jarIndexes, false);
     ProjectDatabaseHelper.saveClassIndexes(otherIndexes, true);
   }
@@ -212,6 +217,7 @@ public class CachedASMReflector {
   private void updateClassIndexes() {
     List<ClassIndex> otherIndexes =
         globalClassIndex.values().stream()
+            .parallel()
             .filter(classIndex -> !classIndex.getFilePath().endsWith(".jar"))
             .collect(Collectors.toList());
 
@@ -231,46 +237,63 @@ public class CachedASMReflector {
       }
     }
     ASMReflector.setFilePath(newIndex, file);
-
     this.globalClassIndex.put(fqcn, newIndex);
   }
 
-  public void createClassIndexes(Collection<File> addJars) {
-    addJars
-        .parallelStream()
-        .forEach(
-            wrapIOConsumer(
-                jar -> {
-                  if (this.jars.contains(jar)) {
-                    return;
-                  }
-                  ASMReflector reflector = ASMReflector.getInstance();
-                  reflector
-                      .getClasses(jar)
-                      .entrySet()
-                      .parallelStream()
-                      .forEach(entry -> addClassIndex(entry.getKey(), entry.getValue()));
-                }));
-    this.jars.addAll(addJars);
-    this.saveAllClassIndexes();
+  public void createClassIndexes(final Collection<File> addJars) {
+    Executor executor = Executor.getInstance();
+    Executor.CompletableFutures<Void> futures = executor.completableFutures(addJars.size());
+    for (final File jar : addJars) {
+      futures.runIOAction(
+          () -> {
+            if (this.jars.contains(jar)) {
+              return null;
+            }
+            ASMReflector reflector = ASMReflector.getInstance();
+            try {
+              reflector
+                  .getClasses(jar)
+                  .entrySet()
+                  .parallelStream()
+                  .forEach(entry -> addClassIndex(entry.getKey(), entry.getValue()));
+              return null;
+            } catch (IOException e) {
+              throw new UncheckedIOException(e);
+            }
+          });
+    }
+
+    futures.whenComplete(
+        (cfs) -> {
+          this.jars.addAll(addJars);
+          this.saveAllClassIndexes();
+        });
   }
 
   public void updateClassIndexFromDirectory() {
-
-    try (Stream<File> stream = this.directories.stream().parallel()) {
-      stream.forEach(
-          wrapIOConsumer(
-              file -> {
-                // TODO is loaded ?
-                ASMReflector reflector = ASMReflector.getInstance();
-                reflector
-                    .getClasses(file)
-                    .entrySet()
-                    .parallelStream()
-                    .forEach(entry -> addClassIndex(entry.getKey(), entry.getValue()));
-              }));
+    Executor executor = Executor.getInstance();
+    Executor.CompletableFutures<Void> futures = executor.completableFutures(32);
+    for (File file : this.directories) {
+      futures.runIOAction(
+          () -> {
+            ASMReflector reflector = ASMReflector.getInstance();
+            try {
+              reflector
+                  .getClasses(file)
+                  .entrySet()
+                  .parallelStream()
+                  .forEach(entry -> addClassIndex(entry.getKey(), entry.getValue()));
+              return null;
+            } catch (IOException e) {
+              throw new UncheckedIOException(e);
+            }
+          });
     }
-    this.updateClassIndexes();
+
+    futures.whenComplete(
+        cfs -> {
+          this.updateClassIndexes();
+        });
   }
 
   public boolean containsFQCN(String fqcn) {
@@ -289,21 +312,19 @@ public class CachedASMReflector {
   }
 
   public Map<String, String> getPackageClasses(String packageName) {
-
     if (this.globalClassIndex.isEmpty()) {
       this.createClassIndexes();
     }
     if (packageName.endsWith(".*")) {
       packageName = PACKAGE_RE.matcher(packageName).replaceAll("");
     }
-
-    Map<String, String> result = new HashMap<>(64);
-
-    for (ClassIndex ci : this.globalClassIndex.values()) {
-      if (ci.getPackage().equals(packageName)) {
-        result.putIfAbsent(ci.getName(), ci.getRawDeclaration());
-      }
-    }
+    final String name = packageName;
+    Map<String, String> result = new ConcurrentHashMap<>(64);
+    this.globalClassIndex
+        .values()
+        .parallelStream()
+        .filter(ci -> ci.getPackage().equals(name))
+        .forEach(ci -> result.putIfAbsent(ci.getName(), ci.getRawDeclaration()));
 
     return result;
   }
@@ -312,22 +333,26 @@ public class CachedASMReflector {
     return this.globalClassIndex
         .values()
         .parallelStream()
-        .filter(classIndex -> classIndex.getReturnType().startsWith(parent + '$'))
+        .filter(ci -> ci.getReturnType().startsWith(parent + '$'))
         .map(CachedASMReflector::cloneClassIndex)
         .collect(Collectors.toList());
   }
 
   public List<ClassIndex> searchInnerClasses(Set<String> parents) {
-    List<ClassIndex> result = new ArrayList<>(16);
-    for (ClassIndex ci : this.globalClassIndex.values()) {
-      String returnType = ci.getReturnType();
-      for (String parent : parents) {
-        if (returnType.startsWith(parent + '$')) {
-          result.add(cloneClassIndex(ci));
-        }
-      }
-    }
-    return result;
+    Set<ClassIndex> result = Sets.newConcurrentHashSet();
+    this.globalClassIndex
+        .values()
+        .parallelStream()
+        .forEach(
+            ci -> {
+              String returnType = ci.getReturnType();
+              for (String parent : parents) {
+                if (returnType.startsWith(parent + '$')) {
+                  result.add(cloneClassIndex(ci));
+                }
+              }
+            });
+    return new ArrayList<>(result);
   }
 
   public List<ClassIndex> searchClasses(final String keyword, final boolean includeAnnotation) {
@@ -371,21 +396,11 @@ public class CachedASMReflector {
 
   private List<MemberDescriptor> replaceMembers(
       String classWithoutTP, String className, List<MemberDescriptor> members) {
-
     ClassIndex classIdx = this.globalClassIndex.get(classWithoutTP);
     if (classIdx != null) {
       return replaceTypeParameters(className, classIdx.getDisplayDeclaration(), members);
     }
     return members;
-  }
-
-  private Stream<MemberDescriptor> reflectStream(String className) {
-    return this.reflect(className).stream();
-  }
-
-  public Stream<MemberDescriptor> reflectMethodStream(String className, String name) {
-    return this.reflect(className).stream()
-        .filter(m -> m.getName().equals(name) && m.matchType(CandidateUnit.MemberType.METHOD));
   }
 
   public Collection<MemberDescriptor> reflectMethods(String className, String name) {
@@ -396,11 +411,6 @@ public class CachedASMReflector {
       }
     }
     return result;
-  }
-
-  public Stream<MemberDescriptor> reflectConstructorStream(String className) {
-    return this.reflect(className).stream()
-        .filter(m -> m.matchType(CandidateUnit.MemberType.CONSTRUCTOR));
   }
 
   public Collection<MemberDescriptor> reflectConstructors(String className) {
@@ -418,7 +428,6 @@ public class CachedASMReflector {
   }
 
   private Collection<String> getSuperClassInternal(String className) {
-
     Set<String> result = new LinkedHashSet<>(4);
     String fqcn = ClassNameUtils.removeTypeParameter(className);
     this.containsClassIndex(fqcn)
@@ -428,11 +437,9 @@ public class CachedASMReflector {
               if (supers.isEmpty()) {
                 return;
               }
-
               if (supers.size() == 1 && supers.get(0).equals(ClassNameUtils.OBJECT_CLASS)) {
                 return;
               }
-
               for (String superClazz : supers) {
                 if (!superClazz.equals(ClassNameUtils.OBJECT_CLASS)) {
                   String clazz = ClassNameUtils.removeTypeMark(superClazz);
@@ -441,7 +448,6 @@ public class CachedASMReflector {
                 }
               }
             });
-
     return result;
   }
 
@@ -471,48 +477,49 @@ public class CachedASMReflector {
   }
 
   public void scanAllStaticMembers() {
-    IndexDatabase database = IndexDatabase.getInstance();
-    try (Stream<File> stream = this.directories.stream().parallel()) {
-      stream.forEach(
-          file -> {
+    Executor executor = Executor.getInstance();
+    Executor.CompletableFutures<Void> futures = executor.completableFutures(32);
+    for (final File file : this.directories) {
+      futures.runIOAction(
+          () -> {
             ConcurrentLinkedDeque<MemberDescriptor> deque = new ConcurrentLinkedDeque<>();
             try {
               scanMembers(file, deque);
               MemberIndex mi = new MemberIndex(file.getCanonicalPath(), deque);
               IndexDatabase.requestIndex(mi, event -> {});
+              return null;
             } catch (IOException e) {
               throw new UncheckedIOException(e);
             }
           });
     }
-
-    this.jars
-        .parallelStream()
-        .forEach(
-            file -> {
-              try {
-                final String path = file.getCanonicalPath();
-                boolean b = ProjectDatabaseHelper.isIndexedFile(path);
-                if (b) {
-                  return;
-                }
-                ConcurrentLinkedDeque<MemberDescriptor> deque = new ConcurrentLinkedDeque<>();
-                scanMembers(file, deque);
-                final MemberIndex mi = new MemberIndex(file.getCanonicalPath(), deque);
-                IndexDatabase.requestIndex(
-                    mi,
-                    event -> {
-                      // store
-                      String fileName = file.getName();
-                      if (fileName.endsWith(".jar")
-                          && !ProjectDatabaseHelper.saveIndexedFile(path)) {
-                        log.warn("failed save index. {}", path);
-                      }
-                    });
-              } catch (IOException e) {
-                throw new UncheckedIOException(e);
+    for (final File file : jars) {
+      futures.runIOAction(
+          () -> {
+            try {
+              final String path = file.getCanonicalPath();
+              boolean b = ProjectDatabaseHelper.isIndexedFile(path);
+              if (b) {
+                return null;
               }
-            });
+              ConcurrentLinkedDeque<MemberDescriptor> deque = new ConcurrentLinkedDeque<>();
+              scanMembers(file, deque);
+              final MemberIndex mi = new MemberIndex(file.getCanonicalPath(), deque);
+              IndexDatabase.requestIndex(
+                  mi,
+                  event -> {
+                    String fileName = file.getName();
+                    if (fileName.endsWith(".jar") && !ProjectDatabaseHelper.saveIndexedFile(path)) {
+                      log.warn("failed save index. {}", path);
+                    }
+                  });
+              return null;
+            } catch (IOException e) {
+              throw new UncheckedIOException(e);
+            }
+          });
+    }
+    futures.whenComplete(cfs -> {}).join();
   }
 
   private static void scanMembers(
@@ -541,19 +548,6 @@ public class CachedASMReflector {
             deque.addAll(members);
           }
         });
-  }
-
-  public static int scan(File root, Consumer<String> c) {
-    ASMReflector reflector = ASMReflector.getInstance();
-    try {
-      return reflector.scanClasses(root, (f, name, in) -> c.accept(name));
-    } catch (IOException e) {
-      throw new UncheckedIOException(e);
-    }
-  }
-
-  public Set<File> getJars() {
-    return jars;
   }
 
   private static class MemberIndex implements SearchIndexable {

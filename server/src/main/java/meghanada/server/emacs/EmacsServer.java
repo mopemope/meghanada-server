@@ -23,10 +23,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import meghanada.Executor;
 import meghanada.server.CommandHandler;
 import meghanada.server.OutputFormatter;
 import meghanada.server.Server;
@@ -41,7 +40,6 @@ public class EmacsServer implements Server {
   private static final Logger log = LogManager.getLogger(EmacsServer.class);
   private static final String EOT = ";;EOT";
   private final ServerSocket serverSocket;
-  private final ExecutorService executorService = Executors.newFixedThreadPool(5);
   private final OUTPUT outputFormat;
   private final String projectRoot;
   private final String host;
@@ -62,16 +60,6 @@ public class EmacsServer implements Server {
     this.outputFormat = OUTPUT.SEXP;
     this.outputEOT = true;
     System.setProperty("meghanada.server.port", Integer.toString(this.serverSocket.getLocalPort()));
-    Runtime.getRuntime()
-        .addShutdownHook(
-            new Thread(
-                () -> {
-                  try {
-                    shutdown();
-                  } catch (Throwable t) {
-                    log.catching(t);
-                  }
-                }));
   }
 
   private boolean dispatch(final List<String> argList, final CommandHandler handler) {
@@ -368,10 +356,11 @@ public class EmacsServer implements Server {
 
   @Override
   public void startServer() throws IOException {
-    if (this.executorService.isShutdown()) {
+    ExecutorService executorService = Executor.getInstance().getCachedExecutorService();
+    if (executorService.isShutdown()) {
       return;
     }
-    if (this.executorService.isTerminated()) {
+    if (executorService.isTerminated()) {
       return;
     }
 
@@ -390,7 +379,6 @@ public class EmacsServer implements Server {
     } finally {
       try {
         this.serverSocket.close();
-        this.executorService.shutdownNow();
         if (nonNull(this.session)) {
           this.session.shutdown(3);
         }
@@ -421,8 +409,8 @@ public class EmacsServer implements Server {
   }
 
   private Future<?> acceptConnection(final Socket conn) {
-
-    return this.executorService.submit(
+    ExecutorService executorService = Executor.getInstance().getCachedExecutorService();
+    return executorService.submit(
         () -> {
           try (final BufferedReader reader =
                   new BufferedReader(new InputStreamReader(conn.getInputStream(), UTF_8));
@@ -475,15 +463,6 @@ public class EmacsServer implements Server {
       return new SExprOutputFormatter();
     }
     throw new UnsupportedOperationException("not support format");
-  }
-
-  public void shutdown() {
-    this.executorService.shutdown();
-    try {
-      this.executorService.awaitTermination(3, TimeUnit.SECONDS);
-    } catch (InterruptedException e) {
-      log.catching(e);
-    }
   }
 
   private enum OUTPUT {

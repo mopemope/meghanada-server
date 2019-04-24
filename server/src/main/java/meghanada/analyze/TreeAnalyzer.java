@@ -433,7 +433,6 @@ public class TreeAnalyzer {
   }
 
   private static void analyzeCompilationUnitTree(SourceContext context, CompilationUnitTree cut) {
-
     Source src = context.source;
     log.trace("file={}", src.getFile());
     EndPosTable endPosTable = ((JCTree.JCCompilationUnit) cut).endPositions;
@@ -441,9 +440,7 @@ public class TreeAnalyzer {
     analyzePackageAnnotations(cut, src, endPosTable);
     analyzePackageName(cut, src, endPosTable);
     analyzeImports(cut, src, endPosTable);
-
     try {
-
       for (Tree td : cut.getTypeDecls()) {
         // start class
         if (td instanceof JCTree.JCClassDecl) {
@@ -496,19 +493,15 @@ public class TreeAnalyzer {
 
   public static Map<File, Source> analyze(
       Iterable<? extends CompilationUnitTree> parsed, Set<File> errorFiles) {
-
     Map<File, Source> analyzeMap = new ConcurrentHashMap<>(64);
-
     if (log.isDebugEnabled()) {
       parsed.forEach(cut -> tryAnalyzeUnit(errorFiles, analyzeMap, cut));
     } else {
       try (Stream<? extends CompilationUnitTree> stream =
           StreamSupport.stream(parsed.spliterator(), true)) {
-        // parallel ?
         stream.forEach(cut -> tryAnalyzeUnit(errorFiles, analyzeMap, cut));
       }
     }
-
     return analyzeMap;
   }
 
@@ -525,7 +518,6 @@ public class TreeAnalyzer {
 
   private static Source analyzeUnit(CompilationUnitTree cut, Set<File> errorFiles)
       throws IOException {
-
     LineMap lineMap = cut.getLineMap();
     URI uri = cut.getSourceFile().toUri();
     File file = new File(uri.normalize());

@@ -5,7 +5,6 @@ import static java.util.Objects.nonNull;
 import static java.util.Objects.requireNonNull;
 
 import com.google.common.base.MoreObjects;
-import com.google.common.base.Stopwatch;
 import com.google.common.hash.Hashing;
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -24,7 +23,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -42,6 +40,7 @@ import jetbrains.exodus.entitystore.StoreTransaction;
 import jetbrains.exodus.env.Environment;
 import jetbrains.exodus.env.EnvironmentImpl;
 import jetbrains.exodus.env.Environments;
+import meghanada.Executor;
 import meghanada.Main;
 import meghanada.config.Config;
 import org.apache.logging.log4j.LogManager;
@@ -55,7 +54,7 @@ public class ProjectDatabase {
   private static final String STORE_NAME = "meghanadaStore";
   private static final Logger log = LogManager.getLogger(ProjectDatabase.class);
 
-  private static final int MERGE_SIZE = 10;
+  private static final int MERGE_SIZE = 20;
   private static final int BURST_LIMIT = 32;
 
   private static ProjectDatabase projectDatabase;
@@ -64,7 +63,6 @@ public class ProjectDatabase {
   private static final long WORKER_DURATION = 2;
 
   private final BlockingQueue<StoreRequest> blockingQueue = new LinkedBlockingDeque<>();
-  private ExecutorService executorService = null;
   private Environment environment = null;
   private PersistentEntityStore entityStore = null;
   private String projectRoot;
@@ -74,8 +72,8 @@ public class ProjectDatabase {
   private File baseLocation;
 
   private ProjectDatabase() {
-    open();
-    initWorker();
+    this.open();
+    this.initWorker();
     Runtime.getRuntime()
         .addShutdownHook(
             new Thread(
@@ -83,7 +81,7 @@ public class ProjectDatabase {
                   try {
                     shutdown();
                   } catch (Throwable t) {
-                    log.catching(t);
+                    // log.catching(t);
                   }
                 }));
   }
@@ -92,8 +90,6 @@ public class ProjectDatabase {
     checkChangeProject();
     if (projectDatabase != null) {
       projectDatabase.open();
-      projectDatabase.initWorker();
-
       return projectDatabase;
     }
     projectDatabase = new ProjectDatabase();
@@ -208,29 +204,21 @@ public class ProjectDatabase {
   }
 
   private void initWorker() {
-
-    if (isNull(this.executorService) || this.executorService.isTerminated()) {
-
-      this.executorService = Executors.newCachedThreadPool();
-      this.isTerminated = false;
-
-      this.executorService.execute(
-          () -> {
-            while (!this.isTerminated) {
-              try {
-
-                StoreRequest req = blockingQueue.take();
-                Stopwatch stopwatch = Stopwatch.createStarted();
-                if (nonNull(req) && !req.isShutdown()) {
-                  mergeAndStore(req);
-                }
-                if (blockingQueue.isEmpty()) {}
-              } catch (Exception e) {
-                log.catching(e);
+    ExecutorService executorService = Executor.getInstance().getCachedExecutorService();
+    this.isTerminated = false;
+    executorService.execute(
+        () -> {
+          while (!this.isTerminated) {
+            try {
+              StoreRequest req = blockingQueue.take();
+              if (nonNull(req) && !req.isShutdown()) {
+                mergeAndStore(req);
               }
+            } catch (Exception e) {
+              log.catching(e);
             }
-          });
-    }
+          }
+        });
   }
 
   private void mergeAndStore(StoreRequest req) {
@@ -269,7 +257,6 @@ public class ProjectDatabase {
   }
 
   private synchronized void close() {
-
     if (nonNull(this.entityStore)) {
       try {
         EnvironmentImpl environment = (EnvironmentImpl) this.entityStore.getEnvironment();
@@ -419,8 +406,9 @@ public class ProjectDatabase {
 
   private void runWorker() {
     if (this.addableWorker()) {
-      lastAddWorker = Instant.now();
-      this.executorService.execute(
+      this.lastAddWorker = Instant.now();
+      ExecutorService executorService = Executor.getInstance().getCachedExecutorService();
+      executorService.execute(
           () -> {
             extraWorkers.incrementAndGet();
             boolean start = true;
@@ -592,9 +580,7 @@ public class ProjectDatabase {
     if (this.isTerminated) {
       return;
     }
-
     this.isTerminated = true;
-
     StoreRequest req = new StoreRequest();
     req.setShutdown(true);
     try {
@@ -602,18 +588,7 @@ public class ProjectDatabase {
     } catch (InterruptedException e) {
       log.catching(e);
     }
-
-    this.executorService.shutdown();
-    try {
-      this.executorService.awaitTermination(30, TimeUnit.SECONDS);
-    } catch (InterruptedException e) {
-      log.catching(e);
-    }
     this.close();
-  }
-
-  public ExecutorService getExecutorService() {
-    return executorService;
   }
 
   public File getBaseLocation() {
