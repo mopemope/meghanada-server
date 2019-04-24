@@ -53,7 +53,7 @@ dependencies {
     val toolsJar = files("$javaHome/../lib/tools.jar")
     implementation(toolsJar)
     implementation("com.google.googlejavaformat:google-java-format:1.7")
-    implementation("org.apache.maven:maven-model-builder:3.6.0")
+    implementation("org.apache.maven:maven-model-builder:3.6.1")
     implementation("com.leacox.motif:motif:0.1")
     implementation("com.leacox.motif:motif-hamcrest:0.1")
     implementation("com.github.javaparser:javaparser-core:3.7.1")
@@ -64,7 +64,7 @@ dependencies {
     implementation("org.gradle:gradle-tooling-api:$gradleVersion")
     implementation("com.google.guava:guava:27.1-jre")
     implementation("org.ow2.asm:asm:7.1")
-    implementation("com.typesafe:config:1.3.3")
+    implementation("com.typesafe:config:1.3.4")
     implementation("org.atteo:evo-inflector:1.2.2")
 
     implementation("org.junit.jupiter:junit-jupiter-api:$junitVersion")
@@ -73,7 +73,7 @@ dependencies {
     implementation("org.junit.vintage:junit-vintage-engine:$junitVersion")
     implementation("org.junit.platform:junit-platform-launcher:1.4.0")
 
-    implementation("com.android.tools.build:builder-model:3.0.1")
+    implementation("com.android.tools.build:builder-model:3.4.0")
     implementation("io.takari.junit:takari-cpsuite:1.2.7")
     implementation("org.jboss.windup.decompiler:decompiler-api:4.2.0.Final")
     implementation("org.jboss.windup.decompiler:decompiler-fernflower:4.2.0.Final")
