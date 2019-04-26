@@ -202,26 +202,31 @@ public class JavaAnalyzer {
       setJavacArgs(config, compileOptions);
       compileOptions.addAll(opts);
 
-      final JavaCompiler.CompilationTask compilerTask =
+      JavaCompiler.CompilationTask compilerTask =
           compiler.getTask(
               null, fileManager, diagnosticCollector, compileOptions, null, compilationUnits);
 
-      final JavacTask javacTask = (JavacTask) compilerTask;
+      JavacTask javacTask = (JavacTask) compilerTask;
 
-      final Iterable<? extends CompilationUnitTree> parsedIter = javacTask.parse();
-      javacTask.analyze();
+      Iterable<? extends CompilationUnitTree> parsedIter = null;
+      try {
+        parsedIter = javacTask.parse();
+        javacTask.analyze();
+      } catch (Throwable e) {
+        // javacTask sometimes throw NPE ...
+        Map<File, Source> analyzedMap = new HashMap<>(0);
+        return new CompileResult(true, analyzedMap);
+      }
+      List<Diagnostic<? extends JavaFileObject>> diagnostics = diagnosticCollector.getDiagnostics();
 
-      final List<Diagnostic<? extends JavaFileObject>> diagnostics =
-          diagnosticCollector.getDiagnostics();
-
-      final Set<File> errorFiles = JavaAnalyzer.getErrorFiles(diagnostics);
-      final Map<File, Source> analyzedMap = analyze(parsedIter, errorFiles);
+      Set<File> errorFiles = JavaAnalyzer.getErrorFiles(diagnostics);
+      Map<File, Source> analyzedMap = analyze(parsedIter, errorFiles);
       if (generate && !Config.load().useExternalBuilder()) {
         javacTask.generate();
         CachedASMReflector.getInstance().updateClassIndexFromDirectory();
       }
       Executor.getInstance().getEventBus().post(new AnalyzedEvent(analyzedMap, isDiagnostics));
-      final boolean success = errorFiles.size() == 0;
+      boolean success = errorFiles.size() == 0;
       return new CompileResult(success, analyzedMap, diagnostics, errorFiles);
     }
   }
@@ -241,7 +246,7 @@ public class JavaAnalyzer {
   }
 
   private static class JavaSourceFromString extends SimpleJavaFileObject {
-    final String code;
+    String code;
 
     JavaSourceFromString(String filePath, String code) {
       super(new File(filePath).toURI(), Kind.SOURCE);

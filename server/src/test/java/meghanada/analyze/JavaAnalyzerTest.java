@@ -547,7 +547,7 @@ public class JavaAnalyzerTest extends GradleTestBase {
       assertEquals("meghanada.analyze.JavaAnalyzer$AnalyzedEvent", ts.getFQCN());
     }
     {
-      Optional<TypeScope> scope = source.getTypeScope(247);
+      Optional<TypeScope> scope = source.getTypeScope(248);
       assertTrue(scope.isPresent());
       TypeScope ts = scope.get();
       assertEquals("meghanada.analyze.JavaAnalyzer$JavaSourceFromString", ts.getFQCN());

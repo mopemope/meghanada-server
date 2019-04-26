@@ -22,10 +22,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import meghanada.server.CommandHandler;
 import meghanada.server.OutputFormatter;
@@ -33,6 +30,7 @@ import meghanada.server.Server;
 import meghanada.server.formatter.SExprOutputFormatter;
 import meghanada.session.Session;
 import meghanada.session.SessionEventBus;
+import meghanada.system.Executor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -41,7 +39,6 @@ public class EmacsServer implements Server {
   private static final Logger log = LogManager.getLogger(EmacsServer.class);
   private static final String EOT = ";;EOT";
   private final ServerSocket serverSocket;
-  private final ExecutorService executorService = Executors.newFixedThreadPool(5);
   private final OUTPUT outputFormat;
   private final String projectRoot;
   private final String host;
@@ -62,16 +59,6 @@ public class EmacsServer implements Server {
     this.outputFormat = OUTPUT.SEXP;
     this.outputEOT = true;
     System.setProperty("meghanada.server.port", Integer.toString(this.serverSocket.getLocalPort()));
-    Runtime.getRuntime()
-        .addShutdownHook(
-            new Thread(
-                () -> {
-                  try {
-                    shutdown();
-                  } catch (Throwable t) {
-                    log.catching(t);
-                  }
-                }));
   }
 
   private boolean dispatch(final List<String> argList, final CommandHandler handler) {
@@ -368,13 +355,6 @@ public class EmacsServer implements Server {
 
   @Override
   public void startServer() throws IOException {
-    if (this.executorService.isShutdown()) {
-      return;
-    }
-    if (this.executorService.isTerminated()) {
-      return;
-    }
-
     try {
       this.session = Session.createSession(projectRoot);
       this.session.start();
@@ -390,7 +370,6 @@ public class EmacsServer implements Server {
     } finally {
       try {
         this.serverSocket.close();
-        this.executorService.shutdownNow();
         if (nonNull(this.session)) {
           this.session.shutdown(3);
         }
@@ -421,53 +400,57 @@ public class EmacsServer implements Server {
   }
 
   private Future<?> acceptConnection(final Socket conn) {
+    Executor executor = Executor.getInstance();
+    return executor
+        .getCachedExecutorService()
+        .submit(
+            () -> {
+              try (final BufferedReader reader =
+                      new BufferedReader(new InputStreamReader(conn.getInputStream(), UTF_8));
+                  final BufferedWriter writer =
+                      new BufferedWriter(new OutputStreamWriter(conn.getOutputStream(), UTF_8))) {
 
-    return this.executorService.submit(
-        () -> {
-          try (final BufferedReader reader =
-                  new BufferedReader(new InputStreamReader(conn.getInputStream(), UTF_8));
-              final BufferedWriter writer =
-                  new BufferedWriter(new OutputStreamWriter(conn.getOutputStream(), UTF_8))) {
+                final CommandHandler handler =
+                    new CommandHandler(session, writer, getOutputFormatter());
+                boolean start = true;
+                final SExprParser parser = new SExprParser();
+                while (start) {
+                  final String line = reader.readLine();
+                  if (isNull(line) || line.isEmpty()) {
+                    log.info("close from client ...");
+                    break;
+                  }
+                  final SExprParser.SExpr expr = parser.parse(line);
+                  final List<SExprParser.SExpr> lst = expr.value();
+                  final List<String> args =
+                      lst.stream()
+                          .map(sExpr -> sExpr.value().toString())
+                          .collect(Collectors.toList());
 
-            final CommandHandler handler =
-                new CommandHandler(session, writer, getOutputFormatter());
-            boolean start = true;
-            final SExprParser parser = new SExprParser();
-            while (start) {
-              final String line = reader.readLine();
-              if (isNull(line) || line.isEmpty()) {
-                log.info("close from client ...");
-                break;
+                  log.debug("receive command line:{} expr:{} args:{}", line, expr, args);
+                  start = dispatch(args, handler);
+                  if (!start) {
+                    log.info("stop client ... args:{}", args);
+                  }
+                  if (this.outputEOT) {
+                    writer.write(EmacsServer.EOT);
+                    writer.newLine();
+                  }
+
+                  writer.flush();
+                }
+                log.info("close client ...");
+              } catch (Throwable e) {
+                log.catching(e);
+              } finally {
+                try {
+                  conn.close();
+                } catch (IOException e) {
+                  log.catching(e);
+                }
+                log.info("client disconnect");
               }
-              final SExprParser.SExpr expr = parser.parse(line);
-              final List<SExprParser.SExpr> lst = expr.value();
-              final List<String> args =
-                  lst.stream().map(sExpr -> sExpr.value().toString()).collect(Collectors.toList());
-
-              log.debug("receive command line:{} expr:{} args:{}", line, expr, args);
-              start = dispatch(args, handler);
-              if (!start) {
-                log.info("stop client ... args:{}", args);
-              }
-              if (this.outputEOT) {
-                writer.write(EmacsServer.EOT);
-                writer.newLine();
-              }
-
-              writer.flush();
-            }
-            log.info("close client ...");
-          } catch (Throwable e) {
-            log.catching(e);
-          } finally {
-            try {
-              conn.close();
-            } catch (IOException e) {
-              log.catching(e);
-            }
-            log.info("client disconnect");
-          }
-        });
+            });
   }
 
   private OutputFormatter getOutputFormatter() {
@@ -475,15 +458,6 @@ public class EmacsServer implements Server {
       return new SExprOutputFormatter();
     }
     throw new UnsupportedOperationException("not support format");
-  }
-
-  public void shutdown() {
-    this.executorService.shutdown();
-    try {
-      this.executorService.awaitTermination(3, TimeUnit.SECONDS);
-    } catch (InterruptedException e) {
-      log.catching(e);
-    }
   }
 
   private enum OUTPUT {

@@ -239,7 +239,7 @@ public class JavaCompletionTest extends GradleTestBase {
             .getCanonicalFile();
     assertTrue(file.exists());
     final Collection<? extends CandidateUnit> units =
-        timeIt(() -> completion.completionAt(file, 262, 0, "an"));
+        timeIt(() -> completion.completionAt(file, 267, 0, "an"));
     units.forEach(a -> System.out.println(a.getDeclaration()));
     assertEquals(3, units.size());
   }
@@ -314,7 +314,7 @@ public class JavaCompletionTest extends GradleTestBase {
             .getCanonicalFile();
     assertTrue(file.exists());
     final Collection<? extends CandidateUnit> units =
-        timeIt(() -> completion.completionAt(file, 247, 4, "*code*int#"));
+        timeIt(() -> completion.completionAt(file, 253, 4, "*code*int#"));
     units.forEach(a -> System.out.println(a.getDisplayDeclaration()));
     Object[] objs = (units.toArray());
     CandidateUnit unit1 = (CandidateUnit) objs[0];

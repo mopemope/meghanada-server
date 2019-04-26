@@ -35,27 +35,6 @@ public class DeclarationSearcherTest extends GradleTestBase {
   }
 
   @Test
-  public void testFieldDeclaration01() throws Exception {
-    File f =
-        new File(
-                project.getProjectRootPath(),
-                "./src/main/java/meghanada/server/emacs/EmacsServer.java")
-            .getCanonicalFile();
-    assertTrue(f.exists());
-
-    final DeclarationSearcher searcher = getSearcher();
-    final Optional<Declaration> result =
-        timeIt(() -> searcher.searchDeclaration(f, 425, 17, "executorService"));
-    assertNotNull(result);
-    assertTrue(result.isPresent());
-    result.ifPresent(
-        declaration -> {
-          assertEquals("this.executorService", declaration.scopeInfo);
-          assertEquals("java.util.concurrent.ExecutorService", declaration.signature);
-        });
-  }
-
-  @Test
   public void testMethodDeclaration01() throws Exception {
     File f =
         new File(
@@ -65,7 +44,7 @@ public class DeclarationSearcherTest extends GradleTestBase {
     assertTrue(f.exists());
     final DeclarationSearcher searcher = getSearcher();
     final Optional<Declaration> result =
-        debugIt(() -> searcher.searchDeclaration(f, 57, 45, "getByName"));
+        debugIt(() -> searcher.searchDeclaration(f, 54, 45, "getByName"));
     assertNotNull(result);
     assertTrue(result.isPresent());
     result.ifPresent(
@@ -88,12 +67,12 @@ public class DeclarationSearcherTest extends GradleTestBase {
     assertTrue(f.exists());
     final DeclarationSearcher searcher = getSearcher();
     final Optional<Declaration> result =
-        debugIt(() -> searcher.searchDeclaration(f, 425, 33, "submit"));
+        debugIt(() -> searcher.searchDeclaration(f, 406, 10, "submit"));
     assertNotNull(result);
     assertTrue(result.isPresent());
     result.ifPresent(
         declaration -> {
-          assertEquals("this.executorService.submit", declaration.scopeInfo);
+          assertEquals("submit.submit", declaration.scopeInfo);
           assertEquals("public Future<?> submit(Runnable arg0)", declaration.signature);
         });
   }
@@ -128,7 +107,7 @@ public class DeclarationSearcherTest extends GradleTestBase {
     assertTrue(f.exists());
     final DeclarationSearcher searcher = getSearcher();
     final Optional<Declaration> result =
-        debugIt(() -> searcher.searchDeclaration(f, 433, 53, "getOutputFormatter"));
+        debugIt(() -> searcher.searchDeclaration(f, 414, 57, "getOutputFormatter"));
     assertNotNull(result);
     assertTrue(result.isPresent());
     result.ifPresent(
@@ -195,7 +174,7 @@ public class DeclarationSearcherTest extends GradleTestBase {
     assertTrue(f.exists());
     final DeclarationSearcher searcher = getSearcher();
     final Optional<Declaration> result =
-        timeIt(() -> searcher.searchDeclaration(f, 62, 32, "SEXP"));
+        timeIt(() -> searcher.searchDeclaration(f, 59, 32, "SEXP"));
     assertNotNull(result);
     assertTrue(result.isPresent());
     result.ifPresent(
@@ -216,7 +195,7 @@ public class DeclarationSearcherTest extends GradleTestBase {
 
     final DeclarationSearcher searcher = getSearcher();
     final Optional<Declaration> result =
-        timeIt(() -> searcher.searchDeclaration(f, 60, 55, "address"));
+        timeIt(() -> searcher.searchDeclaration(f, 57, 55, "address"));
     assertNotNull(result);
     assertTrue(result.isPresent());
     result.ifPresent(
@@ -237,7 +216,7 @@ public class DeclarationSearcherTest extends GradleTestBase {
     assertTrue(f.exists());
 
     final DeclarationSearcher searcher = getSearcher();
-    final Optional<Declaration> result = timeIt(() -> searcher.searchDeclaration(f, 60, 48, "0"));
+    final Optional<Declaration> result = timeIt(() -> searcher.searchDeclaration(f, 57, 48, "0"));
     assertNotNull(result);
     assertTrue(result.isPresent());
     result.ifPresent(
@@ -259,7 +238,7 @@ public class DeclarationSearcherTest extends GradleTestBase {
 
     final DeclarationSearcher searcher = getSearcher();
     final Optional<Declaration> result =
-        timeIt(() -> searcher.searchDeclaration(f, 432, 34, "handler"));
+        timeIt(() -> searcher.searchDeclaration(f, 413, 38, "handler"));
     assertNotNull(result);
     assertTrue(result.isPresent());
     result.ifPresent(
