@@ -36,7 +36,7 @@ public class SourceCacheSubscriber {
     this.checksums = new HashMap<>(2);
   }
 
-  private Map<String, String> getChecksumMap(Project project) {
+  private synchronized Map<String, String> getChecksumMap(Project project) {
     if (this.checksums.containsKey(project)) {
       return this.checksums.get(project);
     }
