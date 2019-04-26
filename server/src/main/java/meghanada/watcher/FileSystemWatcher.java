@@ -62,7 +62,7 @@ public class FileSystemWatcher {
     }
   }
 
-  public void start(final List<File> files) throws IOException {
+  public void start(final List<File> files) {
     this.abort = false;
 
     try (final FileSystem fileSystem = FileSystems.getDefault();
@@ -90,7 +90,7 @@ public class FileSystemWatcher {
           break;
         }
       }
-    } catch (InterruptedException e) {
+    } catch (Throwable e) {
       // ignore
     }
   }
