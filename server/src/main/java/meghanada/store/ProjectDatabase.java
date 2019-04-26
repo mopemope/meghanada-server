@@ -216,6 +216,7 @@ public class ProjectDatabase {
 
       this.executorService.execute(
           () -> {
+            Instant start = Instant.now();
             while (!this.isTerminated) {
               try {
 
@@ -224,7 +225,17 @@ public class ProjectDatabase {
                 if (nonNull(req) && !req.isShutdown()) {
                   mergeAndStore(req);
                 }
-                if (blockingQueue.isEmpty()) {}
+                if (blockingQueue.isEmpty()) {
+                  Instant now = Instant.now();
+                  Duration duration = Duration.between(start, now);
+                  long delta = duration.getSeconds();
+                  if (delta > 10) {
+                    EnvironmentImpl environment =
+                        (EnvironmentImpl) this.entityStore.getEnvironment();
+                    environment.flushAndSync();
+                    start = now;
+                  }
+                }
               } catch (Exception e) {
                 log.catching(e);
               }
@@ -278,7 +289,7 @@ public class ProjectDatabase {
       } catch (ExodusException e) {
         // wait transaction
         try {
-          Thread.sleep(1000 * 1);
+          Thread.sleep(1000);
         } catch (InterruptedException e1) {
           log.catching(e1);
         }
