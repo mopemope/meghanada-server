@@ -49,6 +49,10 @@ public class Main {
   }
 
   public static void main(String[] args) throws ParseException, IOException {
+    int size = Runtime.getRuntime().availableProcessors() + 4;
+    System.setProperty(
+        "java.util.concurrent.ForkJoinPool.common.parallelism", Integer.toString(size));
+
     final String version = getVersion();
     System.setProperty("meghanada-server.version", version);
 
