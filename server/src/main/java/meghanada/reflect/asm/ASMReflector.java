@@ -20,6 +20,7 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -63,7 +64,7 @@ public class ASMReflector {
   private static final Logger log = LogManager.getLogger(ASMReflector.class);
   private static final String preloadClassPackage = "java.lang.";
   private static final Map<String, List<MemberDescriptor>> innerCache =
-      new ConcurrentHashMap<>(256);
+      Collections.synchronizedMap(new LRUHashMap(1024));
   private static ASMReflector asmReflector;
   private final Set<String> allowClass = new HashSet<>(16);
 
@@ -958,5 +959,20 @@ public class ASMReflector {
   @FunctionalInterface
   public interface Scanner {
     void scan(File file, String name, InputStream in) throws IOException;
+  }
+
+  private static class LRUHashMap<K, V> extends LinkedHashMap<K, V> {
+
+    private final int capacity;
+
+    LRUHashMap(int capacity) {
+      super(512, 0.75f, true);
+      this.capacity = capacity;
+    }
+
+    @Override
+    public boolean removeEldestEntry(Map.Entry<K, V> eldest) {
+      return size() > capacity;
+    }
   }
 }
