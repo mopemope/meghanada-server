@@ -49,7 +49,7 @@ public class Main {
   }
 
   public static void main(String[] args) throws ParseException, IOException {
-    int size = Runtime.getRuntime().availableProcessors() + 4;
+    int size = Runtime.getRuntime().availableProcessors() * 2;
     System.setProperty(
         "java.util.concurrent.ForkJoinPool.common.parallelism", Integer.toString(size));
 

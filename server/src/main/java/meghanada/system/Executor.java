@@ -22,7 +22,6 @@ import org.apache.logging.log4j.Logger;
 public class Executor {
 
   private static final Logger log = LogManager.getLogger(Executor.class);
-  private static final int PARALLELISM = 8;
 
   private static Executor executor;
   private final ExecutorService executorService;
@@ -30,8 +29,9 @@ public class Executor {
   private final EventBus eventBus;
 
   private Executor() {
+    int size = Runtime.getRuntime().availableProcessors() * 2;
     this.executorService = Executors.newCachedThreadPool();
-    this.fixedThreadPool = Executors.newFixedThreadPool(PARALLELISM);
+    this.fixedThreadPool = Executors.newFixedThreadPool(size);
     this.eventBus =
         new AsyncEventBus(
             executorService,
