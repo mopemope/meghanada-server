@@ -21,10 +21,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.LinkedBlockingDeque;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
@@ -40,7 +37,6 @@ import jetbrains.exodus.entitystore.StoreTransaction;
 import jetbrains.exodus.env.Environment;
 import jetbrains.exodus.env.EnvironmentImpl;
 import jetbrains.exodus.env.Environments;
-import meghanada.Executor;
 import meghanada.Main;
 import meghanada.config.Config;
 import org.apache.logging.log4j.LogManager;
@@ -63,6 +59,7 @@ public class ProjectDatabase {
   private static final long WORKER_DURATION = 2;
 
   private final BlockingQueue<StoreRequest> blockingQueue = new LinkedBlockingDeque<>();
+  private ExecutorService executorService;
   private Environment environment = null;
   private PersistentEntityStore entityStore = null;
   private String projectRoot;
@@ -137,7 +134,6 @@ public class ProjectDatabase {
   }
 
   private static long putObject(Storable s, boolean allowUpdate, StoreTransaction txn) {
-
     String entityType = s.getEntityType();
     EntityId entityId = s.getEntityId();
     String id = s.getStoreId();
@@ -204,21 +200,23 @@ public class ProjectDatabase {
   }
 
   private void initWorker() {
-    ExecutorService executorService = Executor.getInstance().getCachedExecutorService();
-    this.isTerminated = false;
-    executorService.execute(
-        () -> {
-          while (!this.isTerminated) {
-            try {
-              StoreRequest req = blockingQueue.take();
-              if (nonNull(req) && !req.isShutdown()) {
-                mergeAndStore(req);
+    if (isNull(this.executorService) || this.executorService.isTerminated()) {
+      this.executorService = Executors.newCachedThreadPool();
+      this.isTerminated = false;
+      executorService.execute(
+          () -> {
+            while (!this.isTerminated) {
+              try {
+                StoreRequest req = blockingQueue.take();
+                if (nonNull(req) && !req.isShutdown()) {
+                  mergeAndStore(req);
+                }
+              } catch (Exception e) {
+                log.catching(e);
               }
-            } catch (Exception e) {
-              log.catching(e);
             }
-          }
-        });
+          });
+    }
   }
 
   private void mergeAndStore(StoreRequest req) {
@@ -265,7 +263,7 @@ public class ProjectDatabase {
       } catch (ExodusException e) {
         // wait transaction
         try {
-          Thread.sleep(1000 * 1);
+          Thread.sleep(1000);
         } catch (InterruptedException e1) {
           log.catching(e1);
         }
@@ -407,7 +405,6 @@ public class ProjectDatabase {
   private void runWorker() {
     if (this.addableWorker()) {
       this.lastAddWorker = Instant.now();
-      ExecutorService executorService = Executor.getInstance().getCachedExecutorService();
       executorService.execute(
           () -> {
             extraWorkers.incrementAndGet();
@@ -585,6 +582,12 @@ public class ProjectDatabase {
     req.setShutdown(true);
     try {
       this.blockingQueue.put(req);
+    } catch (InterruptedException e) {
+      log.catching(e);
+    }
+    this.executorService.shutdown();
+    try {
+      this.executorService.awaitTermination(10, TimeUnit.SECONDS);
     } catch (InterruptedException e) {
       log.catching(e);
     }

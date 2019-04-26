@@ -190,11 +190,13 @@ public class CachedASMReflector {
           });
     }
 
-    futures.whenComplete(
-        (cfs) -> {
-          this.updateClassIndexFromDirectory();
-          this.saveAllClassIndexes();
-        });
+    futures
+        .whenComplete(
+            (cfs) -> {
+              this.updateClassIndexFromDirectory();
+              this.saveAllClassIndexes();
+            })
+        .join();
   }
 
   private void saveAllClassIndexes() {

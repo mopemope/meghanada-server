@@ -252,6 +252,8 @@ public class ASMReflectorTest extends GradleTestBase {
       stopwatch.start();
       List<MemberDescriptor> md = asmReflector.reflectAll(info);
       log.info(stopwatch.stop());
+      md.sort(MemberDescriptor::compareTo);
+      md.forEach(m -> log.info(m.getDisplayDeclaration()));
 
       Config config = Config.load();
       if (config.isJava8()) {

@@ -179,7 +179,7 @@ public class ASMReflector {
         classIndex.setAnnotation(isAnnotation);
         indexes.put(classIndex, file);
         if (!onlyClassName) {
-          innerCache.putIfAbsent(className, classAnalyzeVisitor.getMembers());
+          innerCache.put(className, classAnalyzeVisitor.getMembers());
         }
       }
     }
@@ -827,7 +827,7 @@ public class ASMReflector {
     //      this.readSuperMembers(file, cv, members);
     //    }
     List<MemberDescriptor> members = visitor.getMembers();
-    innerCache.putIfAbsent(withoutTP, members);
+    innerCache.put(withoutTP, members);
     return members;
   }
 
