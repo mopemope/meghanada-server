@@ -26,8 +26,8 @@ import javax.tools.SimpleJavaFileObject;
 import javax.tools.StandardJavaFileManager;
 import javax.tools.ToolProvider;
 import meghanada.config.Config;
-import meghanada.event.SystemEventBus;
 import meghanada.reflect.asm.CachedASMReflector;
+import meghanada.system.Executor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -157,9 +157,7 @@ public class JavaAnalyzer {
         CachedASMReflector.getInstance().updateClassIndexFromDirectory();
       }
 
-      SystemEventBus.getInstance()
-          .getEventBus()
-          .post(new AnalyzedEvent(analyzedMap, isDiagnostics));
+      Executor.getInstance().getEventBus().post(new AnalyzedEvent(analyzedMap, isDiagnostics));
 
       final boolean success = errorFiles.size() == 0;
       // ProjectDatabaseHelper.saveCompileResult(result);
@@ -222,8 +220,7 @@ public class JavaAnalyzer {
         javacTask.generate();
         CachedASMReflector.getInstance().updateClassIndexFromDirectory();
       }
-      SystemEventBus systemEventBus = SystemEventBus.getInstance();
-      systemEventBus.getEventBus().post(new AnalyzedEvent(analyzedMap, isDiagnostics));
+      Executor.getInstance().getEventBus().post(new AnalyzedEvent(analyzedMap, isDiagnostics));
       final boolean success = errorFiles.size() == 0;
       return new CompileResult(success, analyzedMap, diagnostics, errorFiles);
     }

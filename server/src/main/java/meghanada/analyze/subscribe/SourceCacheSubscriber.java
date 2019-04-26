@@ -14,10 +14,10 @@ import meghanada.analyze.JavaAnalyzer;
 import meghanada.analyze.Source;
 import meghanada.cache.GlobalCache;
 import meghanada.config.Config;
-import meghanada.event.SystemEventBus;
 import meghanada.project.Project;
 import meghanada.session.SessionEventBus;
 import meghanada.store.ProjectDatabaseHelper;
+import meghanada.system.Executor;
 import meghanada.utils.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -94,7 +94,7 @@ public class SourceCacheSubscriber {
       checksumMap.remove(path);
     }
     SessionEventBus.IdleCacheEvent event = new SessionEventBus.IdleCacheEvent(source.importClasses);
-    SystemEventBus.getInstance().getEventBus().post(event);
+    Executor.getInstance().getEventBus().post(event);
   }
 
   public void complete() throws IOException {

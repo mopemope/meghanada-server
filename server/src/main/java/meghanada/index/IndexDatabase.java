@@ -19,10 +19,10 @@ import javax.annotation.Nullable;
 import jetbrains.exodus.env.ContextualEnvironment;
 import jetbrains.exodus.env.Environment;
 import jetbrains.exodus.env.Environments;
-import meghanada.event.SystemEventBus;
 import meghanada.reflect.MemberDescriptor;
 import meghanada.store.ProjectDatabase;
 import meghanada.store.Serializer;
+import meghanada.system.Executor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.lucene.document.Document;
@@ -39,7 +39,7 @@ public class IndexDatabase {
   private final File baseLocation = null;
 
   private IndexDatabase() {
-    SystemEventBus.getInstance().getEventBus().register(this);
+    Executor.getInstance().getEventBus().register(this);
   }
 
   public static synchronized IndexDatabase getInstance() {
@@ -145,17 +145,17 @@ public class IndexDatabase {
 
   public static void requestIndex(final SearchIndexable i) {
     final IndexEvent event = new IndexEvent(i);
-    SystemEventBus.getInstance().getEventBus().post(event);
+    Executor.getInstance().getEventBus().post(event);
   }
 
   public static void requestIndex(final SearchIndexable i, final Consumer<IndexEvent> c) {
     final IndexEvent event = new IndexEvent(i, c);
-    SystemEventBus.getInstance().getEventBus().post(event);
+    Executor.getInstance().getEventBus().post(event);
   }
 
   public static void requestIndex(final List<SearchIndexable> i) {
     final IndexEvent event = new IndexEvent(i);
-    SystemEventBus.getInstance().getEventBus().post(event);
+    Executor.getInstance().getEventBus().post(event);
   }
 
   public synchronized Optional<SearchResults> search(final String query) {

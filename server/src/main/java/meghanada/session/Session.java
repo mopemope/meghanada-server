@@ -46,7 +46,6 @@ import meghanada.completion.LocalVariable;
 import meghanada.config.Config;
 import meghanada.docs.declaration.Declaration;
 import meghanada.docs.declaration.DeclarationSearcher;
-import meghanada.event.SystemEventBus;
 import meghanada.index.IndexDatabase;
 import meghanada.index.SearchResults;
 import meghanada.location.Location;
@@ -62,6 +61,7 @@ import meghanada.reference.Reference;
 import meghanada.reference.ReferenceSearcher;
 import meghanada.reflect.CandidateUnit;
 import meghanada.reflect.asm.CachedASMReflector;
+import meghanada.system.Executor;
 import meghanada.typeinfo.TypeInfo;
 import meghanada.typeinfo.TypeInfoSearcher;
 import meghanada.utils.FileUtils;
@@ -361,13 +361,11 @@ public class Session {
     if (Config.load().enableIdleCache()) {
       this.sessionEventBus.subscribeIdle();
     }
-    SystemEventBus.getInstance()
+    Executor.getInstance()
         .getEventBus()
         .register(new SourceCacheSubscriber(this::getCurrentProject));
     if (Config.load().useFullTextSearch()) {
-      SystemEventBus.getInstance()
-          .getEventBus()
-          .register(new IndexSubscriber(this::getCurrentProject));
+      Executor.getInstance().getEventBus().register(new IndexSubscriber(this::getCurrentProject));
     }
     GlobalCache.getInstance().setProjectSupplier(this::getCurrentProject);
   }

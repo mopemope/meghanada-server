@@ -19,7 +19,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import meghanada.event.SystemEventBus;
+import meghanada.system.Executor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -117,7 +117,7 @@ public class FileSystemWatcher {
         // Dispatch
         FileEvent fe = toEvent(watchEvent, path);
         if (fe != null) {
-          SystemEventBus.getInstance().getEventBus().post(fe);
+          Executor.getInstance().getEventBus().post(fe);
         }
       }
     }

@@ -12,9 +12,9 @@ import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import meghanada.cache.GlobalCache;
 import meghanada.config.Config;
-import meghanada.event.SystemEventBus;
 import meghanada.session.Session;
 import meghanada.session.SessionEventBus;
+import meghanada.system.Executor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -66,7 +66,7 @@ public class IdleMonitorSubscriber extends AbstractSubscriber {
         long now = Instant.now().getEpochSecond();
         if (this.isIdle(now)) {
           SessionEventBus.IdleEvent idleEvent = createIdleEvent(event.session, this.idleTimer);
-          SystemEventBus.getInstance().getEventBus().post(idleEvent);
+          Executor.getInstance().getEventBus().post(idleEvent);
           this.idleTimer.lastRun = now + this.idleTime + 1;
         }
       } catch (InterruptedException e) {
