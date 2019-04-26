@@ -50,6 +50,7 @@ import meghanada.reflect.FieldDescriptor;
 import meghanada.reflect.MemberDescriptor;
 import meghanada.reflect.MethodDescriptor;
 import meghanada.reflect.asm.CachedASMReflector;
+import meghanada.system.Executor;
 import meghanada.utils.ClassNameUtils;
 import meghanada.utils.FileUtils;
 import meghanada.utils.StringUtils;
@@ -150,11 +151,34 @@ public class JavaCompletion {
   }
 
   private static List<MemberDescriptor> doReflect(String fqcn) {
-    return CachedASMReflector.getInstance().reflect(fqcn);
+    List<MemberDescriptor> members = CachedASMReflector.getInstance().reflect(fqcn);
+    preloadReturnTypes(members);
+    return members;
+  }
+
+  private static void preloadReturnTypes(List<MemberDescriptor> members) {
+    Set<String> set = new HashSet<>(members.size());
+    for (MemberDescriptor member : members) {
+      String returnType = member.getReturnType();
+      if (nonNull(returnType) && !returnType.equals("void")) {
+        set.add(returnType);
+      }
+    }
+    Executor executor = Executor.getInstance();
+    for (final String name : set) {
+      executor.execute(
+          () -> {
+            try {
+              GlobalCache.getInstance().getMemberDescriptors(name);
+            } catch (ExecutionException e) {
+              log.catching(e);
+            }
+          });
+    }
   }
 
   private static Stream<MemberDescriptor> doReflect(String fqcn, Predicate<MemberDescriptor> pre) {
-    return CachedASMReflector.getInstance().reflect(fqcn).stream().filter(pre);
+    return doReflect(fqcn).stream().filter(pre);
   }
 
   private static Collection<? extends CandidateUnit> completionSuper(

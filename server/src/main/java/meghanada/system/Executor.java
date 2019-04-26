@@ -108,6 +108,10 @@ public class Executor {
     return new Executor.CompletableFutures<T>(cap);
   }
 
+  public void execute(Runnable runnable) {
+    this.fixedThreadPool.execute(runnable);
+  }
+
   public static class CompletableFutures<T> {
     static final CompletableFuture[] COMPLETABLE_FUTURES = new CompletableFuture[0];
     private final List<CompletableFuture<T>> cfs;
