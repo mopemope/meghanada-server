@@ -768,7 +768,7 @@ public class JavaCompletion {
                   })
               .collect(Collectors.toList());
     } catch (Exception ex) {
-      log.warn("Error getting static method for {}", name);
+      log.warn("fail getting static method for {}", name);
     }
     return members;
   }
