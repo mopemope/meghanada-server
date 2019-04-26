@@ -2,6 +2,7 @@ package meghanada.session;
 
 import com.google.common.base.MoreObjects;
 import java.io.File;
+import java.util.Collection;
 import java.util.List;
 import meghanada.event.SystemEventBus;
 import meghanada.session.subscribe.CacheEventSubscriber;
@@ -171,6 +172,18 @@ public class SessionEventBus {
 
     public Session getSession() {
       return session;
+    }
+  }
+
+  public static class IdleCacheEvent {
+    private final Collection<String> names;
+
+    public IdleCacheEvent(Collection<String> names) {
+      this.names = names;
+    }
+
+    public Collection<String> getNames() {
+      return this.names;
     }
   }
 
