@@ -30,7 +30,7 @@ import org.apache.logging.log4j.core.layout.PatternLayout;
 
 public class Main {
 
-  public static final String VERSION = "1.0.14";
+  public static final String VERSION = "1.0.15";
   private static final Logger log = LogManager.getLogger(Main.class);
   private static final int ZPAGE_PORT = 60981;
   private static String version;
