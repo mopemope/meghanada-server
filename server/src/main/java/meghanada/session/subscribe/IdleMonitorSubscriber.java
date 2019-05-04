@@ -26,7 +26,7 @@ public class IdleMonitorSubscriber extends AbstractSubscriber {
   private static final long WARMUP_INTERVAL = 15000;
 
   private int idleTime = 10;
-  private Set<String> queue = Collections.synchronizedSet(new LinkedHashSet(32));
+  private Set<String> queue = Collections.synchronizedSet(new LinkedHashSet<>(32));
   private final SessionEventBus.IdleTimer idleTimer;
   private boolean started;
   private final CpuMonitor monitor;

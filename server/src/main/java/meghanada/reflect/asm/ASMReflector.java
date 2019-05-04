@@ -64,7 +64,7 @@ public class ASMReflector {
   private static final Logger log = LogManager.getLogger(ASMReflector.class);
   private static final String preloadClassPackage = "java.lang.";
   private static final Map<String, List<MemberDescriptor>> innerCache =
-      Collections.synchronizedMap(new LRUHashMap(1024));
+      Collections.synchronizedMap(new LRUHashMap<>(1024));
   private static ASMReflector asmReflector;
   private final Set<String> allowClass = new HashSet<>(16);
 
@@ -904,6 +904,7 @@ public class ASMReflector {
 
   private static class LRUHashMap<K, V> extends LinkedHashMap<K, V> {
 
+    private static final long serialVersionUID = -4698744302635028207L;
     private final int capacity;
 
     LRUHashMap(int capacity) {

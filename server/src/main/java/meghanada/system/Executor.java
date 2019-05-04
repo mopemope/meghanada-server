@@ -113,7 +113,9 @@ public class Executor {
   }
 
   public static class CompletableFutures<T> {
+    @SuppressWarnings("rawtypes")
     static final CompletableFuture[] COMPLETABLE_FUTURES = new CompletableFuture[0];
+
     private final List<CompletableFuture<T>> cfs;
 
     CompletableFutures() {
