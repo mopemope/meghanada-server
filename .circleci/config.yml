@@ -5,7 +5,7 @@ jobs:
     working_directory: ~/meghanada
 
     docker:
-      - image: circleci/openjdk:8-jdk-browsers
+      - image: circleci/openjdk:8-jdk-stretch
         environment:
           JAVA_HOME: /usr/lib/jvm/java-8-openjdk-amd64
     steps:
