@@ -1,9 +1,6 @@
 package meghanada.session.subscribe;
 
-import static sun.management.ManagementFactoryHelper.getOperatingSystemMXBean;
-
 import com.google.common.eventbus.Subscribe;
-import com.sun.management.OperatingSystemMXBean;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.Iterator;
@@ -17,6 +14,9 @@ import meghanada.session.SessionEventBus;
 import meghanada.system.Executor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import oshi.SystemInfo;
+import oshi.hardware.CentralProcessor;
+import oshi.hardware.HardwareAbstractionLayer;
 
 public class IdleMonitorSubscriber extends AbstractSubscriber {
 
@@ -107,38 +107,12 @@ public class IdleMonitorSubscriber extends AbstractSubscriber {
   }
 
   private static class CpuMonitor {
-    private int availableProcessors = getOperatingSystemMXBean().getAvailableProcessors();
-    private long lastSystemTime = 0;
-    private long lastProcessCpuTime = 0;
+    private final SystemInfo si = new SystemInfo();
+    private final HardwareAbstractionLayer hal = si.getHardware();
+    private final CentralProcessor processor = hal.getProcessor();
 
     public synchronized double getCpuUsage() {
-      if (this.lastSystemTime == 0) {
-        this.baselineCounters();
-        return 0;
-      }
-
-      long systemTime = System.nanoTime();
-      long processCpuTime = 0;
-
-      if (getOperatingSystemMXBean() instanceof OperatingSystemMXBean) {
-        processCpuTime = ((OperatingSystemMXBean) getOperatingSystemMXBean()).getProcessCpuTime();
-      }
-
-      double cpuUsage =
-          ((double) (processCpuTime - this.lastProcessCpuTime))
-              / ((double) (systemTime - this.lastSystemTime));
-      this.lastSystemTime = systemTime;
-      this.lastProcessCpuTime = processCpuTime;
-      return cpuUsage;
-    }
-
-    private void baselineCounters() {
-      this.lastSystemTime = System.nanoTime();
-
-      if (getOperatingSystemMXBean() instanceof OperatingSystemMXBean) {
-        this.lastProcessCpuTime =
-            ((OperatingSystemMXBean) getOperatingSystemMXBean()).getProcessCpuTime();
-      }
+      return processor.getSystemCpuLoad();
     }
   }
 }
