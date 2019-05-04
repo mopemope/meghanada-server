@@ -34,7 +34,7 @@ val date: String = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-
 val applicationName = "meghanada"
 
 val junitVersion = "5.4.0"
-val gradleVersion = "5.4"
+val gradleVersion = "5.4.1"
 val log4jVersion = "2.11.2"
 val xodusVersion = "1.3.0"
 
@@ -90,9 +90,9 @@ dependencies {
     implementation("org.jetbrains.xodus:xodus-entity-store:$xodusVersion")
     implementation("org.jetbrains.xodus:xodus-compress:$xodusVersion")
 
-    implementation("io.opencensus:opencensus-api:0.20.0")
-    implementation("io.opencensus:opencensus-impl:0.20.0")
-    implementation("io.opencensus:opencensus-contrib-zpages:0.20.0")
+    implementation("io.opencensus:opencensus-api:0.21.0")
+    implementation("io.opencensus:opencensus-impl:0.21.0")
+    implementation("io.opencensus:opencensus-contrib-zpages:0.21.0")
 
     implementation("com.github.oshi:oshi-core:3.13.2")
 }
