@@ -296,7 +296,6 @@ public class ClassNameUtils {
         switch (c) {
           case '?':
             if (indent == 0) {
-              sb.append(CAPTURE_OF);
               sb.append(c);
               wild = true;
             } else {

@@ -24,15 +24,15 @@ public class ClassNameUtilsTest {
   public void parseTypeParameter2() throws Exception {
     String name = "java.util.Enumeration<? extends ZipEntry>";
     List<String> typeParams = ClassNameUtils.parseTypeParameter(name);
-    assertEquals("capture of ? extends ZipEntry", typeParams.get(0));
+    assertEquals("? extends ZipEntry", typeParams.get(0));
   }
 
   @Test
   public void parseTypeParameter3() throws Exception {
     String name = "java.util.Map<? extends String, ? extends Long>";
     List<String> typeParams = ClassNameUtils.parseTypeParameter(name);
-    assertEquals("capture of ? extends String", typeParams.get(0));
-    assertEquals("capture of ? extends Long", typeParams.get(1));
+    assertEquals("? extends String", typeParams.get(0));
+    assertEquals("? extends Long", typeParams.get(1));
   }
 
   @Test
@@ -47,8 +47,8 @@ public class ClassNameUtilsTest {
   public void parseTypeParameter5() throws Exception {
     String name = "java.util.Map<? extends List<String>, ? extends Long>";
     List<String> typeParams = ClassNameUtils.parseTypeParameter(name);
-    assertEquals("capture of ? extends List<String>", typeParams.get(0));
-    assertEquals("capture of ? extends Long", typeParams.get(1));
+    assertEquals("? extends List<String>", typeParams.get(0));
+    assertEquals("? extends Long", typeParams.get(1));
   }
 
   @Test
