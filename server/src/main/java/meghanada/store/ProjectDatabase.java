@@ -55,8 +55,8 @@ public class ProjectDatabase {
   private static final String STORE_NAME = "meghanadaStore";
   private static final Logger log = LogManager.getLogger(ProjectDatabase.class);
 
-  private static final int MERGE_SIZE = 32;
-  private static final int BURST_LIMIT = 32;
+  private static final int MERGE_SIZE = 16;
+  private static final int BURST_LIMIT = 16;
 
   private static ProjectDatabase projectDatabase;
   private static final AtomicLong seq = new AtomicLong(1);
