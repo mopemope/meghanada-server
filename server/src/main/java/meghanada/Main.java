@@ -6,7 +6,12 @@ import io.opencensus.trace.config.TraceConfig;
 import io.opencensus.trace.samplers.Samplers;
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Method;
 import java.net.Socket;
+import java.net.URL;
+import java.net.URLClassLoader;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Objects;
 import meghanada.config.Config;
 import meghanada.server.Server;
@@ -18,7 +23,6 @@ import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
-import org.apache.commons.cli.ParseException;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -48,11 +52,11 @@ public class Main {
     return version;
   }
 
-  public static void main(String[] args) throws ParseException, IOException {
+  public static void main(String[] args) throws Exception {
     int size = Runtime.getRuntime().availableProcessors() * 2;
     System.setProperty(
         "java.util.concurrent.ForkJoinPool.common.parallelism", Integer.toString(size));
-
+    setClasspath();
     final String version = getVersion();
     System.setProperty("meghanada-server.version", version);
 
@@ -70,7 +74,6 @@ public class Main {
       System.out.println(version);
       return;
     }
-
     Runtime.getRuntime()
         .addShutdownHook(
             new Thread(
@@ -221,5 +224,18 @@ public class Main {
       port = socket.getLocalPort();
     }
     return port;
+  }
+
+  private static void setClasspath() throws Exception {
+    String home = System.getProperty("java.home");
+    String parent = new File(home).getParent();
+    Path path = Paths.get(parent, "lib", "tools.jar");
+    path = path.normalize();
+    File file = path.toFile();
+    if (file.exists()) {
+      Method method = URLClassLoader.class.getDeclaredMethod("addURL", URL.class);
+      method.setAccessible(true);
+      method.invoke(ClassLoader.getSystemClassLoader(), file.toURI().toURL());
+    }
   }
 }
