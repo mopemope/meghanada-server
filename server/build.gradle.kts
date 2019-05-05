@@ -75,10 +75,10 @@ dependencies {
 
     implementation("com.android.tools.build:builder-model:3.4.0")
     implementation("io.takari.junit:takari-cpsuite:1.2.7")
-    implementation("org.jboss.windup.decompiler:decompiler-api:4.2.0.Final")
-    implementation("org.jboss.windup.decompiler:decompiler-fernflower:4.2.0.Final")
+    implementation("org.jboss.windup.decompiler:decompiler-api:4.2.1.Final")
+    implementation("org.jboss.windup.decompiler:decompiler-fernflower:4.2.1.Final")
     implementation("com.google.code.findbugs:jsr305:3.0.2")
-    implementation("org.eclipse.jdt:org.eclipse.jdt.core:3.16.0")
+    implementation("org.eclipse.jdt:org.eclipse.jdt.core:3.17.0")
     implementation("de.ruedigermoeller:fst:2.56")
 
     implementation("org.jetbrains.xodus:xodus-query:$xodusVersion")
