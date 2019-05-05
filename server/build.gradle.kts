@@ -14,7 +14,7 @@ plugins {
     id("com.jfrog.bintray").version("1.8.4")
 }
 
-val group = "meghanada"
+val group = "io.github.mopemope"
 var serverVersion = "1.1.0"
 var buildVersion = "release"
 
