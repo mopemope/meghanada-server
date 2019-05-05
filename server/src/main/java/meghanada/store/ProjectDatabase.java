@@ -5,7 +5,6 @@ import static java.util.Objects.nonNull;
 import static java.util.Objects.requireNonNull;
 
 import com.google.common.base.MoreObjects;
-import com.google.common.base.Stopwatch;
 import com.google.common.hash.Hashing;
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -220,8 +219,7 @@ public class ProjectDatabase {
             while (!this.isTerminated) {
               try {
 
-                StoreRequest req = blockingQueue.take();
-                Stopwatch stopwatch = Stopwatch.createStarted();
+                StoreRequest req = blockingQueue.poll(10, TimeUnit.SECONDS);
                 if (nonNull(req) && !req.isShutdown()) {
                   mergeAndStore(req);
                 }
