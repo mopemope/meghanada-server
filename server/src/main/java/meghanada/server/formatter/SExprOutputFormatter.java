@@ -168,7 +168,7 @@ public class SExprOutputFormatter implements OutputFormatter {
                   String returnType = d.getReturnType();
                   String anno =
                       ClassNameUtils.getAllSimpleName(returnType) + " (" + d.getType() + ")";
-                  if (type.equals("CLASS")) {
+                  if (type.equals("CLASS") || type.equals("IMPORT")) {
                     anno = ClassNameUtils.getPackage(d.getDeclaration()) + " (" + d.getType() + ")";
                   }
                   String name = toSimpleName(d.getName());
