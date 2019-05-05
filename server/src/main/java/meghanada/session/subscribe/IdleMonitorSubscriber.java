@@ -1,10 +1,9 @@
 package meghanada.session.subscribe;
 
+import com.google.common.collect.Sets;
 import com.google.common.eventbus.Subscribe;
 import java.time.Instant;
-import java.util.Collections;
 import java.util.Iterator;
-import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import meghanada.cache.GlobalCache;
@@ -26,7 +25,7 @@ public class IdleMonitorSubscriber extends AbstractSubscriber {
   private static final long WARMUP_INTERVAL = 15000;
 
   private int idleTime = 10;
-  private Set<String> queue = Collections.synchronizedSet(new LinkedHashSet<>(32));
+  private Set<String> queue = Sets.newConcurrentHashSet();
   private final SessionEventBus.IdleTimer idleTimer;
   private boolean started;
   private final CpuMonitor monitor;
