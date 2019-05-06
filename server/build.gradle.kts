@@ -138,6 +138,7 @@ tasks {
 
     withType<ShadowJar> {
         mergeServiceFiles()
+        classifier = null
         exclude("tools.jar")
         relocate("junit.framework", "meghanada.junit.framework")
         relocate("com.github.javaparser", "meghanada.com.github.javaparser")
