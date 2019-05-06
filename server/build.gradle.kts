@@ -147,7 +147,7 @@ tasks {
     }
 
     withType<Test> {
-        jvmArgs("-XX:SoftRefLRUPolicyMSPerMB=50", "-XX:+UseConcMarkSweepGC", "-Xverify:none")
+        jvmArgs("-Xverify:none")
         testLogging {
             events("PASSED", "FAILED", "SKIPPED")
             setExceptionFormat("full")
