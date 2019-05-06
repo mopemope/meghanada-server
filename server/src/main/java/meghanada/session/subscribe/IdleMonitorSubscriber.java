@@ -7,7 +7,6 @@ import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import meghanada.cache.GlobalCache;
-import meghanada.config.Config;
 import meghanada.session.Session;
 import meghanada.session.SessionEventBus;
 import meghanada.system.Executor;
@@ -20,11 +19,11 @@ import oshi.hardware.HardwareAbstractionLayer;
 public class IdleMonitorSubscriber extends AbstractSubscriber {
 
   private static final Logger log = LogManager.getLogger(IdleMonitorSubscriber.class);
-  private static final double CPU_LIMIT = 0.1;
+  private static final double CPU_LIMIT = 0.2;
   private static final long IDLE_CHECK_INTERVAL = 1000;
-  private static final long WARMUP_INTERVAL = 15000;
+  private static final long WARMUP_INTERVAL = 3000;
 
-  private int idleTime = 10;
+  private int idleTime = 1;
   private Set<String> queue = Sets.newConcurrentHashSet();
   private final SessionEventBus.IdleTimer idleTimer;
   private boolean started;
@@ -53,11 +52,6 @@ public class IdleMonitorSubscriber extends AbstractSubscriber {
     } catch (InterruptedException e) {
       log.catching(e);
       throw new RuntimeException(e);
-    }
-    Config config = Config.load();
-    this.idleTime = config.getIdleCacheInterval();
-    if (this.idleTime < 1) {
-      this.idleTime = 1;
     }
     while (this.started) {
       try {

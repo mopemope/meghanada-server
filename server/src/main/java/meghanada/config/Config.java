@@ -469,10 +469,6 @@ public class Config {
     return c.getBoolean("idle-cache");
   }
 
-  public int getIdleCacheInterval() {
-    return c.getInt("idle-cache-interval");
-  }
-
   public List<String> searchStaticMethodClasses() {
     final String classes = c.getString("search-static-method-classes");
     return commaSplitter.trimResults().omitEmptyStrings().splitToList(classes);
