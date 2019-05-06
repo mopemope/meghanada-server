@@ -29,7 +29,7 @@ public class JavaCompletionTest extends GradleTestBase {
     CompileResult compileResult2 = project.compileTestJava();
     Config config = Config.load();
     config.update("camel-case-completion", false);
-    Thread.sleep(5 * 1000);
+    Thread.sleep(1000 * 4);
   }
 
   @AfterClass

@@ -31,7 +31,7 @@ public class JavaImportCompletionTest extends GradleTestBase {
   public static void setup() throws Exception {
     GradleTestBase.setupReflector(false);
     CachedASMReflector.getInstance().scanAllStaticMembers();
-    Thread.sleep(1000 * 5);
+    Thread.sleep(1000 * 4);
   }
 
   @AfterClass
