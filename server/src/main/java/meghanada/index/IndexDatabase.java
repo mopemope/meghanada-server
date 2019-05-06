@@ -26,6 +26,7 @@ import meghanada.system.Executor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.index.IndexNotFoundException;
 import org.apache.lucene.util.BytesRef;
 
 public class IndexDatabase {
@@ -211,45 +212,53 @@ public class IndexDatabase {
       final String memberTypeQuery,
       final String nameQuery) {
     this.open();
-    return this.searcher.searchInTransaction(
-        () -> {
-          try {
-            String codeField = IndexableWord.Field.CODE.getName();
-            List<String> queryList = new ArrayList<>(4);
-            if (!isNullOrEmpty(classQuery)) {
-              queryList.add("cdc:" + classQuery);
+    try {
+      return this.searcher.searchInTransaction(
+          () -> {
+            try {
+              String codeField = IndexableWord.Field.CODE.getName();
+              List<String> queryList = new ArrayList<>(4);
+              if (!isNullOrEmpty(classQuery)) {
+                queryList.add("cdc:" + classQuery);
+              }
+              if (!isNullOrEmpty(modifierQuery)) {
+                queryList.add("modifier:" + modifierQuery);
+              }
+              if (!isNullOrEmpty(memberTypeQuery)) {
+                queryList.add("memberType:" + memberTypeQuery);
+              }
+              if (!isNullOrEmpty(nameQuery)) {
+                queryList.add("completion:" + nameQuery);
+              }
+              final String query = Joiner.on(" AND ").join(queryList);
+              log.debug("query: {}", query);
+              return this.searcher.search(
+                  codeField,
+                  query,
+                  maxHits,
+                  d -> {
+                    BytesRef value = d.getBinaryValue("binary");
+                    if (isNull(value)) {
+                      return Optional.empty();
+                    }
+                    byte[] b = value.bytes;
+                    if (isNull(b)) {
+                      return Optional.empty();
+                    }
+                    return Optional.ofNullable(Serializer.asObject(b, MemberDescriptor.class));
+                  });
+            } catch (Throwable e) {
+              log.warn(e);
+              return Collections.emptyList();
             }
-            if (!isNullOrEmpty(modifierQuery)) {
-              queryList.add("modifier:" + modifierQuery);
-            }
-            if (!isNullOrEmpty(memberTypeQuery)) {
-              queryList.add("memberType:" + memberTypeQuery);
-            }
-            if (!isNullOrEmpty(nameQuery)) {
-              queryList.add("completion:" + nameQuery);
-            }
-            final String query = Joiner.on(" AND ").join(queryList);
-            log.debug("query: {}", query);
-            return this.searcher.search(
-                codeField,
-                query,
-                maxHits,
-                d -> {
-                  BytesRef value = d.getBinaryValue("binary");
-                  if (isNull(value)) {
-                    return Optional.empty();
-                  }
-                  byte[] b = value.bytes;
-                  if (isNull(b)) {
-                    return Optional.empty();
-                  }
-                  return Optional.ofNullable(Serializer.asObject(b, MemberDescriptor.class));
-                });
-          } catch (Throwable e) {
-            log.warn(e);
-            return Collections.emptyList();
-          }
-        });
+          });
+    } catch (UncheckedIOException e) {
+      IOException cause = e.getCause();
+      if (cause instanceof IndexNotFoundException) {
+        return Collections.emptyList();
+      }
+      throw e;
+    }
   }
 
   public static class IndexEvent {
