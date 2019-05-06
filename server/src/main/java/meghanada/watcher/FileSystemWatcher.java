@@ -3,6 +3,7 @@ package meghanada.watcher;
 import com.google.common.base.MoreObjects;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.ClosedWatchServiceException;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.FileVisitResult;
@@ -182,13 +183,17 @@ public class FileSystemWatcher {
 
     void register(final Path path) throws IOException {
       if (meghanada.utils.FileUtils.filterFile(path.toFile())) {
-        final WatchKey key =
-            path.register(
-                this.watchService,
-                StandardWatchEventKinds.ENTRY_CREATE,
-                StandardWatchEventKinds.ENTRY_MODIFY,
-                StandardWatchEventKinds.ENTRY_DELETE);
-        this.watchKeys.put(key, path);
+        try {
+          WatchKey key =
+              path.register(
+                  this.watchService,
+                  StandardWatchEventKinds.ENTRY_CREATE,
+                  StandardWatchEventKinds.ENTRY_MODIFY,
+                  StandardWatchEventKinds.ENTRY_DELETE);
+          this.watchKeys.put(key, path);
+        } catch (ClosedWatchServiceException e) {
+          log.warn(e.getMessage());
+        }
       }
     }
 

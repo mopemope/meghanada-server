@@ -11,6 +11,7 @@ import java.io.InputStreamReader;
 import java.io.UncheckedIOException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.AccessDeniedException;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
@@ -41,6 +42,7 @@ import meghanada.config.Config;
 import meghanada.formatter.JavaFormatter;
 import meghanada.store.ProjectDatabaseHelper;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.message.EntryMessage;
@@ -60,7 +62,10 @@ public final class FileUtils {
 
   public static String getChecksum(final File file) throws IOException {
     final EntryMessage entryMessage = log.traceEntry("file={}", file);
-
+    if (!file.exists()) {
+      log.traceExit(entryMessage);
+      return RandomStringUtils.random(10);
+    }
     try {
 
       final MessageDigest md = MessageDigest.getInstance(ALGORITHM_SHA_512);
@@ -113,7 +118,14 @@ public final class FileUtils {
           .map(Path::toFile)
           .filter(file -> file.isFile() && file.getName().endsWith(ext))
           .collect(Collectors.toList());
+    } catch (UncheckedIOException e) {
+      IOException cause = e.getCause();
+      if (cause instanceof AccessDeniedException) {
+        return Collections.emptyList();
+      }
+      throw e;
     } catch (IOException e) {
+      log.warn("@@ {}", e.getMessage());
       throw new UncheckedIOException(e);
     }
   }
