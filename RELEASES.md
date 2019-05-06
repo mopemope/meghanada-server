@@ -1,4 +1,4 @@
-# Version 1.1.0 (2019-05-XX)
+# Version 1.1.0 (2019-05-06)
 
 * support open j9 (experimental).
 * fix some bugs and improve stability.
