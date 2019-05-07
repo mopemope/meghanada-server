@@ -73,10 +73,7 @@ class AndroidSupport {
 
   static AndroidProject getAndroidProject(
       final File root, final org.gradle.tooling.model.GradleProject gradleProject) {
-    String path = gradleProject.getPath();
-    String name = path.substring(1);
-    File childDir = new File(root, name);
-    GradleConnector childConnector = GradleConnector.newConnector().forProjectDirectory(childDir);
+    GradleConnector childConnector = GradleConnector.newConnector().forProjectDirectory(root);
     ProjectConnection childConnection = childConnector.connect();
     try {
       ModelBuilder<AndroidProject> modelBuilder =
