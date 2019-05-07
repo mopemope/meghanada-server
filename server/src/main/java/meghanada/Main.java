@@ -1,5 +1,7 @@
 package meghanada;
 
+import static java.util.Objects.isNull;
+
 import io.opencensus.contrib.zpages.ZPageHandlers;
 import io.opencensus.trace.Tracing;
 import io.opencensus.trace.config.TraceConfig;
@@ -36,7 +38,6 @@ public class Main {
 
   public static final String VERSION = "1.1.1";
   private static final Logger log = LogManager.getLogger(Main.class);
-  private static final int ZPAGE_PORT = 60981;
   private static String version;
 
   public static String getVersion() throws IOException {
@@ -129,10 +130,15 @@ public class Main {
     traceConfig.updateActiveTraceParams(
         traceConfig.getActiveTraceParams().toBuilder().setSampler(Samplers.alwaysSample()).build());
     // LoggingTraceExporter.register();
-    // int zpagePort = getFreePort();
-    ZPageHandlers.startHttpServerAndRegisterAll(ZPAGE_PORT);
-    System.setProperty("meghanada.zpage.port", Integer.toString(ZPAGE_PORT));
-
+    String zPort = System.getProperty("meghanada.zpage.port");
+    if (isNull(zPort)) {
+      int zpagePort = getFreePort();
+      ZPageHandlers.startHttpServerAndRegisterAll(zpagePort);
+      System.setProperty("meghanada.zpage.port", Integer.toString(zpagePort));
+    } else {
+      int zpagePort = Integer.parseInt(zPort);
+      ZPageHandlers.startHttpServerAndRegisterAll(zpagePort);
+    }
     String port = "0";
     String projectRoot = "./";
     String fmt = "sexp";
