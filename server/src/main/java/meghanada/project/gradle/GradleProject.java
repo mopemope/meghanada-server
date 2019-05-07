@@ -102,12 +102,9 @@ public class GradleProject extends Project {
         break;
       }
 
-      final File gradle = new File(dir, Project.GRADLE_PROJECT_FILE);
-      if (!gradle.exists()) {
-        break;
-      }
-      final File gradleKts = new File(dir, Project.GRADLE_KTS_PROJECT_FILE);
-      if (!gradleKts.exists()) {
+      File gradle = new File(dir, Project.GRADLE_PROJECT_FILE);
+      File gradleKts = new File(dir, Project.GRADLE_KTS_PROJECT_FILE);
+      if (!gradle.exists() && !gradleKts.exists()) {
         break;
       }
       result = dir;

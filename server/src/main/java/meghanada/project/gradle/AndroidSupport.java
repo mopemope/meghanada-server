@@ -73,7 +73,10 @@ class AndroidSupport {
 
   static AndroidProject getAndroidProject(
       final File root, final org.gradle.tooling.model.GradleProject gradleProject) {
-    GradleConnector childConnector = GradleConnector.newConnector().forProjectDirectory(root);
+    String path = gradleProject.getPath();
+    String name = path.substring(1);
+    File childDir = new File(root, name);
+    GradleConnector childConnector = GradleConnector.newConnector().forProjectDirectory(childDir);
     ProjectConnection childConnection = childConnector.connect();
     try {
       ModelBuilder<AndroidProject> modelBuilder =
@@ -157,18 +160,49 @@ class AndroidSupport {
     ProductFlavorContainer defaultConfig = androidProject.getDefaultConfig();
 
     if (isNull(this.project.getOutput())) {
-      File buildDir = androidProject.getBuildFolder().getCanonicalFile();
-      String build =
-          Joiner.on(File.separator).join(buildDir, INTERMEDIATE_DIR, CLASSES_DIR, DEBUG_DIR);
-      this.project.setOutput(project.normalize(build));
+      if (this.modelVersion.startsWith("3.4.")) {
+        // 3.4.x
+        File buildDir = androidProject.getBuildFolder().getCanonicalFile();
+        String build =
+            Joiner.on(File.separator)
+                .join(
+                    buildDir,
+                    INTERMEDIATE_DIR,
+                    "javac",
+                    DEBUG_DIR,
+                    "compileDebugJavaWithJavac",
+                    CLASSES_DIR);
+        this.project.setOutput(project.normalize(build));
+      } else {
+        File buildDir = androidProject.getBuildFolder().getCanonicalFile();
+        String build =
+            Joiner.on(File.separator).join(buildDir, INTERMEDIATE_DIR, CLASSES_DIR, DEBUG_DIR);
+        this.project.setOutput(project.normalize(build));
+      }
     }
 
     if (isNull(this.project.getTestOutput())) {
-      File buildDir = androidProject.getBuildFolder().getCanonicalFile();
-      String build =
-          Joiner.on(File.separator)
-              .join(buildDir, INTERMEDIATE_DIR, CLASSES_DIR, TEST_DIR, DEBUG_DIR);
-      this.project.setTestOutput(this.project.normalize(build));
+      if (this.modelVersion.startsWith("3.4.")) {
+        // intermediates/javac/debugUnitTest/compileDebugUnitTestJavaWithJavac/classes
+        // 3.4.x
+        File buildDir = androidProject.getBuildFolder().getCanonicalFile();
+        String build =
+            Joiner.on(File.separator)
+                .join(
+                    buildDir,
+                    INTERMEDIATE_DIR,
+                    "javac",
+                    "debugUnitTest",
+                    "compileDebugUnitTestJavaWithJavac",
+                    CLASSES_DIR);
+        this.project.setTestOutput(this.project.normalize(build));
+      } else {
+        File buildDir = androidProject.getBuildFolder().getCanonicalFile();
+        String build =
+            Joiner.on(File.separator)
+                .join(buildDir, INTERMEDIATE_DIR, CLASSES_DIR, TEST_DIR, DEBUG_DIR);
+        this.project.setTestOutput(this.project.normalize(build));
+      }
     }
 
     Map<String, Set<File>> androidSources = AndroidSupport.getAndroidSources(defaultConfig);
@@ -197,17 +231,45 @@ class AndroidSupport {
     }
 
     if (isNull(this.project.getOutput())) {
-      String buildDir = new File(this.project.getProjectRoot(), BUILD_DIR).getCanonicalPath();
-      String build =
-          Joiner.on(File.separator).join(buildDir, INTERMEDIATE_DIR, CLASSES_DIR, DEBUG_DIR);
-      this.project.setOutput(this.project.normalize(build));
+      if (this.modelVersion.startsWith("3.4.")) {
+        String buildDir = new File(this.project.getProjectRoot(), BUILD_DIR).getCanonicalPath();
+        String build =
+            Joiner.on(File.separator)
+                .join(
+                    buildDir,
+                    INTERMEDIATE_DIR,
+                    "javac",
+                    DEBUG_DIR,
+                    "compileDebugJavaWithJavac",
+                    CLASSES_DIR);
+        this.project.setOutput(this.project.normalize(build));
+      } else {
+        String buildDir = new File(this.project.getProjectRoot(), BUILD_DIR).getCanonicalPath();
+        String build =
+            Joiner.on(File.separator).join(buildDir, INTERMEDIATE_DIR, CLASSES_DIR, DEBUG_DIR);
+        this.project.setOutput(this.project.normalize(build));
+      }
     }
     if (isNull(this.project.getTestOutput())) {
-      String buildDir = new File(this.project.getProjectRoot(), BUILD_DIR).getCanonicalPath();
-      String build =
-          Joiner.on(File.separator)
-              .join(buildDir, INTERMEDIATE_DIR, CLASSES_DIR, TEST_DIR, DEBUG_DIR);
-      this.project.setTestOutput(this.project.normalize(build));
+      if (this.modelVersion.startsWith("3.4.")) {
+        String buildDir = new File(this.project.getProjectRoot(), BUILD_DIR).getCanonicalPath();
+        String build =
+            Joiner.on(File.separator)
+                .join(
+                    buildDir,
+                    INTERMEDIATE_DIR,
+                    "javac",
+                    "debugUnitTest",
+                    "compileDebugUnitTestJavaWithJavac",
+                    CLASSES_DIR);
+        this.project.setTestOutput(this.project.normalize(build));
+      } else {
+        String buildDir = new File(this.project.getProjectRoot(), BUILD_DIR).getCanonicalPath();
+        String build =
+            Joiner.on(File.separator)
+                .join(buildDir, INTERMEDIATE_DIR, CLASSES_DIR, TEST_DIR, DEBUG_DIR);
+        this.project.setTestOutput(this.project.normalize(build));
+      }
     }
 
     // load exists aar
