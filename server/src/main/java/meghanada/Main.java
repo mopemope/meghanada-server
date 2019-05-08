@@ -55,6 +55,10 @@ public class Main {
         "use java runtime: {} {}",
         System.getProperty("java.runtime.name"),
         System.getProperty("java.runtime.version"));
+    log.info(
+        "use java vm: {} {}",
+        System.getProperty("java.vm.name"),
+        System.getProperty("java.vm.version"));
     int size = Runtime.getRuntime().availableProcessors() * 2;
     System.setProperty(
         "java.util.concurrent.ForkJoinPool.common.parallelism", Integer.toString(size));
