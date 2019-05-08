@@ -50,6 +50,11 @@ public class Main {
   }
 
   public static void main(String[] args) throws Exception {
+    log.info("use java home: {}", System.getProperty("java.home"));
+    log.info(
+        "use java runtime: {} {}",
+        System.getProperty("java.runtime.name"),
+        System.getProperty("java.runtime.version"));
     int size = Runtime.getRuntime().availableProcessors() * 2;
     System.setProperty(
         "java.util.concurrent.ForkJoinPool.common.parallelism", Integer.toString(size));
