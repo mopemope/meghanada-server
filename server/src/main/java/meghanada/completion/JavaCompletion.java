@@ -566,7 +566,13 @@ public class JavaCompletion {
                               && md.getName().equals(var)) {
                             String returnType = md.getReturnType();
                             Set<MemberDescriptor> result =
-                                doReflect(returnType, m -> m.isPublic() && !m.isStatic())
+                                doReflect(
+                                        returnType,
+                                        m ->
+                                            m.getMemberType()
+                                                    != CandidateUnit.MemberType.CONSTRUCTOR
+                                                && m.isPublic()
+                                                && !m.isStatic())
                                     .collect(Collectors.toSet());
                             res.addAll(result);
                           }
