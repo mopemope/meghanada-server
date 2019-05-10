@@ -172,7 +172,7 @@ public class SExprOutputFormatter implements OutputFormatter {
                     anno = ClassNameUtils.getPackage(d.getDeclaration()) + " (" + d.getType() + ")";
                   }
                   String name = toSimpleName(d.getName());
-                  if (type.equals("METHOD")) {
+                  if (type.equals("METHOD") || type.equals("CONSTRUCTOR")) {
                     String declaration = d.getDisplayDeclaration();
                     int i = declaration.indexOf(name);
                     name = name + declaration.substring(i + name.length());
