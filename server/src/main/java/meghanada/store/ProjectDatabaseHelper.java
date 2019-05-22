@@ -288,26 +288,30 @@ public class ProjectDatabaseHelper {
   }
 
   public static boolean saveChecksumMap(String projectRoot, Map<String, String> map) {
-    ProjectDatabase database = ProjectDatabase.getInstance();
+    try (TelemetryUtils.ScopedSpan scope =
+        TelemetryUtils.startScopedSpan("ProjectDatabaseHelper.saveChecksumMap")) {
 
-    return database.execute(
-        txn -> {
-          EntityIterable entities = txn.find(Project.ENTITY_TYPE, ID, projectRoot);
+      ProjectDatabase database = ProjectDatabase.getInstance();
 
-          Entity entity = entities.getFirst();
-          if (isNull(entity)) {
-            return false;
-          }
-          try {
-            ProjectDatabase.setSerializeBlobData(entity, BLOB_PROP_CHECKSUM, map);
-          } catch (IOException e) {
-            log.catching(e);
-            txn.abort();
-            return false;
-          }
-          // txn.saveEntity(entity);
-          return true;
-        });
+      return database.execute(
+          txn -> {
+            EntityIterable entities = txn.find(Project.ENTITY_TYPE, ID, projectRoot);
+
+            Entity entity = entities.getFirst();
+            if (isNull(entity)) {
+              return false;
+            }
+            try {
+              ProjectDatabase.setSerializeBlobData(entity, BLOB_PROP_CHECKSUM, map);
+            } catch (IOException e) {
+              log.catching(e);
+              txn.abort();
+              return false;
+            }
+            // txn.saveEntity(entity);
+            return true;
+          });
+    }
   }
 
   @Nonnull
@@ -337,25 +341,29 @@ public class ProjectDatabaseHelper {
   }
 
   public static boolean saveCallerMap(String projectRoot, Map<String, Set<String>> map) {
-    ProjectDatabase database = ProjectDatabase.getInstance();
+    try (TelemetryUtils.ScopedSpan scope =
+        TelemetryUtils.startScopedSpan("ProjectDatabaseHelper.saveCallerMap")) {
 
-    return database.execute(
-        txn -> {
-          EntityIterable entities = txn.find(Project.ENTITY_TYPE, ID, projectRoot);
+      ProjectDatabase database = ProjectDatabase.getInstance();
 
-          Entity entity = entities.getFirst();
-          if (isNull(entity)) {
-            return false;
-          }
-          try {
-            ProjectDatabase.setSerializeBlobData(entity, BLOB_PROP_CALLER, map);
-          } catch (IOException e) {
-            log.catching(e);
-            txn.abort();
-            return false;
-          }
-          return true;
-        });
+      return database.execute(
+          txn -> {
+            EntityIterable entities = txn.find(Project.ENTITY_TYPE, ID, projectRoot);
+
+            Entity entity = entities.getFirst();
+            if (isNull(entity)) {
+              return false;
+            }
+            try {
+              ProjectDatabase.setSerializeBlobData(entity, BLOB_PROP_CALLER, map);
+            } catch (IOException e) {
+              log.catching(e);
+              txn.abort();
+              return false;
+            }
+            return true;
+          });
+    }
   }
 
   @Nonnull

@@ -142,64 +142,73 @@ public class ProjectDatabase {
 
   private static long putObject(Storable s, boolean allowUpdate, StoreTransaction txn) {
 
-    String entityType = s.getEntityType();
-    EntityId entityId = s.getEntityId();
-    String id = s.getStoreId();
-    Entity entity = null;
+    try (TelemetryUtils.ScopedSpan ss =
+        TelemetryUtils.startScopedSpanLow("ProjectDatabase.putObject")) {
 
-    if (nonNull(entityId)) {
-      try {
-        entity = txn.getEntity(entityId);
-      } catch (EntityStoreException e) {
-        // re-create
+      String entityType = s.getEntityType();
+      EntityId entityId = s.getEntityId();
+      String id = s.getStoreId();
+      Entity entity = null;
+
+      if (nonNull(entityId)) {
+        try {
+          entity = txn.getEntity(entityId);
+        } catch (EntityStoreException e) {
+          // re-create
+        }
+      } else {
+        EntityIterable it = txn.find(entityType, ID, id);
+        entity = it.getFirst();
       }
-    } else {
-      EntityIterable it = txn.find(entityType, ID, id);
-      entity = it.getFirst();
-    }
 
-    if (!allowUpdate && nonNull(entity)) {
-      // find update entry
+      if (!allowUpdate && nonNull(entity)) {
+        // find update entry
+        s.onSuccess(entity);
+        return entity.getId().getLocalId();
+      }
+
+      if (isNull(entity)) {
+        entity = txn.newEntity(entityType);
+        entity.setProperty(ID, id);
+      }
+
+      s.store(txn, entity);
+
+      if (s instanceof Serializable) {
+        try {
+          setSerializeBlobData(entity, SERIALIZE_KEY, s);
+        } catch (IOException e) {
+          log.catching(e);
+          txn.abort();
+          return -1;
+        }
+      }
+      // txn.saveEntity(entity);
       s.onSuccess(entity);
       return entity.getId().getLocalId();
     }
-
-    if (isNull(entity)) {
-      entity = txn.newEntity(entityType);
-      entity.setProperty(ID, id);
-    }
-
-    s.store(txn, entity);
-
-    if (s instanceof Serializable) {
-      try {
-        setSerializeBlobData(entity, SERIALIZE_KEY, s);
-      } catch (IOException e) {
-        log.catching(e);
-        txn.abort();
-        return -1;
-      }
-    }
-    // txn.saveEntity(entity);
-    s.onSuccess(entity);
-    return entity.getId().getLocalId();
   }
 
   public static void setSerializeBlobData(Entity entity, String prop, Object obj)
       throws IOException {
-    if (isNull(projectDatabase) || projectDatabase.isTerminated) {
-      return;
-    }
-    requireNonNull(entity, "require entity");
-    requireNonNull(obj, "require obj");
-    requireNonNull(prop, "require prop");
 
-    byte[] bytes = Serializer.asByte(obj);
-    requireNonNull(bytes);
+    try (TelemetryUtils.ScopedSpan ss =
+        TelemetryUtils.startScopedSpan("ProjectDatabase.setSerializeBlobData")) {
 
-    try (InputStream in = new ByteArrayInputStream(bytes)) {
-      requireNonNull(in);
-      entity.setBlob(prop, in);
+      if (isNull(projectDatabase) || projectDatabase.isTerminated) {
+        return;
+      }
+      requireNonNull(entity, "require entity");
+      requireNonNull(obj, "require obj");
+      requireNonNull(prop, "require prop");
+
+      byte[] bytes = Serializer.asByte(obj);
+      requireNonNull(bytes);
+
+      try (InputStream in = new ByteArrayInputStream(bytes)) {
+        requireNonNull(in);
+        entity.setBlob(prop, in);
+      }
     }
   }
 
@@ -402,7 +411,10 @@ public class ProjectDatabase {
   }
 
   public long storeObject(Storable s, boolean allowUpdate) {
-    return this.entityStore.computeInTransaction(txn -> putObject(s, allowUpdate, txn));
+    try (TelemetryUtils.ScopedSpan ss =
+        TelemetryUtils.startScopedSpan("ProjectDatabase.storeObject")) {
+      return this.entityStore.computeInTransaction(txn -> putObject(s, allowUpdate, txn));
+    }
   }
 
   public void asyncStoreObject(Storable s, boolean allowUpdate) {
@@ -451,9 +463,11 @@ public class ProjectDatabase {
             while (!this.isTerminated && start) {
               try {
                 StoreRequest req = blockingQueue.poll(3, TimeUnit.SECONDS);
+
                 try (TelemetryUtils.ParentSpan span =
                         TelemetryUtils.startExplicitParentSpan("ProjectDatabase/runWokrker");
                     TelemetryUtils.ScopedSpan scope = TelemetryUtils.withSpan(span.getSpan())) {
+
                   if (nonNull(req) && !req.isShutdown()) {
                     mergeAndStore(req);
                   } else {

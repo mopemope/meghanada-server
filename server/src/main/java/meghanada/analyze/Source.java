@@ -686,7 +686,7 @@ public class Source implements Serializable, Storable, SearchIndexable {
 
   public String getImportedClassFQCN(final String shortName, @Nullable final String defaultValue) {
     try (TelemetryUtils.ScopedSpan scope =
-        TelemetryUtils.startScopedSpan("Source.getImportedClassFQCN")) {
+        TelemetryUtils.startScopedSpanLow("Source.getImportedClassFQCN")) {
       scope.addAnnotation(
           TelemetryUtils.annotationBuilder()
               .put("shortName", shortName)

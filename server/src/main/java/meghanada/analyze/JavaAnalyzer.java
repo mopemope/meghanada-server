@@ -179,9 +179,9 @@ public class JavaAnalyzer {
 
         final Map<File, Source> analyzedMap = analyze(parsedIter, errorFiles);
 
-        try (TelemetryUtils.ScopedSpan child2 =
-            TelemetryUtils.startScopedSpan("javacTask.generate")) {
-          if (generate && !Config.load().useExternalBuilder()) {
+        if (generate && !Config.load().useExternalBuilder()) {
+          try (TelemetryUtils.ScopedSpan child2 =
+              TelemetryUtils.startScopedSpan("javacTask.generate")) {
             javacTask.generate();
             CachedASMReflector.getInstance().updateClassIndexFromDirectory();
           }

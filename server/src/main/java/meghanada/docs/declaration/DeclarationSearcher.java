@@ -37,22 +37,25 @@ public class DeclarationSearcher {
   }
 
   private static Optional<Declaration> searchFieldVar(Source source, Integer line, String symbol) {
-    return source
-        .getTypeScope(line)
-        .flatMap(
-            ts ->
-                ts.getField(symbol)
-                    .map(
-                        fv ->
-                            new Declaration(
-                                symbol, fv.fqcn, Declaration.Type.VAR, fv.argumentIndex)));
+    try (TelemetryUtils.ScopedSpan ss =
+        TelemetryUtils.startScopedSpan("DeclarationSearcher.searchFieldVar")) {
+      return source
+          .getTypeScope(line)
+          .flatMap(
+              ts ->
+                  ts.getField(symbol)
+                      .map(
+                          fv ->
+                              new Declaration(
+                                  symbol, fv.fqcn, Declaration.Type.VAR, fv.argumentIndex)));
+    }
   }
 
   private static Optional<Declaration> searchLocalVariable(
       Source source, Integer line, Integer column, String symbol) {
 
     try (TelemetryUtils.ScopedSpan ss =
-        TelemetryUtils.startScopedSpan("DeclarationSearcher.searchMethodCall")) {
+        TelemetryUtils.startScopedSpan("DeclarationSearcher.searchLocalVariable")) {
 
       ss.addAnnotation(
           TelemetryUtils.annotationBuilder()
@@ -152,27 +155,36 @@ public class DeclarationSearcher {
 
   private static Optional<MemberDescriptor> searchMethod(
       String declaringClass, String methodName, List<String> arguments) {
-    CachedASMReflector reflector = CachedASMReflector.getInstance();
 
-    for (MemberDescriptor desc : reflector.reflectMethods(declaringClass, methodName)) {
-      MethodDescriptor mDesc = (MethodDescriptor) desc;
-      if (ClassNameUtils.compareArgumentType(arguments, desc.getParameters(), mDesc.hasVarargs)) {
-        return Optional.of(desc);
+    try (TelemetryUtils.ScopedSpan ss =
+        TelemetryUtils.startScopedSpan("DeclarationSearcher.searchMethod")) {
+
+      CachedASMReflector reflector = CachedASMReflector.getInstance();
+      for (MemberDescriptor desc : reflector.reflectMethods(declaringClass, methodName)) {
+        MethodDescriptor mDesc = (MethodDescriptor) desc;
+        if (ClassNameUtils.compareArgumentType(arguments, desc.getParameters(), mDesc.hasVarargs)) {
+          return Optional.of(desc);
+        }
       }
+      return Optional.empty();
     }
-    return Optional.empty();
   }
 
   private static Optional<MemberDescriptor> searchConstructor(
       String declaringClass, List<String> arguments) {
-    CachedASMReflector reflector = CachedASMReflector.getInstance();
-    for (MemberDescriptor desc : reflector.reflectConstructors(declaringClass)) {
-      MethodDescriptor mDesc = (MethodDescriptor) desc;
-      if (ClassNameUtils.compareArgumentType(arguments, desc.getParameters(), mDesc.hasVarargs)) {
-        return Optional.of(desc);
+
+    try (TelemetryUtils.ScopedSpan ss =
+        TelemetryUtils.startScopedSpan("DeclarationSearcher.searchConstructor")) {
+
+      CachedASMReflector reflector = CachedASMReflector.getInstance();
+      for (MemberDescriptor desc : reflector.reflectConstructors(declaringClass)) {
+        MethodDescriptor mDesc = (MethodDescriptor) desc;
+        if (ClassNameUtils.compareArgumentType(arguments, desc.getParameters(), mDesc.hasVarargs)) {
+          return Optional.of(desc);
+        }
       }
+      return Optional.empty();
     }
-    return Optional.empty();
   }
 
   private static Optional<Declaration> searchMethodCall(
@@ -229,7 +241,7 @@ public class DeclarationSearcher {
       Source source, Integer line, Integer column, String symbol) {
 
     try (TelemetryUtils.ScopedSpan ss =
-        TelemetryUtils.startScopedSpan("DeclarationSearcher.searchMethodCall")) {
+        TelemetryUtils.startScopedSpan("DeclarationSearcher.searchClassOrInterface")) {
 
       ss.addAnnotation(
           TelemetryUtils.annotationBuilder()

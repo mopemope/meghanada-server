@@ -77,7 +77,7 @@ public class GlobalCache {
   public List<MemberDescriptor> getMemberDescriptors(final String fqcn) throws ExecutionException {
 
     try (TelemetryUtils.ScopedSpan scope =
-        TelemetryUtils.startScopedSpan("GlobalCache.getMemberDescriptors")) {
+        TelemetryUtils.startScopedSpanLow("GlobalCache.getMemberDescriptors")) {
 
       scope.addAnnotation(TelemetryUtils.annotationBuilder().put("fqcn", fqcn).build("args"));
 
@@ -159,9 +159,13 @@ public class GlobalCache {
   }
 
   public void saveSourceMap() {
-    Map<String, String> sourceMap = this.getSourceMapCache();
-    boolean b =
-        ProjectDatabaseHelper.saveSourceMap(projectSupplier.get().getProjectRootPath(), sourceMap);
+    try (TelemetryUtils.ScopedSpan scope =
+        TelemetryUtils.startScopedSpan("GlobalCache.saveSourceMap")) {
+      Map<String, String> sourceMap = this.getSourceMapCache();
+      boolean b =
+          ProjectDatabaseHelper.saveSourceMap(
+              projectSupplier.get().getProjectRootPath(), sourceMap);
+    }
   }
 
   public void shutdown() throws InterruptedException {

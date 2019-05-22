@@ -38,13 +38,16 @@ public class SourceCacheSubscriber {
   }
 
   private synchronized Map<String, String> getChecksumMap(Project project) {
-    if (this.checksums.containsKey(project)) {
-      return this.checksums.get(project);
+    try (TelemetryUtils.ScopedSpan scope =
+        TelemetryUtils.startScopedSpanLow("SourceCacheSubscriber.getChecksumMap")) {
+      if (this.checksums.containsKey(project)) {
+        return this.checksums.get(project);
+      }
+      Map<String, String> checksumMap =
+          ProjectDatabaseHelper.getChecksumMap(project.getProjectRootPath());
+      this.checksums.put(project, checksumMap);
+      return checksumMap;
     }
-    Map<String, String> checksumMap =
-        ProjectDatabaseHelper.getChecksumMap(project.getProjectRootPath());
-    this.checksums.put(project, checksumMap);
-    return checksumMap;
   }
 
   private void analyzed(final Source source, final boolean isDiagnostics) throws IOException {

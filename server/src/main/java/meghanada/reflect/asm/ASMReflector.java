@@ -444,7 +444,7 @@ public class ASMReflector {
       throws IOException {
 
     try (TelemetryUtils.ScopedSpan scope =
-        TelemetryUtils.startScopedSpan("ASMReflector.reflectAll")) {
+        TelemetryUtils.startScopedSpan("ASMReflector.reflectAll/3")) {
 
       scope.addAnnotation(
           TelemetryUtils.annotationBuilder()
