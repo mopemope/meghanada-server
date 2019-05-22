@@ -165,7 +165,24 @@ public class JavaCompletion {
   }
 
   private static List<MemberDescriptor> doReflect(String fqcn) {
-    List<MemberDescriptor> members = CachedASMReflector.getInstance().reflect(fqcn);
+    List<MemberDescriptor> members;
+    boolean array = ClassNameUtils.isArray(fqcn);
+    if (array) {
+      members = CachedASMReflector.getInstance().reflect(ClassNameUtils.OBJECT_CLASS);
+      members.add(new FieldDescriptor(fqcn, "length", "public", "int"));
+      members.add(
+          new MethodDescriptor(
+              fqcn,
+              "clone",
+              "public",
+              Collections.emptyList(),
+              null,
+              fqcn,
+              false,
+              CandidateUnit.MemberType.METHOD));
+    } else {
+      members = CachedASMReflector.getInstance().reflect(fqcn);
+    }
     preloadReturnTypes(members);
     return members;
   }

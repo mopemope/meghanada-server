@@ -254,7 +254,7 @@ public class JavaCompletionTest extends GradleTestBase {
             .getCanonicalFile();
     assertTrue(file.exists());
     final Collection<? extends CandidateUnit> units =
-        timeIt(() -> completion.completionAt(file, 213, 10, "*map#"));
+        timeIt(() -> completion.completionAt(file, 230, 10, "*map#"));
     units.forEach(a -> System.out.println(a.getDeclaration()));
     assertEquals(18, units.size());
   }
@@ -286,6 +286,22 @@ public class JavaCompletionTest extends GradleTestBase {
           System.out.println(a.getDeclaration());
         });
     assertEquals(59, units.size());
+  }
+
+  @Test
+  public void testCompletion16() throws Exception {
+    JavaCompletion completion = getCompletion();
+    File file =
+        new File(project.getProjectRootPath(), "./src/main/java/meghanada/Main.java")
+            .getCanonicalFile();
+    assertTrue(file.exists());
+    final Collection<? extends CandidateUnit> units =
+        timeIt(() -> completion.completionAt(file, 72, 10, "*args*Options#"));
+    units.forEach(
+        a -> {
+          System.out.println(a.getDeclaration());
+        });
+    assertEquals(11, units.size());
   }
 
   @Test

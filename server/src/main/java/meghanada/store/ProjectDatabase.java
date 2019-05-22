@@ -187,7 +187,9 @@ public class ProjectDatabase {
 
   public static void setSerializeBlobData(Entity entity, String prop, Object obj)
       throws IOException {
-
+    if (isNull(projectDatabase) || projectDatabase.isTerminated) {
+      return;
+    }
     requireNonNull(entity, "require entity");
     requireNonNull(obj, "require obj");
     requireNonNull(prop, "require prop");
