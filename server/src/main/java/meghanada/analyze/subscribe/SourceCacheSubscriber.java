@@ -121,7 +121,10 @@ public class SourceCacheSubscriber {
               .build("event"));
 
       final Map<File, Source> analyzedMap = event.analyzedMap;
-      try (TelemetryUtils.ScopedSpan child = TelemetryUtils.startScopedSpan("analyzed")) {
+
+      try (TelemetryUtils.ScopedSpan child =
+          TelemetryUtils.startScopedSpan("SourceCacheSubscriber.analyzed")) {
+
         analyzedMap
             .values()
             .parallelStream()
@@ -134,7 +137,8 @@ public class SourceCacheSubscriber {
                   }
                 });
       }
-      try (TelemetryUtils.ScopedSpan child = TelemetryUtils.startScopedSpan("complete")) {
+      try (TelemetryUtils.ScopedSpan child =
+          TelemetryUtils.startScopedSpan("SourceCacheSubscriber.complete")) {
         this.complete();
       }
     } catch (Exception ex) {

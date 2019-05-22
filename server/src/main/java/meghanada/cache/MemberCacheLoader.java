@@ -47,22 +47,16 @@ class MemberCacheLoader extends CacheLoader<String, List<MemberDescriptor>>
 
   private static File getClassFile(String fqcn) {
 
-    try (TelemetryUtils.ScopedSpan scope =
-        TelemetryUtils.startScopedSpan("MemberCacheLoader.getClassFile")) {
-
-      scope.addAnnotation(TelemetryUtils.annotationBuilder().put("fqcn", fqcn).build("args"));
-
-      Map<String, ClassIndex> globalClassIndex =
-          CachedASMReflector.getInstance().getGlobalClassIndex();
-      ClassIndex classIndex = globalClassIndex.get(fqcn);
-      if (nonNull(classIndex)) {
-        String filePath = classIndex.getFilePath();
-        if (nonNull(filePath)) {
-          return new File(filePath);
-        }
+    Map<String, ClassIndex> globalClassIndex =
+        CachedASMReflector.getInstance().getGlobalClassIndex();
+    ClassIndex classIndex = globalClassIndex.get(fqcn);
+    if (nonNull(classIndex)) {
+      String filePath = classIndex.getFilePath();
+      if (nonNull(filePath)) {
+        return new File(filePath);
       }
-      return null;
     }
+    return null;
   }
 
   private static void storeMembers(final String fqcn, final List<MemberDescriptor> list) {
