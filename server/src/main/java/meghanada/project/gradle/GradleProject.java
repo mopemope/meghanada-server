@@ -30,6 +30,7 @@ import meghanada.config.Config;
 import meghanada.project.Project;
 import meghanada.project.ProjectDependency;
 import meghanada.project.ProjectParseException;
+import meghanada.telemetry.TelemetryUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -145,16 +146,23 @@ public class GradleProject extends Project {
 
   @Override
   public Project parseProject(File projectRoot, File current) throws ProjectParseException {
-    try (ProjectConnection connection = getProjectConnection()) {
+    try (TelemetryUtils.ScopedSpan scope =
+            TelemetryUtils.startScopedSpan("GradleProject.parseProject");
+        ProjectConnection connection = getProjectConnection()) {
+      scope.addAnnotation(
+          TelemetryUtils.annotationBuilder()
+              .put("projectRoot", projectRoot.getPath())
+              .put("current", current.getPath())
+              .build("args"));
       if (this.kts) {
         log.info(
             "loading gradle project:{}",
             new File(this.projectRoot, Project.GRADLE_KTS_PROJECT_FILE));
-
       } else {
         log.info(
             "loading gradle project:{}", new File(this.projectRoot, Project.GRADLE_PROJECT_FILE));
       }
+
       BuildEnvironment env = connection.getModel(BuildEnvironment.class);
       String version = env.getGradle().getGradleVersion();
       if (isNull(version)) {

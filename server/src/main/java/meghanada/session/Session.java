@@ -62,17 +62,16 @@ import meghanada.reference.ReferenceSearcher;
 import meghanada.reflect.CandidateUnit;
 import meghanada.reflect.asm.CachedASMReflector;
 import meghanada.system.Executor;
+import meghanada.telemetry.TelemetryUtils;
 import meghanada.typeinfo.TypeInfo;
 import meghanada.typeinfo.TypeInfoSearcher;
 import meghanada.utils.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.message.EntryMessage;
 
 public class Session {
 
   private static final Logger log = LogManager.getLogger(Session.class);
-
   private static final Pattern SWITCH_TEST_RE = Pattern.compile("Test.java", Pattern.LITERAL);
   private static final Pattern SWITCH_JAVA_RE = Pattern.compile(".java", Pattern.LITERAL);
   private final SessionEventBus sessionEventBus;
@@ -80,7 +79,6 @@ public class Session {
   private final HashMap<File, Project> projects = new HashMap<>(2);
 
   private Project currentProject;
-
   private JavaCompletion completion;
   private JavaVariableCompletion variableCompletion;
   private JavaImportCompletion importCompletion;
@@ -88,7 +86,6 @@ public class Session {
   private DeclarationSearcher declarationSearcher;
   private ReferenceSearcher referenceSearcher;
   private TypeInfoSearcher typeinfoSearcher;
-
   private boolean started;
 
   private Session(final Project currentProject) {
@@ -99,7 +96,11 @@ public class Session {
   }
 
   public static Session createSession(String root) throws IOException {
-    return createSession(new File(root));
+    try (TelemetryUtils.ScopedSpan scope =
+        TelemetryUtils.startScopedSpan("Session.createSession")) {
+      scope.addAnnotation(TelemetryUtils.annotationBuilder().put("root", root).build("args"));
+      return createSession(new File(root));
+    }
   }
 
   private static Session createSession(final File root) throws IOException {
@@ -158,72 +159,75 @@ public class Session {
   private static Optional<Project> loadProject(File projectRoot, String targetFile, File current)
       throws IOException {
 
-    EntryMessage entryMessage =
-        log.traceEntry("projectRoot={} targetFile={}", projectRoot, targetFile);
+    try (TelemetryUtils.ScopedSpan scope = TelemetryUtils.startScopedSpan("Session.loadProject")) {
 
-    String projectRootPath = projectRoot.getCanonicalPath();
-    Config.setProjectRoot(projectRootPath);
+      scope.addAnnotation(
+          TelemetryUtils.annotationBuilder()
+              .put("projectRoot", projectRoot.getPath())
+              .put("targetFile", targetFile)
+              .put("current", current.getPath())
+              .build("args"));
 
-    try {
-      Config config = Config.load();
-
-      String id = FileUtils.findProjectID(projectRoot, targetFile);
-      if (Project.loadedProject.containsKey(id)) {
-        // loaded skip
-        Project project = Project.loadedProject.get(id);
-        log.traceExit(entryMessage);
-        Config.setProjectRoot(projectRootPath);
-        return Optional.of(project);
-      }
-
-      log.trace("project projectID={} projectRoot={}", id, projectRoot);
-
-      if (config.useFastBoot()) {
-        try {
-          Project tempProject = Project.loadProject(projectRootPath);
-          if (nonNull(tempProject) && tempProject.getId().equals(id)) {
-            tempProject.setId(id);
-            log.debug("load from cache project={}", tempProject);
-            log.info("load project from cache. projectRoot:{}", tempProject.getProjectRoot());
-            log.traceExit(entryMessage);
-            return Optional.of(tempProject.mergeFromProjectConfig());
-          }
-        } catch (Exception ex) {
-          log.catching(ex);
-        }
-      }
-
-      Project project;
-      switch (targetFile) {
-        case Project.GRADLE_PROJECT_FILE:
-          project = new GradleProject(projectRoot);
-          break;
-        case Project.GRADLE_KTS_PROJECT_FILE:
-          project = new GradleProject(projectRoot, true);
-          break;
-        case Project.MVN_PROJECT_FILE:
-          project = new MavenProject(projectRoot);
-          break;
-        case Project.ECLIPSE_PROJECT_FILE:
-          project = new EclipseProject(projectRoot);
-          break;
-        default:
-          project = new MeghanadaProject(projectRoot);
-          break;
-      }
-
-      project.setId(id);
-      Stopwatch stopwatch = Stopwatch.createStarted();
-      Project parsed = project.parseProject(projectRoot, current);
-      if (config.useFastBoot()) {
-        parsed.saveProject();
-      }
-      log.info("loaded project:{} elapsed:{}", project.getProjectRoot(), stopwatch.stop());
-
-      log.traceExit(entryMessage);
-      return Optional.of(parsed.mergeFromProjectConfig());
-    } finally {
+      String projectRootPath = projectRoot.getCanonicalPath();
       Config.setProjectRoot(projectRootPath);
+
+      try {
+        Config config = Config.load();
+
+        String id = FileUtils.findProjectID(projectRoot, targetFile);
+        if (Project.loadedProject.containsKey(id)) {
+          // loaded skip
+          Project project = Project.loadedProject.get(id);
+          Config.setProjectRoot(projectRootPath);
+          return Optional.of(project);
+        }
+
+        log.trace("project projectID={} projectRoot={}", id, projectRoot);
+
+        if (config.useFastBoot()) {
+          try {
+            Project tempProject = Project.loadProject(projectRootPath);
+            if (nonNull(tempProject) && tempProject.getId().equals(id)) {
+              tempProject.setId(id);
+              log.debug("load from cache project={}", tempProject);
+              log.info("load project from cache. projectRoot:{}", tempProject.getProjectRoot());
+              return Optional.of(tempProject.mergeFromProjectConfig());
+            }
+          } catch (Exception ex) {
+            log.catching(ex);
+          }
+        }
+
+        Project project;
+        switch (targetFile) {
+          case Project.GRADLE_PROJECT_FILE:
+            project = new GradleProject(projectRoot);
+            break;
+          case Project.GRADLE_KTS_PROJECT_FILE:
+            project = new GradleProject(projectRoot, true);
+            break;
+          case Project.MVN_PROJECT_FILE:
+            project = new MavenProject(projectRoot);
+            break;
+          case Project.ECLIPSE_PROJECT_FILE:
+            project = new EclipseProject(projectRoot);
+            break;
+          default:
+            project = new MeghanadaProject(projectRoot);
+            break;
+        }
+
+        project.setId(id);
+        Stopwatch stopwatch = Stopwatch.createStarted();
+        Project parsed = project.parseProject(projectRoot, current);
+        if (config.useFastBoot()) {
+          parsed.saveProject();
+        }
+        log.info("loaded project:{} elapsed:{}", project.getProjectRoot(), stopwatch.stop());
+        return Optional.of(parsed.mergeFromProjectConfig());
+      } finally {
+        Config.setProjectRoot(projectRootPath);
+      }
     }
   }
 
@@ -256,42 +260,51 @@ public class Session {
   }
 
   private static File findProjectRoot(File base) {
-    while (true) {
 
-      log.debug("finding project from '{}' ...", base);
-      if (isNull(base.getParent())) {
-        return null;
+    try (TelemetryUtils.ScopedSpan scope =
+        TelemetryUtils.startScopedSpan("Session.findProjectRoot")) {
+
+      while (true) {
+        log.debug("finding project from '{}' ...", base);
+        if (isNull(base.getParent())) {
+          return null;
+        }
+
+        // challenge
+        final File gradle = new File(base, Project.GRADLE_PROJECT_FILE);
+        final File gradleKts = new File(base, Project.GRADLE_KTS_PROJECT_FILE);
+        final File mvn = new File(base, Project.MVN_PROJECT_FILE);
+        final File eclipse = new File(base, Project.ECLIPSE_PROJECT_FILE);
+        final File meghanada = new File(base, Config.MEGHANADA_CONF_FILE);
+
+        if (gradle.exists()) {
+          log.debug("find gradle project {}", gradle);
+          scope.addAnnotation("find gradle project");
+          return base;
+        } else if (gradleKts.exists()) {
+          log.debug("find gradle(kts) project {}", gradleKts);
+          scope.addAnnotation("find gradle(kts) project");
+          return base;
+        } else if (mvn.exists()) {
+          log.debug("find mvn project {}", mvn);
+          scope.addAnnotation("find mvn project");
+          return base;
+        } else if (eclipse.exists()) {
+          log.debug("find eclipse project {}", eclipse);
+          scope.addAnnotation("find eclipse project");
+          return base;
+        } else if (meghanada.exists()) {
+          log.debug("find meghanada project {}", meghanada);
+          scope.addAnnotation("find meghanada project");
+          return base;
+        }
+
+        File parent = base.getParentFile();
+        if (isNull(parent)) {
+          return null;
+        }
+        base = base.getParentFile();
       }
-
-      // challenge
-      final File gradle = new File(base, Project.GRADLE_PROJECT_FILE);
-      final File gradleKts = new File(base, Project.GRADLE_KTS_PROJECT_FILE);
-      final File mvn = new File(base, Project.MVN_PROJECT_FILE);
-      final File eclipse = new File(base, Project.ECLIPSE_PROJECT_FILE);
-      final File meghanada = new File(base, Config.MEGHANADA_CONF_FILE);
-
-      if (gradle.exists()) {
-        log.debug("find gradle project {}", gradle);
-        return base;
-      } else if (gradleKts.exists()) {
-        log.debug("find gradle(kts) project {}", gradleKts);
-        return base;
-      } else if (mvn.exists()) {
-        log.debug("find mvn project {}", mvn);
-        return base;
-      } else if (eclipse.exists()) {
-        log.debug("find eclipse project {}", eclipse);
-        return base;
-      } else if (meghanada.exists()) {
-        log.debug("find meghanada project {}", meghanada);
-        return base;
-      }
-
-      File parent = base.getParentFile();
-      if (isNull(parent)) {
-        return null;
-      }
-      base = base.getParentFile();
     }
   }
 
@@ -301,47 +314,55 @@ public class Session {
   }
 
   private boolean searchAndChangeProject(final File base) throws IOException {
-    final File projectRoot = Session.findProjectRoot(base);
 
-    if (isNull(projectRoot) || this.currentProject.getProjectRoot().equals(projectRoot)) {
-      // not change
-      return false;
-    }
+    try (TelemetryUtils.ScopedSpan scope =
+        TelemetryUtils.startScopedSpan("Session.searchAndChangeProject")) {
 
-    if (this.projects.containsKey(projectRoot)) {
-      // loaded project
-      Project project = this.projects.get(projectRoot);
-      log.info("change project {}", project.getName());
-      String projectRootPath = project.getProjectRootPath();
-      Config.setProjectRoot(projectRootPath);
-      this.currentProject = project;
-      return true;
-    }
+      scope.addAnnotation(
+          TelemetryUtils.annotationBuilder().put("base", base.getPath()).build("args"));
 
-    if (currentProject instanceof GradleProject) {
-      File buildFile = new File(projectRoot, Project.GRADLE_PROJECT_FILE);
-      if (buildFile.exists()) {
-        return loadProject(projectRoot, Project.GRADLE_PROJECT_FILE, base)
+      final File projectRoot = Session.findProjectRoot(base);
+
+      if (isNull(projectRoot) || this.currentProject.getProjectRoot().equals(projectRoot)) {
+        // not change
+        return false;
+      }
+
+      if (this.projects.containsKey(projectRoot)) {
+        // loaded project
+        Project project = this.projects.get(projectRoot);
+        log.info("change project {}", project.getName());
+        String projectRootPath = project.getProjectRootPath();
+        Config.setProjectRoot(projectRootPath);
+        this.currentProject = project;
+        return true;
+      }
+
+      if (currentProject instanceof GradleProject) {
+        File buildFile = new File(projectRoot, Project.GRADLE_PROJECT_FILE);
+        if (buildFile.exists()) {
+          return loadProject(projectRoot, Project.GRADLE_PROJECT_FILE, base)
+              .map(project -> setProject(projectRoot, project))
+              .orElse(false);
+        } else {
+          // search kts
+          return loadProject(projectRoot, Project.GRADLE_KTS_PROJECT_FILE, base)
+              .map(project -> setProject(projectRoot, project))
+              .orElse(false);
+        }
+      } else if (currentProject instanceof MavenProject) {
+        return loadProject(projectRoot, Project.MVN_PROJECT_FILE, base)
             .map(project -> setProject(projectRoot, project))
             .orElse(false);
-      } else {
-        // search kts
-        return loadProject(projectRoot, Project.GRADLE_KTS_PROJECT_FILE, base)
+      } else if (currentProject instanceof EclipseProject) {
+        return loadProject(projectRoot, Project.ECLIPSE_PROJECT_FILE, base)
             .map(project -> setProject(projectRoot, project))
             .orElse(false);
       }
-    } else if (currentProject instanceof MavenProject) {
-      return loadProject(projectRoot, Project.MVN_PROJECT_FILE, base)
-          .map(project -> setProject(projectRoot, project))
-          .orElse(false);
-    } else if (currentProject instanceof EclipseProject) {
-      return loadProject(projectRoot, Project.ECLIPSE_PROJECT_FILE, base)
+      return loadProject(projectRoot, Config.MEGHANADA_CONF_FILE, base)
           .map(project -> setProject(projectRoot, project))
           .orElse(false);
     }
-    return loadProject(projectRoot, Config.MEGHANADA_CONF_FILE, base)
-        .map(project -> setProject(projectRoot, project))
-        .orElse(false);
   }
 
   private boolean setProject(final File projectRoot, final Project project) {
@@ -371,28 +392,33 @@ public class Session {
   }
 
   public void start() throws IOException {
-    if (this.started) {
-      return;
+
+    try (TelemetryUtils.ParentSpan span = TelemetryUtils.startExplicitParentSpan("Session/start");
+        TelemetryUtils.ScopedSpan scope = TelemetryUtils.withSpan(span.getSpan())) {
+
+      if (this.started) {
+        return;
+      }
+
+      this.setupSubscribes();
+      log.debug("session start");
+
+      final Set<File> temp = new HashSet<>(currentProject.getSources());
+      temp.addAll(currentProject.getTestSources());
+      this.sessionEventBus.requestWatchFiles(new ArrayList<>(temp));
+
+      // load once
+      final CachedASMReflector reflector = CachedASMReflector.getInstance();
+      reflector.addClasspath(Session.getSystemJars());
+      this.sessionEventBus.requestCreateCache();
+
+      this.projects
+          .values()
+          .forEach(project -> this.sessionEventBus.requestWatchFile(project.getProjectRoot()));
+
+      log.debug("session started");
+      this.started = true;
     }
-
-    this.setupSubscribes();
-    log.debug("session start");
-
-    final Set<File> temp = new HashSet<>(currentProject.getSources());
-    temp.addAll(currentProject.getTestSources());
-    this.sessionEventBus.requestWatchFiles(new ArrayList<>(temp));
-
-    // load once
-    final CachedASMReflector reflector = CachedASMReflector.getInstance();
-    reflector.addClasspath(Session.getSystemJars());
-    this.sessionEventBus.requestCreateCache();
-
-    this.projects
-        .values()
-        .forEach(project -> this.sessionEventBus.requestWatchFile(project.getProjectRoot()));
-
-    log.debug("session started");
-    this.started = true;
   }
 
   public void shutdown(int timeout) {
@@ -449,26 +475,32 @@ public class Session {
   }
 
   public synchronized boolean changeProject(final String path) {
-    final File file = new File(path);
 
-    if (this.started) {
-      try {
-        if (!file.exists()) {
+    try (TelemetryUtils.ScopedSpan scope =
+        TelemetryUtils.startScopedSpan("Session.changeProject")) {
+
+      scope.addAnnotation(TelemetryUtils.annotationBuilder().put("path", path).build("args"));
+
+      final File file = new File(path);
+      if (this.started) {
+        try {
+          if (!file.exists()) {
+            return false;
+          }
+          final boolean changed = this.searchAndChangeProject(file);
+          if (changed) {
+            this.sessionEventBus.requestCreateCache();
+            return true;
+          }
+          return false;
+        } catch (Exception e) {
+          log.catching(e);
           return false;
         }
-        final boolean changed = this.searchAndChangeProject(file);
-        if (changed) {
-          this.sessionEventBus.requestCreateCache();
-          return true;
-        }
-        return false;
-      } catch (Exception e) {
-        log.catching(e);
-        return false;
       }
-    }
 
-    return false;
+      return false;
+    }
   }
 
   public synchronized Optional<LocalVariable> localVariable(final String path, final int line)
@@ -592,11 +624,19 @@ public class Session {
   }
 
   private static Optional<Source> parseJavaSource(final File file) throws ExecutionException {
-    if (!FileUtils.isJavaFile(file)) {
-      return Optional.empty();
+
+    try (TelemetryUtils.ScopedSpan scope =
+        TelemetryUtils.startScopedSpan("Session.parseJavaSource")) {
+
+      scope.addAnnotation(
+          TelemetryUtils.annotationBuilder().put("file", file.getPath()).build("args"));
+
+      if (!FileUtils.isJavaFile(file)) {
+        return Optional.empty();
+      }
+      final GlobalCache globalCache = GlobalCache.getInstance();
+      return Optional.of(globalCache.getSource(file));
     }
-    final GlobalCache globalCache = GlobalCache.getInstance();
-    return Optional.of(globalCache.getSource(file));
   }
 
   public synchronized boolean parseFile(final String path) throws ExecutionException {
@@ -874,11 +914,8 @@ public class Session {
   }
 
   public CompileResult diagnosticString(String sourceFile, String sourceCode) throws IOException {
-
     boolean b = this.changeProject(sourceFile);
     CompileResult result = currentProject.compileString(sourceFile, sourceCode);
-    if (result.isSuccess()) {}
-
     return result;
   }
 
@@ -941,6 +978,7 @@ public class Session {
     if (!FileUtils.isJavaFile(file)) {
       return false;
     }
+    // TelemetryUtils.recordSelectedCompletion(desc);
     getCompletion().resolve(file, type, desc);
     log.trace("path {} {} {} {}", path, type, item, desc);
     return true;
@@ -961,20 +999,28 @@ public class Session {
   }
 
   private static Optional<Project> loadDefaultProject(File root) throws IOException {
-    root = root.getCanonicalFile();
-    if (!root.isDirectory()) {
-      root = root.getParentFile();
-    }
-    Project project =
-        new MeghanadaProject.Builder(root)
-            .source(root)
-            .resource(root)
-            .output(new File(root, "out"))
-            .testSource(root)
-            .testResource(root)
-            .testOutput(new File(root, "out"))
-            .build();
 
-    return Optional.of(project);
+    try (TelemetryUtils.ScopedSpan scope =
+        TelemetryUtils.startScopedSpan("Session.loadDefaultProject")) {
+
+      scope.addAnnotation(
+          TelemetryUtils.annotationBuilder().put("root", root.getPath()).build("args"));
+
+      root = root.getCanonicalFile();
+      if (!root.isDirectory()) {
+        root = root.getParentFile();
+      }
+      Project project =
+          new MeghanadaProject.Builder(root)
+              .source(root)
+              .resource(root)
+              .output(new File(root, "out"))
+              .testSource(root)
+              .testResource(root)
+              .testOutput(new File(root, "out"))
+              .build();
+
+      return Optional.of(project);
+    }
   }
 }

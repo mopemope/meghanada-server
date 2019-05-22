@@ -46,6 +46,7 @@ import meghanada.reflect.ClassIndex;
 import meghanada.reflect.MemberDescriptor;
 import meghanada.reflect.asm.CachedASMReflector;
 import meghanada.store.Storable;
+import meghanada.telemetry.TelemetryUtils;
 import meghanada.utils.ClassNameUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -359,33 +360,38 @@ public class Source implements Serializable, Storable, SearchIndexable {
 
   public Optional<MethodCall> getMethodCall(
       final int line, final int column, final boolean onlyName) {
-    final EntryMessage entryMessage = log.traceEntry("line={} column={}", line, column);
-    int col = column;
-    final Scope scope = Scope.getInnerScope(line, this.classScopes);
-    if (nonNull(scope)) {
-      final Collection<MethodCall> symbols = scope.getMethodCall(line);
-      final int size = symbols.size();
-      log.trace("variables:{}", symbols);
-      if (onlyName) {
-        for (final MethodCall methodCall : symbols) {
-          if (methodCall.nameContains(col)) {
-            final Optional<MethodCall> result = Optional.of(methodCall);
-            return log.traceExit(entryMessage, result);
+    try (TelemetryUtils.ScopedSpan ss =
+        TelemetryUtils.startScopedSpan("LocationSearcher.searchMethodCall")) {
+      ss.addAnnotation(
+          TelemetryUtils.annotationBuilder()
+              .put("line", line)
+              .put("column", column)
+              .put("onlyName", onlyName)
+              .build("args"));
+      int col = column;
+      final Scope scope = Scope.getInnerScope(line, this.classScopes);
+      if (nonNull(scope)) {
+        final Collection<MethodCall> symbols = scope.getMethodCall(line);
+        final int size = symbols.size();
+        log.trace("variables:{}", symbols);
+        if (onlyName) {
+          for (final MethodCall methodCall : symbols) {
+            if (methodCall.nameContains(col)) {
+              return Optional.of(methodCall);
+            }
           }
-        }
-      } else {
-        while (size > 0 && col-- > 0) {
-          for (final MethodCall methodCallSymbol : symbols) {
-            if (methodCallSymbol.containsColumn(col)) {
-              final Optional<MethodCall> result = Optional.of(methodCallSymbol);
-              return log.traceExit(entryMessage, result);
+        } else {
+          while (size > 0 && col-- > 0) {
+            for (final MethodCall methodCallSymbol : symbols) {
+              if (methodCallSymbol.containsColumn(col)) {
+                return Optional.of(methodCallSymbol);
+              }
             }
           }
         }
       }
+      return Optional.empty();
     }
-    final Optional<MethodCall> empty = Optional.empty();
-    return log.traceExit(entryMessage, empty);
   }
 
   public List<MethodCall> getMethodCall(final int line) {
@@ -458,21 +464,30 @@ public class Source implements Serializable, Storable, SearchIndexable {
     return memberDescriptors;
   }
 
-  public Optional<FieldAccess> searchFieldAccess(final int line, final int col, final String name) {
-    final Scope scope = Scope.getScope(line, this.classScopes);
-    if (nonNull(scope) && (scope instanceof TypeScope)) {
-      final TypeScope ts = (TypeScope) scope;
-      final Collection<FieldAccess> fieldAccesses = ts.getFieldAccess(line);
-
-      for (final FieldAccess fa : fieldAccesses) {
-        final Range range = fa.range;
-        final Position begin = fa.range.begin;
-        if (range.begin.line == line && range.containsColumn(col) && fa.name.equals(name)) {
-          return Optional.of(fa);
+  public Optional<FieldAccess> searchFieldAccess(
+      final int line, final int column, final String name) {
+    try (TelemetryUtils.ScopedSpan ss =
+        TelemetryUtils.startScopedSpan("Source.searchFieldAccess")) {
+      ss.addAnnotation(
+          TelemetryUtils.annotationBuilder()
+              .put("line", line)
+              .put("column", column)
+              .put("symbol", name)
+              .build("args"));
+      final Scope scope = Scope.getScope(line, this.classScopes);
+      if (nonNull(scope) && (scope instanceof TypeScope)) {
+        final TypeScope ts = (TypeScope) scope;
+        final Collection<FieldAccess> fieldAccesses = ts.getFieldAccess(line);
+        for (final FieldAccess fa : fieldAccesses) {
+          final Range range = fa.range;
+          final Position begin = fa.range.begin;
+          if (range.begin.line == line && range.containsColumn(column) && fa.name.equals(name)) {
+            return Optional.of(fa);
+          }
         }
       }
+      return Optional.empty();
     }
-    return Optional.empty();
   }
 
   public Map<String, List<String>> searchMissingImport() {
@@ -670,20 +685,29 @@ public class Source implements Serializable, Storable, SearchIndexable {
   }
 
   public String getImportedClassFQCN(final String shortName, @Nullable final String defaultValue) {
-    return this.importClasses.stream()
-        .filter(
-            s -> {
-              if (s.indexOf('.') > 0) {
-                return s.endsWith('.' + shortName);
-              }
-              return s.endsWith(shortName);
-            })
-        .findFirst()
-        .orElseGet(
-            () ->
-                CachedASMReflector.getInstance()
-                    .getStandardClasses()
-                    .getOrDefault(shortName, defaultValue));
+    try (TelemetryUtils.ScopedSpan scope =
+        TelemetryUtils.startScopedSpan("Source.getImportedClassFQCN")) {
+      scope.addAnnotation(
+          TelemetryUtils.annotationBuilder()
+              .put("shortName", shortName)
+              .put("defaultValue", defaultValue)
+              .build("args"));
+
+      return this.importClasses.stream()
+          .filter(
+              s -> {
+                if (s.indexOf('.') > 0) {
+                  return s.endsWith('.' + shortName);
+                }
+                return s.endsWith(shortName);
+              })
+          .findFirst()
+          .orElseGet(
+              () ->
+                  CachedASMReflector.getInstance()
+                      .getStandardClasses()
+                      .getOrDefault(shortName, defaultValue));
+    }
   }
 
   public Map<String, String> getImportedClassMap() {

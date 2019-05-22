@@ -16,6 +16,7 @@ import meghanada.analyze.AccessSymbol;
 import meghanada.analyze.Source;
 import meghanada.cache.GlobalCache;
 import meghanada.project.Project;
+import meghanada.telemetry.TelemetryUtils;
 import meghanada.utils.ClassNameUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
@@ -56,40 +57,50 @@ public class JavaVariableCompletion {
 
   public Optional<LocalVariable> localVariable(final File file, final int line)
       throws ExecutionException, IOException {
-    final Source source = JavaVariableCompletion.getSource(file);
-    return source
-        .getExpressionReturn(line)
-        .filter(as -> as.returnType != null)
-        .flatMap(as -> createLocalVariable(as, as.returnType));
+
+    try (TelemetryUtils.ScopedSpan scope =
+        TelemetryUtils.startScopedSpan("JavaVariableCompletion.localVariable")) {
+
+      final Source source = JavaVariableCompletion.getSource(file);
+      return source
+          .getExpressionReturn(line)
+          .filter(as -> as.returnType != null)
+          .flatMap(as -> createLocalVariable(as, as.returnType));
+    }
   }
 
   Optional<LocalVariable> createLocalVariable(
       final AccessSymbol accessSymbol, final String returnType) {
-    if (returnType.equals("void")) {
-      return Optional.of(new LocalVariable(returnType, new ArrayList<>(0)));
+
+    try (TelemetryUtils.ScopedSpan scope =
+        TelemetryUtils.startScopedSpan("JavaVariableCompletion.createLocalVariable")) {
+
+      if (returnType.equals("void")) {
+        return Optional.of(new LocalVariable(returnType, new ArrayList<>(0)));
+      }
+
+      // completion
+      final List<String> candidates = new ArrayList<>(4);
+
+      // 1. from type
+      final List<String> fromTypes = this.fromType(returnType);
+      candidates.addAll(fromTypes);
+
+      // 2. add method or isField name
+      final List<String> fromNames = this.fromName(accessSymbol);
+      candidates.addAll(fromNames);
+
+      // 3. add returnType initials
+      if (returnType.startsWith("java.lang") || ClassNameUtils.isPrimitive(returnType)) {
+        final String initial = fromInitial(returnType);
+        candidates.add(initial);
+      }
+
+      final List<String> results =
+          candidates.stream().map(s -> removeMatcher.removeFrom(s)).collect(Collectors.toList());
+
+      return Optional.of(new LocalVariable(returnType, results));
     }
-
-    // completion
-    final List<String> candidates = new ArrayList<>(4);
-
-    // 1. from type
-    final List<String> fromTypes = this.fromType(returnType);
-    candidates.addAll(fromTypes);
-
-    // 2. add method or isField name
-    final List<String> fromNames = this.fromName(accessSymbol);
-    candidates.addAll(fromNames);
-
-    // 3. add returnType initials
-    if (returnType.startsWith("java.lang") || ClassNameUtils.isPrimitive(returnType)) {
-      final String initial = fromInitial(returnType);
-      candidates.add(initial);
-    }
-
-    final List<String> results =
-        candidates.stream().map(s -> removeMatcher.removeFrom(s)).collect(Collectors.toList());
-
-    return Optional.of(new LocalVariable(returnType, results));
   }
 
   private List<String> fromType(final String returnType) {

@@ -29,7 +29,7 @@ public class JavaCompletionTest extends GradleTestBase {
     CompileResult compileResult2 = project.compileTestJava();
     Config config = Config.load();
     config.update("camel-case-completion", false);
-    Thread.sleep(1000 * 4);
+    Thread.sleep(1000 * 3);
   }
 
   @AfterClass
@@ -239,7 +239,7 @@ public class JavaCompletionTest extends GradleTestBase {
             .getCanonicalFile();
     assertTrue(file.exists());
     final Collection<? extends CandidateUnit> units =
-        timeIt(() -> completion.completionAt(file, 267, 0, "an"));
+        timeIt(() -> completion.completionAt(file, 334, 0, "an"));
     units.forEach(a -> System.out.println(a.getDeclaration()));
     assertEquals(3, units.size());
   }
@@ -254,7 +254,7 @@ public class JavaCompletionTest extends GradleTestBase {
             .getCanonicalFile();
     assertTrue(file.exists());
     final Collection<? extends CandidateUnit> units =
-        timeIt(() -> completion.completionAt(file, 188, 10, "*map#"));
+        timeIt(() -> completion.completionAt(file, 213, 10, "*map#"));
     units.forEach(a -> System.out.println(a.getDeclaration()));
     assertEquals(18, units.size());
   }
@@ -330,7 +330,7 @@ public class JavaCompletionTest extends GradleTestBase {
             .getCanonicalFile();
     assertTrue(file.exists());
     final Collection<? extends CandidateUnit> units =
-        timeIt(() -> completion.completionAt(file, 253, 4, "*code*int#"));
+        timeIt(() -> completion.completionAt(file, 319, 4, "*code*int#"));
     units.forEach(a -> System.out.println(a.getDisplayDeclaration()));
     Object[] objs = (units.toArray());
     CandidateUnit unit1 = (CandidateUnit) objs[0];

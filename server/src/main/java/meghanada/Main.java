@@ -13,6 +13,7 @@ import java.util.Objects;
 import meghanada.config.Config;
 import meghanada.server.Server;
 import meghanada.server.emacs.EmacsServer;
+import meghanada.telemetry.TelemetryUtils;
 import meghanada.utils.ClasspathUtils;
 import meghanada.utils.FileUtils;
 import org.apache.commons.cli.CommandLine;
@@ -65,7 +66,8 @@ public class Main {
     ClasspathUtils.addToolsJar();
     final String version = getVersion();
     System.setProperty("meghanada-server.version", version);
-
+    System.setProperty("meghanada-server.uid", TelemetryUtils.getUID());
+    setupTelemetry();
     final Options options = buildOptions();
 
     final CommandLineParser parser = new DefaultParser();
@@ -84,6 +86,7 @@ public class Main {
         .addShutdownHook(
             new Thread(
                 () -> {
+                  Tracing.getExportComponent().shutdown();
                   log.info("shutdown server");
                   Config.showMemory();
                 }));
@@ -131,19 +134,7 @@ public class Main {
         System.setProperty("meghanada.gradle-version", gradleVersion);
       }
     }
-    TraceConfig traceConfig = Tracing.getTraceConfig();
-    traceConfig.updateActiveTraceParams(
-        traceConfig.getActiveTraceParams().toBuilder().setSampler(Samplers.alwaysSample()).build());
-    // LoggingTraceExporter.register();
-    String zPort = System.getProperty("meghanada.zpage.port");
-    if (isNull(zPort)) {
-      int zpagePort = getFreePort();
-      ZPageHandlers.startHttpServerAndRegisterAll(zpagePort);
-      System.setProperty("meghanada.zpage.port", Integer.toString(zpagePort));
-    } else {
-      int zpagePort = Integer.parseInt(zPort);
-      ZPageHandlers.startHttpServerAndRegisterAll(zpagePort);
-    }
+
     String port = "0";
     String projectRoot = "./";
     String fmt = "sexp";
@@ -163,6 +154,30 @@ public class Main {
     log.info("Meghanada-Server Version:{}", version);
     final Server server = createServer("localhost", portInt, projectRoot, fmt);
     server.startServer();
+  }
+
+  private static void setupTelemetry() throws IOException {
+    // global
+    boolean exporter = TelemetryUtils.setupExporter();
+    if (!exporter) {
+      TraceConfig traceConfig = Tracing.getTraceConfig();
+      traceConfig.updateActiveTraceParams(
+          traceConfig
+              .getActiveTraceParams()
+              .toBuilder()
+              .setSampler(Samplers.alwaysSample())
+              .build());
+      String zPort = System.getProperty("meghanada.zpage.port");
+      if (isNull(zPort)) {
+        int zpagePort = getFreePort();
+        ZPageHandlers.startHttpServerAndRegisterAll(zpagePort);
+        System.setProperty("meghanada.zpage.port", Integer.toString(zpagePort));
+      } else {
+        int zpagePort = Integer.parseInt(zPort);
+        ZPageHandlers.startHttpServerAndRegisterAll(zpagePort);
+      }
+      System.setProperty("meghanada.zpage.enable", "true");
+    }
   }
 
   private static void addFileAppender(String logFilename) throws IOException {

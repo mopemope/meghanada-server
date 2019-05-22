@@ -90,9 +90,11 @@ dependencies {
     implementation("org.jetbrains.xodus:xodus-entity-store:$xodusVersion")
     implementation("org.jetbrains.xodus:xodus-compress:$xodusVersion")
 
-    implementation("io.opencensus:opencensus-api:0.21.0")
-    implementation("io.opencensus:opencensus-impl:0.21.0")
-    implementation("io.opencensus:opencensus-contrib-zpages:0.21.0")
+    implementation("io.opencensus:opencensus-api:0.22.0")
+    implementation("io.opencensus:opencensus-impl:0.22.0")
+    implementation("io.opencensus:opencensus-contrib-zpages:0.22.0")
+    implementation("io.opencensus:opencensus-exporter-trace-stackdriver:0.22.0")
+    implementation("io.opencensus:opencensus-exporter-stats-stackdriver:0.22.0")
 
     implementation("com.github.oshi:oshi-core:3.13.2")
 }

@@ -15,6 +15,7 @@ import meghanada.reflect.asm.CachedASMReflector;
 import meghanada.session.Session;
 import meghanada.session.SessionEventBus;
 import meghanada.store.ProjectDatabaseHelper;
+import meghanada.telemetry.TelemetryUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -29,7 +30,11 @@ public class CacheEventSubscriber extends AbstractSubscriber {
 
   @Subscribe
   public void on(final SessionEventBus.ClassCacheRequest request) {
-    this.analyze();
+    try (TelemetryUtils.ParentSpan span =
+            TelemetryUtils.startExplicitParentSpan("CacheEventSubscriber/on");
+        TelemetryUtils.ScopedSpan scope = TelemetryUtils.withSpan(span.getSpan())) {
+      this.analyze();
+    }
   }
 
   private void analyze() {
@@ -116,9 +121,12 @@ public class CacheEventSubscriber extends AbstractSubscriber {
         .getStandardClasses()
         .values()
         .forEach(
-            c -> {
-              try {
-                globalCache.getMemberDescriptors(c);
+            fqcn -> {
+              try (TelemetryUtils.ScopedSpan scope =
+                  TelemetryUtils.startScopedSpan("CacheEventSubscriber.createStandardClassCache")) {
+                scope.addAnnotation(
+                    TelemetryUtils.annotationBuilder().put("fqcn", fqcn).build("args"));
+                globalCache.getMemberDescriptors(fqcn);
               } catch (Exception e) {
                 log.catching(e);
               }
@@ -135,9 +143,12 @@ public class CacheEventSubscriber extends AbstractSubscriber {
         .getPackageClasses(name)
         .values()
         .forEach(
-            c -> {
-              try {
-                globalCache.getMemberDescriptors(c);
+            fqcn -> {
+              try (TelemetryUtils.ScopedSpan scope =
+                  TelemetryUtils.startScopedSpan("CacheEventSubscriber.createClassCache")) {
+                scope.addAnnotation(
+                    TelemetryUtils.annotationBuilder().put("fqcn", fqcn).build("args"));
+                globalCache.getMemberDescriptors(fqcn);
               } catch (Exception e) {
                 log.catching(e);
               }

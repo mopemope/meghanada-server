@@ -62,7 +62,7 @@ public class Config {
     Level level = Level.toLevel(logLevel);
     final String lowerLevel = logLevel.toLowerCase();
 
-    if (lowerLevel.equals("debug") || lowerLevel.equals("trace")) {
+    if (lowerLevel.equals("debug") || lowerLevel.equals("telemetry")) {
       this.debug = true;
     }
     // force change
@@ -488,6 +488,10 @@ public class Config {
       return PREFIX;
     }
     return getCompletionType(m);
+  }
+
+  public String getGoogleApplicationCredentials() {
+    return c.getString("google-application-credentials");
   }
 
   private static Config.CompletionType getCompletionType(String m) {

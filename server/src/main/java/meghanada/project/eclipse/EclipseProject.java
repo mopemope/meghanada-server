@@ -14,6 +14,7 @@ import javax.xml.stream.XMLStreamReader;
 import meghanada.project.Project;
 import meghanada.project.ProjectDependency;
 import meghanada.project.ProjectParseException;
+import meghanada.telemetry.TelemetryUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -32,8 +33,16 @@ public class EclipseProject extends Project {
 
   @Override
   public Project parseProject(File projectRoot, File current) throws ProjectParseException {
-    parseClassPathFile(this.classPathFile);
-    return this;
+    try (TelemetryUtils.ScopedSpan scope =
+        TelemetryUtils.startScopedSpan("EclipseProject.parseProject")) {
+      scope.addAnnotation(
+          TelemetryUtils.annotationBuilder()
+              .put("projectRoot", projectRoot.getPath())
+              .put("current", current.getPath())
+              .build("args"));
+      parseClassPathFile(this.classPathFile);
+      return this;
+    }
   }
 
   @Override

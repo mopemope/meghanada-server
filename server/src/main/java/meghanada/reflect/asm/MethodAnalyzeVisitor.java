@@ -84,8 +84,8 @@ class MethodAnalyzeVisitor extends MethodVisitor {
     this.methodSignature = target;
     this.interfaceMethod = this.classAnalyzeVisitor.getClassIndex().isInterface();
 
-    // log.trace("name:{} sig:{}", name, target);
-    // log.trace("classIndex:{}", classAnalyzeVisitor.getClassIndex().isInterface);
+    // log.telemetry("name:{} sig:{}", name, target);
+    // log.telemetry("classIndex:{}", classAnalyzeVisitor.getClassIndex().isInterface);
     // log.debug("methodName {} desc {} sig {}", name, desc, signature);
     log.traceExit(entryMessage);
   }
@@ -297,9 +297,8 @@ class MethodAnalyzeVisitor extends MethodVisitor {
         if (idx2 > 0) {
           parameterNameType = parameterNameType.substring(0, idx2);
         }
-        // log.trace("search parameterName idx:{} {}/{}", i, typeInfoType, parameterNameType);
+        // log.telemetry("search parameterName idx:{} {}/{}", i, typeInfoType, parameterNameType);
         if (typeInfoType.equals(parameterNameType)) {
-          // log.trace("@ match parameterName idx:{} {}/{}", i, typeInfoType, parameterNameType);
           this.parameterNames[i] = parameterName.name;
         } else {
           // fail

@@ -28,15 +28,14 @@ import javax.tools.ToolProvider;
 import meghanada.config.Config;
 import meghanada.reflect.asm.CachedASMReflector;
 import meghanada.system.Executor;
+import meghanada.telemetry.TelemetryUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class JavaAnalyzer {
 
   private static final Logger log = LogManager.getLogger(JavaAnalyzer.class);
-
   private static final JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
-
   private final String compileSource;
   private final String compileTarget;
 
@@ -66,7 +65,6 @@ public class JavaAnalyzer {
         }
       }
     }
-
     return temp;
   }
 
@@ -114,7 +112,18 @@ public class JavaAnalyzer {
     final Config config = Config.load();
 
     try (final StandardJavaFileManager fileManager =
-        compiler.getStandardFileManager(null, null, Charset.forName("UTF-8"))) {
+            compiler.getStandardFileManager(null, null, Charset.forName("UTF-8"));
+        TelemetryUtils.ScopedSpan scope =
+            TelemetryUtils.startScopedSpan("JavaAnalyzer.runAnalyzeAndCompile")) {
+
+      scope.addAnnotation(
+          TelemetryUtils.annotationBuilder()
+              .put("classpath", classpath)
+              .put("out", out)
+              .put("compileFiles", compileFiles.toString())
+              .put("generate", generate)
+              .put("isDiagnostics", isDiagnostics)
+              .build("args"));
 
       final Iterable<? extends JavaFileObject> compilationUnits =
           fileManager.getJavaFileObjectsFromFiles(compileFiles);
@@ -143,25 +152,45 @@ public class JavaAnalyzer {
 
       final JavacTask javacTask = (JavacTask) compilerTask;
 
-      final Iterable<? extends CompilationUnitTree> parsedIter = javacTask.parse();
-      javacTask.analyze();
-
-      final List<Diagnostic<? extends JavaFileObject>> diagnostics =
-          diagnosticCollector.getDiagnostics();
-      final Set<File> errorFiles = JavaAnalyzer.getErrorFiles(diagnostics);
-
-      final Map<File, Source> analyzedMap = analyze(parsedIter, errorFiles);
-
-      if (generate && !Config.load().useExternalBuilder()) {
-        javacTask.generate();
-        CachedASMReflector.getInstance().updateClassIndexFromDirectory();
+      Iterable<? extends CompilationUnitTree> parsedIter;
+      try (TelemetryUtils.ScopedSpan child = TelemetryUtils.startScopedSpan("javacTask.parse")) {
+        child.addAnnotation(
+            TelemetryUtils.annotationBuilder()
+                .put("javac arg", config.getJavacArg())
+                .put("size", compileFiles.size())
+                .build("compile option"));
+        parsedIter = javacTask.parse();
       }
 
-      Executor.getInstance().getEventBus().post(new AnalyzedEvent(analyzedMap, isDiagnostics));
+      try (TelemetryUtils.ScopedSpan child = TelemetryUtils.startScopedSpan("javacTask.analyze")) {
+        child.addAnnotation(
+            TelemetryUtils.annotationBuilder()
+                .put("javac arg", config.getJavacArg())
+                .put("size", compileFiles.size())
+                .build("compile option"));
+        javacTask.analyze();
+      }
 
-      final boolean success = errorFiles.size() == 0;
-      // ProjectDatabaseHelper.saveCompileResult(result);
-      return new CompileResult(success, analyzedMap, diagnostics, errorFiles);
+      try (TelemetryUtils.ScopedSpan child =
+          TelemetryUtils.startScopedSpan("JavaAnalyzer.analyzeAST")) {
+        final List<Diagnostic<? extends JavaFileObject>> diagnostics =
+            diagnosticCollector.getDiagnostics();
+        final Set<File> errorFiles = JavaAnalyzer.getErrorFiles(diagnostics);
+
+        final Map<File, Source> analyzedMap = analyze(parsedIter, errorFiles);
+
+        try (TelemetryUtils.ScopedSpan child2 =
+            TelemetryUtils.startScopedSpan("javacTask.generate")) {
+          if (generate && !Config.load().useExternalBuilder()) {
+            javacTask.generate();
+            CachedASMReflector.getInstance().updateClassIndexFromDirectory();
+          }
+        }
+        Executor.getInstance().getEventBus().post(new AnalyzedEvent(analyzedMap, isDiagnostics));
+        final boolean success = errorFiles.size() == 0;
+        // ProjectDatabaseHelper.saveCompileResult(result);
+        return new CompileResult(success, analyzedMap, diagnostics, errorFiles);
+      }
     }
   }
 
@@ -177,7 +206,18 @@ public class JavaAnalyzer {
     final Config config = Config.load();
 
     try (final StandardJavaFileManager fileManager =
-        compiler.getStandardFileManager(null, null, Charset.forName("UTF-8"))) {
+            compiler.getStandardFileManager(null, null, Charset.forName("UTF-8"));
+        TelemetryUtils.ScopedSpan scope =
+            TelemetryUtils.startScopedSpan("JavaAnalyzer.runAnalyzeAndCompile")) {
+      scope.addAnnotation(
+          TelemetryUtils.annotationBuilder()
+              .put("classpath", classpath)
+              .put("out", out)
+              .put("sourcePath", sourcePath)
+              .put("sourceCode", sourceCode)
+              .put("generate", generate)
+              .put("isDiagnostics", isDiagnostics)
+              .build("args"));
 
       final File sourceFile = new File(sourcePath);
       final JavaFileObject fileObject =
@@ -208,26 +248,53 @@ public class JavaAnalyzer {
 
       JavacTask javacTask = (JavacTask) compilerTask;
 
-      Iterable<? extends CompilationUnitTree> parsedIter = null;
-      try {
+      Iterable<? extends CompilationUnitTree> parsedIter;
+      try (TelemetryUtils.ScopedSpan child = TelemetryUtils.startScopedSpan("javacTask.parse")) {
+        child.addAnnotation(
+            TelemetryUtils.annotationBuilder()
+                .put("javac arg", config.getJavacArg())
+                .put("size", compilationUnits.size())
+                .build("compile option"));
         parsedIter = javacTask.parse();
+      } catch (Throwable e) {
+        // javacTask sometimes throw NPE ...
+        Map<File, Source> analyzedMap = new HashMap<>(0);
+        return new CompileResult(true, analyzedMap);
+      }
+
+      try (TelemetryUtils.ScopedSpan child = TelemetryUtils.startScopedSpan("javacTask.analyze")) {
+        child.addAnnotation(
+            TelemetryUtils.annotationBuilder()
+                .put("javac arg", config.getJavacArg().toString())
+                .put("size", compilationUnits.size())
+                .build("compile option"));
         javacTask.analyze();
       } catch (Throwable e) {
         // javacTask sometimes throw NPE ...
         Map<File, Source> analyzedMap = new HashMap<>(0);
         return new CompileResult(true, analyzedMap);
       }
-      List<Diagnostic<? extends JavaFileObject>> diagnostics = diagnosticCollector.getDiagnostics();
 
-      Set<File> errorFiles = JavaAnalyzer.getErrorFiles(diagnostics);
-      Map<File, Source> analyzedMap = analyze(parsedIter, errorFiles);
-      if (generate && !Config.load().useExternalBuilder()) {
-        javacTask.generate();
-        CachedASMReflector.getInstance().updateClassIndexFromDirectory();
+      try (TelemetryUtils.ScopedSpan child =
+          TelemetryUtils.startScopedSpan("JavaAnalyzer.analyzeAST")) {
+
+        List<Diagnostic<? extends JavaFileObject>> diagnostics =
+            diagnosticCollector.getDiagnostics();
+        Set<File> errorFiles = JavaAnalyzer.getErrorFiles(diagnostics);
+        Map<File, Source> analyzedMap = analyze(parsedIter, errorFiles);
+
+        try (TelemetryUtils.ScopedSpan child2 =
+            TelemetryUtils.startScopedSpan("javacTask.generate")) {
+          if (generate && !Config.load().useExternalBuilder()) {
+            javacTask.generate();
+            CachedASMReflector.getInstance().updateClassIndexFromDirectory();
+          }
+        }
+
+        Executor.getInstance().getEventBus().post(new AnalyzedEvent(analyzedMap, isDiagnostics));
+        boolean success = errorFiles.size() == 0;
+        return new CompileResult(success, analyzedMap, diagnostics, errorFiles);
       }
-      Executor.getInstance().getEventBus().post(new AnalyzedEvent(analyzedMap, isDiagnostics));
-      boolean success = errorFiles.size() == 0;
-      return new CompileResult(success, analyzedMap, diagnostics, errorFiles);
     }
   }
 

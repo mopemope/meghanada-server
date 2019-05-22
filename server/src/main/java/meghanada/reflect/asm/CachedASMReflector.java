@@ -34,6 +34,7 @@ import meghanada.reflect.CandidateUnit;
 import meghanada.reflect.ClassIndex;
 import meghanada.reflect.MemberDescriptor;
 import meghanada.store.ProjectDatabaseHelper;
+import meghanada.telemetry.TelemetryUtils;
 import meghanada.utils.ClassName;
 import meghanada.utils.ClassNameUtils;
 import meghanada.utils.FileUtils;
@@ -155,38 +156,41 @@ public class CachedASMReflector {
   }
 
   public void createClassIndexes() {
-    this.jars
-        .parallelStream()
-        .forEach(
-            wrapIOConsumer(
-                root -> {
-                  String name = root.getName();
-                  if (name.endsWith(".jar")
-                      && !name.endsWith("SNAPSHOT.jar")
-                      && ProjectDatabaseHelper.getLoadJar(root.getPath())) {
-                    List<ClassIndex> indexes =
-                        ProjectDatabaseHelper.getClassIndexes(root.getPath());
+    try (TelemetryUtils.ScopedSpan scope =
+        TelemetryUtils.startScopedSpan("CachedASMReflector.createClassIndexes")) {
+      this.jars
+          .parallelStream()
+          .forEach(
+              wrapIOConsumer(
+                  root -> {
+                    String name = root.getName();
+                    if (name.endsWith(".jar")
+                        && !name.endsWith("SNAPSHOT.jar")
+                        && ProjectDatabaseHelper.getLoadJar(root.getPath())) {
+                      List<ClassIndex> indexes =
+                          ProjectDatabaseHelper.getClassIndexes(root.getPath());
 
-                    for (ClassIndex index : indexes) {
-                      index.loaded = true;
-                      String fqcn = index.getRawDeclaration();
-                      this.globalClassIndex.put(fqcn, index);
+                      for (ClassIndex index : indexes) {
+                        index.loaded = true;
+                        String fqcn = index.getRawDeclaration();
+                        this.globalClassIndex.put(fqcn, index);
+                      }
+                    } else {
+                      ASMReflector reflector = ASMReflector.getInstance();
+                      reflector
+                          .getClasses(root)
+                          .entrySet()
+                          .parallelStream()
+                          .forEach(entry -> addClassIndex(entry.getKey(), entry.getValue()));
+                      if (name.endsWith(".jar") && !name.endsWith("SNAPSHOT.jar")) {
+                        ProjectDatabaseHelper.saveLoadJar(root.getPath());
+                      }
                     }
-                  } else {
-                    ASMReflector reflector = ASMReflector.getInstance();
-                    reflector
-                        .getClasses(root)
-                        .entrySet()
-                        .parallelStream()
-                        .forEach(entry -> addClassIndex(entry.getKey(), entry.getValue()));
-                    if (name.endsWith(".jar") && !name.endsWith("SNAPSHOT.jar")) {
-                      ProjectDatabaseHelper.saveLoadJar(root.getPath());
-                    }
-                  }
-                }));
+                  }));
 
-    this.updateClassIndexFromDirectory();
-    this.saveAllClassIndexes();
+      this.updateClassIndexFromDirectory();
+      this.saveAllClassIndexes();
+    }
   }
 
   private void saveAllClassIndexes() {
@@ -357,6 +361,9 @@ public class CachedASMReflector {
     try {
       List<MemberDescriptor> members = new ArrayList<>(16);
       List<MemberDescriptor> list = globalCache.getMemberDescriptors(classWithoutTP);
+      if (!list.isEmpty()) {
+        // TelemetryUtils.recordAutocompleteStat(classWithoutTP);
+      }
       for (MemberDescriptor md : list) {
         members.add(md.clone());
       }
@@ -418,31 +425,37 @@ public class CachedASMReflector {
   }
 
   private Collection<String> getSuperClassInternal(String className) {
+    try (TelemetryUtils.ScopedSpan ss =
+        TelemetryUtils.startScopedSpan("CachedASMReflector.getSuperClassInternal")) {
 
-    Set<String> result = new LinkedHashSet<>(4);
-    String fqcn = ClassNameUtils.removeTypeParameter(className);
-    this.containsClassIndex(fqcn)
-        .ifPresent(
-            ci -> {
-              List<String> supers = ci.getSupers();
-              if (supers.isEmpty()) {
-                return;
-              }
+      ss.addAnnotation(
+          TelemetryUtils.annotationBuilder().put("className", className).build("args"));
 
-              if (supers.size() == 1 && supers.get(0).equals(ClassNameUtils.OBJECT_CLASS)) {
-                return;
-              }
-
-              for (String superClazz : supers) {
-                if (!superClazz.equals(ClassNameUtils.OBJECT_CLASS)) {
-                  String clazz = ClassNameUtils.removeTypeMark(superClazz);
-                  result.add(clazz);
-                  result.addAll(getSuperClassInternal(superClazz));
+      Set<String> result = new LinkedHashSet<>(4);
+      String fqcn = ClassNameUtils.removeTypeParameter(className);
+      this.containsClassIndex(fqcn)
+          .ifPresent(
+              ci -> {
+                List<String> supers = ci.getSupers();
+                if (supers.isEmpty()) {
+                  return;
                 }
-              }
-            });
 
-    return result;
+                if (supers.size() == 1 && supers.get(0).equals(ClassNameUtils.OBJECT_CLASS)) {
+                  return;
+                }
+
+                for (String superClazz : supers) {
+                  if (!superClazz.equals(ClassNameUtils.OBJECT_CLASS)) {
+                    String clazz = ClassNameUtils.removeTypeMark(superClazz);
+                    result.add(clazz);
+                    result.addAll(getSuperClassInternal(superClazz));
+                  }
+                }
+              });
+
+      return result;
+    }
   }
 
   public Collection<String> getSuperClass(String className) {

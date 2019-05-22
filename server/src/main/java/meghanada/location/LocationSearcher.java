@@ -53,12 +53,12 @@ import meghanada.config.Config;
 import meghanada.project.Project;
 import meghanada.project.ProjectDependency;
 import meghanada.reflect.asm.CachedASMReflector;
+import meghanada.telemetry.TelemetryUtils;
 import meghanada.utils.ClassNameUtils;
 import meghanada.utils.FileUtils;
 import meghanada.utils.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.message.EntryMessage;
 import org.jboss.windup.decompiler.api.DecompilationListener;
 import org.jboss.windup.decompiler.api.DecompilationResult;
 import org.jboss.windup.decompiler.fernflower.FernflowerDecompiler;
@@ -82,108 +82,135 @@ public class LocationSearcher {
   }
 
   private static Source getSource(final File file) throws IOException, ExecutionException {
-    final GlobalCache globalCache = GlobalCache.getInstance();
-    return globalCache.getSource(file.getCanonicalFile());
+
+    try (TelemetryUtils.ScopedSpan scope =
+        TelemetryUtils.startScopedSpan("LocationSearcher.getSource")) {
+
+      scope.addAnnotation(
+          TelemetryUtils.annotationBuilder().put("file", file.getPath()).build("args"));
+
+      final GlobalCache globalCache = GlobalCache.getInstance();
+      return globalCache.getSource(file.getCanonicalFile());
+    }
   }
 
   private static Location searchLocationFromFile(
       final SearchContext ctx, final String fqcn, final File targetFile) throws IOException {
-    CompilationUnit compilationUnit;
-    try {
-      compilationUnit = JavaParser.parse(targetFile, StandardCharsets.UTF_8);
-    } catch (Throwable e) {
-      log.warn(e.getMessage(), e);
-      return new Location(targetFile.getCanonicalPath(), 0, 0);
-    }
-    final List<TypeDeclaration<?>> types = compilationUnit.getTypes();
-    for (final TypeDeclaration<?> type : types) {
-      if (ctx.kind.equals(SearchKind.CLASS)) {
-        final SimpleName simpleName = type.getName();
-        final String typeName = simpleName.getIdentifier();
-        final String name = ClassNameUtils.getSimpleName(fqcn);
-        final Optional<Position> begin = simpleName.getBegin();
-        if (typeName.equals(name) && begin.isPresent()) {
-          final Position position = begin.get();
-          return new Location(targetFile.getCanonicalPath(), position.line, position.column);
-        }
+
+    try (TelemetryUtils.ScopedSpan scope =
+        TelemetryUtils.startScopedSpan("LocationSearcher.searchLocationFromFile")) {
+
+      scope.addAnnotation(
+          TelemetryUtils.annotationBuilder()
+              .put("fqcn", fqcn)
+              .put("targetFile", targetFile.getPath())
+              .build("args"));
+
+      CompilationUnit compilationUnit;
+      try {
+        compilationUnit = JavaParser.parse(targetFile, StandardCharsets.UTF_8);
+      } catch (Throwable e) {
+        log.warn(e.getMessage(), e);
+        return new Location(targetFile.getCanonicalPath(), 0, 0);
       }
-
-      final List<BodyDeclaration<?>> members = type.getMembers();
-      ConstructorDeclaration constructor = null;
-      MethodDeclaration method = null;
-
-      for (final BodyDeclaration<?> member : members) {
-        if (member instanceof FieldDeclaration
-            && ctx.name != null
-            && ctx.kind.equals(SearchKind.FIELD)) {
-          final Location variable = getFieldLocation(ctx, targetFile, (FieldDeclaration) member);
-          if (variable != null) {
-            return variable;
-          }
-        } else if (member instanceof ConstructorDeclaration
-            && ctx.name != null
-            && ctx.kind.equals(SearchKind.METHOD)) {
-          final ConstructorDeclaration declaration = (ConstructorDeclaration) member;
-          final SimpleName simpleName = declaration.getName();
-          final String name = simpleName.getIdentifier();
+      final List<TypeDeclaration<?>> types = compilationUnit.getTypes();
+      for (final TypeDeclaration<?> type : types) {
+        if (ctx.kind.equals(SearchKind.CLASS)) {
+          final SimpleName simpleName = type.getName();
+          final String typeName = simpleName.getIdentifier();
+          final String name = ClassNameUtils.getSimpleName(fqcn);
           final Optional<Position> begin = simpleName.getBegin();
-          if (name.equals(ctx.name) && begin.isPresent()) {
+          if (typeName.equals(name) && begin.isPresent()) {
             final Position position = begin.get();
-            final List<Parameter> parameters = declaration.getParameters();
-            // TODO check FQCN types
-            if (ctx.arguments.size() == parameters.size()) {
-              return new Location(targetFile.getCanonicalPath(), position.line, position.column);
-            } else {
-              if (constructor == null) {
-                constructor = declaration;
+            return new Location(targetFile.getCanonicalPath(), position.line, position.column);
+          }
+        }
+
+        final List<BodyDeclaration<?>> members = type.getMembers();
+        ConstructorDeclaration constructor = null;
+        MethodDeclaration method = null;
+
+        for (final BodyDeclaration<?> member : members) {
+          if (member instanceof FieldDeclaration
+              && ctx.name != null
+              && ctx.kind.equals(SearchKind.FIELD)) {
+            final Location variable = getFieldLocation(ctx, targetFile, (FieldDeclaration) member);
+            if (variable != null) {
+              return variable;
+            }
+          } else if (member instanceof ConstructorDeclaration
+              && ctx.name != null
+              && ctx.kind.equals(SearchKind.METHOD)) {
+            final ConstructorDeclaration declaration = (ConstructorDeclaration) member;
+            final SimpleName simpleName = declaration.getName();
+            final String name = simpleName.getIdentifier();
+            final Optional<Position> begin = simpleName.getBegin();
+            if (name.equals(ctx.name) && begin.isPresent()) {
+              final Position position = begin.get();
+              final List<Parameter> parameters = declaration.getParameters();
+              // TODO check FQCN types
+              if (ctx.arguments.size() == parameters.size()) {
+                return new Location(targetFile.getCanonicalPath(), position.line, position.column);
+              } else {
+                if (constructor == null) {
+                  constructor = declaration;
+                }
+              }
+            }
+          } else if (member instanceof MethodDeclaration
+              && ctx.name != null
+              && ctx.kind.equals(SearchKind.METHOD)) {
+            final MethodDeclaration declaration = (MethodDeclaration) member;
+            final SimpleName simpleName = declaration.getName();
+            final String name = simpleName.getIdentifier();
+            final Optional<Position> begin = simpleName.getBegin();
+            if (name.equals(ctx.name) && begin.isPresent()) {
+              final Position position = begin.get();
+              final List<Parameter> parameters = declaration.getParameters();
+              if (ctx.arguments.size() == parameters.size()) {
+                return new Location(targetFile.getCanonicalPath(), position.line, position.column);
+              } else {
+                if (method == null) {
+                  method = declaration;
+                }
               }
             }
           }
-        } else if (member instanceof MethodDeclaration
-            && ctx.name != null
-            && ctx.kind.equals(SearchKind.METHOD)) {
-          final MethodDeclaration declaration = (MethodDeclaration) member;
-          final SimpleName simpleName = declaration.getName();
-          final String name = simpleName.getIdentifier();
-          final Optional<Position> begin = simpleName.getBegin();
-          if (name.equals(ctx.name) && begin.isPresent()) {
-            final Position position = begin.get();
-            final List<Parameter> parameters = declaration.getParameters();
-            if (ctx.arguments.size() == parameters.size()) {
-              return new Location(targetFile.getCanonicalPath(), position.line, position.column);
-            } else {
-              if (method == null) {
-                method = declaration;
-              }
-            }
-          }
+        }
+        if (constructor != null) {
+          final Position pos = constructor.getName().getBegin().get();
+          return new Location(targetFile.getCanonicalPath(), pos.line, pos.column);
+        }
+        if (method != null) {
+          final Position pos = method.getName().getBegin().get();
+          return new Location(targetFile.getCanonicalPath(), pos.line, pos.column);
         }
       }
-      if (constructor != null) {
-        final Position pos = constructor.getName().getBegin().get();
-        return new Location(targetFile.getCanonicalPath(), pos.line, pos.column);
-      }
-      if (method != null) {
-        final Position pos = method.getName().getBegin().get();
-        return new Location(targetFile.getCanonicalPath(), pos.line, pos.column);
-      }
+      return null;
     }
-    return null;
   }
 
   private static Location getFieldLocation(
       SearchContext context, File targetFile, FieldDeclaration declaration) throws IOException {
-    final List<VariableDeclarator> variables = declaration.getVariables();
-    for (final VariableDeclarator variable : variables) {
-      final SimpleName simpleName = variable.getName();
-      final String name = simpleName.getIdentifier();
-      final Optional<Position> begin = simpleName.getBegin();
-      if (name.equals(context.name) && begin.isPresent()) {
-        final Position position = begin.get();
-        return new Location(targetFile.getCanonicalPath(), position.line, position.column);
+
+    try (TelemetryUtils.ScopedSpan scope =
+        TelemetryUtils.startScopedSpan("LocationSearcher.getFieldLocation")) {
+
+      scope.addAnnotation(
+          TelemetryUtils.annotationBuilder().put("targetFile", targetFile.getPath()).build("args"));
+
+      final List<VariableDeclarator> variables = declaration.getVariables();
+      for (final VariableDeclarator variable : variables) {
+        final SimpleName simpleName = variable.getName();
+        final String name = simpleName.getIdentifier();
+        final Optional<Position> begin = simpleName.getBegin();
+        if (name.equals(context.name) && begin.isPresent()) {
+          final Position position = begin.get();
+          return new Location(targetFile.getCanonicalPath(), position.line, position.column);
+        }
       }
+      return null;
     }
-    return null;
   }
 
   private static String replaceIgnoreStmt(String s) {
@@ -278,55 +305,74 @@ public class LocationSearcher {
 
   private static Optional<Variable> getMatchField(
       final ClassScope cs, final String fqcn, final String fieldName) {
-    final ClassScope matchClassScope = getMatchClassScope(cs, fqcn);
-    if (matchClassScope == null) {
-      return Optional.empty();
+
+    try (TelemetryUtils.ScopedSpan scope =
+        TelemetryUtils.startScopedSpan("LocationSearcher.getMatchField")) {
+
+      scope.addAnnotation(
+          TelemetryUtils.annotationBuilder()
+              .put("fqcn", fqcn)
+              .put("fieldName", fieldName)
+              .build("args"));
+
+      final ClassScope matchClassScope = getMatchClassScope(cs, fqcn);
+      if (matchClassScope == null) {
+        return Optional.empty();
+      }
+      return matchClassScope.getField(fieldName);
     }
-    return matchClassScope.getField(fieldName);
   }
 
   private Optional<Location> searchLocalVariable(
-      final Source source, final int line, final int col, final String symbol) {
-    final EntryMessage entryMessage = log.traceEntry("line={} col={} symbol={}", line, col, symbol);
+      final Source source, final int line, final int column, final String symbol) {
 
-    final Map<String, Variable> variableMap = source.getVariableMap(line);
-    log.trace("variables={}", variableMap);
-    final Optional<Variable> variable = Optional.ofNullable(variableMap.get(symbol));
-    final Optional<Location> location =
-        variable
-            .map(
-                var -> {
-                  if (var.isDecl()) {
-                    final Location loc =
-                        new Location(
-                            source.getFile().getPath(),
-                            var.range.begin.line,
-                            var.range.begin.column);
-                    return Optional.of(loc);
-                  } else {
-                    final String fqcn = var.fqcn;
-                    final Location loc = getFQCNLocation(fqcn);
-                    return Optional.ofNullable(loc);
-                  }
-                })
-            .orElseGet(
-                () -> {
-                  // isField
-                  final Optional<TypeScope> ts = source.getTypeScope(line);
-                  if (!ts.isPresent()) {
-                    return Optional.empty();
-                  }
-                  return ts.get()
-                      .getField(symbol)
-                      .map(
-                          fieldSymbol ->
-                              new Location(
-                                  source.getFile().getPath(),
-                                  fieldSymbol.range.begin.line,
-                                  fieldSymbol.range.begin.column));
-                });
-    log.traceExit(entryMessage);
-    return location;
+    try (TelemetryUtils.ScopedSpan scope =
+        TelemetryUtils.startScopedSpan("LocationSearcher.searchLocalVariable")) {
+
+      scope.addAnnotation(
+          TelemetryUtils.annotationBuilder()
+              .put("source", source.getFile().getPath())
+              .put("line", line)
+              .put("column", column)
+              .build("args"));
+
+      final Map<String, Variable> variableMap = source.getVariableMap(line);
+      final Optional<Variable> variable = Optional.ofNullable(variableMap.get(symbol));
+      final Optional<Location> location =
+          variable
+              .map(
+                  var -> {
+                    if (var.isDecl()) {
+                      final Location loc =
+                          new Location(
+                              source.getFile().getPath(),
+                              var.range.begin.line,
+                              var.range.begin.column);
+                      return Optional.of(loc);
+                    } else {
+                      final String fqcn = var.fqcn;
+                      final Location loc = getFQCNLocation(fqcn);
+                      return Optional.ofNullable(loc);
+                    }
+                  })
+              .orElseGet(
+                  () -> {
+                    // is field
+                    final Optional<TypeScope> ts = source.getTypeScope(line);
+                    if (!ts.isPresent()) {
+                      return Optional.empty();
+                    }
+                    return ts.get()
+                        .getField(symbol)
+                        .map(
+                            fieldSymbol ->
+                                new Location(
+                                    source.getFile().getPath(),
+                                    fieldSymbol.range.begin.line,
+                                    fieldSymbol.range.begin.column));
+                  });
+      return location;
+    }
   }
 
   public Optional<Location> searchSymbol(final String symbol) {
@@ -336,14 +382,26 @@ public class LocationSearcher {
   public Optional<Location> searchDeclarationLocation(
       final File file, final int line, final int column, final String symbol)
       throws ExecutionException, IOException {
-    final Source source = getSource(file);
-    log.trace("search symbol {} {}", symbol, source.getFile());
 
-    return this.functions.stream()
-        .map(f -> f.apply(source, line, column, symbol))
-        .filter(Optional::isPresent)
-        .findFirst()
-        .orElse(Optional.empty());
+    try (TelemetryUtils.ScopedSpan scope =
+        TelemetryUtils.startScopedSpan("LocationSearcher.searchDeclarationLocation")) {
+
+      scope.addAnnotation(
+          TelemetryUtils.annotationBuilder()
+              .put("line", line)
+              .put("column", column)
+              .put("symbol", symbol)
+              .build("args"));
+
+      final Source source = getSource(file);
+      log.trace("search symbol {} {}", symbol, source.getFile());
+
+      return this.functions.stream()
+          .map(f -> f.apply(source, line, column, symbol))
+          .filter(Optional::isPresent)
+          .findFirst()
+          .orElse(Optional.empty());
+    }
   }
 
   private List<LocationSearchFunction> getFunctions() {
@@ -355,48 +413,69 @@ public class LocationSearcher {
     return list;
   }
 
-  private Optional<Location> searchMethodCall(Source source, int line, int col, String symbol) {
-    EntryMessage entryMessage = log.traceEntry("line={} col={} symbol={}", line, col, symbol);
-    Optional<MethodCall> methodCall = source.getMethodCall(line, col, true);
-    Optional<Location> result = methodCall.flatMap(mc -> searchMethodCallLocation(mc));
-    log.traceExit(entryMessage);
-    return result;
+  private Optional<Location> searchMethodCall(Source source, int line, int column, String symbol) {
+
+    try (TelemetryUtils.ScopedSpan scope =
+        TelemetryUtils.startScopedSpan("LocationSearcher.searchMethodCall")) {
+
+      scope.addAnnotation(
+          TelemetryUtils.annotationBuilder()
+              .put("source", source.getFile().getPath())
+              .put("line", line)
+              .put("column", column)
+              .put("symbol", symbol)
+              .build("args"));
+      Optional<MethodCall> methodCall = source.getMethodCall(line, column, true);
+      Optional<Location> result = methodCall.flatMap(mc -> searchMethodCallLocation(mc));
+      return result;
+    }
   }
 
   private Optional<Location> searchMethodCallLocation(MethodCall mc) {
-    String methodName = mc.name;
-    List<String> arguments = mc.getArguments();
-    String declaringClass = mc.declaringClass;
-    if (isNull(declaringClass)) {
-      return Optional.empty();
-    }
-    List<String> targets = new ArrayList<>(2);
-    targets.add(declaringClass);
 
-    CachedASMReflector reflector = CachedASMReflector.getInstance();
-    targets.addAll(reflector.getSuperClass(declaringClass));
-    Project project = this.projectSupplier.get();
-    return targets.stream()
-        .map(
-            fqcn ->
-                existsFQCN(project.getAllSourcesWithDependencies(), fqcn)
-                    .flatMap(file -> getMethodLocationFromProject(methodName, arguments, file))
-                    .orElseGet(
-                        wrapIO(
-                            () -> {
-                              SearchContext context = new SearchContext(fqcn, SearchKind.METHOD);
-                              context.name = methodName;
-                              context.arguments = arguments;
-                              return Optional.ofNullable(searchFromSrcZip(context))
-                                  .orElseGet(wrapIO(() -> searchFromDependency(context)));
-                            })))
-        .filter(Objects::nonNull)
-        .findFirst();
+    try (TelemetryUtils.ScopedSpan scope =
+        TelemetryUtils.startScopedSpan("LocationSearcher.searchMethodCallLocation")) {
+
+      String methodName = mc.name;
+      List<String> arguments = mc.getArguments();
+      String declaringClass = mc.declaringClass;
+      if (isNull(declaringClass)) {
+        return Optional.empty();
+      }
+      List<String> targets = new ArrayList<>(2);
+      targets.add(declaringClass);
+
+      CachedASMReflector reflector = CachedASMReflector.getInstance();
+      targets.addAll(reflector.getSuperClass(declaringClass));
+      Project project = this.projectSupplier.get();
+      return targets.stream()
+          .map(
+              fqcn ->
+                  existsFQCN(project.getAllSourcesWithDependencies(), fqcn)
+                      .flatMap(file -> getMethodLocationFromProject(methodName, arguments, file))
+                      .orElseGet(
+                          wrapIO(
+                              () -> {
+                                SearchContext context = new SearchContext(fqcn, SearchKind.METHOD);
+                                context.name = methodName;
+                                context.arguments = arguments;
+                                return Optional.ofNullable(searchFromSrcZip(context))
+                                    .orElseGet(wrapIO(() -> searchFromDependency(context)));
+                              })))
+          .filter(Objects::nonNull)
+          .findFirst();
+    }
   }
 
   private static Optional<Location> getMethodLocationFromProject(
       String methodName, List<String> arguments, File file) {
-    try {
+
+    try (TelemetryUtils.ScopedSpan scope =
+        TelemetryUtils.startScopedSpan("LocationSearcher.getMethodLocationFromProject")) {
+
+      scope.addAnnotation(
+          TelemetryUtils.annotationBuilder().put("methodName", methodName).build("args"));
+
       Source declaringClassSrc = getSource(file);
       String path = declaringClassSrc.getFile().getPath();
       return declaringClassSrc.getClassScopes().stream()
@@ -424,163 +503,187 @@ public class LocationSearcher {
   }
 
   private Optional<Location> searchClassOrInterface(
-      final Source source, final int line, final int col, String symbol) {
-    final EntryMessage entryMessage = log.traceEntry("line={} col={} symbol={}", line, col, symbol);
-    if (symbol.startsWith("@")) {
-      symbol = symbol.substring(1);
-    }
+      final Source source, final int line, final int column, String symbol) {
 
-    final List<String> searchTargets = new ArrayList<>(4);
-    String fqcn = source.getImportedClassFQCN(symbol, null);
-    if (fqcn == null) {
-      final CachedASMReflector reflector = CachedASMReflector.getInstance();
-      final Map<String, String> standardClasses = reflector.getStandardClasses();
-      fqcn = standardClasses.get(symbol);
-      if (fqcn == null) {
-        if (!source.getPackageName().isEmpty()) {
-          fqcn = source.getPackageName() + '.' + symbol;
-        } else {
-          fqcn = symbol;
-        }
-        searchTargets.add(fqcn);
-        // Add inner class
-        final String finalSym = symbol;
-        source
-            .getTypeScope(line)
-            .ifPresent(
-                typeScope -> {
-                  final String firstFQCN = typeScope.getFQCN();
-                  searchTargets.add(firstFQCN + ClassNameUtils.INNER_MARK + finalSym);
-                });
+    try (TelemetryUtils.ScopedSpan scope =
+        TelemetryUtils.startScopedSpan("LocationSearcher.searchClassOrInterface")) {
+
+      scope.addAnnotation(
+          TelemetryUtils.annotationBuilder()
+              .put("source", source.getFile().getPath())
+              .put("line", line)
+              .put("column", column)
+              .put("symbol", symbol)
+              .build("args"));
+
+      if (symbol.startsWith("@")) {
+        symbol = symbol.substring(1);
       }
-    } else {
-      searchTargets.add(fqcn);
+
+      final List<String> searchTargets = new ArrayList<>(4);
+      String fqcn = source.getImportedClassFQCN(symbol, null);
+      if (fqcn == null) {
+        final CachedASMReflector reflector = CachedASMReflector.getInstance();
+        final Map<String, String> standardClasses = reflector.getStandardClasses();
+        fqcn = standardClasses.get(symbol);
+        if (fqcn == null) {
+          if (!source.getPackageName().isEmpty()) {
+            fqcn = source.getPackageName() + '.' + symbol;
+          } else {
+            fqcn = symbol;
+          }
+          searchTargets.add(fqcn);
+          // Add inner class
+          final String finalSym = symbol;
+          source
+              .getTypeScope(line)
+              .ifPresent(
+                  typeScope -> {
+                    final String firstFQCN = typeScope.getFQCN();
+                    searchTargets.add(firstFQCN + ClassNameUtils.INNER_MARK + finalSym);
+                  });
+        }
+      } else {
+        searchTargets.add(fqcn);
+      }
+
+      return searchTargets.stream().map(this::getFQCNLocation).filter(Objects::nonNull).findFirst();
     }
-
-    final Optional<Location> location =
-        searchTargets.stream().map(this::getFQCNLocation).filter(Objects::nonNull).findFirst();
-
-    log.traceExit(entryMessage);
-    return location;
   }
 
   private Location getFQCNLocation(final String fqcn) {
-    Project project = this.projectSupplier.get();
-    return existsFQCN(project.getAllSourcesWithDependencies(), fqcn)
-        .flatMap(
-            f -> {
-              try {
-                final Source declaringClassSrc = getSource(f);
-                final String path = declaringClassSrc.getFile().getPath();
-                return declaringClassSrc.getClassScopes().stream()
-                    .filter(cs -> matchClassName(cs, fqcn))
-                    .map(
-                        cs -> {
-                          final ClassScope match = getMatchClassScope(cs, fqcn);
-                          if (match == null) {
-                            return null;
-                          }
-                          return new Location(
-                              path, match.getBeginLine(), match.getNameRange().begin.column);
-                        })
-                    .filter(Objects::nonNull)
-                    .findFirst();
-              } catch (Exception e) {
-                throw new UncheckedExecutionException(e);
-              }
-            })
-        .orElseGet(
-            wrapIO(
-                () -> {
-                  final SearchContext context = new SearchContext(fqcn, SearchKind.CLASS);
-                  return Optional.ofNullable(searchFromSrcZip(context))
-                      .orElseGet(wrapIO(() -> searchFromDependency(context)));
-                }));
+
+    try (TelemetryUtils.ScopedSpan scope =
+        TelemetryUtils.startScopedSpan("LocationSearcher.getFQCNLocation")) {
+
+      scope.addAnnotation(TelemetryUtils.annotationBuilder().put("fqcn", fqcn).build("args"));
+
+      Project project = this.projectSupplier.get();
+      return existsFQCN(project.getAllSourcesWithDependencies(), fqcn)
+          .flatMap(
+              f -> {
+                try {
+                  final Source declaringClassSrc = getSource(f);
+                  final String path = declaringClassSrc.getFile().getPath();
+                  return declaringClassSrc.getClassScopes().stream()
+                      .filter(cs -> matchClassName(cs, fqcn))
+                      .map(
+                          cs -> {
+                            final ClassScope match = getMatchClassScope(cs, fqcn);
+                            if (match == null) {
+                              return null;
+                            }
+                            return new Location(
+                                path, match.getBeginLine(), match.getNameRange().begin.column);
+                          })
+                      .filter(Objects::nonNull)
+                      .findFirst();
+                } catch (Exception e) {
+                  throw new UncheckedExecutionException(e);
+                }
+              })
+          .orElseGet(
+              wrapIO(
+                  () -> {
+                    final SearchContext context = new SearchContext(fqcn, SearchKind.CLASS);
+                    return Optional.ofNullable(searchFromSrcZip(context))
+                        .orElseGet(wrapIO(() -> searchFromDependency(context)));
+                  }));
+    }
   }
 
   private Location searchFromSrcZip(final SearchContext context) throws IOException {
 
-    final String javaHomeDir = Config.load().getJavaHomeDir();
-    File srcZip;
+    try (TelemetryUtils.ScopedSpan scope =
+        TelemetryUtils.startScopedSpan("LocationSearcher.searchFromSrcZip")) {
 
-    Config config = Config.load();
-    if (config.isJava8()) {
-      srcZip = new File(javaHomeDir, "src.zip");
-      if (!srcZip.exists()) {
-        srcZip = new File(new File(javaHomeDir).getParentFile(), "src.zip");
-      }
-      if (!srcZip.exists()) {
-        return null;
-      }
-    } else {
-      srcZip = new File(javaHomeDir + File.separator + "lib", "src.zip");
-      if (!srcZip.exists()) {
-        srcZip = new File(new File(javaHomeDir).getParentFile(), "src.zip");
-      }
-      if (!srcZip.exists()) {
-        return null;
-      }
-    }
+      final String javaHomeDir = Config.load().getJavaHomeDir();
+      File srcZip;
 
-    final String fqcn = ClassNameUtils.getParentClass(context.searchFQCN);
-    final File temp = copyFromSrcZip(fqcn, srcZip);
-    if (temp == null) {
-      return null;
-    }
-
-    final Location loc = searchLocationFromFile(context, fqcn, temp);
-    if (!temp.setReadOnly()) {
-      log.warn("{} setReadOnly fail", temp);
-    }
-    if (loc != null) {
-      return loc;
-    }
-    return null;
-  }
-
-  private Location searchFromDependency(final SearchContext context) throws IOException {
-    final String searchFQCN = context.searchFQCN;
-    final CachedASMReflector reflector = CachedASMReflector.getInstance();
-    final File classFile = reflector.getClassFile(searchFQCN);
-    final String tempDir = System.getProperty("java.io.tmpdir");
-    if (classFile != null
-        && classFile.exists()
-        && classFile.getName().endsWith(FileUtils.JAR_EXT)) {
-
-      final String androidHome = System.getenv("ANDROID_HOME");
-      if (androidHome != null) {
-        final Optional<ProjectDependency> dependencyOptional =
-            this.projectSupplier.get().getDependencies().stream()
-                .filter(dependency -> dependency.getFile().equals(classFile))
-                .findFirst();
-        if (dependencyOptional.isPresent()) {
-          final ProjectDependency dependency = dependencyOptional.get();
-          final String sourceJar =
-              ClassNameUtils.getSimpleName(dependency.getId())
-                  + '-'
-                  + dependency.getVersion()
-                  + "-sources.jar";
-          final File root = new File(androidHome, "extras");
-          if (root.exists()) {
-            return getLocationFromSrcOrDecompile(context, classFile, root, sourceJar);
-          }
+      Config config = Config.load();
+      if (config.isJava8()) {
+        srcZip = new File(javaHomeDir, "src.zip");
+        if (!srcZip.exists()) {
+          srcZip = new File(new File(javaHomeDir).getParentFile(), "src.zip");
+        }
+        if (!srcZip.exists()) {
+          return null;
+        }
+      } else {
+        srcZip = new File(javaHomeDir + File.separator + "lib", "src.zip");
+        if (!srcZip.exists()) {
+          srcZip = new File(new File(javaHomeDir).getParentFile(), "src.zip");
+        }
+        if (!srcZip.exists()) {
+          return null;
         }
       }
 
-      final File depParent = classFile.getParentFile();
-      final File dependencyDir = depParent.getParentFile();
-      final String srcJarName =
-          StringUtils.replace(classFile.getName(), FileUtils.JAR_EXT, "-sources.jar");
-
-      final String disable = System.getProperty("disable-source-jar");
-      if (disable != null && disable.equals("true")) {
-        return searchLocationFromDecompileFile(context, searchFQCN, classFile, tempDir);
+      final String fqcn = ClassNameUtils.getParentClass(context.searchFQCN);
+      final File temp = copyFromSrcZip(fqcn, srcZip);
+      if (temp == null) {
+        return null;
       }
 
-      return getLocationFromSrcOrDecompile(context, classFile, dependencyDir, srcJarName);
+      final Location loc = searchLocationFromFile(context, fqcn, temp);
+      if (!temp.setReadOnly()) {
+        log.warn("{} setReadOnly fail", temp);
+      }
+      if (loc != null) {
+        return loc;
+      }
+      return null;
     }
+  }
 
-    return null;
+  private Location searchFromDependency(final SearchContext context) throws IOException {
+
+    try (TelemetryUtils.ScopedSpan scope =
+        TelemetryUtils.startScopedSpan("LocationSearcher.searchFromDependency")) {
+
+      final String searchFQCN = context.searchFQCN;
+      final CachedASMReflector reflector = CachedASMReflector.getInstance();
+      final File classFile = reflector.getClassFile(searchFQCN);
+      final String tempDir = System.getProperty("java.io.tmpdir");
+      if (classFile != null
+          && classFile.exists()
+          && classFile.getName().endsWith(FileUtils.JAR_EXT)) {
+
+        final String androidHome = System.getenv("ANDROID_HOME");
+        if (androidHome != null) {
+          final Optional<ProjectDependency> dependencyOptional =
+              this.projectSupplier.get().getDependencies().stream()
+                  .filter(dependency -> dependency.getFile().equals(classFile))
+                  .findFirst();
+          if (dependencyOptional.isPresent()) {
+            final ProjectDependency dependency = dependencyOptional.get();
+            final String sourceJar =
+                ClassNameUtils.getSimpleName(dependency.getId())
+                    + '-'
+                    + dependency.getVersion()
+                    + "-sources.jar";
+            final File root = new File(androidHome, "extras");
+            if (root.exists()) {
+              return getLocationFromSrcOrDecompile(context, classFile, root, sourceJar);
+            }
+          }
+        }
+
+        final File depParent = classFile.getParentFile();
+        final File dependencyDir = depParent.getParentFile();
+        final String srcJarName =
+            StringUtils.replace(classFile.getName(), FileUtils.JAR_EXT, "-sources.jar");
+
+        final String disable = System.getProperty("disable-source-jar");
+        if (disable != null && disable.equals("true")) {
+          return searchLocationFromDecompileFile(context, searchFQCN, classFile, tempDir);
+        }
+
+        return getLocationFromSrcOrDecompile(context, classFile, dependencyDir, srcJarName);
+      }
+
+      return null;
+    }
   }
 
   private Location getLocationFromSrcOrDecompile(
@@ -589,189 +692,224 @@ public class LocationSearcher {
       final File dependencyDir,
       final String srcName)
       throws IOException {
-    final String tempDir = System.getProperty("java.io.tmpdir");
-    final String searchFQCN = context.searchFQCN;
-    return FileUtils.collectFile(dependencyDir, srcName)
-        .map(
-            wrapIO(
-                srcJar -> {
-                  final File file = copyFromSrcZip(searchFQCN, srcJar);
-                  if (file == null) {
-                    return searchLocationFromDecompileFile(context, searchFQCN, classFile, tempDir);
-                  }
-                  final String fqcn = ClassNameUtils.getParentClass(context.searchFQCN);
-                  return searchLocationFromFile(context, fqcn, file);
-                }))
-        .orElseGet(
-            wrapIO(() -> searchLocationFromDecompileFile(context, searchFQCN, classFile, tempDir)));
+
+    try (TelemetryUtils.ScopedSpan scope =
+        TelemetryUtils.startScopedSpan("LocationSearcher.getLocationFromSrcOrDecompile")) {
+
+      final String tempDir = System.getProperty("java.io.tmpdir");
+      final String searchFQCN = context.searchFQCN;
+      return FileUtils.collectFile(dependencyDir, srcName)
+          .map(
+              wrapIO(
+                  srcJar -> {
+                    final File file = copyFromSrcZip(searchFQCN, srcJar);
+                    if (file == null) {
+                      return searchLocationFromDecompileFile(
+                          context, searchFQCN, classFile, tempDir);
+                    }
+                    final String fqcn = ClassNameUtils.getParentClass(context.searchFQCN);
+                    return searchLocationFromFile(context, fqcn, file);
+                  }))
+          .orElseGet(
+              wrapIO(
+                  () -> searchLocationFromDecompileFile(context, searchFQCN, classFile, tempDir)));
+    }
   }
 
   private Location searchLocationFromDecompileFile(
       SearchContext context, String searchFQCN, File classFile, String tempDir) throws IOException {
-    final FernflowerDecompiler decompiler = new FernflowerDecompiler();
-    decompiler.getLogger().setLevel(Level.OFF);
-    final File output = new File(tempDir, TEMP_DECOMPILE_DIR);
-    if (!output.exists() && !output.mkdirs()) {
-      log.warn("{} mkdirs fail", output);
-    }
-    try {
-      final DecompilationResult decompilationResult =
-          decompiler.decompileArchive(
-              classFile.toPath(),
-              output.toPath(),
-              zipEntry -> {
-                final String name = zipEntry.getName();
-                final String base = StringUtils.replace(searchFQCN, ".", "/");
-                final String search = base + FileUtils.CLASS_EXT;
-                if (name.equals(search)) {
-                  return Filter.Result.ACCEPT;
-                }
-                final String inner = base + '$';
-                if (name.startsWith(inner)) {
-                  return Filter.Result.ACCEPT;
-                }
-                return Filter.Result.REJECT;
-              },
-              new DefaultDecompileFilter());
-      final String fqcn = ClassNameUtils.getParentClass(context.searchFQCN);
 
-      if (this.decompileFiles.containsKey(fqcn)) {
-        final List<String> files = this.decompileFiles.get(fqcn);
-        for (final String decompileFile : files) {
-          final File file = new File(decompileFile);
-          final Location location = searchLocationFromFile(context, fqcn, file);
-          if (location != null) {
-            return location;
-          }
-        }
-      } else {
-        final Map<String, String> decompiledFiles = decompilationResult.getDecompiledFiles();
-        final List<String> tempList = new ArrayList<>(4);
-        for (final String decompileFile : decompiledFiles.values()) {
-          final File decompiled = new File(decompileFile);
-          final File temp =
-              File.createTempFile(TEMP_FILE_PREFIX + "-decompile-", FileUtils.JAVA_EXT);
-          LocationSearcher.copyAndFilter(decompiled, temp);
-          tempList.add(temp.getCanonicalPath());
-          decompiled.deleteOnExit();
-          if (!decompiled.delete()) {
-            log.warn("{} delete fail", decompiled);
-          }
+    try (TelemetryUtils.ScopedSpan scope =
+        TelemetryUtils.startScopedSpan("LocationSearcher.searchLocationFromDecompileFile")) {
 
-          if (!temp.setReadOnly()) {
-            log.warn("{} setReadOnly fail", temp);
-          }
-          temp.deleteOnExit();
-          final Location location = searchLocationFromFile(context, fqcn, temp);
-          if (location != null) {
-            this.decompileFiles.put(fqcn, tempList);
-            return location;
-          }
-        }
-        this.decompileFiles.put(fqcn, tempList);
+      final FernflowerDecompiler decompiler = new FernflowerDecompiler();
+      decompiler.getLogger().setLevel(Level.OFF);
+      final File output = new File(tempDir, TEMP_DECOMPILE_DIR);
+      if (!output.exists() && !output.mkdirs()) {
+        log.warn("{} mkdirs fail", output);
       }
-      return null;
-    } finally {
-      org.apache.commons.io.FileUtils.deleteDirectory(output);
+      try {
+        final DecompilationResult decompilationResult =
+            decompiler.decompileArchive(
+                classFile.toPath(),
+                output.toPath(),
+                zipEntry -> {
+                  final String name = zipEntry.getName();
+                  final String base = StringUtils.replace(searchFQCN, ".", "/");
+                  final String search = base + FileUtils.CLASS_EXT;
+                  if (name.equals(search)) {
+                    return Filter.Result.ACCEPT;
+                  }
+                  final String inner = base + '$';
+                  if (name.startsWith(inner)) {
+                    return Filter.Result.ACCEPT;
+                  }
+                  return Filter.Result.REJECT;
+                },
+                new DefaultDecompileFilter());
+        final String fqcn = ClassNameUtils.getParentClass(context.searchFQCN);
+
+        if (this.decompileFiles.containsKey(fqcn)) {
+          final List<String> files = this.decompileFiles.get(fqcn);
+          for (final String decompileFile : files) {
+            final File file = new File(decompileFile);
+            final Location location = searchLocationFromFile(context, fqcn, file);
+            if (location != null) {
+              return location;
+            }
+          }
+        } else {
+          final Map<String, String> decompiledFiles = decompilationResult.getDecompiledFiles();
+          final List<String> tempList = new ArrayList<>(4);
+          for (final String decompileFile : decompiledFiles.values()) {
+            final File decompiled = new File(decompileFile);
+            final File temp =
+                File.createTempFile(TEMP_FILE_PREFIX + "-decompile-", FileUtils.JAVA_EXT);
+            LocationSearcher.copyAndFilter(decompiled, temp);
+            tempList.add(temp.getCanonicalPath());
+            decompiled.deleteOnExit();
+            if (!decompiled.delete()) {
+              log.warn("{} delete fail", decompiled);
+            }
+
+            if (!temp.setReadOnly()) {
+              log.warn("{} setReadOnly fail", temp);
+            }
+            temp.deleteOnExit();
+            final Location location = searchLocationFromFile(context, fqcn, temp);
+            if (location != null) {
+              this.decompileFiles.put(fqcn, tempList);
+              return location;
+            }
+          }
+          this.decompileFiles.put(fqcn, tempList);
+        }
+        return null;
+      } finally {
+        org.apache.commons.io.FileUtils.deleteDirectory(output);
+      }
     }
   }
 
   private File copyFromSrcZip(final String searchFQCN, final File srcZip) throws IOException {
-    if (this.copiedSrcFile.containsKey(searchFQCN)) {
-      final File file = this.copiedSrcFile.get(searchFQCN);
-      if (file.exists()) {
-        return file;
-      }
-      // deleted
-      this.copiedSrcFile.remove(searchFQCN);
-    }
-    try (final ZipFile srcZipFile = new ZipFile(srcZip)) {
-      final String s = StringUtils.replace(searchFQCN, ".", "/") + FileUtils.JAVA_EXT;
-      ZipEntry entry = srcZipFile.getEntry(s);
-      if (entry == null) {
-        Optional<? extends ZipEntry> zipEntry =
-            srcZipFile.stream()
-                .filter(
-                    e -> {
-                      Path p = Paths.get(e.getName());
-                      if (p.getNameCount() < 2) {
-                        return false;
-                      }
-                      Path subpath = p.subpath(1, p.getNameCount());
-                      return subpath.toString().equals(s);
-                    })
-                .findFirst();
 
-        if (!zipEntry.isPresent()) {
-          return null;
-        }
-        entry = zipEntry.get();
-      }
+    try (TelemetryUtils.ScopedSpan scope =
+        TelemetryUtils.startScopedSpan("LocationSearcher.copyFromSrcZip")) {
 
-      String tmpdir = System.getProperty("java.io.tmpdir");
-      File tmpParent = new File(tmpdir);
-      if (!tmpParent.exists() && !tmpParent.mkdirs()) {
-        log.warn("fail create tmpdir");
-      }
-      // copy from src.zip
-      final File temp = File.createTempFile(TEMP_FILE_PREFIX, FileUtils.JAVA_EXT);
-      temp.deleteOnExit();
-      try (final InputStream inputStream = srcZipFile.getInputStream(entry);
-          final OutputStream outputStream = new FileOutputStream(temp)) {
-        final byte[] buf = new byte[1024];
-        int ret;
-        while ((ret = inputStream.read(buf)) != -1) {
-          outputStream.write(buf, 0, ret);
+      if (this.copiedSrcFile.containsKey(searchFQCN)) {
+        final File file = this.copiedSrcFile.get(searchFQCN);
+        if (file.exists()) {
+          return file;
         }
+        // deleted
+        this.copiedSrcFile.remove(searchFQCN);
       }
-      // reuse
-      this.copiedSrcFile.put(searchFQCN, temp);
-      return temp;
+      try (final ZipFile srcZipFile = new ZipFile(srcZip)) {
+        final String s = StringUtils.replace(searchFQCN, ".", "/") + FileUtils.JAVA_EXT;
+        ZipEntry entry = srcZipFile.getEntry(s);
+        if (entry == null) {
+          Optional<? extends ZipEntry> zipEntry =
+              srcZipFile.stream()
+                  .filter(
+                      e -> {
+                        Path p = Paths.get(e.getName());
+                        if (p.getNameCount() < 2) {
+                          return false;
+                        }
+                        Path subpath = p.subpath(1, p.getNameCount());
+                        return subpath.toString().equals(s);
+                      })
+                  .findFirst();
+
+          if (!zipEntry.isPresent()) {
+            return null;
+          }
+          entry = zipEntry.get();
+        }
+
+        String tmpdir = System.getProperty("java.io.tmpdir");
+        File tmpParent = new File(tmpdir);
+        if (!tmpParent.exists() && !tmpParent.mkdirs()) {
+          log.warn("fail create tmpdir");
+        }
+        // copy from src.zip
+        final File temp = File.createTempFile(TEMP_FILE_PREFIX, FileUtils.JAVA_EXT);
+        temp.deleteOnExit();
+        try (final InputStream inputStream = srcZipFile.getInputStream(entry);
+            final OutputStream outputStream = new FileOutputStream(temp)) {
+          final byte[] buf = new byte[1024];
+          int ret;
+          while ((ret = inputStream.read(buf)) != -1) {
+            outputStream.write(buf, 0, ret);
+          }
+        }
+        // reuse
+        this.copiedSrcFile.put(searchFQCN, temp);
+        return temp;
+      }
     }
   }
 
-  private Optional<Location> searchFieldAccess(Source src, int line, int col, String symbol) {
-    EntryMessage entryMessage = log.traceEntry("line={} col={} symbol={}", line, col, symbol);
-    Optional<Location> result =
-        src.searchFieldAccess(line, col, symbol)
-            .flatMap(
-                fa -> {
-                  String fieldName = fa.name;
-                  String declaringClass = fa.declaringClass;
-                  if (declaringClass == null) {
-                    return Optional.empty();
-                  }
-                  List<String> targets = new ArrayList<>(2);
-                  targets.add(declaringClass);
-                  CachedASMReflector reflector = CachedASMReflector.getInstance();
-                  targets.addAll(reflector.getSuperClass(declaringClass));
-                  Project project = this.projectSupplier.get();
-                  return targets.stream()
-                      .map(
-                          fqcn ->
-                              existsFQCN(project.getAllSourcesWithDependencies(), fqcn)
-                                  .flatMap(
-                                      file -> getFieldLocationFromProject(fqcn, fieldName, file))
-                                  .orElseGet(
-                                      wrapIO(
-                                          () -> {
-                                            SearchContext context =
-                                                new SearchContext(fqcn, SearchKind.FIELD);
-                                            context.name = fieldName;
-                                            return Optional.ofNullable(searchFromSrcZip(context))
-                                                .orElseGet(
-                                                    wrapIO(() -> searchFromDependency(context)));
-                                          })))
-                      .filter(Objects::nonNull)
-                      .findFirst();
-                });
-    log.traceExit(entryMessage);
-    return result;
+  private Optional<Location> searchFieldAccess(Source source, int line, int column, String symbol) {
+    try (TelemetryUtils.ScopedSpan scope =
+        TelemetryUtils.startScopedSpan("LocationSearcher.searchFieldAccess")) {
+
+      scope.addAnnotation(
+          TelemetryUtils.annotationBuilder()
+              .put("source", source.getFile().getPath())
+              .put("line", line)
+              .put("column", column)
+              .put("symbol", symbol)
+              .build("args"));
+
+      return source
+          .searchFieldAccess(line, column, symbol)
+          .flatMap(
+              fa -> {
+                String fieldName = fa.name;
+                String declaringClass = fa.declaringClass;
+                if (declaringClass == null) {
+                  return Optional.empty();
+                }
+                List<String> targets = new ArrayList<>(2);
+                targets.add(declaringClass);
+                CachedASMReflector reflector = CachedASMReflector.getInstance();
+                targets.addAll(reflector.getSuperClass(declaringClass));
+                Project project = this.projectSupplier.get();
+                return targets.stream()
+                    .map(
+                        fqcn ->
+                            existsFQCN(project.getAllSourcesWithDependencies(), fqcn)
+                                .flatMap(file -> getFieldLocationFromProject(fqcn, fieldName, file))
+                                .orElseGet(
+                                    wrapIO(
+                                        () -> {
+                                          SearchContext context =
+                                              new SearchContext(fqcn, SearchKind.FIELD);
+                                          context.name = fieldName;
+                                          return Optional.ofNullable(searchFromSrcZip(context))
+                                              .orElseGet(
+                                                  wrapIO(() -> searchFromDependency(context)));
+                                        })))
+                    .filter(Objects::nonNull)
+                    .findFirst();
+              });
+    }
   }
 
   private static Optional<Location> getFieldLocationFromProject(
       final String fqcn, final String fieldName, final File file) {
-    try {
+
+    try (TelemetryUtils.ScopedSpan scope =
+        TelemetryUtils.startScopedSpan("LocationSearcher.getFieldLocationFromProject")) {
+
+      scope.addAnnotation(
+          TelemetryUtils.annotationBuilder()
+              .put("fqcn", fqcn)
+              .put("fieldName", fieldName)
+              .put("file", file.getPath())
+              .build("args"));
+
       final Source declaringClassSrc = getSource(file);
       final String path = declaringClassSrc.getFile().getPath();
       return declaringClassSrc.getClassScopes().stream()

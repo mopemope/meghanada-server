@@ -30,3 +30,4 @@ bazel-*
 .vscode
 .#*.*
 /.nb-gradle/
+credentials.json

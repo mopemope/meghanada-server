@@ -541,13 +541,13 @@ public class JavaAnalyzerTest extends GradleTestBase {
             });
     Source source = cr.getSources().get(file.getCanonicalFile());
     {
-      Optional<TypeScope> scope = source.getTypeScope(262);
+      Optional<TypeScope> scope = source.getTypeScope(334);
       assertTrue(scope.isPresent());
       TypeScope ts = scope.get();
       assertEquals("meghanada.analyze.JavaAnalyzer$AnalyzedEvent", ts.getFQCN());
     }
     {
-      Optional<TypeScope> scope = source.getTypeScope(248);
+      Optional<TypeScope> scope = source.getTypeScope(319);
       assertTrue(scope.isPresent());
       TypeScope ts = scope.get();
       assertEquals("meghanada.analyze.JavaAnalyzer$JavaSourceFromString", ts.getFQCN());

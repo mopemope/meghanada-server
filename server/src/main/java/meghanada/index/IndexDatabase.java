@@ -23,6 +23,7 @@ import meghanada.reflect.MemberDescriptor;
 import meghanada.store.ProjectDatabase;
 import meghanada.store.Serializer;
 import meghanada.system.Executor;
+import meghanada.telemetry.TelemetryUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.lucene.document.Document;
@@ -131,16 +132,21 @@ public class IndexDatabase {
 
   @Subscribe
   public void on(final IndexEvent event) {
-    if (isNull(this.searcher)) {
-      return;
-    }
-    if (nonNull(event.indexables)) {
-      this.indexObjects(event.indexables);
-    } else {
-      this.indexObject(event.indexable);
-    }
-    if (nonNull(event.onSuccess)) {
-      event.onSuccess.accept(event);
+    try (TelemetryUtils.ParentSpan span =
+            TelemetryUtils.startExplicitParentSpan("IndexDatabase/on");
+        TelemetryUtils.ScopedSpan scope = TelemetryUtils.withSpan(span.getSpan())) {
+
+      if (isNull(this.searcher)) {
+        return;
+      }
+      if (nonNull(event.indexables)) {
+        this.indexObjects(event.indexables);
+      } else {
+        this.indexObject(event.indexable);
+      }
+      if (nonNull(event.onSuccess)) {
+        event.onSuccess.accept(event);
+      }
     }
   }
 

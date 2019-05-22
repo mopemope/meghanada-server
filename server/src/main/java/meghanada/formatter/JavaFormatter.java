@@ -14,6 +14,7 @@ import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 import meghanada.config.Config;
+import meghanada.telemetry.TelemetryUtils;
 import org.eclipse.jdt.core.ToolFactory;
 import org.eclipse.jdt.core.formatter.CodeFormatter;
 import org.eclipse.jface.text.Document;
@@ -64,7 +65,10 @@ public class JavaFormatter {
   }
 
   public static String formatGoogleStyle(final String content) {
-    try {
+    try (TelemetryUtils.ScopedSpan scope =
+        TelemetryUtils.startScopedSpan("JavaFormatter.formatGoogleStyle")) {
+      scope.addAnnotation(
+          TelemetryUtils.annotationBuilder().put("size", content.length()).build("args"));
       return getGoogleFormatter().formatSourceAndFixImports(content);
     } catch (Throwable e) {
       return content;
@@ -72,9 +76,13 @@ public class JavaFormatter {
   }
 
   public static String formatEclipseStyle(final Properties prop, final String content) {
-    final CodeFormatter codeFormatter = ToolFactory.createCodeFormatter(prop);
-    final IDocument document = new Document(content);
-    try {
+    try (TelemetryUtils.ScopedSpan scope =
+        TelemetryUtils.startScopedSpan("JavaFormatter.formatEclipseStyle")) {
+      scope.addAnnotation(
+          TelemetryUtils.annotationBuilder().put("size", content.length()).build("args"));
+
+      final CodeFormatter codeFormatter = ToolFactory.createCodeFormatter(prop);
+      final IDocument document = new Document(content);
       final TextEdit textEdit =
           codeFormatter.format(
               CodeFormatter.K_COMPILATION_UNIT | CodeFormatter.F_INCLUDE_COMMENTS,

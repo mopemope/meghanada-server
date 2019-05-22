@@ -17,6 +17,7 @@ import meghanada.config.Config;
 import meghanada.project.Project;
 import meghanada.reflect.MemberDescriptor;
 import meghanada.store.ProjectDatabaseHelper;
+import meghanada.telemetry.TelemetryUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -74,7 +75,14 @@ public class GlobalCache {
   }
 
   public List<MemberDescriptor> getMemberDescriptors(final String fqcn) throws ExecutionException {
-    return this.memberCache.get(fqcn);
+
+    try (TelemetryUtils.ScopedSpan scope =
+        TelemetryUtils.startScopedSpan("GlobalCache.getMemberDescriptors")) {
+
+      scope.addAnnotation(TelemetryUtils.annotationBuilder().put("fqcn", fqcn).build("args"));
+
+      return this.memberCache.get(fqcn);
+    }
   }
 
   public void invalidateMemberDescriptors(final String fqcn) {
@@ -101,8 +109,13 @@ public class GlobalCache {
   }
 
   public Source getSource(final File file) throws ExecutionException {
-    final LoadingCache<File, Source> sourceCache = this.getSourceCache();
-    return sourceCache.get(file);
+    try (TelemetryUtils.ScopedSpan scope =
+        TelemetryUtils.startScopedSpan("GlobalCache.getSource")) {
+      scope.addAnnotation(
+          TelemetryUtils.annotationBuilder().put("file", file.getPath()).build("args"));
+      final LoadingCache<File, Source> sourceCache = this.getSourceCache();
+      return sourceCache.get(file);
+    }
   }
 
   public void replaceSource(final Source source) {
@@ -129,8 +142,15 @@ public class GlobalCache {
   }
 
   public Optional<String> getSourceMap(final String fqcn) throws ExecutionException {
-    Map<String, String> sourceMap = this.getSourceMapCache();
-    return Optional.ofNullable(sourceMap.get(fqcn));
+
+    try (TelemetryUtils.ScopedSpan scope =
+        TelemetryUtils.startScopedSpan("GlobalCache.getSourceMap")) {
+
+      scope.addAnnotation(TelemetryUtils.annotationBuilder().put("fqcn", fqcn).build("args"));
+
+      Map<String, String> sourceMap = this.getSourceMapCache();
+      return Optional.ofNullable(sourceMap.get(fqcn));
+    }
   }
 
   public void replaceSourceMap(final String fqcn, final String path) {

@@ -12,6 +12,7 @@ import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Optional;
+import meghanada.telemetry.TelemetryUtils;
 import meghanada.utils.ClassNameUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -114,19 +115,24 @@ public class ModuleHelper {
   }
 
   public static Optional<ClassData> pathToClassData(Path p) {
+    try (TelemetryUtils.ScopedSpan scope =
+        TelemetryUtils.startScopedSpan("ModuleHelper.pathToClassData")) {
+      scope.addAnnotation(
+          TelemetryUtils.annotationBuilder().put("path", p.toString()).build("args"));
 
-    if (p.startsWith(File.separator + "modules" + File.separator)) {
-      Path sub = p.subpath(2, p.getNameCount());
-      String s = ClassNameUtils.replaceSlash(sub.toString());
-      if (s.endsWith(".class")) {
-        String className = s.substring(0, s.length() - 6);
-        Path mod = p.subpath(1, 2);
-        String module = mod.toString();
-        ClassData cd = new ClassData(module, className, p);
-        return Optional.of(cd);
+      if (p.startsWith(File.separator + "modules" + File.separator)) {
+        Path sub = p.subpath(2, p.getNameCount());
+        String s = ClassNameUtils.replaceSlash(sub.toString());
+        if (s.endsWith(".class")) {
+          String className = s.substring(0, s.length() - 6);
+          Path mod = p.subpath(1, 2);
+          String module = mod.toString();
+          ClassData cd = new ClassData(module, className, p);
+          return Optional.of(cd);
+        }
       }
+      return Optional.empty();
     }
-    return Optional.empty();
   }
 
   @FunctionalInterface

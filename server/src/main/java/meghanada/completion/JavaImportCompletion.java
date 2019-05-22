@@ -19,6 +19,7 @@ import meghanada.index.IndexDatabase;
 import meghanada.project.Project;
 import meghanada.reflect.ClassIndex;
 import meghanada.reflect.asm.CachedASMReflector;
+import meghanada.telemetry.TelemetryUtils;
 import meghanada.utils.ClassNameUtils;
 import meghanada.utils.FileUtils;
 import org.apache.logging.log4j.LogManager;
@@ -43,102 +44,141 @@ public class JavaImportCompletion {
   }
 
   private static Optional<Map<String, List<String>>> searchFieldAndMethods(
-      Source source, Integer line, Integer col, String name) {
-    List<String> results =
-        IndexDatabase.getInstance()
-            .searchMembers(
-                "", IndexDatabase.doubleQuote("public static"), "(\"METHOD\" OR \"FIELD\")", name)
-            .stream()
-            .filter(d -> d.getName().equals(name))
-            .map(d -> d.getDeclaringClass() + "#" + d.getName())
-            .distinct()
-            .collect(Collectors.toList());
-    if (isNull(results) || results.isEmpty()) {
-      return Optional.empty();
-    }
+      Source source, Integer line, Integer column, String name) {
 
-    Map<String, List<String>> m = new HashMap<>(1);
-    m.putIfAbsent("method", results);
-    return Optional.of(m);
-  }
+    try (TelemetryUtils.ScopedSpan scope =
+        TelemetryUtils.startScopedSpan("JavaCompletion.searchFieldAndMethods")) {
 
-  private static Optional<Map<String, List<String>>> searchMethodCall(
-      Source source, Integer line, Integer col, String symbol) {
-    Optional<MethodCall> methodCall = source.getMethodCall(line, col, true);
-    Optional<List<String>> optionalList =
-        methodCall.map(
-            mc -> {
-              String methodName = mc.name;
-              List<String> arguments = mc.getArguments();
-              return IndexDatabase.getInstance()
-                  .searchMembers(
-                      "",
-                      IndexDatabase.doubleQuote("public static"),
-                      IndexDatabase.doubleQuote("METHOD"),
-                      methodName)
-                  .stream()
-                  .filter(
-                      d ->
-                          d.getName().equals(methodName)
-                              && ClassNameUtils.compareArgumentType(
-                                  arguments, d.getParameters(), false))
-                  .map(d -> d.getDeclaringClass() + "#" + d.getName())
-                  .distinct()
-                  .collect(Collectors.toList());
-            });
-    if (optionalList.isPresent()) {
-      List<String> results = optionalList.get();
+      scope.addAnnotation(
+          TelemetryUtils.annotationBuilder()
+              .put("source", source.getFile().getPath())
+              .put("line", line)
+              .put("column", column)
+              .put("name", name)
+              .build("args"));
+
+      List<String> results =
+          IndexDatabase.getInstance()
+              .searchMembers(
+                  "", IndexDatabase.doubleQuote("public static"), "(\"METHOD\" OR \"FIELD\")", name)
+              .stream()
+              .filter(d -> d.getName().equals(name))
+              .map(d -> d.getDeclaringClass() + "#" + d.getName())
+              .distinct()
+              .collect(Collectors.toList());
       if (isNull(results) || results.isEmpty()) {
         return Optional.empty();
       }
+
       Map<String, List<String>> m = new HashMap<>(1);
       m.putIfAbsent("method", results);
       return Optional.of(m);
     }
-    return Optional.empty();
+  }
+
+  private static Optional<Map<String, List<String>>> searchMethodCall(
+      Source source, Integer line, Integer column, String symbol) {
+
+    try (TelemetryUtils.ScopedSpan scope =
+        TelemetryUtils.startScopedSpan("JavaCompletion.searchMethodCall")) {
+
+      scope.addAnnotation(
+          TelemetryUtils.annotationBuilder()
+              .put("source", source.getFile().getPath())
+              .put("line", line)
+              .put("column", column)
+              .put("symbol", symbol)
+              .build("args"));
+
+      Optional<MethodCall> methodCall = source.getMethodCall(line, column, true);
+      Optional<List<String>> optionalList =
+          methodCall.map(
+              mc -> {
+                String methodName = mc.name;
+                List<String> arguments = mc.getArguments();
+                return IndexDatabase.getInstance()
+                    .searchMembers(
+                        "",
+                        IndexDatabase.doubleQuote("public static"),
+                        IndexDatabase.doubleQuote("METHOD"),
+                        methodName)
+                    .stream()
+                    .filter(
+                        d ->
+                            d.getName().equals(methodName)
+                                && ClassNameUtils.compareArgumentType(
+                                    arguments, d.getParameters(), false))
+                    .map(d -> d.getDeclaringClass() + "#" + d.getName())
+                    .distinct()
+                    .collect(Collectors.toList());
+              });
+      if (optionalList.isPresent()) {
+        List<String> results = optionalList.get();
+        if (isNull(results) || results.isEmpty()) {
+          return Optional.empty();
+        }
+        Map<String, List<String>> m = new HashMap<>(1);
+        m.putIfAbsent("method", results);
+        return Optional.of(m);
+      }
+      return Optional.empty();
+    }
   }
 
   private static Optional<Map<String, List<String>>> searchClassOrInterface(
-      final Source source, final Integer line, final Integer col, final String symbol) {
-    CachedASMReflector reflector = CachedASMReflector.getInstance();
-    String packageName = source.getPackageName();
-    String fqcn = source.getImportedClassFQCN(symbol, null);
-    if (isNull(fqcn)) {
-      if (!packageName.isEmpty()) {
-        String pkgFQCN = packageName + '.' + symbol;
-        List<String> results =
-            reflector
-                .containsClassIndex(pkgFQCN)
-                .map(
-                    ci -> {
-                      // same package. imported
-                      return Collections.<String>emptyList();
-                    })
-                .orElseGet(
-                    () ->
-                        reflector.searchClasses(symbol, true).stream()
-                            .map(ClassIndex::getDeclaration)
-                            .collect(Collectors.toList()));
-        if (results.isEmpty()) {
-          return Optional.empty();
+      final Source source, final Integer line, final Integer column, final String symbol) {
+
+    try (TelemetryUtils.ScopedSpan scope =
+        TelemetryUtils.startScopedSpan("JavaCompletion.searchMethodCall")) {
+
+      scope.addAnnotation(
+          TelemetryUtils.annotationBuilder()
+              .put("source", source.getFile().getPath())
+              .put("line", line)
+              .put("column", column)
+              .put("symbol", symbol)
+              .build("args"));
+
+      CachedASMReflector reflector = CachedASMReflector.getInstance();
+      String packageName = source.getPackageName();
+      String fqcn = source.getImportedClassFQCN(symbol, null);
+      if (isNull(fqcn)) {
+        if (!packageName.isEmpty()) {
+          String pkgFQCN = packageName + '.' + symbol;
+          List<String> results =
+              reflector
+                  .containsClassIndex(pkgFQCN)
+                  .map(
+                      ci -> {
+                        // same package. imported
+                        return Collections.<String>emptyList();
+                      })
+                  .orElseGet(
+                      () ->
+                          reflector.searchClasses(symbol, true).stream()
+                              .map(ClassIndex::getDeclaration)
+                              .collect(Collectors.toList()));
+          if (results.isEmpty()) {
+            return Optional.empty();
+          }
+          Map<String, List<String>> m = new HashMap<>(1);
+          m.putIfAbsent("class", results);
+          return Optional.of(m);
+        } else {
+          List<String> results =
+              reflector.searchClasses(symbol, true).stream()
+                  .map(ClassIndex::getDeclaration)
+                  .collect(Collectors.toList());
+          if (results.isEmpty()) {
+            return Optional.empty();
+          }
+          Map<String, List<String>> m = new HashMap<>(1);
+          m.putIfAbsent("class", results);
+          return Optional.of(m);
         }
-        Map<String, List<String>> m = new HashMap<>(1);
-        m.putIfAbsent("class", results);
-        return Optional.of(m);
-      } else {
-        List<String> results =
-            reflector.searchClasses(symbol, true).stream()
-                .map(ClassIndex::getDeclaration)
-                .collect(Collectors.toList());
-        if (results.isEmpty()) {
-          return Optional.empty();
-        }
-        Map<String, List<String>> m = new HashMap<>(1);
-        m.putIfAbsent("class", results);
-        return Optional.of(m);
       }
+      return Optional.empty();
     }
-    return Optional.empty();
   }
 
   private Optional<Map<String, List<String>>> execFunctions(

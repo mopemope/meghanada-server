@@ -42,6 +42,7 @@ public class ParseEventSubscriber extends AbstractSubscriber {
 
   @Subscribe
   public synchronized void on(SessionEventBus.ParseFilesRequest request) {
+
     final Session session = super.sessionEventBus.getSession();
     final List<File> files = request.getFiles();
     for (final File file : files) {

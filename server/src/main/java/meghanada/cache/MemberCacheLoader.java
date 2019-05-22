@@ -5,7 +5,6 @@ import static java.util.Objects.nonNull;
 import static meghanada.utils.FunctionUtils.wrapIO;
 import static meghanada.utils.FunctionUtils.wrapIOConsumer;
 
-import com.google.common.base.Stopwatch;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.RemovalCause;
 import com.google.common.cache.RemovalListener;
@@ -25,6 +24,7 @@ import meghanada.reflect.asm.ASMReflector;
 import meghanada.reflect.asm.CachedASMReflector;
 import meghanada.reflect.asm.InheritanceInfo;
 import meghanada.store.ProjectDatabaseHelper;
+import meghanada.telemetry.TelemetryUtils;
 import meghanada.utils.ClassName;
 import meghanada.utils.ClassNameUtils;
 import org.apache.logging.log4j.LogManager;
@@ -37,110 +37,140 @@ class MemberCacheLoader extends CacheLoader<String, List<MemberDescriptor>>
 
   MemberCacheLoader() {}
 
-  private static List<MemberDescriptor> getCachedMemberDescriptors(String fqcn) {
-    Optional<List<MemberDescriptor>> result = ProjectDatabaseHelper.getMemberDescriptors(fqcn);
-    return result.orElse(null);
+  private static Optional<List<MemberDescriptor>> getCachedMemberDescriptors(String fqcn) {
+    try (TelemetryUtils.ScopedSpan scope =
+        TelemetryUtils.startScopedSpan("MemberCacheLoader.getCachedMemberDescriptors")) {
+      scope.addAnnotation(TelemetryUtils.annotationBuilder().put("fqcn", fqcn).build("args"));
+      return ProjectDatabaseHelper.getMemberDescriptors(fqcn);
+    }
   }
 
   private static File getClassFile(String fqcn) {
-    Map<String, ClassIndex> globalClassIndex =
-        CachedASMReflector.getInstance().getGlobalClassIndex();
-    ClassIndex classIndex = globalClassIndex.get(fqcn);
-    if (nonNull(classIndex)) {
-      String filePath = classIndex.getFilePath();
-      if (nonNull(filePath)) {
 
-        return new File(filePath);
+    try (TelemetryUtils.ScopedSpan scope =
+        TelemetryUtils.startScopedSpan("MemberCacheLoader.getClassFile")) {
+
+      scope.addAnnotation(TelemetryUtils.annotationBuilder().put("fqcn", fqcn).build("args"));
+
+      Map<String, ClassIndex> globalClassIndex =
+          CachedASMReflector.getInstance().getGlobalClassIndex();
+      ClassIndex classIndex = globalClassIndex.get(fqcn);
+      if (nonNull(classIndex)) {
+        String filePath = classIndex.getFilePath();
+        if (nonNull(filePath)) {
+          return new File(filePath);
+        }
       }
+      return null;
     }
-    return null;
   }
 
   private static void storeMembers(final String fqcn, final List<MemberDescriptor> list) {
 
-    final CachedASMReflector reflector = CachedASMReflector.getInstance();
-    reflector
-        .containsClassIndex(fqcn)
-        .map(
-            wrapIO(
-                index ->
-                    ProjectDatabaseHelper.saveMemberDescriptors(index.getRawDeclaration(), list)))
-        .orElseGet(
-            () -> {
-              final String innerFQCN = ClassNameUtils.replaceInnerMark(fqcn);
-              reflector
-                  .containsClassIndex(innerFQCN)
-                  .ifPresent(
-                      wrapIOConsumer(
-                          index -> {
-                            boolean b =
-                                ProjectDatabaseHelper.saveMemberDescriptors(
-                                    index.getRawDeclaration(), list);
-                          }));
-              return true;
-            });
+    try (TelemetryUtils.ScopedSpan scope =
+        TelemetryUtils.startScopedSpan("MemberCacheLoader.storeMembers")) {
+
+      scope.addAnnotation(
+          TelemetryUtils.annotationBuilder()
+              .put("fqcn", fqcn)
+              .put("list.size", list.size())
+              .build("args"));
+
+      final CachedASMReflector reflector = CachedASMReflector.getInstance();
+      reflector
+          .containsClassIndex(fqcn)
+          .map(
+              wrapIO(
+                  index ->
+                      ProjectDatabaseHelper.saveMemberDescriptors(index.getRawDeclaration(), list)))
+          .orElseGet(
+              () -> {
+                final String innerFQCN = ClassNameUtils.replaceInnerMark(fqcn);
+                reflector
+                    .containsClassIndex(innerFQCN)
+                    .ifPresent(
+                        wrapIOConsumer(
+                            index -> {
+                              boolean b =
+                                  ProjectDatabaseHelper.saveMemberDescriptors(
+                                      index.getRawDeclaration(), list);
+                            }));
+                return true;
+              });
+    }
   }
 
   @Override
   public List<MemberDescriptor> load(final String className) throws IOException {
 
-    final ClassName cn = new ClassName(className);
-    final String fqcn = cn.getName();
+    try (TelemetryUtils.ScopedSpan scope =
+        TelemetryUtils.startScopedSpan("MemberCacheLoader.load")) {
 
-    final String projectRoot = Config.getProjectRoot();
-    File classFile = MemberCacheLoader.getClassFile(fqcn);
-    if (isNull(classFile)) {
-      // try inner class
-      classFile = MemberCacheLoader.getClassFile(ClassNameUtils.replaceInnerMark(fqcn));
+      scope.addAnnotation(
+          TelemetryUtils.annotationBuilder().put("className", className).build("args"));
+
+      final ClassName cn = new ClassName(className);
+      final String fqcn = cn.getName();
+
+      final String projectRoot = Config.getProjectRoot();
+      File classFile = MemberCacheLoader.getClassFile(fqcn);
       if (isNull(classFile)) {
-        log.debug("Missing FQCN:{}'s file is null", fqcn);
-        return Collections.emptyList();
+        // try inner class
+        classFile = MemberCacheLoader.getClassFile(ClassNameUtils.replaceInnerMark(fqcn));
+        if (isNull(classFile)) {
+          log.debug("Missing FQCN:{}'s file is null", fqcn);
+          return Collections.emptyList();
+        }
       }
-    }
 
-    String classFilePath = classFile.getPath();
-    boolean isMyProject = classFilePath.startsWith(projectRoot);
+      String classFilePath = classFile.getPath();
+      boolean isMyProject = classFilePath.startsWith(projectRoot);
 
-    if (!isMyProject) {
-      final Stopwatch stopwatch = Stopwatch.createStarted();
+      if (!isMyProject) {
+        final List<MemberDescriptor> members = loadFromReflector(fqcn);
+        if (!members.isEmpty()) {
+          storeMembers(fqcn, members);
+          return members;
+        }
+      }
+
+      Optional<List<MemberDescriptor>> cachedResult =
+          MemberCacheLoader.getCachedMemberDescriptors(fqcn);
+      if (cachedResult.isPresent()) {
+        return cachedResult.get();
+      }
+
       final List<MemberDescriptor> members = loadFromReflector(fqcn);
-      log.trace("load fqcn:{} elapsed:{}", fqcn, stopwatch.stop());
-      if (!members.isEmpty()) {
-        storeMembers(fqcn, members);
-        return members;
-      }
+      storeMembers(fqcn, members);
+      return members;
     }
-
-    final List<MemberDescriptor> cachedResult = MemberCacheLoader.getCachedMemberDescriptors(fqcn);
-    if (nonNull(cachedResult)) {
-      return cachedResult;
-    }
-
-    final Stopwatch stopwatch = Stopwatch.createStarted();
-    final List<MemberDescriptor> members = loadFromReflector(fqcn);
-    log.trace("load fqcn:{} elapsed:{}", fqcn, stopwatch.stop());
-    storeMembers(fqcn, members);
-    return members;
   }
 
   private static List<MemberDescriptor> loadFromReflector(String fqcn) {
-    final String initName = ClassNameUtils.getSimpleName(fqcn);
-    final ASMReflector asmReflector = ASMReflector.getInstance();
-    Map<String, ClassIndex> index = CachedASMReflector.getInstance().getGlobalClassIndex();
 
-    final InheritanceInfo info = asmReflector.getReflectInfo(index, fqcn);
-    final List<MemberDescriptor> result = asmReflector.reflectAll(info);
+    try (TelemetryUtils.ScopedSpan scope =
+        TelemetryUtils.startScopedSpan("MemberCacheLoader.loadFromReflector")) {
 
-    return result.stream()
-        .filter(
-            md -> {
-              if (md.matchType(CandidateUnit.MemberType.CONSTRUCTOR)) {
-                final String name = ClassNameUtils.getSimpleName(md.getName());
-                return name.equals(initName);
-              }
-              return true;
-            })
-        .collect(Collectors.toList());
+      scope.addAnnotation(TelemetryUtils.annotationBuilder().put("fqcn", fqcn).build("args"));
+
+      final String initName = ClassNameUtils.getSimpleName(fqcn);
+      final ASMReflector asmReflector = ASMReflector.getInstance();
+      Map<String, ClassIndex> index = CachedASMReflector.getInstance().getGlobalClassIndex();
+
+      final InheritanceInfo info = asmReflector.getReflectInfo(index, fqcn);
+      final List<MemberDescriptor> result = asmReflector.reflectAll(info);
+
+      return result.stream()
+          .filter(
+              md -> {
+                if (md.matchType(CandidateUnit.MemberType.CONSTRUCTOR)) {
+                  final String name = ClassNameUtils.getSimpleName(md.getName());
+                  return name.equals(initName);
+                }
+                return true;
+              })
+          .collect(Collectors.toList());
+    }
   }
 
   @Override

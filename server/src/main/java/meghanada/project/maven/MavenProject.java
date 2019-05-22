@@ -17,6 +17,7 @@ import meghanada.config.Config;
 import meghanada.project.Project;
 import meghanada.project.ProjectDependency;
 import meghanada.project.ProjectParseException;
+import meghanada.telemetry.TelemetryUtils;
 import meghanada.utils.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -63,7 +64,13 @@ public class MavenProject extends Project {
 
   @Override
   public Project parseProject(File projectRoot, File current) throws ProjectParseException {
-    try {
+    try (TelemetryUtils.ScopedSpan scope =
+        TelemetryUtils.startScopedSpan("MavenProject.parseProject")) {
+      scope.addAnnotation(
+          TelemetryUtils.annotationBuilder()
+              .put("projectRoot", projectRoot.getPath())
+              .put("current", current.getPath())
+              .build("args"));
       final String mavenPath = Config.load().getMavenPath();
       if (!Strings.isNullOrEmpty(mavenPath)) {
         this.mavenCmd = mavenPath;

@@ -43,6 +43,7 @@ import jetbrains.exodus.env.EnvironmentImpl;
 import jetbrains.exodus.env.Environments;
 import meghanada.Main;
 import meghanada.config.Config;
+import meghanada.telemetry.TelemetryUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -218,20 +219,28 @@ public class ProjectDatabase {
             Instant start = Instant.now();
             while (!this.isTerminated) {
               try {
-
                 StoreRequest req = blockingQueue.poll(10, TimeUnit.SECONDS);
-                if (nonNull(req) && !req.isShutdown()) {
-                  mergeAndStore(req);
-                }
-                if (blockingQueue.isEmpty()) {
-                  Instant now = Instant.now();
-                  Duration duration = Duration.between(start, now);
-                  long delta = duration.getSeconds();
-                  if (delta > 10) {
-                    EnvironmentImpl environment =
-                        (EnvironmentImpl) this.entityStore.getEnvironment();
-                    environment.flushAndSync();
-                    start = now;
+                try (TelemetryUtils.ParentSpan span =
+                        TelemetryUtils.startExplicitParentSpan("ProjectDatabase/wokrker");
+                    TelemetryUtils.ScopedSpan scope = TelemetryUtils.withSpan(span.getSpan())) {
+
+                  if (nonNull(req) && !req.isShutdown()) {
+                    mergeAndStore(req);
+                  }
+                  if (blockingQueue.isEmpty()) {
+                    try (TelemetryUtils.ScopedSpan ss =
+                        TelemetryUtils.startScopedSpan("ProjectDatabase.flushAndSync")) {
+
+                      Instant now = Instant.now();
+                      Duration duration = Duration.between(start, now);
+                      long delta = duration.getSeconds();
+                      if (delta > 10) {
+                        EnvironmentImpl environment =
+                            (EnvironmentImpl) this.entityStore.getEnvironment();
+                        environment.flushAndSync();
+                        start = now;
+                      }
+                    }
                   }
                 }
               } catch (Exception e) {
@@ -244,35 +253,39 @@ public class ProjectDatabase {
 
   private void mergeAndStore(StoreRequest req) {
 
-    if (req.isMergable()) {
-      Set<Storable> buf = new HashSet<>(5);
-      buf.add(req.getStorable());
+    try (TelemetryUtils.ScopedSpan ss =
+        TelemetryUtils.startScopedSpan("ProjectDatabase.mergeAndStore")) {
 
-      for (int i = 0; i < MERGE_SIZE - 1; i++) {
-        StoreRequest nextReq = this.blockingQueue.poll();
-        if (isNull(nextReq) || nextReq.isShutdown()) {
-          break;
+      if (req.isMergable()) {
+        Set<Storable> buf = new HashSet<>(5);
+        buf.add(req.getStorable());
+
+        for (int i = 0; i < MERGE_SIZE - 1; i++) {
+          StoreRequest nextReq = this.blockingQueue.poll();
+          if (isNull(nextReq) || nextReq.isShutdown()) {
+            break;
+          }
+
+          if (nextReq.isMergable()) {
+            buf.add(nextReq.getStorable());
+          } else {
+            this.mergeAndStore(nextReq);
+          }
         }
 
-        if (nextReq.isMergable()) {
-          buf.add(nextReq.getStorable());
-        } else {
-          this.mergeAndStore(nextReq);
+        if (!buf.isEmpty()) {
+          int i = storeObjects(buf, true);
         }
-      }
+      } else {
 
-      if (!buf.isEmpty()) {
-        int i = storeObjects(buf, true);
-      }
-    } else {
-
-      Storable storable = req.getStorable();
-      if (nonNull(storable)) {
-        long i = storeObject(storable, req.isAllowUpdate());
-      }
-      Collection<? extends Storable> storables = req.getStorables();
-      if (nonNull(storables)) {
-        int i = storeObjects(storables, req.isAllowUpdate());
+        Storable storable = req.getStorable();
+        if (nonNull(storable)) {
+          long i = storeObject(storable, req.isAllowUpdate());
+        }
+        Collection<? extends Storable> storables = req.getStorables();
+        if (nonNull(storables)) {
+          int i = storeObjects(storables, req.isAllowUpdate());
+        }
       }
     }
   }
@@ -436,10 +449,14 @@ public class ProjectDatabase {
             while (!this.isTerminated && start) {
               try {
                 StoreRequest req = blockingQueue.poll(3, TimeUnit.SECONDS);
-                if (nonNull(req) && !req.isShutdown()) {
-                  mergeAndStore(req);
-                } else {
-                  start = false;
+                try (TelemetryUtils.ParentSpan span =
+                        TelemetryUtils.startExplicitParentSpan("ProjectDatabase/runWokrker");
+                    TelemetryUtils.ScopedSpan scope = TelemetryUtils.withSpan(span.getSpan())) {
+                  if (nonNull(req) && !req.isShutdown()) {
+                    mergeAndStore(req);
+                  } else {
+                    start = false;
+                  }
                 }
               } catch (Exception e) {
                 log.catching(e);

@@ -18,6 +18,7 @@ import meghanada.project.Project;
 import meghanada.session.SessionEventBus;
 import meghanada.store.ProjectDatabaseHelper;
 import meghanada.system.Executor;
+import meghanada.telemetry.TelemetryUtils;
 import meghanada.utils.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -47,6 +48,7 @@ public class SourceCacheSubscriber {
   }
 
   private void analyzed(final Source source, final boolean isDiagnostics) throws IOException {
+
     Project project = projectSupplier.get();
     Map<String, Set<String>> callerMap = project.getCallerMap();
     Map<String, String> checksumMap = this.getChecksumMap(project);
@@ -107,20 +109,34 @@ public class SourceCacheSubscriber {
 
   @Subscribe
   public void on(final JavaAnalyzer.AnalyzedEvent event) {
-    final Map<File, Source> analyzedMap = event.analyzedMap;
-    analyzedMap
-        .values()
-        .parallelStream()
-        .forEach(
-            source -> {
-              try {
-                this.analyzed(source, event.diagnostics);
-              } catch (Exception ex) {
-                log.catching(ex);
-              }
-            });
-    try {
-      this.complete();
+
+    try (TelemetryUtils.ParentSpan span =
+            TelemetryUtils.startExplicitParentSpan("SourceCacheSubscriber/on");
+        TelemetryUtils.ScopedSpan scope = TelemetryUtils.withSpan(span.getSpan())) {
+
+      scope.addAnnotation(
+          TelemetryUtils.annotationBuilder()
+              .put("diagnostics", event.diagnostics)
+              .put("size", event.analyzedMap.size())
+              .build("event"));
+
+      final Map<File, Source> analyzedMap = event.analyzedMap;
+      try (TelemetryUtils.ScopedSpan child = TelemetryUtils.startScopedSpan("analyzed")) {
+        analyzedMap
+            .values()
+            .parallelStream()
+            .forEach(
+                source -> {
+                  try {
+                    this.analyzed(source, event.diagnostics);
+                  } catch (Exception ex) {
+                    log.catching(ex);
+                  }
+                });
+      }
+      try (TelemetryUtils.ScopedSpan child = TelemetryUtils.startScopedSpan("complete")) {
+        this.complete();
+      }
     } catch (Exception ex) {
       log.catching(ex);
     }

@@ -41,6 +41,7 @@ import meghanada.config.Config;
 import meghanada.formatter.JavaFormatter;
 import meghanada.store.ProjectDatabaseHelper;
 import meghanada.store.Storable;
+import meghanada.telemetry.TelemetryUtils;
 import meghanada.utils.ClassNameUtils;
 import meghanada.utils.FileUtils;
 import meghanada.utils.StringUtils;
@@ -120,11 +121,15 @@ public abstract class Project implements Serializable, Storable {
   }
 
   private static CompileResult clearMemberCache(final CompileResult compileResult) {
-    final Map<File, Source> sourceMap = compileResult.getSources();
-    for (final Source source : sourceMap.values()) {
-      source.invalidateCache();
+    try (TelemetryUtils.ScopedSpan scope =
+        TelemetryUtils.startScopedSpan("Peoject.clearMemberCache")) {
+
+      final Map<File, Source> sourceMap = compileResult.getSources();
+      for (final Source source : sourceMap.values()) {
+        source.invalidateCache();
+      }
+      return compileResult;
     }
-    return compileResult;
   }
 
   private static List<File> collectJavaFiles(final Set<File> sourceDirs) {
@@ -137,15 +142,21 @@ public abstract class Project implements Serializable, Storable {
   }
 
   public static Project loadProject(final String projectRoot) throws Exception {
-    Project tempProject = ProjectDatabaseHelper.loadProject(projectRoot);
-    if (tempProject != null) {
-      tempProject.initialize();
+    try (TelemetryUtils.ScopedSpan scope = TelemetryUtils.startScopedSpan("Project.loadProject")) {
+      scope.addAnnotation(
+          TelemetryUtils.annotationBuilder().put("projectRoot", projectRoot).build("args"));
+      Project tempProject = ProjectDatabaseHelper.loadProject(projectRoot);
+      if (tempProject != null) {
+        tempProject.initialize();
+      }
+      return tempProject;
     }
-    return tempProject;
   }
 
   public void saveProject() {
-    ProjectDatabaseHelper.saveProject(this, true);
+    try (TelemetryUtils.ScopedSpan scope = TelemetryUtils.startScopedSpan("Project.saveProject")) {
+      ProjectDatabaseHelper.saveProject(this, true);
+    }
   }
 
   protected void initialize() throws IOException {
@@ -248,19 +259,21 @@ public abstract class Project implements Serializable, Storable {
   }
 
   private String allClasspath() throws IOException {
-    if (this.cachedAllClasspath != null) {
+    try (TelemetryUtils.ScopedSpan scope = TelemetryUtils.startScopedSpan("Peoject.allClasspath")) {
+      if (this.cachedAllClasspath != null) {
+        return this.cachedAllClasspath;
+      }
+
+      final Set<String> classpath = new HashSet<>(32);
+      this.dependencies.stream()
+          .map(ProjectDependency::getDependencyFilePath)
+          .forEach(classpath::add);
+
+      classpath.add(this.output.getCanonicalPath());
+      classpath.add(this.testOutput.getCanonicalPath());
+      this.cachedAllClasspath = String.join(File.pathSeparator, classpath);
       return this.cachedAllClasspath;
     }
-
-    final Set<String> classpath = new HashSet<>(32);
-    this.dependencies.stream()
-        .map(ProjectDependency::getDependencyFilePath)
-        .forEach(classpath::add);
-
-    classpath.add(this.output.getCanonicalPath());
-    classpath.add(this.testOutput.getCanonicalPath());
-    this.cachedAllClasspath = String.join(File.pathSeparator, classpath);
-    return this.cachedAllClasspath;
   }
 
   public CompileResult compileJava() throws IOException {
@@ -976,19 +989,22 @@ public abstract class Project implements Serializable, Storable {
   }
 
   public Optional<Properties> getFormatProperties() {
-    if (this.formatProperties != null) {
-      return Optional.of(this.formatProperties);
+    try (TelemetryUtils.ScopedSpan scope =
+        TelemetryUtils.startScopedSpan("Project.getFormatProperties")) {
+      if (this.formatProperties != null) {
+        return Optional.of(this.formatProperties);
+      }
+      final Optional<Properties> properties = Project.readFormatPropertiesFromFile();
+      return properties.map(
+          p -> {
+            // merge
+            p.setProperty(JavaCore.COMPILER_SOURCE, compileSource);
+            p.setProperty(JavaCore.COMPILER_COMPLIANCE, compileSource);
+            p.setProperty(JavaCore.COMPILER_CODEGEN_TARGET_PLATFORM, compileSource);
+            this.formatProperties = p;
+            return this.formatProperties;
+          });
     }
-    final Optional<Properties> properties = Project.readFormatPropertiesFromFile();
-    return properties.map(
-        p -> {
-          // merge
-          p.setProperty(JavaCore.COMPILER_SOURCE, compileSource);
-          p.setProperty(JavaCore.COMPILER_COMPLIANCE, compileSource);
-          p.setProperty(JavaCore.COMPILER_CODEGEN_TARGET_PLATFORM, compileSource);
-          this.formatProperties = p;
-          return this.formatProperties;
-        });
   }
 
   public File getOutput() {
@@ -1098,11 +1114,14 @@ public abstract class Project implements Serializable, Storable {
 
     boolean isTest = false;
 
-    for (final File source : this.testSources) {
-      String testPath = source.getCanonicalPath();
-      if (sourceFile.startsWith(testPath)) {
-        isTest = true;
-        break;
+    try (TelemetryUtils.ScopedSpan scope =
+        TelemetryUtils.startScopedSpan("Peoject.compileString/isTest")) {
+      for (final File source : this.testSources) {
+        String testPath = source.getCanonicalPath();
+        if (sourceFile.startsWith(testPath)) {
+          isTest = true;
+          break;
+        }
       }
     }
 
@@ -1113,7 +1132,6 @@ public abstract class Project implements Serializable, Storable {
       output = this.output.getCanonicalPath();
     }
     final Stopwatch stopwatch = Stopwatch.createStarted();
-
     CompileResult compileResult =
         clearMemberCache(
             getJavaAnalyzer()

@@ -13,6 +13,7 @@ import meghanada.index.IndexDatabase;
 import meghanada.index.SearchIndexable;
 import meghanada.project.Project;
 import meghanada.store.ProjectDatabaseHelper;
+import meghanada.telemetry.TelemetryUtils;
 import meghanada.utils.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -42,25 +43,31 @@ public class IndexSubscriber {
 
   @Subscribe
   public void on(final JavaAnalyzer.AnalyzedEvent event) {
-    Map<String, String> checksumMap = getChecksumMap();
-    final Map<File, Source> analyzedMap = event.analyzedMap;
-    List<SearchIndexable> sources =
-        analyzedMap.values().stream()
-            .filter(
-                source -> {
-                  try {
-                    final File sourceFile = source.getFile();
-                    final String path = sourceFile.getCanonicalPath();
-                    final String oldChecksum = checksumMap.getOrDefault(path, "");
-                    final String md5sum = FileUtils.getChecksum(sourceFile);
-                    return !oldChecksum.equals(md5sum);
-                  } catch (Exception e) {
-                    log.catching(e);
-                  }
-                  return false;
-                })
-            .collect(Collectors.toList());
 
-    IndexDatabase.requestIndex(sources);
+    try (TelemetryUtils.ParentSpan span =
+            TelemetryUtils.startExplicitParentSpan("IndexSubscriber/on");
+        TelemetryUtils.ScopedSpan scope = TelemetryUtils.withSpan(span.getSpan())) {
+
+      Map<String, String> checksumMap = getChecksumMap();
+      final Map<File, Source> analyzedMap = event.analyzedMap;
+      List<SearchIndexable> sources =
+          analyzedMap.values().stream()
+              .filter(
+                  source -> {
+                    try {
+                      final File sourceFile = source.getFile();
+                      final String path = sourceFile.getCanonicalPath();
+                      final String oldChecksum = checksumMap.getOrDefault(path, "");
+                      final String md5sum = FileUtils.getChecksum(sourceFile);
+                      return !oldChecksum.equals(md5sum);
+                    } catch (Exception e) {
+                      log.catching(e);
+                    }
+                    return false;
+                  })
+              .collect(Collectors.toList());
+
+      IndexDatabase.requestIndex(sources);
+    }
   }
 }

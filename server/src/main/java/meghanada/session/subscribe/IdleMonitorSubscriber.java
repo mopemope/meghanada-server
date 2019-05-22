@@ -43,6 +43,7 @@ public class IdleMonitorSubscriber extends AbstractSubscriber {
 
   @Subscribe
   public void on(final SessionEventBus.IdleMonitorEvent event) {
+
     if (this.started) {
       return;
     }
@@ -77,18 +78,18 @@ public class IdleMonitorSubscriber extends AbstractSubscriber {
     Iterator<String> it = this.queue.iterator();
     int cnt = 20;
     while (cnt-- > 0) {
-      if (it.hasNext()) {
-        String name = it.next();
-        try {
+      try {
+        if (it.hasNext()) {
+          String name = it.next();
           GlobalCache.getInstance().getMemberDescriptors(name);
-        } catch (ExecutionException e) {
-          log.catching(e);
-        } finally {
-          try {
-            it.remove();
-          } catch (Throwable e) {
-            //
-          }
+        }
+      } catch (ExecutionException e) {
+        log.catching(e);
+      } finally {
+        try {
+          it.remove();
+        } catch (Throwable e) {
+          //
         }
       }
     }

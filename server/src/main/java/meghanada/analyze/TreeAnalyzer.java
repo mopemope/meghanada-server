@@ -36,6 +36,7 @@ import javax.lang.model.element.Name;
 import meghanada.index.IndexableWord;
 import meghanada.reflect.ClassIndex;
 import meghanada.reflect.asm.CachedASMReflector;
+import meghanada.telemetry.TelemetryUtils;
 import meghanada.utils.ClassName;
 import meghanada.utils.ClassNameUtils;
 import org.apache.logging.log4j.LogManager;
@@ -495,21 +496,20 @@ public class TreeAnalyzer {
   }
 
   public static Map<File, Source> analyze(
-      Iterable<? extends CompilationUnitTree> parsed, Set<File> errorFiles) {
+      Iterable<? extends CompilationUnitTree> parsed, Set<File> errorFiles) throws IOException {
 
-    Map<File, Source> analyzeMap = new ConcurrentHashMap<>(64);
-
-    if (log.isDebugEnabled()) {
-      parsed.forEach(cut -> tryAnalyzeUnit(errorFiles, analyzeMap, cut));
-    } else {
-      try (Stream<? extends CompilationUnitTree> stream =
-          StreamSupport.stream(parsed.spliterator(), true)) {
-        // parallel ?
-        stream.forEach(cut -> tryAnalyzeUnit(errorFiles, analyzeMap, cut));
+    try (TelemetryUtils.ScopedSpan scope = TelemetryUtils.startScopedSpan("TreeAnalyzer.analyze")) {
+      Map<File, Source> analyzeMap = new ConcurrentHashMap<>(64);
+      if (log.isDebugEnabled()) {
+        parsed.forEach(cut -> tryAnalyzeUnit(errorFiles, analyzeMap, cut));
+      } else {
+        try (Stream<? extends CompilationUnitTree> stream =
+            StreamSupport.stream(parsed.spliterator(), true)) {
+          stream.forEach(cut -> tryAnalyzeUnit(errorFiles, analyzeMap, cut));
+        }
       }
+      return analyzeMap;
     }
-
-    return analyzeMap;
   }
 
   private static void tryAnalyzeUnit(

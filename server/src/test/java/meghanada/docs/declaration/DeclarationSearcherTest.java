@@ -67,7 +67,7 @@ public class DeclarationSearcherTest extends GradleTestBase {
     assertTrue(f.exists());
     final DeclarationSearcher searcher = getSearcher();
     final Optional<Declaration> result =
-        debugIt(() -> searcher.searchDeclaration(f, 406, 10, "submit"));
+        debugIt(() -> searcher.searchDeclaration(f, 411, 10, "submit"));
     assertNotNull(result);
     assertTrue(result.isPresent());
     result.ifPresent(
@@ -87,7 +87,7 @@ public class DeclarationSearcherTest extends GradleTestBase {
     assertTrue(f.exists());
     final DeclarationSearcher searcher = getSearcher();
     final Optional<Declaration> result =
-        debugIt(() -> searcher.searchDeclaration(f, 350, 24, "BufferedReader"));
+        debugIt(() -> searcher.searchDeclaration(f, 413, 24, "BufferedReader"));
     assertNotNull(result);
     assertTrue(result.isPresent());
     result.ifPresent(
@@ -107,7 +107,7 @@ public class DeclarationSearcherTest extends GradleTestBase {
     assertTrue(f.exists());
     final DeclarationSearcher searcher = getSearcher();
     final Optional<Declaration> result =
-        debugIt(() -> searcher.searchDeclaration(f, 414, 57, "getOutputFormatter"));
+        debugIt(() -> searcher.searchDeclaration(f, 419, 57, "getOutputFormatter"));
     assertNotNull(result);
     assertTrue(result.isPresent());
     result.ifPresent(
@@ -238,7 +238,7 @@ public class DeclarationSearcherTest extends GradleTestBase {
 
     final DeclarationSearcher searcher = getSearcher();
     final Optional<Declaration> result =
-        timeIt(() -> searcher.searchDeclaration(f, 413, 38, "handler"));
+        timeIt(() -> searcher.searchDeclaration(f, 418, 38, "handler"));
     assertNotNull(result);
     assertTrue(result.isPresent());
     result.ifPresent(

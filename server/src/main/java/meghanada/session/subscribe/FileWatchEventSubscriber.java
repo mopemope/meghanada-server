@@ -30,9 +30,8 @@ public class FileWatchEventSubscriber extends AbstractSubscriber {
 
   @Subscribe
   public void on(final FileSystemWatcher.DeleteEvent event) {
-    final File file = event.getFile();
-
     try {
+      final File file = event.getFile();
       String filePath = file.getCanonicalPath();
       GlobalCache globalCache = GlobalCache.getInstance();
       Project project = sessionEventBus.getSession().getCurrentProject();
@@ -50,6 +49,7 @@ public class FileWatchEventSubscriber extends AbstractSubscriber {
 
   @Subscribe
   public void on(final FileSystemWatcher.ModifyEvent event) {
+
     final File file = event.getFile();
 
     final String name = file.getName();

@@ -358,9 +358,14 @@ public class EmacsServer implements Server {
     try {
       this.session = Session.createSession(projectRoot);
       this.session.start();
-      String zpagePort = System.getProperty("meghanada.zpage.port");
-      if (nonNull(zpagePort)) {
+      String enable = System.getProperty("meghanada.zpage.enable");
+      if (nonNull(enable)) {
+        String zpagePort = System.getProperty("meghanada.zpage.port");
         log.info("zpage tracez handler http://localhost:{}/tracez", zpagePort);
+      }
+      enable = System.getProperty("meghanada.stackdriver.enable");
+      if (nonNull(enable)) {
+        log.info("stackdriver trace enabled");
       }
       log.info("Start server Listen {} port:{}", this.host, this.serverSocket.getLocalPort());
       this.idleTimer = this.session.getSessionEventBus().getIdleTimer();

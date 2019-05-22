@@ -28,6 +28,7 @@ import meghanada.project.Project;
 import meghanada.reflect.ClassIndex;
 import meghanada.reflect.MemberDescriptor;
 import meghanada.reflect.asm.CachedASMReflector;
+import meghanada.telemetry.TelemetryUtils;
 import meghanada.utils.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -75,19 +76,27 @@ public class ProjectDatabaseHelper {
   }
 
   public static List<ClassIndex> getClassIndexes(String filePath) {
-    ProjectDatabase database = ProjectDatabase.getInstance();
-    return database.find(
-        ClassIndex.ENTITY_TYPE,
-        "filePath",
-        filePath,
-        entity -> {
-          try (InputStream in = entity.getBlob(ProjectDatabase.SERIALIZE_KEY)) {
-            return Serializer.readObject(in, ClassIndex.class);
-          } catch (Exception e) {
-            log.warn(e.getMessage());
-            return null;
-          }
-        });
+
+    try (TelemetryUtils.ScopedSpan scope =
+        TelemetryUtils.startScopedSpan("ProjectDatabaseHelper.getClassIndexes")) {
+
+      scope.addAnnotation(
+          TelemetryUtils.annotationBuilder().put("filePath", filePath).build("args"));
+
+      ProjectDatabase database = ProjectDatabase.getInstance();
+      return database.find(
+          ClassIndex.ENTITY_TYPE,
+          "filePath",
+          filePath,
+          entity -> {
+            try (InputStream in = entity.getBlob(ProjectDatabase.SERIALIZE_KEY)) {
+              return Serializer.readObject(in, ClassIndex.class);
+            } catch (Exception e) {
+              log.warn(e.getMessage());
+              return null;
+            }
+          });
+    }
   }
 
   public static File getClassFile(String fqcn) {
