@@ -1349,11 +1349,12 @@ public class JavaCompletion {
     }
   }
 
-  public synchronized void resolve(File file, String type, String desc) {
+  public synchronized void resolve(File file, String type, String desc, String returnType) {
     if (nonNull(hits)) {
+      String declaration = returnType + " " + desc;
       hits.forEach(
           c -> {
-            if (c.getType().equals(type) && c.getDisplayDeclaration().equals(desc)) {
+            if (c.getType().equals(type) && c.getDisplayDeclaration().equals(declaration)) {
               // match
               Integer count = this.statisticsTable.get(file, c);
               if (isNull(count)) {

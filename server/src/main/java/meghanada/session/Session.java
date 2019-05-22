@@ -979,7 +979,11 @@ public class Session {
       return false;
     }
     // TelemetryUtils.recordSelectedCompletion(desc);
-    getCompletion().resolve(file, type, desc);
+    String[] split = desc.split(" ");
+    if (split.length > 1) {
+      desc = split[0];
+    }
+    getCompletion().resolve(file, type, item, desc);
     log.trace("path {} {} {} {}", path, type, item, desc);
     return true;
   }
