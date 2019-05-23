@@ -97,6 +97,7 @@ public class CacheEventSubscriber extends AbstractSubscriber {
         "class index size:{} total elapsed:{}",
         reflector.getGlobalClassIndex().size(),
         stopwatch.stop());
+    TelemetryUtils.recordClassIndexes(reflector.getGlobalClassIndex().size());
     Config.showMemory();
     log.info("Ready");
     reflector.scanAllStaticMembers();

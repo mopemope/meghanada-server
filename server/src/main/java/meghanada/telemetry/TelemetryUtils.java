@@ -62,16 +62,19 @@ public class TelemetryUtils {
   private static final Sampler PROBABILITY_SAMPLER_MIDDLE = Samplers.probabilitySampler(1 / 80.0);
   private static final Sampler PROBABILITY_SAMPLER_LOW = Samplers.probabilitySampler(1 / 1000.0);
   private static final Sampler NEVER_SAMPLER = Samplers.neverSample();
-
-  public static final Measure.MeasureDouble COMMAND_LATENCY_MS =
+  private static final Measure.MeasureDouble COMMAND_LATENCY_MS =
       Measure.MeasureDouble.create("command_latency", "The task latency in milliseconds", "ms");
-  public static final TagKey KEY_COMMAND = TagKey.create("command");
-  public static final String PROJECT_ID = "meghanada-240122";
+  private static final Measure.MeasureLong CLASS_INDEX =
+      Measure.MeasureLong.create("class_index", "The number of class indexes", "1");
+  private static final TagKey KEY_COMMAND = TagKey.create("command");
+  private static final TagKey KEY_UID = TagKey.create("uid");
+  private static final String PROJECT_ID = "meghanada-240122";
 
   private static boolean enabledExporter;
   private static Map<String, AttributeValue> javaAttributeMap;
   private static Map<String, AttributeValue> osAttributeMap;
   private static Annotation meghanadaAnnotation;
+  private static String uid;
 
   static {
     Map<String, AttributeValue> javaMap = new HashMap<>(16);
@@ -193,46 +196,6 @@ public class TelemetryUtils {
                     8000.0, // >=8s
                     10000.0 // >=10s
                     )));
-    //
-    //    Aggregation lengthsDistribution =
-    //        Aggregation.Distribution.create(
-    //            BucketBoundaries.create(
-    //                Arrays.asList(
-    //                    0.0, // >=0B
-    //                    5.0, // >=5B
-    //                    10.0, // >=10B
-    //                    20.0, // >=20B
-    //                    40.0, // >=40B
-    //                    80.0, // >=80B
-    //                    100.0, // >=100B
-    //                    200.0, // >=200B
-    //                    500.0, // >=500B
-    //                    800.0, // >=800B
-    //                    1000.0 // >=1000B
-    //                    )));
-    //
-    //    Aggregation sizeDistribution =
-    //        Aggregation.Distribution.create(
-    //            BucketBoundaries.create(
-    //                Arrays.asList(
-    //                    0.0, // >=0KB
-    //                    1024.0, // >=1KB
-    //                    2048.0, // >=2KB
-    //                    4096.0, // >=4KB
-    //                    8152.0, // >=8KB
-    //                    16304.0, // >=16KB
-    //                    32608.0, // >=32KB
-    //                    65216.0, // >=64KB
-    //                    130432.0, // >=128KB
-    //                    260864.0, // >=256KB
-    //                    521728.0, // >=512KB
-    //                    1043456.0, // >=1MB
-    //                    2086912.0, // >=2MB
-    //                    4173824.0, // >=4MB
-    //                    8347648.0, // >=8MB
-    //                    16695296.0 // >=16MB
-    //                    )));
-
     View[] views =
         new View[] {
           View.create(
@@ -240,7 +203,13 @@ public class TelemetryUtils {
               "The distribution of the command latencies",
               COMMAND_LATENCY_MS,
               commandLatencyDistribution,
-              Collections.unmodifiableList(Arrays.asList(KEY_COMMAND))),
+              Collections.unmodifiableList(Arrays.asList(KEY_UID, KEY_COMMAND))),
+          View.create(
+              View.Name.create("meghanada_class_index"),
+              "The number of class indexes",
+              CLASS_INDEX,
+              Aggregation.LastValue.create(),
+              Collections.unmodifiableList(Arrays.asList(KEY_UID))),
         };
     ViewManager vmgr = Stats.getViewManager();
     for (View view : views) {
@@ -298,9 +267,17 @@ public class TelemetryUtils {
     return (new Double(System.nanoTime() - startTimeNs)) / 1e6;
   }
 
-  public static void recordCommandLatency(String name, double latency) {
+  public static void recordCommandLatency(String commandName, double latency) {
     TelemetryUtils.recordTaggedStat(
-        TelemetryUtils.KEY_COMMAND, name, TelemetryUtils.COMMAND_LATENCY_MS, latency);
+        new TagKey[] {TelemetryUtils.KEY_UID, TelemetryUtils.KEY_COMMAND},
+        new String[] {getUID(), commandName},
+        TelemetryUtils.COMMAND_LATENCY_MS,
+        latency);
+  }
+
+  public static void recordClassIndexes(long size) {
+    TelemetryUtils.recordTaggedStat(
+        TelemetryUtils.KEY_UID, getUID(), TelemetryUtils.CLASS_INDEX, size);
   }
 
   private static Annotation getBaseAnnotation() {
@@ -397,21 +374,28 @@ public class TelemetryUtils {
   }
 
   public static String getUID() {
+    if (nonNull(uid)) {
+      return uid;
+    }
+
     String osName = System.getProperty("os.name");
     String osVersion = System.getProperty("os.version");
     String userHome = System.getProperty("user.home");
     String userLang = System.getProperty("user.language");
     String userName = System.getProperty("user.name");
 
-    return Hashing.sha256()
-        .newHasher()
-        .putString(osName, StandardCharsets.UTF_8)
-        .putString(osVersion, StandardCharsets.UTF_8)
-        .putString(userHome, StandardCharsets.UTF_8)
-        .putString(userLang, StandardCharsets.UTF_8)
-        .putString(userName, StandardCharsets.UTF_8)
-        .hash()
-        .toString();
+    String hashed =
+        Hashing.sha256()
+            .newHasher()
+            .putString(osName, StandardCharsets.UTF_8)
+            .putString(osVersion, StandardCharsets.UTF_8)
+            .putString(userHome, StandardCharsets.UTF_8)
+            .putString(userLang, StandardCharsets.UTF_8)
+            .putString(userName, StandardCharsets.UTF_8)
+            .hash()
+            .toString();
+    uid = hashed;
+    return uid;
   }
 
   public static class ParentSpan implements Closeable {
