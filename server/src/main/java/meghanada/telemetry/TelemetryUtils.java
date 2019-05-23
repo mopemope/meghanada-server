@@ -41,6 +41,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import meghanada.config.Config;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import oshi.SystemInfo;
@@ -57,7 +58,7 @@ public class TelemetryUtils {
   private static final String CREDENTIALS_JSON = "credentials.json";
   private static final Tracer tracer = Tracing.getTracer();
   private static final Sampler PROBABILITY_SAMPLER_HIGH = Samplers.probabilitySampler(1 / 10.0);
-  private static final Sampler PROBABILITY_SAMPLER_MIDDLE = Samplers.probabilitySampler(1 / 50.0);
+  private static final Sampler PROBABILITY_SAMPLER_MIDDLE = Samplers.probabilitySampler(1 / 80.0);
   private static final Sampler PROBABILITY_SAMPLER_LOW = Samplers.probabilitySampler(1 / 1000.0);
   private static final Sampler NEVER_SAMPLER = Samplers.neverSample();
 
@@ -79,6 +80,7 @@ public class TelemetryUtils {
   private static boolean enabledExporter;
   private static Map<String, AttributeValue> javaAttributeMap = new HashMap<>(8);
   private static Map<String, AttributeValue> osAttributeMap = new HashMap<>(8);
+  private static Annotation meghanadaAnno;
 
   static {
     Map<String, AttributeValue> javaMap = new HashMap<>(16);
@@ -106,7 +108,9 @@ public class TelemetryUtils {
     CentralProcessor processor = hal.getProcessor();
     String cpuCount = Integer.toString(processor.getLogicalProcessorCount());
     osMap.put("cpu.count", AttributeValue.stringAttributeValue(cpuCount));
-    String memoryTotal = Long.toString(hal.getMemory().getTotal());
+
+    float mem = hal.getMemory().getTotal() / 1024 / 1024;
+    String memoryTotal = String.format("%.2f", mem);
     osMap.put("memory.total", AttributeValue.stringAttributeValue(memoryTotal));
 
     javaAttributeMap = javaMap;
@@ -329,6 +333,18 @@ public class TelemetryUtils {
         TelemetryUtils.KEY_MEMBER, memberDesc, TelemetryUtils.M_AC_SELECTED, 1L);
   }
 
+  private static Annotation getBaseAnnotation() {
+    if (isNull(meghanadaAnno)) {
+      String version = System.getProperty("meghanada-server.version", "");
+      String uid = System.getProperty("meghanada-server.uid", "");
+      Map<String, AttributeValue> m = new HashMap<>(2);
+      m.put("meghanada-server.version", AttributeValue.stringAttributeValue(version));
+      m.put("meghanada-server.uid", AttributeValue.stringAttributeValue(uid));
+      meghanadaAnno = Annotation.fromDescriptionAndAttributes("meghanada properties", m);
+    }
+    return meghanadaAnno;
+  }
+
   public static ParentSpan startExplicitParentSpan(String name) {
     Span span;
     if (enabledExporter) {
@@ -337,12 +353,7 @@ public class TelemetryUtils {
       span = tracer.spanBuilderWithExplicitParent(name, null).setRecordEvents(true).startSpan();
     }
 
-    String version = System.getProperty("meghanada-server.version", "");
-    String uid = System.getProperty("meghanada-server.uid", "");
-    Map<String, AttributeValue> m = new HashMap<>(2);
-    m.put("meghanada-server.version", AttributeValue.stringAttributeValue(version));
-    m.put("meghanada-server.uid", AttributeValue.stringAttributeValue(uid));
-    span.addAnnotation(Annotation.fromDescriptionAndAttributes("meghanada properties", m));
+    span.addAnnotation(getBaseAnnotation());
     Annotation vmAnno =
         Annotation.fromDescriptionAndAttributes("java.vm properties", javaAttributeMap);
     span.addAnnotation(vmAnno);
@@ -372,6 +383,15 @@ public class TelemetryUtils {
   }
 
   public static void setStatusINTERNAL(String message) {
+    // add error info annotation
+    Span current = tracer.getCurrentSpan();
+    current.addAnnotation(getBaseAnnotation());
+    HashMap<String, AttributeValue> newMap = new HashMap<>(javaAttributeMap);
+    newMap.put("java.vm.memory", AttributeValue.stringAttributeValue(Config.getMemoryString()));
+    Annotation vmAnno = Annotation.fromDescriptionAndAttributes("java.vm properties", newMap);
+    current.addAnnotation(vmAnno);
+    Annotation osAnno = Annotation.fromDescriptionAndAttributes("os properties", osAttributeMap);
+    current.addAnnotation(osAnno);
     TelemetryUtils.setStatus(Status.INTERNAL.withDescription(message));
   }
 

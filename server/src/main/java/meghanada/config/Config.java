@@ -204,7 +204,7 @@ public class Config {
         String.format("%.2f", maxMemory));
   }
 
-  public static String showMemoryString() {
+  public static String getMemoryString() {
 
     final Runtime runtime = Runtime.getRuntime();
     final float maxMemory = runtime.maxMemory() / 1024 / 1024;

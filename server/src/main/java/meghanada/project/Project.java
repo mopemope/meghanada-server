@@ -1176,7 +1176,7 @@ public abstract class Project implements Serializable, Storable {
       sb.append(String.format("os: %s\n", System.getProperty("os.name")));
       sb.append(String.format("osVersion: %s\n", System.getProperty("os.version")));
       sb.append(String.format("osArch: %s\n", System.getProperty("os.arch")));
-      sb.append(String.format("memory: %s\n", Config.showMemoryString()));
+      sb.append(String.format("memory: %s\n", Config.getMemoryString()));
       sb.append("\n");
     }
 
