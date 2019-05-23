@@ -1,6 +1,7 @@
 package meghanada.reflect.names;
 
 import com.github.javaparser.ast.Modifier;
+import com.github.javaparser.ast.NodeList;
 import com.github.javaparser.ast.PackageDeclaration;
 import com.github.javaparser.ast.body.BodyDeclaration;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
@@ -10,7 +11,6 @@ import com.github.javaparser.ast.body.Parameter;
 import com.github.javaparser.ast.expr.SimpleName;
 import com.github.javaparser.ast.visitor.VoidVisitorAdapter;
 import java.util.ArrayList;
-import java.util.EnumSet;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -38,8 +38,8 @@ public class ParameterNameVisitor extends VoidVisitorAdapter<Object> {
   @Override
   public void visit(ClassOrInterfaceDeclaration n, Object arg) {
     super.visit(n, arg);
-    final EnumSet<Modifier> modifiers = n.getModifiers();
-    if (!modifiers.contains(Modifier.PRIVATE)) {
+    NodeList<Modifier> modifiers = n.getModifiers();
+    if (!modifiers.contains(Modifier.privateModifier())) {
       final List<BodyDeclaration<?>> members = n.getMembers();
       final SimpleName simpleName = n.getName();
       final String clazz = simpleName.getId();
@@ -76,8 +76,8 @@ public class ParameterNameVisitor extends VoidVisitorAdapter<Object> {
   }
 
   private void getParameterNames(MethodDeclaration methodDeclaration, boolean isInterface) {
-    final EnumSet<Modifier> modifiers = methodDeclaration.getModifiers();
-    if (isInterface || modifiers.contains(Modifier.PUBLIC)) {
+    NodeList<Modifier> modifiers = methodDeclaration.getModifiers();
+    if (isInterface || modifiers.contains(Modifier.publicModifier())) {
       String methodName = methodDeclaration.getName().getIdentifier();
       List<Parameter> parameters = methodDeclaration.getParameters();
       names.className = this.className;

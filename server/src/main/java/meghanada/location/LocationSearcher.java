@@ -5,8 +5,8 @@ import static meghanada.utils.FileUtils.existsFQCN;
 import static meghanada.utils.FunctionUtils.wrapIO;
 import static meghanada.utils.FunctionUtils.wrapIOConsumer;
 
-import com.github.javaparser.JavaParser;
 import com.github.javaparser.Position;
+import com.github.javaparser.StaticJavaParser;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.body.BodyDeclaration;
 import com.github.javaparser.ast.body.ConstructorDeclaration;
@@ -108,7 +108,7 @@ public class LocationSearcher {
 
       CompilationUnit compilationUnit;
       try {
-        compilationUnit = JavaParser.parse(targetFile, StandardCharsets.UTF_8);
+        compilationUnit = StaticJavaParser.parse(targetFile, StandardCharsets.UTF_8);
       } catch (Throwable e) {
         log.warn(e.getMessage(), e);
         return new Location(targetFile.getCanonicalPath(), 0, 0);
