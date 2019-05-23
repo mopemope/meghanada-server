@@ -6,6 +6,7 @@ import static java.util.Objects.nonNull;
 import com.google.auth.oauth2.ServiceAccountCredentials;
 import com.google.common.hash.Hashing;
 import com.google.common.io.Resources;
+import io.opencensus.common.Duration;
 import io.opencensus.common.Scope;
 import io.opencensus.exporter.stats.stackdriver.StackdriverStatsConfiguration;
 import io.opencensus.exporter.stats.stackdriver.StackdriverStatsExporter;
@@ -62,25 +63,15 @@ public class TelemetryUtils {
   private static final Sampler PROBABILITY_SAMPLER_LOW = Samplers.probabilitySampler(1 / 1000.0);
   private static final Sampler NEVER_SAMPLER = Samplers.neverSample();
 
-  public static final Measure.MeasureLong M_AC_CLASSES =
-      Measure.MeasureLong.create("autocomplete class", "The number of class", "1");
-  public static final Measure.MeasureLong M_AC_SELECTED =
-      Measure.MeasureLong.create(
-          "selected member", "The number of selected from completion candidates", "1");
-  public static final Measure.MeasureLong M_IMP_CLASSES =
-      Measure.MeasureLong.create("import class", "The number of import class", "1");
-  public static final TagKey KEY_CLASS = TagKey.create("class");
-  public static final TagKey KEY_IMPORT_CLASS = TagKey.create("importClass");
-  public static final TagKey KEY_MEMBER = TagKey.create("member");
-  public static final TagKey KEY_SRC_FILE = TagKey.create("source");
-  public static final TagKey KEY_STATUS = TagKey.create("status");
-  public static final TagKey KEY_ERROR = TagKey.create("error");
+  public static final Measure.MeasureDouble COMMAND_LATENCY_MS =
+      Measure.MeasureDouble.create("command_latency", "The task latency in milliseconds", "ms");
+  public static final TagKey KEY_COMMAND = TagKey.create("command");
   public static final String PROJECT_ID = "meghanada-240122";
 
   private static boolean enabledExporter;
-  private static Map<String, AttributeValue> javaAttributeMap = new HashMap<>(8);
-  private static Map<String, AttributeValue> osAttributeMap = new HashMap<>(8);
-  private static Annotation meghanadaAnno;
+  private static Map<String, AttributeValue> javaAttributeMap;
+  private static Map<String, AttributeValue> osAttributeMap;
+  private static Annotation meghanadaAnnotation;
 
   static {
     Map<String, AttributeValue> javaMap = new HashMap<>(16);
@@ -125,14 +116,12 @@ public class TelemetryUtils {
   public static boolean setupExporter() {
     boolean enable = setupStackdriverTraceExporter();
     setupStackdriverStatsExporter();
-    registerAllViews();
     if (enable) {
       TraceConfig traceConfig = Tracing.getTraceConfig();
       traceConfig.updateActiveTraceParams(
           traceConfig
               .getActiveTraceParams()
               .toBuilder()
-              // .setSampler(Samplers.alwaysSample())
               .setSampler(PROBABILITY_SAMPLER_MIDDLE)
               .build());
       enabledExporter = true;
@@ -152,6 +141,7 @@ public class TelemetryUtils {
         URL url = Resources.getResource(CREDENTIALS_JSON);
         StackdriverTraceExporter.createAndRegister(
             StackdriverTraceConfiguration.builder()
+                .setDeadline(Duration.create(60L, 0))
                 .setProjectId(PROJECT_ID)
                 .setCredentials(ServiceAccountCredentials.fromStream(url.openStream()))
                 .build());
@@ -167,9 +157,12 @@ public class TelemetryUtils {
   public static boolean setupStackdriverStatsExporter() {
     if (enableTelemetry()) {
       try {
+        registerAllViews();
         URL url = Resources.getResource(CREDENTIALS_JSON);
         StackdriverStatsExporter.createAndRegister(
             StackdriverStatsConfiguration.builder()
+                .setExportInterval(Duration.create(60L, 0))
+                .setDeadline(Duration.create(60L, 0))
                 .setProjectId(PROJECT_ID)
                 .setCredentials(ServiceAccountCredentials.fromStream(url.openStream()))
                 .build());
@@ -183,7 +176,7 @@ public class TelemetryUtils {
   }
 
   private static void registerAllViews() {
-    Aggregation latencyDistribution =
+    Aggregation commandLatencyDistribution =
         Aggregation.Distribution.create(
             BucketBoundaries.create(
                 Arrays.asList(
@@ -240,32 +233,15 @@ public class TelemetryUtils {
     //                    16695296.0 // >=16MB
     //                    )));
 
-    Aggregation classCountAggregation = Aggregation.Count.create();
-    Aggregation impClassAggregation = Aggregation.Count.create();
-    Aggregation selectedCountAggregation = Aggregation.Count.create();
-
     View[] views =
         new View[] {
           View.create(
-              View.Name.create("meghanada/autocomplete"),
-              "The number of classes completed by autocomplete",
-              M_AC_CLASSES,
-              classCountAggregation,
-              Collections.unmodifiableList(Arrays.asList(KEY_CLASS))),
-          View.create(
-              View.Name.create("meghanada/autocomplete-selected"),
-              "The number of member selected from autocomplete",
-              M_AC_SELECTED,
-              selectedCountAggregation,
-              Collections.unmodifiableList(Arrays.asList(KEY_MEMBER))),
-          View.create(
-              View.Name.create("meghanada/importClass"),
-              "The number of classes being imported",
-              M_IMP_CLASSES,
-              impClassAggregation,
-              Collections.unmodifiableList(Arrays.asList(KEY_IMPORT_CLASS, KEY_CLASS))),
+              View.Name.create("meghanada_command"),
+              "The distribution of the command latencies",
+              COMMAND_LATENCY_MS,
+              commandLatencyDistribution,
+              Collections.unmodifiableList(Arrays.asList(KEY_COMMAND))),
         };
-
     ViewManager vmgr = Stats.getViewManager();
     for (View view : views) {
       vmgr.registerView(view);
@@ -318,31 +294,25 @@ public class TelemetryUtils {
     }
   }
 
-  public static void recordAutocompleteStat(String className) {
-    TelemetryUtils.recordTaggedStat(
-        TelemetryUtils.KEY_CLASS, className, TelemetryUtils.M_AC_CLASSES, 1L);
+  public static double sinceInMilliseconds(long startTimeNs) {
+    return (new Double(System.nanoTime() - startTimeNs)) / 1e6;
   }
 
-  public static void recordImportStat(String className) {
+  public static void recordCommandLatency(String name, double latency) {
     TelemetryUtils.recordTaggedStat(
-        TelemetryUtils.KEY_CLASS, className, TelemetryUtils.M_IMP_CLASSES, 1L);
-  }
-
-  public static void recordSelectedCompletion(String memberDesc) {
-    TelemetryUtils.recordTaggedStat(
-        TelemetryUtils.KEY_MEMBER, memberDesc, TelemetryUtils.M_AC_SELECTED, 1L);
+        TelemetryUtils.KEY_COMMAND, name, TelemetryUtils.COMMAND_LATENCY_MS, latency);
   }
 
   private static Annotation getBaseAnnotation() {
-    if (isNull(meghanadaAnno)) {
+    if (isNull(meghanadaAnnotation)) {
       String version = System.getProperty("meghanada-server.version", "");
       String uid = System.getProperty("meghanada-server.uid", "");
       Map<String, AttributeValue> m = new HashMap<>(2);
       m.put("meghanada-server.version", AttributeValue.stringAttributeValue(version));
       m.put("meghanada-server.uid", AttributeValue.stringAttributeValue(uid));
-      meghanadaAnno = Annotation.fromDescriptionAndAttributes("meghanada properties", m);
+      meghanadaAnnotation = Annotation.fromDescriptionAndAttributes("meghanada properties", m);
     }
-    return meghanadaAnno;
+    return meghanadaAnnotation;
   }
 
   public static ParentSpan startExplicitParentSpan(String name) {
@@ -380,6 +350,11 @@ public class TelemetryUtils {
   public static void setStatus(Status status) {
     Span current = tracer.getCurrentSpan();
     current.setStatus(status);
+  }
+
+  public static void setStatusOK() {
+    Span current = tracer.getCurrentSpan();
+    current.setStatus(Status.OK);
   }
 
   public static void setStatusINTERNAL(String message) {

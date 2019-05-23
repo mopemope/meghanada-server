@@ -58,8 +58,9 @@ public class CommandHandler {
   }
 
   public void changeProject(long id, String path) {
-    try (TelemetryUtils.ParentSpan span =
-            TelemetryUtils.startExplicitParentSpan("Meghanada/changeProject");
+    long startTime = System.nanoTime();
+    String name = "Meghanada/changeProject";
+    try (TelemetryUtils.ParentSpan span = TelemetryUtils.startExplicitParentSpan(name);
         TelemetryUtils.ScopedSpan scope = TelemetryUtils.withSpan(span.getSpan())) {
       scope.addAnnotation(TelemetryUtils.annotationBuilder().put("path", path).build("args"));
       String canonicalPath = new File(path).getCanonicalPath();
@@ -70,12 +71,15 @@ public class CommandHandler {
     } catch (Throwable t) {
       TelemetryUtils.setStatusINTERNAL(t.getMessage());
       writeError(id, t);
+    } finally {
+      TelemetryUtils.recordCommandLatency(name, TelemetryUtils.sinceInMilliseconds(startTime));
     }
   }
 
   public void diagnostics(long id, String path) {
-    try (TelemetryUtils.ParentSpan span =
-            TelemetryUtils.startExplicitParentSpan("Meghanada/diagnostics");
+    long startTime = System.nanoTime();
+    String name = "Meghanada/diagnostics";
+    try (TelemetryUtils.ParentSpan span = TelemetryUtils.startExplicitParentSpan(name);
         TelemetryUtils.ScopedSpan scope = TelemetryUtils.withSpan(span.getSpan())) {
       scope.addAnnotation(TelemetryUtils.annotationBuilder().put("path", path).build("args"));
       File f = new File(path);
@@ -87,12 +91,15 @@ public class CommandHandler {
     } catch (Throwable t) {
       TelemetryUtils.setStatusINTERNAL(t.getMessage());
       writeError(id, t);
+    } finally {
+      TelemetryUtils.recordCommandLatency(name, TelemetryUtils.sinceInMilliseconds(startTime));
     }
   }
 
   public void diagnostics(long id, String sourceFile, String tmpSourceFile) {
-    try (TelemetryUtils.ParentSpan span =
-            TelemetryUtils.startExplicitParentSpan("Meghanada/diagnostics/2");
+    long startTime = System.nanoTime();
+    String name = "Meghanada/diagnostics/2";
+    try (TelemetryUtils.ParentSpan span = TelemetryUtils.startExplicitParentSpan(name);
         TelemetryUtils.ScopedSpan scope = TelemetryUtils.withSpan(span.getSpan())) {
       scope.addAnnotation(
           TelemetryUtils.annotationBuilder()
@@ -116,12 +123,15 @@ public class CommandHandler {
     } catch (Throwable t) {
       TelemetryUtils.setStatusINTERNAL(t.getMessage());
       writeError(id, t);
+    } finally {
+      TelemetryUtils.recordCommandLatency(name, TelemetryUtils.sinceInMilliseconds(startTime));
     }
   }
 
   public void compile(long id, String path) {
-    try (TelemetryUtils.ParentSpan span =
-            TelemetryUtils.startExplicitParentSpan("Meghanada/compile");
+    long startTime = System.nanoTime();
+    String name = "Meghanada/compile";
+    try (TelemetryUtils.ParentSpan span = TelemetryUtils.startExplicitParentSpan(name);
         TelemetryUtils.ScopedSpan scope = TelemetryUtils.withSpan(span.getSpan())) {
       scope.addAnnotation(TelemetryUtils.annotationBuilder().put("path", path).build("args"));
       String canonicalPath = new File(path).getCanonicalPath();
@@ -132,12 +142,15 @@ public class CommandHandler {
     } catch (Throwable t) {
       TelemetryUtils.setStatusINTERNAL(t.getMessage());
       writeError(id, t);
+    } finally {
+      TelemetryUtils.recordCommandLatency(name, TelemetryUtils.sinceInMilliseconds(startTime));
     }
   }
 
   public void compileProject(long id, String path) {
-    try (TelemetryUtils.ParentSpan span =
-            TelemetryUtils.startExplicitParentSpan("Meghanada/compileProject");
+    long startTime = System.nanoTime();
+    String name = "Meghanada/compileProject";
+    try (TelemetryUtils.ParentSpan span = TelemetryUtils.startExplicitParentSpan(name);
         TelemetryUtils.ScopedSpan scope = TelemetryUtils.withSpan(span.getSpan())) {
       scope.addAnnotation(TelemetryUtils.annotationBuilder().put("path", path).build("args"));
       CompileResult compileResult = session.compileProject(path, true);
@@ -147,12 +160,15 @@ public class CommandHandler {
     } catch (Throwable t) {
       TelemetryUtils.setStatusINTERNAL(t.getMessage());
       writeError(id, t);
+    } finally {
+      TelemetryUtils.recordCommandLatency(name, TelemetryUtils.sinceInMilliseconds(startTime));
     }
   }
 
   public void autocomplete(long id, String path, String line, String column, String prefix) {
-    try (TelemetryUtils.ParentSpan span =
-            TelemetryUtils.startExplicitParentSpan("Meghanada/autocomplete");
+    long startTime = System.nanoTime();
+    String name = "Meghanada/autocomplete";
+    try (TelemetryUtils.ParentSpan span = TelemetryUtils.startExplicitParentSpan(name);
         TelemetryUtils.ScopedSpan scope = TelemetryUtils.withSpan(span.getSpan())) {
       scope.addAnnotation(
           TelemetryUtils.annotationBuilder()
@@ -171,12 +187,15 @@ public class CommandHandler {
     } catch (Throwable t) {
       TelemetryUtils.setStatusINTERNAL(t.getMessage());
       writeError(id, t);
+    } finally {
+      TelemetryUtils.recordCommandLatency(name, TelemetryUtils.sinceInMilliseconds(startTime));
     }
   }
 
   public void runJUnit(long id, String path, String test, boolean debug) {
-    try (TelemetryUtils.ParentSpan span =
-            TelemetryUtils.startExplicitParentSpan("Meghanada/runJUnit");
+    long startTime = System.nanoTime();
+    String name = "Meghanada/runJUnit";
+    try (TelemetryUtils.ParentSpan span = TelemetryUtils.startExplicitParentSpan(name);
         TelemetryUtils.ScopedSpan scope = TelemetryUtils.withSpan(span.getSpan())) {
       scope.addAnnotation(
           TelemetryUtils.annotationBuilder()
@@ -201,12 +220,15 @@ public class CommandHandler {
     } catch (Throwable t) {
       TelemetryUtils.setStatusINTERNAL(t.getMessage());
       writeError(id, t);
+    } finally {
+      TelemetryUtils.recordCommandLatency(name, TelemetryUtils.sinceInMilliseconds(startTime));
     }
   }
 
   public void parse(long id, String path) {
-    try (TelemetryUtils.ParentSpan span =
-            TelemetryUtils.startExplicitParentSpan("Meghanada/parse");
+    long startTime = System.nanoTime();
+    String name = "Meghanada/parse";
+    try (TelemetryUtils.ParentSpan span = TelemetryUtils.startExplicitParentSpan(name);
         TelemetryUtils.ScopedSpan scope = TelemetryUtils.withSpan(span.getSpan())) {
       scope.addAnnotation(TelemetryUtils.annotationBuilder().put("path", path).build("args"));
       boolean result = session.parseFile(path);
@@ -216,12 +238,15 @@ public class CommandHandler {
     } catch (Throwable t) {
       TelemetryUtils.setStatusINTERNAL(t.getMessage());
       writeError(id, t);
+    } finally {
+      TelemetryUtils.recordCommandLatency(name, TelemetryUtils.sinceInMilliseconds(startTime));
     }
   }
 
   public void addImport(long id, String path, String fqcn) {
-    try (TelemetryUtils.ParentSpan span =
-            TelemetryUtils.startExplicitParentSpan("Meghanada/addImport");
+    long startTime = System.nanoTime();
+    String name = "Meghanada/addImport";
+    try (TelemetryUtils.ParentSpan span = TelemetryUtils.startExplicitParentSpan(name);
         TelemetryUtils.ScopedSpan scope = TelemetryUtils.withSpan(span.getSpan())) {
       scope.addAnnotation(
           TelemetryUtils.annotationBuilder().put("path", path).put("fqcn", fqcn).build("args"));
@@ -232,10 +257,14 @@ public class CommandHandler {
     } catch (Throwable t) {
       TelemetryUtils.setStatusINTERNAL(t.getMessage());
       writeError(id, t);
+    } finally {
+      TelemetryUtils.recordCommandLatency(name, TelemetryUtils.sinceInMilliseconds(startTime));
     }
   }
 
   public void optimizeImport(long id, String sourceFile, String tmpSourceFile) {
+    long startTime = System.nanoTime();
+    String name = "Meghanada/optimizeImport";
     File f = new File(tmpSourceFile);
     f.deleteOnExit();
     try (TelemetryUtils.ParentSpan span =
@@ -254,12 +283,15 @@ public class CommandHandler {
     } catch (Throwable t) {
       TelemetryUtils.setStatusINTERNAL(t.getMessage());
       writeError(id, t);
+    } finally {
+      TelemetryUtils.recordCommandLatency(name, TelemetryUtils.sinceInMilliseconds(startTime));
     }
   }
 
   public void importAll(long id, String path) {
-    try (TelemetryUtils.ParentSpan span =
-            TelemetryUtils.startExplicitParentSpan("Meghanada/importAll");
+    long startTime = System.nanoTime();
+    String name = "Meghanada/importAll";
+    try (TelemetryUtils.ParentSpan span = TelemetryUtils.startExplicitParentSpan(name);
         TelemetryUtils.ScopedSpan scope = TelemetryUtils.withSpan(span.getSpan())) {
       scope.addAnnotation(TelemetryUtils.annotationBuilder().put("path", path).build("args"));
       Map<String, List<String>> result = session.searchMissingImport(path);
@@ -269,12 +301,15 @@ public class CommandHandler {
     } catch (Throwable t) {
       TelemetryUtils.setStatusINTERNAL(t.getMessage());
       writeError(id, t);
+    } finally {
+      TelemetryUtils.recordCommandLatency(name, TelemetryUtils.sinceInMilliseconds(startTime));
     }
   }
 
   public void switchTest(long id, String path) {
-    try (TelemetryUtils.ParentSpan span =
-            TelemetryUtils.startExplicitParentSpan("Meghanada/switchTest");
+    long startTime = System.nanoTime();
+    String name = "Meghanada/switchTest";
+    try (TelemetryUtils.ParentSpan span = TelemetryUtils.startExplicitParentSpan(name);
         TelemetryUtils.ScopedSpan scope = TelemetryUtils.withSpan(span.getSpan())) {
       scope.addAnnotation(TelemetryUtils.annotationBuilder().put("path", path).build("args"));
       String openPath = session.switchTest(path).orElse(path);
@@ -284,11 +319,15 @@ public class CommandHandler {
     } catch (Throwable t) {
       TelemetryUtils.setStatusINTERNAL(t.getMessage());
       writeError(id, t);
+    } finally {
+      TelemetryUtils.recordCommandLatency(name, TelemetryUtils.sinceInMilliseconds(startTime));
     }
   }
 
   public void ping(long id) {
-    try (TelemetryUtils.ParentSpan span = TelemetryUtils.startExplicitParentSpan("Meghanada/ping");
+    long startTime = System.nanoTime();
+    String name = "Meghanada/ping";
+    try (TelemetryUtils.ParentSpan span = TelemetryUtils.startExplicitParentSpan(name);
         TelemetryUtils.ScopedSpan scope = TelemetryUtils.withSpan(span.getSpan())) {
       scope.addAnnotation(TelemetryUtils.annotationBuilder().build("args"));
       String out = outputFormatter.ping(id, "pong");
@@ -297,12 +336,15 @@ public class CommandHandler {
     } catch (Throwable t) {
       TelemetryUtils.setStatusINTERNAL(t.getMessage());
       writeError(id, t);
+    } finally {
+      TelemetryUtils.recordCommandLatency(name, TelemetryUtils.sinceInMilliseconds(startTime));
     }
   }
 
   public void listSymbols(long id, boolean global) {
-    try (TelemetryUtils.ParentSpan span =
-            TelemetryUtils.startExplicitParentSpan("Meghanada/listSymbols");
+    long startTime = System.nanoTime();
+    String name = "Meghanada/listSymbols";
+    try (TelemetryUtils.ParentSpan span = TelemetryUtils.startExplicitParentSpan(name);
         TelemetryUtils.ScopedSpan scope = TelemetryUtils.withSpan(span.getSpan())) {
       scope.addAnnotation(TelemetryUtils.annotationBuilder().put("global", global).build("args"));
       String out =
@@ -313,12 +355,15 @@ public class CommandHandler {
     } catch (Throwable t) {
       TelemetryUtils.setStatusINTERNAL(t.getMessage());
       writeError(id, t);
+    } finally {
+      TelemetryUtils.recordCommandLatency(name, TelemetryUtils.sinceInMilliseconds(startTime));
     }
   }
 
   public void jumpSymbol(long id, String path, String line, String column, String symbol) {
-    try (TelemetryUtils.ParentSpan span =
-            TelemetryUtils.startExplicitParentSpan("Meghanada/jumpSymbol");
+    long startTime = System.nanoTime();
+    String name = "Meghanada/jumpSymbol";
+    try (TelemetryUtils.ParentSpan span = TelemetryUtils.startExplicitParentSpan(name);
         TelemetryUtils.ScopedSpan scope = TelemetryUtils.withSpan(span.getSpan())) {
       scope.addAnnotation(
           TelemetryUtils.annotationBuilder().put("line", line).put("column", column).build("args"));
@@ -334,12 +379,15 @@ public class CommandHandler {
     } catch (Throwable t) {
       TelemetryUtils.setStatusINTERNAL(t.getMessage());
       writeError(id, t);
+    } finally {
+      TelemetryUtils.recordCommandLatency(name, TelemetryUtils.sinceInMilliseconds(startTime));
     }
   }
 
   public void jumpDeclaration(long id, String path, String line, String column, String symbol) {
-    try (TelemetryUtils.ParentSpan span =
-            TelemetryUtils.startExplicitParentSpan("Meghanada/jumpDeclaration");
+    long startTime = System.nanoTime();
+    String name = "Meghanada/jumpDeclaration";
+    try (TelemetryUtils.ParentSpan span = TelemetryUtils.startExplicitParentSpan(name);
         TelemetryUtils.ScopedSpan scope = TelemetryUtils.withSpan(span.getSpan())) {
       scope.addAnnotation(
           TelemetryUtils.annotationBuilder()
@@ -359,12 +407,15 @@ public class CommandHandler {
     } catch (Throwable t) {
       TelemetryUtils.setStatusINTERNAL(t.getMessage());
       writeError(id, t);
+    } finally {
+      TelemetryUtils.recordCommandLatency(name, TelemetryUtils.sinceInMilliseconds(startTime));
     }
   }
 
   public void backJump(long id) {
-    try (TelemetryUtils.ParentSpan span =
-            TelemetryUtils.startExplicitParentSpan("Meghanada/backJump");
+    long startTime = System.nanoTime();
+    String name = "Meghanada/backJump";
+    try (TelemetryUtils.ParentSpan span = TelemetryUtils.startExplicitParentSpan(name);
         TelemetryUtils.ScopedSpan scope = TelemetryUtils.withSpan(span.getSpan())) {
       scope.addAnnotation(TelemetryUtils.annotationBuilder().build("args"));
       Location location = session.backDeclaration().orElseGet(() -> new Location("", -1, -1));
@@ -374,12 +425,15 @@ public class CommandHandler {
     } catch (Throwable t) {
       TelemetryUtils.setStatusINTERNAL(t.getMessage());
       writeError(id, t);
+    } finally {
+      TelemetryUtils.recordCommandLatency(name, TelemetryUtils.sinceInMilliseconds(startTime));
     }
   }
 
   public void runTask(long id, List<String> tasks) {
-    try (TelemetryUtils.ParentSpan span =
-            TelemetryUtils.startExplicitParentSpan("Meghanada/runTask");
+    long startTime = System.nanoTime();
+    String name = "Meghanada/runTask";
+    try (TelemetryUtils.ParentSpan span = TelemetryUtils.startExplicitParentSpan(name);
         TelemetryUtils.ScopedSpan scope = TelemetryUtils.withSpan(span.getSpan());
         InputStream in = this.session.runTask(tasks)) {
       scope.addAnnotation(
@@ -399,12 +453,15 @@ public class CommandHandler {
     } catch (Throwable t) {
       TelemetryUtils.setStatusINTERNAL(t.getMessage());
       writeError(id, t);
+    } finally {
+      TelemetryUtils.recordCommandLatency(name, TelemetryUtils.sinceInMilliseconds(startTime));
     }
   }
 
   public void clearCache(long id) {
-    try (TelemetryUtils.ParentSpan span =
-            TelemetryUtils.startExplicitParentSpan("Meghanada/clearCache");
+    long startTime = System.nanoTime();
+    String name = "Meghanada/clearCache";
+    try (TelemetryUtils.ParentSpan span = TelemetryUtils.startExplicitParentSpan(name);
         TelemetryUtils.ScopedSpan scope = TelemetryUtils.withSpan(span.getSpan())) {
       scope.addAnnotation(TelemetryUtils.annotationBuilder().build("args"));
       boolean result = this.session.clearCache();
@@ -414,12 +471,15 @@ public class CommandHandler {
     } catch (Throwable t) {
       TelemetryUtils.setStatusINTERNAL(t.getMessage());
       writeError(id, t);
+    } finally {
+      TelemetryUtils.recordCommandLatency(name, TelemetryUtils.sinceInMilliseconds(startTime));
     }
   }
 
   public void localVariable(long id, String path, String line) {
-    try (TelemetryUtils.ParentSpan span =
-            TelemetryUtils.startExplicitParentSpan("Meghanada/localVariable");
+    long startTime = System.nanoTime();
+    String name = "Meghanada/localVariable";
+    try (TelemetryUtils.ParentSpan span = TelemetryUtils.startExplicitParentSpan(name);
         TelemetryUtils.ScopedSpan scope = TelemetryUtils.withSpan(span.getSpan())) {
       scope.addAnnotation(TelemetryUtils.annotationBuilder().put("line", line).build("args"));
       int lineInt = Integer.parseInt(line);
@@ -436,12 +496,15 @@ public class CommandHandler {
     } catch (Throwable t) {
       TelemetryUtils.setStatusINTERNAL(t.getMessage());
       writeError(id, t);
+    } finally {
+      TelemetryUtils.recordCommandLatency(name, TelemetryUtils.sinceInMilliseconds(startTime));
     }
   }
 
   public void formatCode(long id, String path) {
-    try (TelemetryUtils.ParentSpan span =
-            TelemetryUtils.startExplicitParentSpan("Meghanada/formatCode");
+    long startTime = System.nanoTime();
+    String name = "Meghanada/formatCode";
+    try (TelemetryUtils.ParentSpan span = TelemetryUtils.startExplicitParentSpan(name);
         TelemetryUtils.ScopedSpan scope = TelemetryUtils.withSpan(span.getSpan())) {
       scope.addAnnotation(TelemetryUtils.annotationBuilder().put("path", path).build("args"));
       String canonicalPath = new File(path).getCanonicalPath();
@@ -451,12 +514,15 @@ public class CommandHandler {
     } catch (Throwable t) {
       TelemetryUtils.setStatusINTERNAL(t.getMessage());
       writeError(id, t);
+    } finally {
+      TelemetryUtils.recordCommandLatency(name, TelemetryUtils.sinceInMilliseconds(startTime));
     }
   }
 
   public void showDeclaration(long id, String path, String line, String column, String symbol) {
-    try (TelemetryUtils.ParentSpan span =
-            TelemetryUtils.startExplicitParentSpan("Meghanada/showDeclaration");
+    long startTime = System.nanoTime();
+    String name = "Meghanada/showDeclaration";
+    try (TelemetryUtils.ParentSpan span = TelemetryUtils.startExplicitParentSpan(name);
         TelemetryUtils.ScopedSpan scope = TelemetryUtils.withSpan(span.getSpan())) {
       scope.addAnnotation(
           TelemetryUtils.annotationBuilder()
@@ -478,12 +544,15 @@ public class CommandHandler {
     } catch (Throwable t) {
       TelemetryUtils.setStatusINTERNAL(t.getMessage());
       writeError(id, t);
+    } finally {
+      TelemetryUtils.recordCommandLatency(name, TelemetryUtils.sinceInMilliseconds(startTime));
     }
   }
 
   public void execMain(long id, String path, boolean debug) {
-    try (TelemetryUtils.ParentSpan span =
-            TelemetryUtils.startExplicitParentSpan("Meghanada/execMain");
+    long startTime = System.nanoTime();
+    String name = "Meghanada/execMain";
+    try (TelemetryUtils.ParentSpan span = TelemetryUtils.startExplicitParentSpan(name);
         TelemetryUtils.ScopedSpan scope = TelemetryUtils.withSpan(span.getSpan())) {
       scope.addAnnotation(
           TelemetryUtils.annotationBuilder().put("path", path).put("debug", debug).build("args"));
@@ -531,12 +600,15 @@ public class CommandHandler {
     } catch (Throwable t) {
       TelemetryUtils.setStatusINTERNAL(t.getMessage());
       writeError(id, t);
+    } finally {
+      TelemetryUtils.recordCommandLatency(name, TelemetryUtils.sinceInMilliseconds(startTime));
     }
   }
 
   public void reference(long id, String path, String line, String column, String symbol) {
-    try (TelemetryUtils.ParentSpan span =
-            TelemetryUtils.startExplicitParentSpan("Meghanada/reference");
+    long startTime = System.nanoTime();
+    String name = "Meghanada/reference";
+    try (TelemetryUtils.ParentSpan span = TelemetryUtils.startExplicitParentSpan(name);
         TelemetryUtils.ScopedSpan scope = TelemetryUtils.withSpan(span.getSpan())) {
       scope.addAnnotation(
           TelemetryUtils.annotationBuilder()
@@ -555,12 +627,15 @@ public class CommandHandler {
     } catch (Throwable t) {
       TelemetryUtils.setStatusINTERNAL(t.getMessage());
       writeError(id, t);
+    } finally {
+      TelemetryUtils.recordCommandLatency(name, TelemetryUtils.sinceInMilliseconds(startTime));
     }
   }
 
   public void typeInfo(long id, String path, String line, String column, String symbol) {
-    try (TelemetryUtils.ParentSpan span =
-            TelemetryUtils.startExplicitParentSpan("Meghanada/typeInfo");
+    long startTime = System.nanoTime();
+    String name = "Meghanada/typeInfo";
+    try (TelemetryUtils.ParentSpan span = TelemetryUtils.startExplicitParentSpan(name);
         TelemetryUtils.ScopedSpan scope = TelemetryUtils.withSpan(span.getSpan())) {
       scope.addAnnotation(
           TelemetryUtils.annotationBuilder()
@@ -585,12 +660,15 @@ public class CommandHandler {
     } catch (Throwable t) {
       TelemetryUtils.setStatusINTERNAL(t.getMessage());
       writeError(id, t);
+    } finally {
+      TelemetryUtils.recordCommandLatency(name, TelemetryUtils.sinceInMilliseconds(startTime));
     }
   }
 
   public void searchEverywhere(long id, String query) {
-    try (TelemetryUtils.ParentSpan span =
-            TelemetryUtils.startExplicitParentSpan("Meghanada/searchEverywhere");
+    long startTime = System.nanoTime();
+    String name = "Meghanada/searchEverywhere";
+    try (TelemetryUtils.ParentSpan span = TelemetryUtils.startExplicitParentSpan(name);
         TelemetryUtils.ScopedSpan scope = TelemetryUtils.withSpan(span.getSpan())) {
       scope.addAnnotation(TelemetryUtils.annotationBuilder().put("query", query).build("args"));
       Optional<SearchResults> results = Session.searchEverywhere(query);
@@ -607,12 +685,15 @@ public class CommandHandler {
     } catch (Throwable t) {
       TelemetryUtils.setStatusINTERNAL(t.getMessage());
       writeError(id, t);
+    } finally {
+      TelemetryUtils.recordCommandLatency(name, TelemetryUtils.sinceInMilliseconds(startTime));
     }
   }
 
   public void killRunningProcess(long id) {
-    try (TelemetryUtils.ParentSpan span =
-            TelemetryUtils.startExplicitParentSpan("Meghanada/killRunningProcess");
+    long startTime = System.nanoTime();
+    String name = "Meghanada/killRunningProcess";
+    try (TelemetryUtils.ParentSpan span = TelemetryUtils.startExplicitParentSpan(name);
         TelemetryUtils.ScopedSpan scope = TelemetryUtils.withSpan(span.getSpan())) {
       scope.addAnnotation(TelemetryUtils.annotationBuilder().build("args"));
       session.killRunningProcess();
@@ -623,12 +704,15 @@ public class CommandHandler {
     } catch (Throwable t) {
       TelemetryUtils.setStatusINTERNAL(t.getMessage());
       writeError(id, t);
+    } finally {
+      TelemetryUtils.recordCommandLatency(name, TelemetryUtils.sinceInMilliseconds(startTime));
     }
   }
 
   public void showProject(long id) {
-    try (TelemetryUtils.ParentSpan span =
-            TelemetryUtils.startExplicitParentSpan("Meghanada/showProject");
+    long startTime = System.nanoTime();
+    String name = "Meghanada/showProject";
+    try (TelemetryUtils.ParentSpan span = TelemetryUtils.startExplicitParentSpan(name);
         TelemetryUtils.ScopedSpan scope = TelemetryUtils.withSpan(span.getSpan())) {
       scope.addAnnotation(TelemetryUtils.annotationBuilder().build("args"));
       String s = session.showProject();
@@ -639,13 +723,16 @@ public class CommandHandler {
     } catch (Throwable t) {
       TelemetryUtils.setStatusINTERNAL(t.getMessage());
       writeError(id, t);
+    } finally {
+      TelemetryUtils.recordCommandLatency(name, TelemetryUtils.sinceInMilliseconds(startTime));
     }
   }
 
   public void autocompleteResolve(
       long id, String path, String line, String column, String type, String item, String desc) {
-    try (TelemetryUtils.ParentSpan span =
-            TelemetryUtils.startExplicitParentSpan("Meghanada/autocompleteResolve");
+    long startTime = System.nanoTime();
+    String name = "Meghanada/autocompleteResolve";
+    try (TelemetryUtils.ParentSpan span = TelemetryUtils.startExplicitParentSpan(name);
         TelemetryUtils.ScopedSpan scope = TelemetryUtils.withSpan(span.getSpan())) {
       scope.addAnnotation(
           TelemetryUtils.annotationBuilder()
@@ -666,12 +753,15 @@ public class CommandHandler {
     } catch (Throwable t) {
       TelemetryUtils.setStatusINTERNAL(t.getMessage());
       writeError(id, t);
+    } finally {
+      TelemetryUtils.recordCommandLatency(name, TelemetryUtils.sinceInMilliseconds(startTime));
     }
   }
 
   public void importAtPoint(long id, String path, String line, String column, String symbol) {
-    try (TelemetryUtils.ParentSpan span =
-            TelemetryUtils.startExplicitParentSpan("Meghanada/importAtPoint");
+    long startTime = System.nanoTime();
+    String name = "Meghanada/importAtPoint";
+    try (TelemetryUtils.ParentSpan span = TelemetryUtils.startExplicitParentSpan(name);
         TelemetryUtils.ScopedSpan scope = TelemetryUtils.withSpan(span.getSpan())) {
       scope.addAnnotation(
           TelemetryUtils.annotationBuilder()
@@ -689,6 +779,8 @@ public class CommandHandler {
     } catch (Throwable t) {
       TelemetryUtils.setStatusINTERNAL(t.getMessage());
       writeError(id, t);
+    } finally {
+      TelemetryUtils.recordCommandLatency(name, TelemetryUtils.sinceInMilliseconds(startTime));
     }
   }
 }
