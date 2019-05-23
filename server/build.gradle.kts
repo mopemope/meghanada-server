@@ -37,6 +37,7 @@ val junitVersion = "5.4.0"
 val gradleVersion = "5.4.1"
 val log4jVersion = "2.11.2"
 val xodusVersion = "1.3.0"
+val opencensusVersion = "0.22.1"
 
 base {
     archivesBaseName = applicationName
@@ -90,11 +91,11 @@ dependencies {
     implementation("org.jetbrains.xodus:xodus-entity-store:$xodusVersion")
     implementation("org.jetbrains.xodus:xodus-compress:$xodusVersion")
 
-    implementation("io.opencensus:opencensus-api:0.22.0")
-    implementation("io.opencensus:opencensus-impl:0.22.0")
-    implementation("io.opencensus:opencensus-contrib-zpages:0.22.0")
-    implementation("io.opencensus:opencensus-exporter-trace-stackdriver:0.22.0")
-    implementation("io.opencensus:opencensus-exporter-stats-stackdriver:0.22.0")
+    implementation("io.opencensus:opencensus-api:$opencensusVersion")
+    implementation("io.opencensus:opencensus-impl:$opencensusVersion")
+    implementation("io.opencensus:opencensus-contrib-zpages:$opencensusVersion")
+    implementation("io.opencensus:opencensus-exporter-trace-stackdriver:$opencensusVersion")
+    implementation("io.opencensus:opencensus-exporter-stats-stackdriver:$opencensusVersion")
 
     implementation("com.github.oshi:oshi-core:3.13.2")
 }
