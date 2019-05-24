@@ -2,6 +2,7 @@ package meghanada.session.subscribe;
 
 import com.google.common.collect.Sets;
 import com.google.common.eventbus.Subscribe;
+import java.io.IOException;
 import java.time.Instant;
 import java.util.Iterator;
 import java.util.Set;
@@ -81,9 +82,9 @@ public class IdleMonitorSubscriber extends AbstractSubscriber {
       try {
         if (it.hasNext()) {
           String name = it.next();
-          GlobalCache.getInstance().getMemberDescriptors(name);
+          GlobalCache.getInstance().loadMemberDescriptors(name);
         }
-      } catch (ExecutionException e) {
+      } catch (IOException | ExecutionException e) {
         log.catching(e);
       } finally {
         try {

@@ -190,6 +190,7 @@ public class CachedASMReflector {
 
       this.updateClassIndexFromDirectory();
       this.saveAllClassIndexes();
+      TelemetryUtils.recordClassIndexes(globalClassIndex.size());
     }
   }
 
@@ -220,6 +221,7 @@ public class CachedASMReflector {
             .collect(Collectors.toList());
 
     ProjectDatabaseHelper.saveClassIndexes(otherIndexes, true);
+    TelemetryUtils.recordClassIndexes(globalClassIndex.size());
   }
 
   private void addClassIndex(ClassIndex newIndex, File file) {

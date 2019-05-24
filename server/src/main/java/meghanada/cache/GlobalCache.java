@@ -77,7 +77,7 @@ public class GlobalCache {
         CacheBuilder.newBuilder()
             .maximumSize(MEMBER_CACHE_MAX)
             .recordStats()
-            .expireAfterAccess(15, TimeUnit.MINUTES)
+            .expireAfterAccess(30, TimeUnit.MINUTES)
             .removalListener(memberCacheLoader)
             .build(memberCacheLoader);
   }
@@ -90,6 +90,8 @@ public class GlobalCache {
       scope.addAnnotation(TelemetryUtils.annotationBuilder().put("fqcn", fqcn).build("args"));
 
       return this.memberCache.get(fqcn);
+    } finally {
+      TelemetryUtils.recordMemberCacheRate(getMemberDescriptorsRateStats());
     }
   }
 
@@ -102,6 +104,8 @@ public class GlobalCache {
 
       List<MemberDescriptor> descriptors = this.memberCacheLoader.load(fqcn);
       this.memberCache.put(fqcn, descriptors);
+    } finally {
+      TelemetryUtils.recordMemberCacheRate(getMemberDescriptorsRateStats());
     }
   }
 
@@ -140,21 +144,41 @@ public class GlobalCache {
       final LoadingCache<File, Source> loadingCache =
           CacheBuilder.newBuilder()
               .maximumSize(size)
-              .expireAfterAccess(10, TimeUnit.MINUTES)
+              .expireAfterAccess(30, TimeUnit.MINUTES)
               .removalListener(javaSourceLoader)
               .build(javaSourceLoader);
       this.sourceCaches.put(projectRoot, loadingCache);
+      this.sourceLoaders.put(projectRoot, javaSourceLoader);
       return loadingCache;
     }
   }
 
   public Source getSource(final File file) throws ExecutionException {
+
     try (TelemetryUtils.ScopedSpan scope =
         TelemetryUtils.startScopedSpan("GlobalCache.getSource")) {
+
       scope.addAnnotation(
           TelemetryUtils.annotationBuilder().put("file", file.getPath()).build("args"));
+
       final LoadingCache<File, Source> sourceCache = this.getSourceCache();
       return sourceCache.get(file);
+    }
+  }
+
+  public void loadSource(final File file) throws IOException {
+
+    try (TelemetryUtils.ScopedSpan scope =
+        TelemetryUtils.startScopedSpan("GlobalCache.loadSource")) {
+
+      scope.addAnnotation(
+          TelemetryUtils.annotationBuilder().put("file", file.getPath()).build("args"));
+
+      final LoadingCache<File, Source> sourceCache = this.getSourceCache();
+      Project project = this.projectSupplier.get();
+      final File projectRoot = project.getProjectRoot();
+      JavaSourceLoader loader = sourceLoaders.get(projectRoot);
+      sourceCache.put(file, loader.load(file));
     }
   }
 

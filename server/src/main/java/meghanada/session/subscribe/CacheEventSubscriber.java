@@ -97,7 +97,6 @@ public class CacheEventSubscriber extends AbstractSubscriber {
         "class index size:{} total elapsed:{}",
         reflector.getGlobalClassIndex().size(),
         stopwatch.stop());
-    TelemetryUtils.recordClassIndexes(reflector.getGlobalClassIndex().size());
     Config.showMemory();
     log.info("Ready");
     reflector.scanAllStaticMembers();
@@ -127,7 +126,7 @@ public class CacheEventSubscriber extends AbstractSubscriber {
                   TelemetryUtils.startScopedSpan("CacheEventSubscriber.createStandardClassCache")) {
                 scope.addAnnotation(
                     TelemetryUtils.annotationBuilder().put("fqcn", fqcn).build("args"));
-                globalCache.getMemberDescriptors(fqcn);
+                globalCache.loadMemberDescriptors(fqcn);
               } catch (Exception e) {
                 log.catching(e);
               }
@@ -149,7 +148,7 @@ public class CacheEventSubscriber extends AbstractSubscriber {
                   TelemetryUtils.startScopedSpan("CacheEventSubscriber.createClassCache")) {
                 scope.addAnnotation(
                     TelemetryUtils.annotationBuilder().put("fqcn", fqcn).build("args"));
-                globalCache.getMemberDescriptors(fqcn);
+                globalCache.loadMemberDescriptors(fqcn);
               } catch (Exception e) {
                 log.catching(e);
               }
