@@ -3,8 +3,10 @@ package meghanada.cache;
 import static java.util.Objects.nonNull;
 
 import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheStats;
 import com.google.common.cache.LoadingCache;
 import java.io.File;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -29,13 +31,18 @@ public class GlobalCache {
 
   private static GlobalCache globalCache;
   private final Map<File, LoadingCache<File, Source>> sourceCaches;
+  private final Map<File, JavaSourceLoader> sourceLoaders;
   private final Map<File, Map<String, String>> sourceMapCaches;
+
   private LoadingCache<String, List<MemberDescriptor>> memberCache;
+  private MemberCacheLoader memberCacheLoader;
+
   private Supplier<Project> projectSupplier;
 
   private GlobalCache() {
 
     this.sourceCaches = new HashMap<>(1);
+    this.sourceLoaders = new HashMap<>(1);
     this.sourceMapCaches = new HashMap<>(1);
 
     Runtime.getRuntime()
@@ -62,14 +69,15 @@ public class GlobalCache {
   }
 
   public void setupMemberCache() {
-    if (this.memberCache != null) {
+    if (nonNull(this.memberCache)) {
       return;
     }
-    final MemberCacheLoader memberCacheLoader = new MemberCacheLoader();
+    this.memberCacheLoader = new MemberCacheLoader();
     this.memberCache =
         CacheBuilder.newBuilder()
             .maximumSize(MEMBER_CACHE_MAX)
-            .expireAfterAccess(10, TimeUnit.MINUTES)
+            .recordStats()
+            .expireAfterAccess(15, TimeUnit.MINUTES)
             .removalListener(memberCacheLoader)
             .build(memberCacheLoader);
   }
@@ -85,6 +93,37 @@ public class GlobalCache {
     }
   }
 
+  public void loadMemberDescriptors(final String fqcn) throws IOException, ExecutionException {
+
+    try (TelemetryUtils.ScopedSpan scope =
+        TelemetryUtils.startScopedSpanLow("GlobalCache.loadMemberDescriptors")) {
+
+      scope.addAnnotation(TelemetryUtils.annotationBuilder().put("fqcn", fqcn).build("args"));
+
+      List<MemberDescriptor> descriptors = this.memberCacheLoader.load(fqcn);
+      this.memberCache.put(fqcn, descriptors);
+    }
+  }
+
+  public double[] getMemberDescriptorsRateStats() throws ExecutionException {
+    CacheStats cacheStats = this.memberCache.stats();
+    return new double[] {
+      cacheStats.hitRate(), cacheStats.loadExceptionRate(), cacheStats.missRate(),
+    };
+  }
+
+  public long[] getMemberDescriptorsCountStats() throws ExecutionException {
+    CacheStats cacheStats = this.memberCache.stats();
+    return new long[] {
+      cacheStats.hitCount(),
+      cacheStats.loadCount(),
+      cacheStats.loadExceptionCount(),
+      cacheStats.loadSuccessCount(),
+      cacheStats.missCount(),
+      cacheStats.requestCount(),
+    };
+  }
+
   public void invalidateMemberDescriptors(final String fqcn) {
     this.memberCache.invalidate(fqcn);
   }
@@ -96,6 +135,7 @@ public class GlobalCache {
       return this.sourceCaches.get(projectRoot);
     } else {
       final JavaSourceLoader javaSourceLoader = new JavaSourceLoader(this.projectSupplier);
+
       int size = Config.load().getSourceCacheSize();
       final LoadingCache<File, Source> loadingCache =
           CacheBuilder.newBuilder()
