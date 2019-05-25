@@ -11,6 +11,7 @@ import meghanada.cache.GlobalCache;
 import meghanada.session.Session;
 import meghanada.session.SessionEventBus;
 import meghanada.system.Executor;
+import meghanada.telemetry.TelemetryUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import oshi.SystemInfo;
@@ -63,6 +64,7 @@ public class IdleMonitorSubscriber extends AbstractSubscriber {
           SessionEventBus.IdleEvent idleEvent = createIdleEvent(event.session, this.idleTimer);
           Executor.getInstance().getEventBus().post(idleEvent);
           this.idleTimer.lastRun = now + this.idleTime + 1;
+          TelemetryUtils.recordMemory();
         }
       } catch (InterruptedException e) {
         log.catching(e);
