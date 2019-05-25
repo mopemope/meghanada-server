@@ -68,6 +68,7 @@ public class IndexSubscriber {
               .collect(Collectors.toList());
 
       IndexDatabase.requestIndex(sources);
+      span.setStatusOK();
     }
   }
 }

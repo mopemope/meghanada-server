@@ -253,6 +253,7 @@ public class ProjectDatabase {
                       }
                     }
                   }
+                  span.setStatusOK();
                 }
               } catch (Exception e) {
                 log.catching(e);
@@ -473,6 +474,7 @@ public class ProjectDatabase {
                   } else {
                     start = false;
                   }
+                  span.setStatusOK();
                 }
               } catch (Exception e) {
                 log.catching(e);

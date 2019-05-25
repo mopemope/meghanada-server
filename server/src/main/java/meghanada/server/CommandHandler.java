@@ -68,6 +68,7 @@ public class CommandHandler {
       String out = outputFormatter.changeProject(id, result);
       writer.write(out);
       writer.newLine();
+      span.setStatusOK();
     } catch (Throwable t) {
       TelemetryUtils.setStatusINTERNAL(t.getMessage());
       writeError(id, t);
@@ -88,6 +89,7 @@ public class CommandHandler {
       String out = outputFormatter.diagnostics(id, compileResult, path);
       writer.write(out);
       writer.newLine();
+      span.setStatusOK();
     } catch (Throwable t) {
       TelemetryUtils.setStatusINTERNAL(t.getMessage());
       writeError(id, t);
@@ -115,6 +117,7 @@ public class CommandHandler {
         String out = outputFormatter.diagnostics(id, compileResult, sourceFile);
         writer.write(out);
         writer.newLine();
+        span.setStatusOK();
       } finally {
         if (f.exists()) {
           f.delete();
@@ -139,6 +142,7 @@ public class CommandHandler {
       String out = outputFormatter.compile(id, compileResult, canonicalPath);
       writer.write(out);
       writer.newLine();
+      span.setStatusOK();
     } catch (Throwable t) {
       TelemetryUtils.setStatusINTERNAL(t.getMessage());
       writeError(id, t);
@@ -157,6 +161,7 @@ public class CommandHandler {
       String out = outputFormatter.compileProject(id, compileResult);
       writer.write(out);
       writer.newLine();
+      span.setStatusOK();
     } catch (Throwable t) {
       TelemetryUtils.setStatusINTERNAL(t.getMessage());
       writeError(id, t);
@@ -184,6 +189,7 @@ public class CommandHandler {
       String out = outputFormatter.autocomplete(id, units);
       writer.write(out);
       writer.newLine();
+      span.setStatusOK();
     } catch (Throwable t) {
       TelemetryUtils.setStatusINTERNAL(t.getMessage());
       writeError(id, t);
@@ -217,6 +223,7 @@ public class CommandHandler {
         }
         writer.newLine();
       }
+      span.setStatusOK();
     } catch (Throwable t) {
       TelemetryUtils.setStatusINTERNAL(t.getMessage());
       writeError(id, t);
@@ -235,6 +242,7 @@ public class CommandHandler {
       String out = outputFormatter.parse(id, result);
       writer.write(out);
       writer.newLine();
+      span.setStatusOK();
     } catch (Throwable t) {
       TelemetryUtils.setStatusINTERNAL(t.getMessage());
       writeError(id, t);
@@ -254,6 +262,7 @@ public class CommandHandler {
       String out = outputFormatter.addImport(id, result, ClassNameUtils.replaceInnerMark(fqcn));
       writer.write(out);
       writer.newLine();
+      span.setStatusOK();
     } catch (Throwable t) {
       TelemetryUtils.setStatusINTERNAL(t.getMessage());
       writeError(id, t);
@@ -280,6 +289,7 @@ public class CommandHandler {
       session.optimizeImport(sourceFile, tmpSourceFile, contents);
       writer.write(outputFormatter.optimizeImport(id, canonicalPath));
       writer.newLine();
+      span.setStatusOK();
     } catch (Throwable t) {
       TelemetryUtils.setStatusINTERNAL(t.getMessage());
       writeError(id, t);
@@ -298,6 +308,7 @@ public class CommandHandler {
       String out = outputFormatter.importAll(id, result);
       writer.write(out);
       writer.newLine();
+      span.setStatusOK();
     } catch (Throwable t) {
       TelemetryUtils.setStatusINTERNAL(t.getMessage());
       writeError(id, t);
@@ -316,6 +327,7 @@ public class CommandHandler {
       String out = outputFormatter.switchTest(id, openPath);
       writer.write(out);
       writer.newLine();
+      span.setStatusOK();
     } catch (Throwable t) {
       TelemetryUtils.setStatusINTERNAL(t.getMessage());
       writeError(id, t);
@@ -333,6 +345,7 @@ public class CommandHandler {
       String out = outputFormatter.ping(id, "pong");
       writer.write(out);
       writer.newLine();
+      span.setStatusOK();
     } catch (Throwable t) {
       TelemetryUtils.setStatusINTERNAL(t.getMessage());
       writeError(id, t);
@@ -352,6 +365,7 @@ public class CommandHandler {
               id, session.listSymbols(global).stream().collect(Collectors.joining("\n")));
       writer.write(out);
       writer.newLine();
+      span.setStatusOK();
     } catch (Throwable t) {
       TelemetryUtils.setStatusINTERNAL(t.getMessage());
       writeError(id, t);
@@ -376,6 +390,7 @@ public class CommandHandler {
       String out = outputFormatter.jumpDeclaration(id, location);
       writer.write(out);
       writer.newLine();
+      span.setStatusOK();
     } catch (Throwable t) {
       TelemetryUtils.setStatusINTERNAL(t.getMessage());
       writeError(id, t);
@@ -404,6 +419,7 @@ public class CommandHandler {
       String out = outputFormatter.jumpDeclaration(id, location);
       writer.write(out);
       writer.newLine();
+      span.setStatusOK();
     } catch (Throwable t) {
       TelemetryUtils.setStatusINTERNAL(t.getMessage());
       writeError(id, t);
@@ -422,6 +438,7 @@ public class CommandHandler {
       String out = outputFormatter.jumpDeclaration(id, location);
       writer.write(out);
       writer.newLine();
+      span.setStatusOK();
     } catch (Throwable t) {
       TelemetryUtils.setStatusINTERNAL(t.getMessage());
       writeError(id, t);
@@ -450,6 +467,7 @@ public class CommandHandler {
         writer.flush();
       }
       writer.newLine();
+      span.setStatusOK();
     } catch (Throwable t) {
       TelemetryUtils.setStatusINTERNAL(t.getMessage());
       writeError(id, t);
@@ -468,6 +486,7 @@ public class CommandHandler {
       String out = outputFormatter.clearCache(id, result);
       writer.write(out);
       writer.newLine();
+      span.setStatusOK();
     } catch (Throwable t) {
       TelemetryUtils.setStatusINTERNAL(t.getMessage());
       writeError(id, t);
@@ -493,6 +512,7 @@ public class CommandHandler {
         writer.write(out);
       }
       writer.newLine();
+      span.setStatusOK();
     } catch (Throwable t) {
       TelemetryUtils.setStatusINTERNAL(t.getMessage());
       writeError(id, t);
@@ -511,6 +531,7 @@ public class CommandHandler {
       session.formatCode(canonicalPath);
       writer.write(outputFormatter.formatCode(id, canonicalPath));
       writer.newLine();
+      span.setStatusOK();
     } catch (Throwable t) {
       TelemetryUtils.setStatusINTERNAL(t.getMessage());
       writeError(id, t);
@@ -541,6 +562,7 @@ public class CommandHandler {
       writer.write(out);
       writer.newLine();
       writer.flush();
+      span.setStatusOK();
     } catch (Throwable t) {
       TelemetryUtils.setStatusINTERNAL(t.getMessage());
       writeError(id, t);
@@ -592,6 +614,7 @@ public class CommandHandler {
         writer.newLine();
         writer.write("elapsed: " + stopWatch.toString());
         writer.newLine();
+        span.setStatusOK();
       } catch (Throwable t) {
         scope.setStatusINTERNAL(t.getMessage());
         writeError(id, t);
@@ -624,6 +647,7 @@ public class CommandHandler {
       writer.write(out);
       writer.newLine();
       writer.flush();
+      span.setStatusOK();
     } catch (Throwable t) {
       TelemetryUtils.setStatusINTERNAL(t.getMessage());
       writeError(id, t);
@@ -657,6 +681,7 @@ public class CommandHandler {
       }
       writer.newLine();
       writer.flush();
+      span.setStatusOK();
     } catch (Throwable t) {
       TelemetryUtils.setStatusINTERNAL(t.getMessage());
       writeError(id, t);
@@ -682,6 +707,7 @@ public class CommandHandler {
       }
       writer.newLine();
       writer.flush();
+      span.setStatusOK();
     } catch (Throwable t) {
       TelemetryUtils.setStatusINTERNAL(t.getMessage());
       writeError(id, t);
@@ -701,6 +727,7 @@ public class CommandHandler {
       writer.write(out);
       writer.newLine();
       writer.flush();
+      span.setStatusOK();
     } catch (Throwable t) {
       TelemetryUtils.setStatusINTERNAL(t.getMessage());
       writeError(id, t);
@@ -720,6 +747,7 @@ public class CommandHandler {
       writer.write(out);
       writer.newLine();
       writer.flush();
+      span.setStatusOK();
     } catch (Throwable t) {
       TelemetryUtils.setStatusINTERNAL(t.getMessage());
       writeError(id, t);
@@ -750,6 +778,7 @@ public class CommandHandler {
       writer.write(out);
       writer.newLine();
       writer.flush();
+      span.setStatusOK();
     } catch (Throwable t) {
       TelemetryUtils.setStatusINTERNAL(t.getMessage());
       writeError(id, t);
@@ -776,6 +805,7 @@ public class CommandHandler {
       String out = outputFormatter.importAtPoint(id, result);
       writer.write(out);
       writer.newLine();
+      span.setStatusOK();
     } catch (Throwable t) {
       TelemetryUtils.setStatusINTERNAL(t.getMessage());
       writeError(id, t);

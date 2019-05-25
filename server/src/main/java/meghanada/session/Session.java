@@ -417,6 +417,7 @@ public class Session {
           .forEach(project -> this.sessionEventBus.requestWatchFile(project.getProjectRoot()));
 
       log.debug("session started");
+      span.setStatusOK();
       this.started = true;
     }
   }

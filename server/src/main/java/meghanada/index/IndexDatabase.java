@@ -147,6 +147,7 @@ public class IndexDatabase {
       if (nonNull(event.onSuccess)) {
         event.onSuccess.accept(event);
       }
+      span.setStatusOK();
     }
   }
 

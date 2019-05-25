@@ -34,6 +34,7 @@ public class CacheEventSubscriber extends AbstractSubscriber {
             TelemetryUtils.startExplicitParentSpan("CacheEventSubscriber/on");
         TelemetryUtils.ScopedSpan scope = TelemetryUtils.withSpan(span.getSpan())) {
       this.analyze();
+      span.setStatusOK();
     }
   }
 

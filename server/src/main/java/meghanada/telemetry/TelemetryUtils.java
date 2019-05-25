@@ -358,7 +358,7 @@ public class TelemetryUtils {
     span.addAnnotation(vmAnno);
     Annotation osAnno = Annotation.fromDescriptionAndAttributes("os properties", osAttributeMap);
     span.addAnnotation(osAnno);
-    return new ParentSpan(span);
+    return new ParentSpan(span, name);
   }
 
   public static ScopedSpan withSpan(Span span) {
@@ -453,9 +453,19 @@ public class TelemetryUtils {
   public static class ParentSpan implements Closeable {
 
     private final Span span;
+    private final Map<String, AttributeValue> attrs = new HashMap<>();
 
-    ParentSpan(Span span) {
+    ParentSpan(Span span, String name) {
       this.span = span;
+      this.span.putAttributes(attrs);
+      attrs.put("http.method", AttributeValue.stringAttributeValue("GET"));
+      attrs.put("http.path", AttributeValue.stringAttributeValue(name));
+      attrs.put("http.user_agent", AttributeValue.stringAttributeValue(TelemetryUtils.getUID()));
+      attrs.put("http.status_code", AttributeValue.longAttributeValue(500));
+    }
+
+    public void setStatusOK() {
+      attrs.put("http.status_code", AttributeValue.longAttributeValue(200));
     }
 
     public void setStatusINTERNAL(String message) {
@@ -467,6 +477,7 @@ public class TelemetryUtils {
     }
 
     public void end() {
+      span.putAttributes(this.attrs);
       if (enabledExporter) {
         span.end();
       } else {
