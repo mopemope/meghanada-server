@@ -3,6 +3,7 @@
 * collect telemetry data of meghanada-server (default disabled).
 * fix constructor completion format.
 * fix array completion.
+* fix file paths not being processed correctly in windows.
 * fix some bugs and improve stability.
 
 # Version 1.1.2 (2019-05-09)
