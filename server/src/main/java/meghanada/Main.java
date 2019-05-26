@@ -14,7 +14,7 @@ import meghanada.config.Config;
 import meghanada.server.Server;
 import meghanada.server.emacs.EmacsServer;
 import meghanada.telemetry.TelemetryUtils;
-import meghanada.utils.ClasspathUtils;
+import meghanada.utils.ClassPathUtils;
 import meghanada.utils.FileUtils;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -63,7 +63,7 @@ public class Main {
     int size = Runtime.getRuntime().availableProcessors() * 2;
     System.setProperty(
         "java.util.concurrent.ForkJoinPool.common.parallelism", Integer.toString(size));
-    ClasspathUtils.addToolsJar();
+    ClassPathUtils.addToolsJar();
     final String version = getVersion();
     System.setProperty("meghanada-server.version", version);
     System.setProperty("meghanada-server.uid", TelemetryUtils.getUID());
