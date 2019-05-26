@@ -99,18 +99,19 @@ public class CachedASMReflectorTest extends GradleTestBase {
     Stopwatch stopwatch = Stopwatch.createUnstarted();
     {
       String fqcn = "java.lang.String";
+      GlobalCache.getInstance().invalidateMemberDescriptors(fqcn);
 
       stopwatch.start();
-      List<MemberDescriptor> memberDescriptors = cachedASMReflector.reflect(fqcn);
+      List<MemberDescriptor> descriptors = cachedASMReflector.reflect(fqcn);
       log.info(stopwatch.stop());
       stopwatch.reset();
-      // memberDescriptors.sort(MemberDescriptor::compareTo);
-      // memberDescriptors.forEach(m -> System.out.println(m.getDisplayDeclaration()));
+      descriptors.sort(MemberDescriptor::compareTo);
+      descriptors.forEach(m -> System.out.println(m.getDisplayDeclaration()));
       Config config = Config.load();
       if (config.isJava8()) {
-        assertEquals(98, memberDescriptors.size());
+        assertEquals(98, descriptors.size());
       } else {
-        assertEquals(109, memberDescriptors.size());
+        assertEquals(109, descriptors.size());
       }
     }
     {

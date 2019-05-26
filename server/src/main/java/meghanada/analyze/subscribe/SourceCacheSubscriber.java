@@ -144,6 +144,7 @@ public class SourceCacheSubscriber {
           TelemetryUtils.startScopedSpan("SourceCacheSubscriber.complete")) {
         this.complete();
       }
+      span.setStatusOK();
     } catch (Exception ex) {
       log.catching(ex);
     }

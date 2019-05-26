@@ -2,6 +2,7 @@ package meghanada.session.subscribe;
 
 import com.google.common.collect.Sets;
 import com.google.common.eventbus.Subscribe;
+import java.io.IOException;
 import java.time.Instant;
 import java.util.Iterator;
 import java.util.Set;
@@ -10,6 +11,7 @@ import meghanada.cache.GlobalCache;
 import meghanada.session.Session;
 import meghanada.session.SessionEventBus;
 import meghanada.system.Executor;
+import meghanada.telemetry.TelemetryUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import oshi.SystemInfo;
@@ -62,6 +64,7 @@ public class IdleMonitorSubscriber extends AbstractSubscriber {
           SessionEventBus.IdleEvent idleEvent = createIdleEvent(event.session, this.idleTimer);
           Executor.getInstance().getEventBus().post(idleEvent);
           this.idleTimer.lastRun = now + this.idleTime + 1;
+          TelemetryUtils.recordMemory();
         }
       } catch (InterruptedException e) {
         log.catching(e);
@@ -81,9 +84,9 @@ public class IdleMonitorSubscriber extends AbstractSubscriber {
       try {
         if (it.hasNext()) {
           String name = it.next();
-          GlobalCache.getInstance().getMemberDescriptors(name);
+          GlobalCache.getInstance().loadMemberDescriptors(name);
         }
-      } catch (ExecutionException e) {
+      } catch (IOException | ExecutionException e) {
         log.catching(e);
       } finally {
         try {

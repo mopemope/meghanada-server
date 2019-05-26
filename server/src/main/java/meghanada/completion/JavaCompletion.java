@@ -200,8 +200,8 @@ public class JavaCompletion {
       executor.execute(
           () -> {
             try {
-              GlobalCache.getInstance().getMemberDescriptors(name);
-            } catch (ExecutionException e) {
+              GlobalCache.getInstance().loadMemberDescriptors(name);
+            } catch (IOException | ExecutionException e) {
               log.catching(e);
             }
           });

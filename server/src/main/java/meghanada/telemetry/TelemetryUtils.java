@@ -62,10 +62,21 @@ public class TelemetryUtils {
   private static final Sampler PROBABILITY_SAMPLER_MIDDLE = Samplers.probabilitySampler(1 / 100.0);
   private static final Sampler PROBABILITY_SAMPLER_LOW = Samplers.probabilitySampler(1 / 1000.0);
   private static final Sampler NEVER_SAMPLER = Samplers.neverSample();
-  private static final Measure.MeasureDouble COMMAND_LATENCY_MS =
+
+  private static final Measure.MeasureDouble M_COMMAND_LATENCY_MS =
       Measure.MeasureDouble.create("command_latency", "The task latency in milliseconds", "ms");
-  private static final Measure.MeasureLong CLASS_INDEX =
-      Measure.MeasureLong.create("class_index", "The number of class indexes", "1");
+  private static final Measure.MeasureLong M_CLASS_INDEX =
+      Measure.MeasureLong.create("class_index_size", "The number of class indexes", "1");
+  private static final Measure.MeasureDouble M_MEMBER_CACHE_HIT_RATE =
+      Measure.MeasureDouble.create("member_cache_hit_rate", "The member cache hit rate", "1.0");
+  private static final Measure.MeasureDouble M_MEMBER_CACHE_LOAD_ERROR_RATE =
+      Measure.MeasureDouble.create(
+          "member_cache_load_err_rate", "The member cache load error rate", "1.0");
+  private static final Measure.MeasureDouble M_MEMBER_CACHE_MISS_RATE =
+      Measure.MeasureDouble.create("member_cache_miss_rate", "The member cache miss rate", "1.0");
+  private static final Measure.MeasureDouble M_MEMORY =
+      Measure.MeasureDouble.create("memory", "The used memory", "M");
+
   private static final TagKey KEY_COMMAND = TagKey.create("command");
   private static final TagKey KEY_UID = TagKey.create("uid");
   private static final String PROJECT_ID = "meghanada-240122";
@@ -199,18 +210,43 @@ public class TelemetryUtils {
     View[] views =
         new View[] {
           View.create(
-              View.Name.create("meghanada_command"),
+              View.Name.create("meghanada/command_latency"),
               "The distribution of the command latencies",
-              COMMAND_LATENCY_MS,
+              M_COMMAND_LATENCY_MS,
               commandLatencyDistribution,
               Collections.unmodifiableList(Arrays.asList(KEY_UID, KEY_COMMAND))),
           View.create(
-              View.Name.create("meghanada_class_index"),
+              View.Name.create("meghanada/class_index_size"),
               "The number of class indexes",
-              CLASS_INDEX,
+              M_CLASS_INDEX,
+              Aggregation.LastValue.create(),
+              Collections.unmodifiableList(Arrays.asList(KEY_UID))),
+          View.create(
+              View.Name.create("meghanada/member_cache_hit_rate"),
+              "The member cache hit rate",
+              M_MEMBER_CACHE_HIT_RATE,
+              Aggregation.LastValue.create(),
+              Collections.unmodifiableList(Arrays.asList(KEY_UID))),
+          View.create(
+              View.Name.create("meghanada/member_cache_load_exception_rate"),
+              "The member cache load exception rate",
+              M_MEMBER_CACHE_LOAD_ERROR_RATE,
+              Aggregation.LastValue.create(),
+              Collections.unmodifiableList(Arrays.asList(KEY_UID))),
+          View.create(
+              View.Name.create("meghanada/member_cache_miss_rate"),
+              "The member cache miss rate",
+              M_MEMBER_CACHE_MISS_RATE,
+              Aggregation.LastValue.create(),
+              Collections.unmodifiableList(Arrays.asList(KEY_UID))),
+          View.create(
+              View.Name.create("meghanada/vm_memory"),
+              "The vm memory",
+              M_MEMORY,
               Aggregation.LastValue.create(),
               Collections.unmodifiableList(Arrays.asList(KEY_UID))),
         };
+
     ViewManager vmgr = Stats.getViewManager();
     for (View view : views) {
       vmgr.registerView(view);
@@ -271,13 +307,29 @@ public class TelemetryUtils {
     TelemetryUtils.recordTaggedStat(
         new TagKey[] {TelemetryUtils.KEY_UID, TelemetryUtils.KEY_COMMAND},
         new String[] {getUID(), commandName},
-        TelemetryUtils.COMMAND_LATENCY_MS,
+        TelemetryUtils.M_COMMAND_LATENCY_MS,
         latency);
   }
 
   public static void recordClassIndexes(long size) {
     TelemetryUtils.recordTaggedStat(
-        TelemetryUtils.KEY_UID, getUID(), TelemetryUtils.CLASS_INDEX, size);
+        TelemetryUtils.KEY_UID, getUID(), TelemetryUtils.M_CLASS_INDEX, size);
+  }
+
+  public static void recordMemberCacheRate(double[] stats) {
+    TelemetryUtils.recordTaggedStat(
+        TelemetryUtils.KEY_UID, getUID(), TelemetryUtils.M_MEMBER_CACHE_HIT_RATE, stats[0]);
+    TelemetryUtils.recordTaggedStat(
+        TelemetryUtils.KEY_UID, getUID(), TelemetryUtils.M_MEMBER_CACHE_LOAD_ERROR_RATE, stats[1]);
+    TelemetryUtils.recordTaggedStat(
+        TelemetryUtils.KEY_UID, getUID(), TelemetryUtils.M_MEMBER_CACHE_MISS_RATE, stats[2]);
+  }
+
+  public static void recordMemory() {
+    final Runtime runtime = Runtime.getRuntime();
+    final double usedMemory = (runtime.totalMemory() - runtime.freeMemory()) / 1024 / 1024;
+    TelemetryUtils.recordTaggedStat(
+        TelemetryUtils.KEY_UID, getUID(), TelemetryUtils.M_MEMORY, usedMemory);
   }
 
   private static Annotation getBaseAnnotation() {
@@ -306,7 +358,7 @@ public class TelemetryUtils {
     span.addAnnotation(vmAnno);
     Annotation osAnno = Annotation.fromDescriptionAndAttributes("os properties", osAttributeMap);
     span.addAnnotation(osAnno);
-    return new ParentSpan(span);
+    return new ParentSpan(span, name);
   }
 
   public static ScopedSpan withSpan(Span span) {
@@ -401,9 +453,19 @@ public class TelemetryUtils {
   public static class ParentSpan implements Closeable {
 
     private final Span span;
+    private final Map<String, AttributeValue> attrs = new HashMap<>();
 
-    ParentSpan(Span span) {
+    ParentSpan(Span span, String name) {
       this.span = span;
+      this.span.putAttributes(attrs);
+      attrs.put("http.method", AttributeValue.stringAttributeValue("GET"));
+      attrs.put("http.path", AttributeValue.stringAttributeValue(name));
+      attrs.put("http.user_agent", AttributeValue.stringAttributeValue(TelemetryUtils.getUID()));
+      attrs.put("http.status_code", AttributeValue.longAttributeValue(500));
+    }
+
+    public void setStatusOK() {
+      attrs.put("http.status_code", AttributeValue.longAttributeValue(200));
     }
 
     public void setStatusINTERNAL(String message) {
@@ -415,6 +477,7 @@ public class TelemetryUtils {
     }
 
     public void end() {
+      span.putAttributes(this.attrs);
       if (enabledExporter) {
         span.end();
       } else {
