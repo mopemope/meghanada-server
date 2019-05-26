@@ -51,8 +51,6 @@ public class ASMReflector {
   private static final String PACKAGE_INFO = "package-info";
   private static final String[] filterPackage =
       new String[] {
-        "sun.",
-        "com.sun",
         "com.oracle",
         "oracle.jrockit",
         "jdk",
