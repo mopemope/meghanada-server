@@ -91,12 +91,12 @@ public class Debugger {
 
   public void start() throws InterruptedException, ExecutionException {
     this.start = true;
-    Future<?> future = this.executorService.submit(this::startDebug);
+    this.executorService.execute(this::startDebug);
     this.executorService.execute(
         () -> {
+          final byte[] buf = new byte[4096];
+          int ret;
           try (InputStream in = this.vm.process().getInputStream()) {
-            final byte[] buf = new byte[4096];
-            int ret;
             while ((ret = in.read(buf)) != -1) {
               System.out.write(buf, 0, ret);
             }
@@ -104,7 +104,6 @@ public class Debugger {
             log.catching(e);
           }
         });
-    future.get();
   }
 
   public void stopLoop() {
@@ -190,6 +189,7 @@ public class Debugger {
         BreakpointRequest breakpointRequest =
             this.eventRequestManager.createBreakpointRequest(location);
         breakpointRequest.enable();
+        log.info("set breakpoint {}#L{}", location.sourcePath(), location.lineNumber());
       }
     }
   }
@@ -199,22 +199,25 @@ public class Debugger {
     // event.disable();
     this.currentBreakpoint = event;
 
-    ThreadReference thread = event.thread();
+    ThreadReference thread = this.currentBreakpoint.thread();
     StackFrame stackFrame = thread.frame(0);
 
     Map<LocalVariable, Value> visibleVariables =
-        (Map<LocalVariable, Value>) stackFrame.getValues(stackFrame.visibleVariables());
+        stackFrame.getValues(stackFrame.visibleVariables());
     for (Map.Entry<LocalVariable, Value> entry : visibleVariables.entrySet()) {
       System.out.println(entry.getKey() + ":" + entry.getValue());
     }
 
-    this.suspend();
+    event.virtualMachine().suspend();
   }
 
   public static void main(String[] args) throws Exception {
     Debugger debugger = new Debugger(TestMain.class);
     debugger.addBreakpoint("meghanada.debugger.TestMain", 7);
     debugger.start();
+    Thread.sleep(1000);
+    debugger.resume();
+    Thread.sleep(1000);
     debugger.stop();
     log.info("finish");
   }
