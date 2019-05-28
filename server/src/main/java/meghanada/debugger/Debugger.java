@@ -33,12 +33,13 @@ import com.sun.jdi.request.EventRequestManager;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -54,6 +55,7 @@ public class Debugger {
   private boolean start;
   private EventRequestManager eventRequestManager;
   private BreakpointEvent currentBreakpoint;
+  private Set<Breakpoint> breakpointSet = new HashSet<>();
 
   public Debugger(Class clazz) throws Exception {
     this.eventBus = new EventBus("meghanada-debugger");
@@ -75,18 +77,20 @@ public class Debugger {
     this.eventRequestManager = vm.eventRequestManager();
   }
 
-  public void addBreakpoint(String clazz, int line) {
+  public void addBreakpoint(Breakpoint bp) throws IOException {
     ClassPrepareRequest request = this.eventRequestManager.createClassPrepareRequest();
-    request.addClassFilter(clazz);
-    request.putProperty(KEY_MEGHANADA_BREAKPOINT, line);
+    if (bp.hasFile()) {
+      request.addSourceNameFilter(bp.getFile().getCanonicalPath());
+    } else {
+      request.addClassFilter(bp.getClassName());
+    }
+    request.putProperty(KEY_MEGHANADA_BREAKPOINT, bp.getLine());
     request.enable();
+    this.breakpointSet.add(bp);
   }
 
-  public void addBreakpoint(File file, int line) throws IOException {
-    ClassPrepareRequest request = this.eventRequestManager.createClassPrepareRequest();
-    request.addSourceNameFilter(file.getCanonicalPath());
-    request.putProperty(KEY_MEGHANADA_BREAKPOINT, line);
-    request.enable();
+  public Set<Breakpoint> getBreakpoints() {
+    return breakpointSet;
   }
 
   public void start() throws InterruptedException, ExecutionException {
@@ -189,6 +193,7 @@ public class Debugger {
         BreakpointRequest breakpointRequest =
             this.eventRequestManager.createBreakpointRequest(location);
         breakpointRequest.enable();
+
         log.info("set breakpoint {}#L{}", location.sourcePath(), location.lineNumber());
       }
     }
@@ -213,7 +218,8 @@ public class Debugger {
 
   public static void main(String[] args) throws Exception {
     Debugger debugger = new Debugger(TestMain.class);
-    debugger.addBreakpoint("meghanada.debugger.TestMain", 7);
+    Breakpoint bp = new Breakpoint("meghanada.debugger.TestMain", 7);
+    debugger.addBreakpoint(bp);
     debugger.start();
     Thread.sleep(1000);
     debugger.resume();
