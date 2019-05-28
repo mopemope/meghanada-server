@@ -42,9 +42,9 @@ public class Breakpoint {
     if (this == o) return true;
     if (!(o instanceof Breakpoint)) return false;
     Breakpoint that = (Breakpoint) o;
-    return Objects.equal(line, that.line) &&
-        Objects.equal(file, that.file) &&
-        Objects.equal(className, that.className);
+    return Objects.equal(line, that.line)
+        && Objects.equal(file, that.file)
+        && Objects.equal(className, that.className);
   }
 
   @Override

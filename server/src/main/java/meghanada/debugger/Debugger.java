@@ -2,6 +2,7 @@ package meghanada.debugger;
 
 import static java.util.Objects.nonNull;
 
+import com.google.common.base.Joiner;
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
 import com.sun.jdi.AbsentInformationException;
@@ -30,9 +31,9 @@ import com.sun.jdi.request.BreakpointRequest;
 import com.sun.jdi.request.ClassPrepareRequest;
 import com.sun.jdi.request.EventRequest;
 import com.sun.jdi.request.EventRequestManager;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -57,22 +58,24 @@ public class Debugger {
   private BreakpointEvent currentBreakpoint;
   private Set<Breakpoint> breakpointSet = new HashSet<>();
 
-  public Debugger(Class clazz) throws Exception {
+  public Debugger(String mainClass, List<String> options) throws Exception {
     this.eventBus = new EventBus("meghanada-debugger");
     this.eventBus.register(this);
     this.executorService = Executors.newCachedThreadPool();
-    this.launch(clazz);
+    this.launch(mainClass, options);
   }
 
-  private void launch(Class clazz) throws Exception {
+  private void launch(String mainClass, List<String> options) throws Exception {
     VirtualMachineManager virtualMachineManager = Bootstrap.virtualMachineManager();
     LaunchingConnector launchingConnector = virtualMachineManager.defaultConnector();
-    Map<String, Connector.Argument> map = launchingConnector.defaultArguments();
-    map.get("main").setValue(clazz.getCanonicalName());
-    // TODO add option and args
-    String cp = System.getProperty("java.class.path");
-    map.get("options").setValue("-classpath \"" + cp + "\"");
-    VirtualMachine virtualMachine = launchingConnector.launch(map);
+
+    Map<String, Connector.Argument> env = launchingConnector.defaultArguments();
+    env.get("main").setValue(mainClass);
+
+    String opts = Joiner.on(" ").join(options);
+    env.get("options").setValue(opts);
+
+    VirtualMachine virtualMachine = launchingConnector.launch(env);
     this.vm = virtualMachine;
     this.eventRequestManager = vm.eventRequestManager();
   }
@@ -217,14 +220,21 @@ public class Debugger {
   }
 
   public static void main(String[] args) throws Exception {
-    Debugger debugger = new Debugger(TestMain.class);
+
+    List<String> options = new ArrayList<>();
+    String cp = System.getProperty("java.class.path");
+    options.add("-classpath \"" + cp + "\"");
+
+    Debugger debugger = new Debugger(TestMain.class.getCanonicalName(), options);
     Breakpoint bp = new Breakpoint("meghanada.debugger.TestMain", 7);
     debugger.addBreakpoint(bp);
+
     debugger.start();
     Thread.sleep(1000);
     debugger.resume();
     Thread.sleep(1000);
     debugger.stop();
+
     log.info("finish");
   }
 }
