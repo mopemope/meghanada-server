@@ -347,9 +347,18 @@ public class TelemetryUtils {
   public static ParentSpan startExplicitParentSpan(String name) {
     Span span;
     if (enabledExporter) {
-      span = tracer.spanBuilderWithExplicitParent(name, null).startSpan();
+      span =
+          tracer
+              .spanBuilderWithExplicitParent(name, null)
+              .setSampler(PROBABILITY_SAMPLER_HIGH)
+              .startSpan();
     } else {
-      span = tracer.spanBuilderWithExplicitParent(name, null).setRecordEvents(true).startSpan();
+      span =
+          tracer
+              .spanBuilderWithExplicitParent(name, null)
+              .setSampler(PROBABILITY_SAMPLER_HIGH)
+              .setRecordEvents(true)
+              .startSpan();
     }
 
     span.addAnnotation(getBaseAnnotation());
