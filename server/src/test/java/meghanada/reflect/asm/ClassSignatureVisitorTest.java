@@ -94,15 +94,15 @@ public class ClassSignatureVisitorTest extends GradleTestBase {
 
   @org.junit.Test
   public void testComplexType1() throws Exception {
-    String fqcn = "com.google.common.util.concurrent.AbstractCheckedFuture";
+    String fqcn = "com.google.common.cache.AbstractLoadingCache";
     File jar = getJar("com.google.guava:guava:");
     ClassSignatureVisitor visitor = doAnalyze(jar, fqcn);
 
-    assertEquals("com.google.common.util.concurrent.AbstractCheckedFuture", visitor.getName());
+    assertEquals("com.google.common.cache.AbstractLoadingCache", visitor.getName());
 
     List<String> expected = new ArrayList<>();
+    expected.add("K");
     expected.add("V");
-    expected.add("X");
     assertEquals(expected, visitor.getTypeParameters());
 
     visitor.getSuperClasses().forEach(cd -> System.out.println("super:" + cd.getClassName()));
