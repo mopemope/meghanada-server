@@ -37,7 +37,7 @@ val junitVersion = "5.4.0"
 val gradleVersion = "5.4.1"
 val log4jVersion = "2.11.2"
 val xodusVersion = "1.3.0"
-val opencensusVersion = "0.22.1"
+val opencensusVersion = "0.23.0"
 
 base {
     archivesBaseName = applicationName
@@ -63,7 +63,7 @@ dependencies {
     implementation("org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion")
     implementation("commons-cli:commons-cli:1.4")
     implementation("org.gradle:gradle-tooling-api:$gradleVersion")
-    implementation("com.google.guava:guava:27.1-jre")
+    implementation("com.google.guava:guava:28.0-jre")
     implementation("org.ow2.asm:asm:7.1")
     implementation("com.typesafe:config:1.3.4")
     implementation("org.atteo:evo-inflector:1.2.2")
