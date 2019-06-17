@@ -96,8 +96,8 @@ dependencies {
     implementation("io.opencensus:opencensus-contrib-zpages:$opencensusVersion")
     implementation("io.opencensus:opencensus-exporter-trace-stackdriver:$opencensusVersion")
     implementation("io.opencensus:opencensus-exporter-stats-stackdriver:$opencensusVersion")
-
-    implementation("com.github.oshi:oshi-core:3.13.2")
+    implementation("io.reactivex.rxjava2:rxjava:2.2.9")
+    implementation("com.github.oshi:oshi-core:3.13.3")
 }
 
 application {
