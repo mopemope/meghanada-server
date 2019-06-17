@@ -56,10 +56,9 @@ public abstract class Project implements Serializable, Storable {
   public static final String MVN_PROJECT_FILE = "pom.xml";
   public static final String ECLIPSE_PROJECT_FILE = ".project";
 
-  // public static final String PROJECT_ROOT_KEY = "project.root";
-
   public static final Map<String, Project> loadedProject = new HashMap<>(4);
   public static final String ENTITY_TYPE = "Project";
+  public static final String PROJECT_CLASSPATH = "meghanada.project.classpath";
 
   private static final long serialVersionUID = 7172580558461159805L;
   private static final String FORMATTER_FILE_KEY = "meghanada.formatter.file";
@@ -272,6 +271,7 @@ public abstract class Project implements Serializable, Storable {
       classpath.add(this.output.getCanonicalPath());
       classpath.add(this.testOutput.getCanonicalPath());
       this.cachedAllClasspath = String.join(File.pathSeparator, classpath);
+      System.setProperty(PROJECT_CLASSPATH, this.cachedAllClasspath);
       return this.cachedAllClasspath;
     }
   }

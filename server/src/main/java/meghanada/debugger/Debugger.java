@@ -41,6 +41,7 @@ import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import meghanada.project.Project;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -58,10 +59,22 @@ public class Debugger {
   private BreakpointEvent currentBreakpoint;
   private Set<Breakpoint> breakpointSet = new HashSet<>();
 
+  public Debugger(String mainClass) throws Exception {
+    List<String> options = new ArrayList<>(8);
+    this.eventBus = new EventBus("meghanada-debugger");
+    this.eventBus.register(this);
+    this.executorService = Executors.newCachedThreadPool();
+    String cp = System.getProperty(Project.PROJECT_CLASSPATH);
+    options.add("-classpath \"" + cp + "\"");
+    this.launch(mainClass, options);
+  }
+
   public Debugger(String mainClass, List<String> options) throws Exception {
     this.eventBus = new EventBus("meghanada-debugger");
     this.eventBus.register(this);
     this.executorService = Executors.newCachedThreadPool();
+    String cp = System.getProperty(Project.PROJECT_CLASSPATH);
+    options.add("-classpath \"" + cp + "\"");
     this.launch(mainClass, options);
   }
 
@@ -221,11 +234,7 @@ public class Debugger {
 
   public static void main(String[] args) throws Exception {
 
-    List<String> options = new ArrayList<>();
-    String cp = System.getProperty("java.class.path");
-    options.add("-classpath \"" + cp + "\"");
-
-    Debugger debugger = new Debugger(TestMain.class.getCanonicalName(), options);
+    Debugger debugger = new Debugger(TestMain.class.getCanonicalName());
     Breakpoint bp = new Breakpoint("meghanada.debugger.TestMain", 7);
     debugger.addBreakpoint(bp);
 
