@@ -58,8 +58,8 @@ public class TelemetryUtils {
       EndSpanOptions.builder().setSampleToLocalSpanStore(true).build();
   private static final String CREDENTIALS_JSON = "credentials.json";
   private static final Tracer tracer = Tracing.getTracer();
-  private static final Sampler PROBABILITY_SAMPLER_HIGH = Samplers.probabilitySampler(1 / 10.0);
-  private static final Sampler PROBABILITY_SAMPLER_MIDDLE = Samplers.probabilitySampler(1 / 100.0);
+  private static final Sampler PROBABILITY_SAMPLER_HIGH = Samplers.probabilitySampler(1 / 5.0);
+  private static final Sampler PROBABILITY_SAMPLER_MIDDLE = Samplers.probabilitySampler(1 / 10.0);
   private static final Sampler PROBABILITY_SAMPLER_LOW = Samplers.probabilitySampler(1 / 1000.0);
   private static final Sampler NEVER_SAMPLER = Samplers.neverSample();
 
