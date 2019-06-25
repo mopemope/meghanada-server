@@ -6,7 +6,6 @@ import static java.util.Objects.nonNull;
 import com.google.auth.oauth2.ServiceAccountCredentials;
 import com.google.common.hash.Hashing;
 import com.google.common.io.Resources;
-import io.opencensus.common.Duration;
 import io.opencensus.common.Scope;
 import io.opencensus.exporter.stats.stackdriver.StackdriverStatsConfiguration;
 import io.opencensus.exporter.stats.stackdriver.StackdriverStatsExporter;
@@ -58,8 +57,8 @@ public class TelemetryUtils {
       EndSpanOptions.builder().setSampleToLocalSpanStore(true).build();
   private static final String CREDENTIALS_JSON = "credentials.json";
   private static final Tracer tracer = Tracing.getTracer();
-  private static final Sampler PROBABILITY_SAMPLER_HIGH = Samplers.probabilitySampler(1 / 10.0);
-  private static final Sampler PROBABILITY_SAMPLER_MIDDLE = Samplers.probabilitySampler(1 / 100.0);
+  private static final Sampler PROBABILITY_SAMPLER_HIGH = Samplers.probabilitySampler(1 / 5.0);
+  private static final Sampler PROBABILITY_SAMPLER_MIDDLE = Samplers.probabilitySampler(1 / 10.0);
   private static final Sampler PROBABILITY_SAMPLER_LOW = Samplers.probabilitySampler(1 / 1000.0);
   private static final Sampler NEVER_SAMPLER = Samplers.neverSample();
 
@@ -155,7 +154,6 @@ public class TelemetryUtils {
         URL url = Resources.getResource(CREDENTIALS_JSON);
         StackdriverTraceExporter.createAndRegister(
             StackdriverTraceConfiguration.builder()
-                .setDeadline(Duration.create(60L, 0))
                 .setProjectId(PROJECT_ID)
                 .setCredentials(ServiceAccountCredentials.fromStream(url.openStream()))
                 .build());
@@ -175,8 +173,6 @@ public class TelemetryUtils {
         URL url = Resources.getResource(CREDENTIALS_JSON);
         StackdriverStatsExporter.createAndRegister(
             StackdriverStatsConfiguration.builder()
-                .setExportInterval(Duration.create(60L, 0))
-                .setDeadline(Duration.create(60L, 0))
                 .setProjectId(PROJECT_ID)
                 .setCredentials(ServiceAccountCredentials.fromStream(url.openStream()))
                 .build());
