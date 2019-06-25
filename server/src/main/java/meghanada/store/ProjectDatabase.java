@@ -231,29 +231,23 @@ public class ProjectDatabase {
             while (!this.isTerminated) {
               try {
                 StoreRequest req = blockingQueue.poll(10, TimeUnit.SECONDS);
-                try (TelemetryUtils.ParentSpan span =
-                        TelemetryUtils.startExplicitParentSpan("ProjectDatabase/wokrker");
-                    TelemetryUtils.ScopedSpan scope = TelemetryUtils.withSpan(span.getSpan())) {
+                if (nonNull(req) && !req.isShutdown()) {
+                  mergeAndStore(req);
+                }
+                if (blockingQueue.isEmpty()) {
+                  try (TelemetryUtils.ScopedSpan ss =
+                      TelemetryUtils.startScopedSpan("ProjectDatabase.flushAndSync")) {
 
-                  if (nonNull(req) && !req.isShutdown()) {
-                    mergeAndStore(req);
-                  }
-                  if (blockingQueue.isEmpty()) {
-                    try (TelemetryUtils.ScopedSpan ss =
-                        TelemetryUtils.startScopedSpan("ProjectDatabase.flushAndSync")) {
-
-                      Instant now = Instant.now();
-                      Duration duration = Duration.between(start, now);
-                      long delta = duration.getSeconds();
-                      if (delta > 10) {
-                        EnvironmentImpl environment =
-                            (EnvironmentImpl) this.entityStore.getEnvironment();
-                        environment.flushAndSync();
-                        start = now;
-                      }
+                    Instant now = Instant.now();
+                    Duration duration = Duration.between(start, now);
+                    long delta = duration.getSeconds();
+                    if (delta > 10) {
+                      EnvironmentImpl environment =
+                          (EnvironmentImpl) this.entityStore.getEnvironment();
+                      environment.flushAndSync();
+                      start = now;
                     }
                   }
-                  span.setStatusOK();
                 }
               } catch (Exception e) {
                 log.catching(e);
@@ -264,7 +258,6 @@ public class ProjectDatabase {
   }
 
   private void mergeAndStore(StoreRequest req) {
-
     try (TelemetryUtils.ScopedSpan ss =
         TelemetryUtils.startScopedSpan("ProjectDatabase.mergeAndStore")) {
 
