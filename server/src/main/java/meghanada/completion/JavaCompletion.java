@@ -224,7 +224,6 @@ public class JavaCompletion {
               .put("line", line)
               .put("prefix", prefix)
               .build("args"));
-
       return source
           .getTypeScope(line)
           .map(
@@ -1133,7 +1132,7 @@ public class JavaCompletion {
     }
   }
 
-  public Collection<? extends CandidateUnit> completionAt(
+  public synchronized Collection<? extends CandidateUnit> completionAt(
       final File file, int line, int column, String prefix) {
 
     try (TelemetryUtils.ScopedSpan scope =
@@ -1362,6 +1361,12 @@ public class JavaCompletion {
               }
               count++;
               this.statisticsTable.put(file, c, count);
+              String key = c.getDisplayDeclaration();
+              if (c instanceof MemberDescriptor) {
+                MemberDescriptor md = (MemberDescriptor) c;
+                key = md.getDeclaringClass() + "#" + c.getName();
+              }
+              TelemetryUtils.recordSelectedCompletion(key, 1L);
             }
           });
     }

@@ -64,6 +64,8 @@ public class TelemetryUtils {
 
   private static final Measure.MeasureDouble M_COMMAND_LATENCY_MS =
       Measure.MeasureDouble.create("command_latency", "The task latency in milliseconds", "ms");
+  private static final Measure.MeasureLong M_AUTOCOMPLETE_COUNT =
+      Measure.MeasureLong.create("autocomplete", "The number of autocomplete count", "1");
   private static final Measure.MeasureLong M_CLASS_INDEX =
       Measure.MeasureLong.create("class_index_size", "The number of class indexes", "1");
   private static final Measure.MeasureDouble M_MEMBER_CACHE_HIT_RATE =
@@ -77,6 +79,7 @@ public class TelemetryUtils {
       Measure.MeasureDouble.create("memory", "The used memory", "M");
 
   private static final TagKey KEY_COMMAND = TagKey.create("command");
+  private static final TagKey KEY_DESCRIPTION = TagKey.create("description");
   private static final TagKey KEY_UID = TagKey.create("uid");
   private static final String PROJECT_ID = "meghanada-240122";
 
@@ -218,6 +221,12 @@ public class TelemetryUtils {
               Aggregation.LastValue.create(),
               Collections.unmodifiableList(Arrays.asList(KEY_UID))),
           View.create(
+              View.Name.create("meghanada/autocomplete"),
+              "The number of autocomplete count",
+              M_AUTOCOMPLETE_COUNT,
+              Aggregation.Sum.create(),
+              Collections.unmodifiableList(Arrays.asList(KEY_UID, KEY_DESCRIPTION))),
+          View.create(
               View.Name.create("meghanada/member_cache_hit_rate"),
               "The member cache hit rate",
               M_MEMBER_CACHE_HIT_RATE,
@@ -326,6 +335,14 @@ public class TelemetryUtils {
     final double usedMemory = (runtime.totalMemory() - runtime.freeMemory()) / 1024 / 1024;
     TelemetryUtils.recordTaggedStat(
         TelemetryUtils.KEY_UID, getUID(), TelemetryUtils.M_MEMORY, usedMemory);
+  }
+
+  public static void recordSelectedCompletion(String desc, long val) {
+    TelemetryUtils.recordTaggedStat(
+        new TagKey[] {TelemetryUtils.KEY_UID, TelemetryUtils.KEY_DESCRIPTION},
+        new String[] {getUID(), desc},
+        TelemetryUtils.M_AUTOCOMPLETE_COUNT,
+        val);
   }
 
   private static Annotation getBaseAnnotation() {
