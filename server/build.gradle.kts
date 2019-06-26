@@ -36,7 +36,7 @@ val applicationName = "meghanada"
 val junitVersion = "5.4.0"
 val gradleVersion = "5.4.1"
 val log4jVersion = "2.11.2"
-val xodusVersion = "1.3.0"
+val xodusVersion = "1.3.91"
 val opencensusVersion = "0.23.0"
 
 base {
