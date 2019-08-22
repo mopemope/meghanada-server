@@ -33,9 +33,9 @@ val longVersion = "$serverVersion-$buildVersion"
 val date: String = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss"))
 val applicationName = "meghanada"
 
-val junitVersion = "5.5.0"
-val gradleVersion = "5.5.1"
-val log4jVersion = "2.12.0"
+val junitVersion = "5.5.1"
+val gradleVersion = "5.6"
+val log4jVersion = "2.12.1"
 val xodusVersion = "1.3.91"
 val opencensusVersion = "0.23.0"
 
@@ -72,7 +72,7 @@ dependencies {
     implementation("org.junit.jupiter:junit-jupiter-params:$junitVersion")
     implementation("org.junit.jupiter:junit-jupiter-engine:$junitVersion")
     implementation("org.junit.vintage:junit-vintage-engine:$junitVersion")
-    implementation("org.junit.platform:junit-platform-launcher:1.5.0")
+    implementation("org.junit.platform:junit-platform-launcher:1.5.1")
 
     implementation("com.android.tools.build:builder-model:3.4.0")
     implementation("io.takari.junit:takari-cpsuite:1.2.7")
