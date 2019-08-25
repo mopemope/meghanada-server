@@ -33,10 +33,10 @@ val longVersion = "$serverVersion-$buildVersion"
 val date: String = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss"))
 val applicationName = "meghanada"
 
-val junitVersion = "5.4.0"
-val gradleVersion = "5.4.1"
-val log4jVersion = "2.11.2"
-val xodusVersion = "1.3.0"
+val junitVersion = "5.5.1"
+val gradleVersion = "5.6"
+val log4jVersion = "2.12.1"
+val xodusVersion = "1.3.91"
 val opencensusVersion = "0.23.0"
 
 base {
@@ -57,7 +57,7 @@ dependencies {
     implementation("org.apache.maven:maven-model-builder:3.6.1")
     implementation("com.leacox.motif:motif:0.1")
     implementation("com.leacox.motif:motif-hamcrest:0.1")
-    implementation("com.github.javaparser:javaparser-core:3.14.5")
+    implementation("com.github.javaparser:javaparser-core:3.14.7")
     implementation("org.apache.logging.log4j:log4j-core:$log4jVersion")
     implementation("org.apache.logging.log4j:log4j-api:$log4jVersion")
     implementation("org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion")
@@ -72,14 +72,14 @@ dependencies {
     implementation("org.junit.jupiter:junit-jupiter-params:$junitVersion")
     implementation("org.junit.jupiter:junit-jupiter-engine:$junitVersion")
     implementation("org.junit.vintage:junit-vintage-engine:$junitVersion")
-    implementation("org.junit.platform:junit-platform-launcher:1.4.0")
+    implementation("org.junit.platform:junit-platform-launcher:1.5.1")
 
     implementation("com.android.tools.build:builder-model:3.4.0")
     implementation("io.takari.junit:takari-cpsuite:1.2.7")
     implementation("org.jboss.windup.decompiler:decompiler-api:4.2.1.Final")
     implementation("org.jboss.windup.decompiler:decompiler-fernflower:4.2.1.Final")
     implementation("com.google.code.findbugs:jsr305:3.0.2")
-    implementation("org.eclipse.jdt:org.eclipse.jdt.core:3.17.0")
+    implementation("org.eclipse.jdt:org.eclipse.jdt.core:3.18.0")
     implementation("de.ruedigermoeller:fst:2.56")
 
     implementation("org.jetbrains.xodus:xodus-query:$xodusVersion")
