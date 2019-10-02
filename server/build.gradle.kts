@@ -36,7 +36,7 @@ val applicationName = "meghanada"
 val junitVersion = "5.5.2"
 val gradleVersion = "5.6.2"
 val log4jVersion = "2.12.1"
-val xodusVersion = "1.3.91"
+val xodusVersion = "1.3.124"
 val opencensusVersion = "0.24.0"
 
 base {
@@ -64,7 +64,7 @@ dependencies {
     implementation("commons-cli:commons-cli:1.4")
     implementation("org.gradle:gradle-tooling-api:$gradleVersion")
     implementation("com.google.guava:guava:28.1-jre")
-    implementation("org.ow2.asm:asm:7.1")
+    implementation("org.ow2.asm:asm:7.2")
     implementation("com.typesafe:config:1.3.4")
     implementation("org.atteo:evo-inflector:1.2.2")
 
@@ -79,7 +79,7 @@ dependencies {
     implementation("org.jboss.windup.decompiler:decompiler-api:4.2.1.Final")
     implementation("org.jboss.windup.decompiler:decompiler-fernflower:4.2.1.Final")
     implementation("com.google.code.findbugs:jsr305:3.0.2")
-    implementation("org.eclipse.jdt:org.eclipse.jdt.core:3.18.0")
+    implementation("org.eclipse.jdt:org.eclipse.jdt.core:3.19.0")
     implementation("de.ruedigermoeller:fst:2.56")
 
     implementation("org.jetbrains.xodus:xodus-query:$xodusVersion")
