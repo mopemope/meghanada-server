@@ -63,7 +63,7 @@ public class ASMReflector {
   private static final Logger log = LogManager.getLogger(ASMReflector.class);
   private static final String preloadClassPackage = "java.lang.";
   private static final Map<String, List<MemberDescriptor>> innerCache =
-      Collections.synchronizedMap(new LRUHashMap<>(1024));
+      Collections.synchronizedMap(new LRUHashMap<>(4096));
   private static ASMReflector asmReflector;
   private final Set<String> allowClass = new HashSet<>(16);
 
