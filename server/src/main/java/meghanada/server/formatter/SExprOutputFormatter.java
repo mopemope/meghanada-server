@@ -164,19 +164,30 @@ public class SExprOutputFormatter implements OutputFormatter {
         units.stream()
             .map(
                 d -> {
-                  String type = d.getType();
-                  String returnType = d.getReturnType();
+                  final String type = d.getType();
+                  final String returnType = d.getReturnType();
                   String anno =
                       ClassNameUtils.getAllSimpleName(returnType) + " (" + d.getType() + ")";
-                  if (type.equals("CLASS") || type.equals("IMPORT")) {
-                    anno = ClassNameUtils.getPackage(d.getDeclaration()) + " (" + d.getType() + ")";
-                  }
                   String name = toSimpleName(d.getName());
-                  if (type.equals("METHOD") || type.equals("CONSTRUCTOR")) {
-                    String declaration = d.getDisplayDeclaration();
-                    int i = declaration.indexOf(name);
-                    name = name + declaration.substring(i + name.length());
+
+                  switch (type) {
+                    case "CLASS":
+                    case "IMPORT":
+                      anno =
+                          ClassNameUtils.getPackage(d.getDeclaration()) + " (" + d.getType() + ")";
+                      break;
+                    case "METHOD":
+                    case "CONSTRUCTOR":
+                      String declaration = d.getDisplayDeclaration();
+                      int i = declaration.indexOf(name);
+                      if (i > -1 && i + name.length() < declaration.length()) {
+                        name = name + declaration.substring(i + name.length());
+                      }
+                      break;
+                    default:
+                      break;
                   }
+                  
                   return LPAREN
                       + String.join(
                           LIST_SEP,
