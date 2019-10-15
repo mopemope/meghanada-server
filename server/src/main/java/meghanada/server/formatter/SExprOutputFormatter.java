@@ -187,7 +187,7 @@ public class SExprOutputFormatter implements OutputFormatter {
                     default:
                       break;
                   }
-                  
+
                   return LPAREN
                       + String.join(
                           LIST_SEP,
