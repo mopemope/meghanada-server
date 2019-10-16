@@ -9,6 +9,7 @@ import java.time.format.DateTimeFormatter
 plugins {
     `java`
     `maven`
+    `maven-publish`
     `application`
     id("com.github.johnrengelman.shadow") version "5.0.0"
     id("com.jfrog.bintray") version "1.8.4"
@@ -73,15 +74,35 @@ bintray {
     })
 }
 
+publishing {
+    repositories {
+        maven {
+            name = "GitHubPackages"
+            url = uri("https://maven.pkg.github.com/mopemope/meganada-server")
+            credentials {
+                username = System.getenv("GPR_USER")
+                password = System.getenv("GPR_API_KEY")
+            }
+        }
+    }
+    publications {
+        register("gpr", MavenPublication::class) {
+            from(components["java"])
+            this.artifactId = "meghanada-setup"
+        }
+    }
+}
 
 tasks {
 
     val processResources by existing
     val classes by existing
-    val shadowJar by existing
     val clean by existing
 
-    withType<ShadowJar> {}
+    val shadowJar = withType<ShadowJar> {
+        classifier = null
+    }
+
 
     val embedVersion = register<Copy>("embedVersion") {
         from("src/main/resources/VERSION")
@@ -92,6 +113,10 @@ tasks {
 
     classes {
         dependsOn(embedVersion)
+    }
+
+    named("publishGprPublicationToGitHubPackagesRepository") {
+        dependsOn(shadowJar)
     }
 
     val installEmacsHome = register<Copy>("installEmacsHome") {
