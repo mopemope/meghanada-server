@@ -88,7 +88,7 @@ publishing {
     publications {
         register("gpr", MavenPublication::class) {
             from(components["java"])
-            this.artifactId = tasks.jar.get().archiveBaseName.get()
+            this.artifactId = "meghanada-setup"
         }
     }
 }
