@@ -7,11 +7,11 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
 plugins {
-    id("java")
-    id("maven")
-    id("application")
-    id("com.github.johnrengelman.shadow").version("5.0.0")
-    id("com.jfrog.bintray").version("1.8.4")
+    `java`
+    `maven`
+    `application`
+    id("com.github.johnrengelman.shadow") version "5.0.0"
+    id("com.jfrog.bintray") version "1.8.4"
 }
 
 val group = "meghanada"
