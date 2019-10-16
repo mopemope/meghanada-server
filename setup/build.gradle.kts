@@ -7,9 +7,10 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
 plugins {
-    id("java")
-    id("maven")
-    id("application")
+    `java`
+    `maven`
+    `maven-publish`
+    `application`
     id("com.github.johnrengelman.shadow").version("5.0.0")
     id("com.jfrog.bintray").version("1.8.4")
 }
@@ -73,6 +74,24 @@ bintray {
     })
 }
 
+publishing {
+    repositories {
+        maven {
+            name = "GitHubPackages"
+            url = uri("https://maven.pkg.github.com/mopemope/meganada-server")
+            credentials {
+                username = System.getenv("GPR_USER")
+                password = System.getenv("GPR_API_KEY")
+            }
+        }
+    }
+    publications {
+        create<MavenPublication>("gpr") {
+            from(components["java"])
+            this.artifactId = tasks.jar.get().archiveBaseName.get()
+        }
+    }
+}
 
 tasks {
 
