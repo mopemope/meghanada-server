@@ -137,7 +137,7 @@ publishing {
     repositories {
         maven {
             name = "GitHubPackages"
-            url = uri("https://maven.pkg.github.com/mopemope/meganada-server")
+            url = uri("https://maven.pkg.github.com/mopemope/meghanada-server")
             credentials {
                 username = System.getenv("GPR_USER")
                 password = System.getenv("GPR_API_KEY")
@@ -145,7 +145,7 @@ publishing {
         }
     }
     publications {
-        create<MavenPublication>("gpr") {
+        register("gpr", MavenPublication::class) {
             from(components["java"])
             this.artifactId = tasks.jar.get().archiveBaseName.get()
         }
@@ -156,10 +156,9 @@ tasks {
 
     val processResources by existing
     val classes by existing
-    val shadowJar by existing
     val clean by existing
 
-    withType<ShadowJar> {
+    val shadowJar = withType<ShadowJar> {
         mergeServiceFiles()
         classifier = null
         exclude("tools.jar")
@@ -186,6 +185,9 @@ tasks {
 
     classes {
         dependsOn(embedVersion)
+    }
+    named("publishGprPublicationToGitHubPackagesRepository") {
+        dependsOn(shadowJar)
     }
 
     val installEmacsHome = register<Copy>("installEmacsHome") {

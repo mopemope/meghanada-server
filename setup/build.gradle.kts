@@ -86,7 +86,7 @@ publishing {
         }
     }
     publications {
-        create<MavenPublication>("gpr") {
+        register("gpr", MavenPublication::class) {
             from(components["java"])
             this.artifactId = tasks.jar.get().archiveBaseName.get()
         }
@@ -97,10 +97,12 @@ tasks {
 
     val processResources by existing
     val classes by existing
-    val shadowJar by existing
     val clean by existing
 
-    withType<ShadowJar> {}
+    val shadowJar = withType<ShadowJar> {
+        classifier = null
+    }
+
 
     val embedVersion = register<Copy>("embedVersion") {
         from("src/main/resources/VERSION")
@@ -111,6 +113,10 @@ tasks {
 
     classes {
         dependsOn(embedVersion)
+    }
+
+    named("publishGprPublicationToGitHubPackagesRepository") {
+        dependsOn(shadowJar)
     }
 
     val installEmacsHome = register<Copy>("installEmacsHome") {
