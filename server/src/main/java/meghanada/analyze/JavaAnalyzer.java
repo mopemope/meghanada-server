@@ -101,6 +101,7 @@ public class JavaAnalyzer {
     return this.runAnalyzeAndCompile(classpath, out, files, generate, isDiagnostic);
   }
 
+  @SuppressWarnings("try")
   private CompileResult runAnalyzeAndCompile(
       final String classpath,
       final String out,
@@ -194,6 +195,7 @@ public class JavaAnalyzer {
     }
   }
 
+  @SuppressWarnings("try")
   public CompileResult runAnalyzeAndCompile(
       final String classpath,
       final String out,

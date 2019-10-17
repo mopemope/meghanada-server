@@ -4,10 +4,7 @@ import static java.util.Objects.nonNull;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import jetbrains.exodus.env.ContextualEnvironment;
@@ -128,7 +125,7 @@ public class DocumentSearcher implements AutoCloseable {
                 throw new UncheckedIOException(ex);
               }
             })
-        .filter(r -> nonNull(r))
+        .filter(Objects::nonNull)
         .collect(Collectors.toList());
   }
 

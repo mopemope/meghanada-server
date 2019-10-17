@@ -256,6 +256,7 @@ public class JavaCompletion {
         .collect(Collectors.toSet());
   }
 
+  @SuppressWarnings("try")
   private static Collection<? extends CandidateUnit> packageReflect(
       final String fqcn,
       final boolean noStatic,
@@ -432,6 +433,7 @@ public class JavaCompletion {
     }
   }
 
+  @SuppressWarnings("try")
   private static void completionClass(Set<CandidateUnit> result, CompletionMatcher classMatcher) {
 
     try (TelemetryUtils.ScopedSpan scope =
@@ -454,6 +456,7 @@ public class JavaCompletion {
     }
   }
 
+  @SuppressWarnings("try")
   private static void completionFromStaticImport(
       Source source, Set<CandidateUnit> result, CompletionMatcher matcher) {
 
@@ -472,6 +475,7 @@ public class JavaCompletion {
     }
   }
 
+  @SuppressWarnings("try")
   private static void completionFromImport(
       Source source, Set<CandidateUnit> result, CompletionMatcher classMatcher) {
 
@@ -487,6 +491,7 @@ public class JavaCompletion {
     }
   }
 
+  @SuppressWarnings("try")
   private static void completionFromLocalVariable(
       Set<CandidateUnit> result, CompletionMatcher matcher, Map<String, Variable> symbols) {
 
@@ -509,6 +514,7 @@ public class JavaCompletion {
     }
   }
 
+  @SuppressWarnings("try")
   private static void completionThisMembers(
       TypeScope typeScope, String prefix, Set<CandidateUnit> result, CompletionMatcher matcher) {
 
@@ -839,6 +845,7 @@ public class JavaCompletion {
     }
   }
 
+  @SuppressWarnings("try")
   private static void completionFromExprReturn(Set<CandidateUnit> res, AccessSymbol expr) {
 
     try (TelemetryUtils.ScopedSpan scope =
@@ -937,6 +944,7 @@ public class JavaCompletion {
     };
   }
 
+  @SuppressWarnings("try")
   private static List<ClassIndex> completionImport(final String searchWord) {
 
     try (TelemetryUtils.ScopedSpan scope =
@@ -964,6 +972,7 @@ public class JavaCompletion {
     }
   }
 
+  @SuppressWarnings("try")
   private static List<MemberDescriptor> completionStaticMembers(
       Set<CandidateUnit> result, final String name) {
 
@@ -1073,6 +1082,7 @@ public class JavaCompletion {
     };
   }
 
+  @SuppressWarnings("try")
   private static Collection<? extends CandidateUnit> completionNewKeyword(
       Source source, int line, int column, String searchWord) {
 

@@ -30,6 +30,7 @@ public class CacheEventSubscriber extends AbstractSubscriber {
   }
 
   @Subscribe
+  @SuppressWarnings("try")
   public void on(final SessionEventBus.ClassCacheRequest request) {
     try (TelemetryUtils.ParentSpan span =
             TelemetryUtils.startExplicitParentSpan("CacheEventSubscriber/on");

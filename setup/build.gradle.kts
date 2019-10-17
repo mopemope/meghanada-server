@@ -7,10 +7,10 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
 plugins {
-    `java`
-    `maven`
+    java
+    maven
     `maven-publish`
-    `application`
+    application
     id("com.github.johnrengelman.shadow") version "5.0.0"
     id("com.jfrog.bintray") version "1.8.4"
 }
@@ -67,7 +67,7 @@ bintray {
         setLabels("java", "emacs")
 
         version(delegateClosureOf<BintrayExtension.VersionConfig> {
-            name = "$setupVersion"
+            name = setupVersion
             desc = "Meghanada Server setup $setupVersion"
         })
 
@@ -127,8 +127,8 @@ tasks {
     }
 
     clean {
-        doLast({
+        doLast {
             file(".meghanada").deleteRecursively()
-        })
+        }
     }
 }

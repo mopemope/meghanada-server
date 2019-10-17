@@ -431,6 +431,7 @@ public class LocationSearcher {
     }
   }
 
+  @SuppressWarnings("try")
   private Optional<Location> searchMethodCallLocation(MethodCall mc) {
 
     try (TelemetryUtils.ScopedSpan scope =
@@ -592,6 +593,7 @@ public class LocationSearcher {
     }
   }
 
+  @SuppressWarnings("try")
   private Location searchFromSrcZip(final SearchContext context) throws IOException {
 
     try (TelemetryUtils.ScopedSpan scope =
@@ -636,6 +638,7 @@ public class LocationSearcher {
     }
   }
 
+  @SuppressWarnings("try")
   private Location searchFromDependency(final SearchContext context) throws IOException {
 
     try (TelemetryUtils.ScopedSpan scope =
@@ -686,6 +689,7 @@ public class LocationSearcher {
     }
   }
 
+  @SuppressWarnings("try")
   private Location getLocationFromSrcOrDecompile(
       final SearchContext context,
       final File classFile,
@@ -716,6 +720,7 @@ public class LocationSearcher {
     }
   }
 
+  @SuppressWarnings("try")
   private Location searchLocationFromDecompileFile(
       SearchContext context, String searchFQCN, File classFile, String tempDir) throws IOException {
 
@@ -791,6 +796,7 @@ public class LocationSearcher {
     }
   }
 
+  @SuppressWarnings("try")
   private File copyFromSrcZip(final String searchFQCN, final File srcZip) throws IOException {
 
     try (TelemetryUtils.ScopedSpan scope =

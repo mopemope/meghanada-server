@@ -726,9 +726,10 @@ public class ASMReflector {
     }
   }
 
+  @SuppressWarnings("try")
   private void readSuperMembers(File parent, ClassAnalyzeVisitor cv, List<MemberDescriptor> units) {
 
-    try (TelemetryUtils.ScopedSpan scope =
+    try (TelemetryUtils.ScopedSpan ss =
         TelemetryUtils.startScopedSpan("ASMReflector.readSuperMembers")) {
 
       ClassIndex classIndex = cv.getClassIndex();

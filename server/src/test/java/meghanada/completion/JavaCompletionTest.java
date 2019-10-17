@@ -240,7 +240,7 @@ public class JavaCompletionTest extends GradleTestBase {
             .getCanonicalFile();
     assertTrue(file.exists());
     final Collection<? extends CandidateUnit> units =
-        timeIt(() -> completion.completionAt(file, 334, 0, "an"));
+        timeIt(() -> completion.completionAt(file, 336, 0, "an"));
     units.forEach(a -> System.out.println(a.getDeclaration()));
     assertEquals(3, units.size());
   }

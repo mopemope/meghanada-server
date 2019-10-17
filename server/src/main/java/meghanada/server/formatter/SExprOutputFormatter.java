@@ -291,11 +291,9 @@ public class SExprOutputFormatter implements OutputFormatter {
       sb.append(LPAREN);
 
       final String values =
-          String.join(
-              LIST_SEP,
-              lv.getCandidates().stream()
-                  .map(SExprOutputFormatter::doubleQuote)
-                  .collect(Collectors.toList()));
+          lv.getCandidates().stream()
+              .map(SExprOutputFormatter::doubleQuote)
+              .collect(Collectors.joining(LIST_SEP));
 
       sb.append(values);
       sb.append(RPAREN);

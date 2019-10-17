@@ -222,6 +222,7 @@ public class GlobalCache {
     sourceMap.put(fqcn, path);
   }
 
+  @SuppressWarnings("try")
   public void saveSourceMap() {
     try (TelemetryUtils.ScopedSpan scope =
         TelemetryUtils.startScopedSpan("GlobalCache.saveSourceMap")) {

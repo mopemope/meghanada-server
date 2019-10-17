@@ -518,15 +518,12 @@ public class GradleProject extends Project {
 
   private void runPrepareCompileTask() throws IOException {
     if (!this.prepareCompileTask.isEmpty()) {
-      final ProjectConnection connection = this.getProjectConnection();
-      try {
+      try (ProjectConnection connection = this.getProjectConnection()) {
         final String[] tasks = prepareCompileTask.toArray(new String[0]);
         final BuildLauncher buildLauncher = connection.newBuild();
         log.info("project {} run tasks:{}", this.name, tasks);
         GradleProject.setBuildJVMArgs(buildLauncher);
         buildLauncher.forTasks(tasks).run();
-      } finally {
-        connection.close();
       }
     }
   }
@@ -549,15 +546,12 @@ public class GradleProject extends Project {
 
   private void runPrepareTestCompileTask() throws IOException {
     if (!this.prepareTestCompileTask.isEmpty()) {
-      final ProjectConnection connection = this.getProjectConnection();
-      try {
+      try (ProjectConnection connection = this.getProjectConnection()) {
         final String[] tasks = prepareTestCompileTask.toArray(new String[0]);
         final BuildLauncher buildLauncher = connection.newBuild();
         log.info("project {} run tasks:{}", this.name, tasks);
         GradleProject.setBuildJVMArgs(buildLauncher);
         buildLauncher.forTasks(tasks).run();
-      } finally {
-        connection.close();
       }
     }
   }

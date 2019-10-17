@@ -206,7 +206,8 @@ public class TelemetryUtils {
                     8000.0, // >=8s
                     10000.0 // >=10s
                     )));
-    View[] views =
+    View[] views;
+    views =
         new View[] {
           View.create(
               View.Name.create("meghanada/command_latency"),
@@ -219,7 +220,7 @@ public class TelemetryUtils {
               "The number of class indexes",
               M_CLASS_INDEX,
               Aggregation.LastValue.create(),
-              Collections.unmodifiableList(Arrays.asList(KEY_UID))),
+              Collections.unmodifiableList(Collections.singletonList(KEY_UID))),
           View.create(
               View.Name.create("meghanada/autocomplete"),
               "The number of autocomplete count",
@@ -231,13 +232,13 @@ public class TelemetryUtils {
               "The member cache hit rate",
               M_MEMBER_CACHE_HIT_RATE,
               Aggregation.LastValue.create(),
-              Collections.unmodifiableList(Arrays.asList(KEY_UID))),
+              Collections.unmodifiableList(Collections.singletonList(KEY_UID))),
           View.create(
               View.Name.create("meghanada/member_cache_load_exception_rate"),
               "The member cache load exception rate",
               M_MEMBER_CACHE_LOAD_ERROR_RATE,
               Aggregation.LastValue.create(),
-              Collections.unmodifiableList(Arrays.asList(KEY_UID))),
+              Collections.unmodifiableList(Collections.singletonList(KEY_UID))),
           View.create(
               View.Name.create("meghanada/member_cache_miss_rate"),
               "The member cache miss rate",
@@ -258,6 +259,7 @@ public class TelemetryUtils {
     }
   }
 
+  @SuppressWarnings("try")
   public static void recordStat(Measure.MeasureLong ml, Long n) {
     TagContext tctx = tagger.emptyBuilder().build();
     try (Scope ss = tagger.withTagContext(tctx)) {
@@ -265,6 +267,7 @@ public class TelemetryUtils {
     }
   }
 
+  @SuppressWarnings("try")
   public static void recordTaggedStat(TagKey key, String value, Measure.MeasureLong ml, Long n) {
     TagContext tctx = tagger.emptyBuilder().putLocal(key, TagValue.create(value)).build();
     try (Scope ss = tagger.withTagContext(tctx)) {
@@ -272,6 +275,7 @@ public class TelemetryUtils {
     }
   }
 
+  @SuppressWarnings("try")
   public static void recordTaggedStat(
       TagKey key, String value, Measure.MeasureDouble md, Double d) {
     TagContext tctx = tagger.emptyBuilder().putLocal(key, TagValue.create(value)).build();
@@ -280,6 +284,7 @@ public class TelemetryUtils {
     }
   }
 
+  @SuppressWarnings("try")
   public static void recordTaggedStat(
       TagKey[] keys, String[] values, Measure.MeasureDouble md, Double d) {
     TagContextBuilder builder = tagger.emptyBuilder();
@@ -292,6 +297,7 @@ public class TelemetryUtils {
     }
   }
 
+  @SuppressWarnings("try")
   public static void recordTaggedStat(
       TagKey[] keys, String[] values, Measure.MeasureLong md, Long n) {
     TagContextBuilder builder = tagger.emptyBuilder();
@@ -299,13 +305,14 @@ public class TelemetryUtils {
       builder.putLocal(keys[i], TagValue.create(values[i]));
     }
     TagContext tctx = builder.build();
+
     try (Scope ss = tagger.withTagContext(tctx)) {
       statsRecorder.newMeasureMap().put(md, n).record();
     }
   }
 
   public static double sinceInMilliseconds(long startTimeNs) {
-    return (new Double(System.nanoTime() - startTimeNs)) / 1e6;
+    return ((double) (System.nanoTime() - startTimeNs)) / 1e6;
   }
 
   public static void recordCommandLatency(String commandName, double latency) {

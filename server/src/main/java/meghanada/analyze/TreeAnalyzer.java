@@ -495,6 +495,7 @@ public class TreeAnalyzer {
     }
   }
 
+  @SuppressWarnings("try")
   public static Map<File, Source> analyze(
       Iterable<? extends CompilationUnitTree> parsed, Set<File> errorFiles) throws IOException {
 

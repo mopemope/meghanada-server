@@ -140,6 +140,7 @@ public class ProjectDatabase {
     }
   }
 
+  @SuppressWarnings("try")
   private static long putObject(Storable s, boolean allowUpdate, StoreTransaction txn) {
 
     try (TelemetryUtils.ScopedSpan ss =
@@ -189,6 +190,7 @@ public class ProjectDatabase {
     }
   }
 
+  @SuppressWarnings("try")
   public static void setSerializeBlobData(Entity entity, String prop, Object obj)
       throws IOException {
 
@@ -218,6 +220,7 @@ public class ProjectDatabase {
     }
   }
 
+  @SuppressWarnings("try")
   private void initWorker() {
 
     if (isNull(this.executorService) || this.executorService.isTerminated()) {
@@ -257,6 +260,7 @@ public class ProjectDatabase {
     }
   }
 
+  @SuppressWarnings("try")
   private void mergeAndStore(StoreRequest req) {
     try (TelemetryUtils.ScopedSpan ss =
         TelemetryUtils.startScopedSpan("ProjectDatabase.mergeAndStore")) {
@@ -404,6 +408,7 @@ public class ProjectDatabase {
     return storeObject(s, true);
   }
 
+  @SuppressWarnings("try")
   public long storeObject(Storable s, boolean allowUpdate) {
     try (TelemetryUtils.ScopedSpan ss =
         TelemetryUtils.startScopedSpan("ProjectDatabase.storeObject")) {
@@ -447,6 +452,7 @@ public class ProjectDatabase {
         && delta > WORKER_DURATION;
   }
 
+  @SuppressWarnings("try")
   private void runWorker() {
     if (this.addableWorker()) {
       lastAddWorker = Instant.now();

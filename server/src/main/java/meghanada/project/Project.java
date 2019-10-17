@@ -120,6 +120,7 @@ public abstract class Project implements Serializable, Storable {
     this.initialize();
   }
 
+  @SuppressWarnings("try")
   private static CompileResult clearMemberCache(final CompileResult compileResult) {
     try (TelemetryUtils.ScopedSpan scope =
         TelemetryUtils.startScopedSpan("Peoject.clearMemberCache")) {
@@ -153,6 +154,7 @@ public abstract class Project implements Serializable, Storable {
     }
   }
 
+  @SuppressWarnings("try")
   public void saveProject() {
     try (TelemetryUtils.ScopedSpan scope = TelemetryUtils.startScopedSpan("Project.saveProject")) {
       ProjectDatabaseHelper.saveProject(this, true);
@@ -258,6 +260,7 @@ public abstract class Project implements Serializable, Storable {
     return this.cachedClasspath;
   }
 
+  @SuppressWarnings("try")
   private String allClasspath() throws IOException {
     try (TelemetryUtils.ScopedSpan scope = TelemetryUtils.startScopedSpan("Peoject.allClasspath")) {
       if (this.cachedAllClasspath != null) {
@@ -988,6 +991,7 @@ public abstract class Project implements Serializable, Storable {
     return Optional.empty();
   }
 
+  @SuppressWarnings("try")
   public Optional<Properties> getFormatProperties() {
     try (TelemetryUtils.ScopedSpan scope =
         TelemetryUtils.startScopedSpan("Project.getFormatProperties")) {
@@ -1109,6 +1113,7 @@ public abstract class Project implements Serializable, Storable {
     }
   }
 
+  @SuppressWarnings("try")
   public CompileResult compileString(final String sourceFile, final String sourceCode)
       throws IOException {
 

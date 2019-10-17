@@ -36,6 +36,7 @@ public class DeclarationSearcher {
     this.projectSupplier = supplier;
   }
 
+  @SuppressWarnings("try")
   private static Optional<Declaration> searchFieldVar(Source source, Integer line, String symbol) {
     try (TelemetryUtils.ScopedSpan ss =
         TelemetryUtils.startScopedSpan("DeclarationSearcher.searchFieldVar")) {
@@ -153,6 +154,7 @@ public class DeclarationSearcher {
     }
   }
 
+  @SuppressWarnings("try")
   private static Optional<MemberDescriptor> searchMethod(
       String declaringClass, String methodName, List<String> arguments) {
 
@@ -170,6 +172,7 @@ public class DeclarationSearcher {
     }
   }
 
+  @SuppressWarnings("try")
   private static Optional<MemberDescriptor> searchConstructor(
       String declaringClass, List<String> arguments) {
 
