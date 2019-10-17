@@ -34,6 +34,7 @@ public class JavaCompletionTest extends GradleTestBase {
 
   @AfterClass
   public static void shutdown() throws Exception {
+    Thread.sleep(1000 * 1);
     GradleTestBase.shutdown();
   }
 

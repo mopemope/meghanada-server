@@ -19,10 +19,12 @@ public class LocationSearcherTest extends GradleTestBase {
   @BeforeClass
   public static void setup() throws Exception {
     GradleTestBase.setupReflector(false);
+    Thread.sleep(1000 * 1);
   }
 
   @AfterClass
   public static void shutdown() throws Exception {
+    Thread.sleep(1000 * 1);
     GradleTestBase.shutdown();
   }
 
@@ -235,7 +237,7 @@ public class LocationSearcherTest extends GradleTestBase {
 
     LocationSearcher searcher = getSearcher();
     Location result =
-        timeIt(() -> searcher.searchDeclarationLocation(f, 73, 19, "getAllowClass")).orElse(null);
+        timeIt(() -> searcher.searchDeclarationLocation(f, 76, 19, "getAllowClass")).orElse(null);
     assertNotNull(result);
     assertTrue(result.getPath().contains("Config.java"));
     assertEquals(356, result.getLine());
