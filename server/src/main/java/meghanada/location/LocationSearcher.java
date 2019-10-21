@@ -543,6 +543,13 @@ public class LocationSearcher {
                     final String firstFQCN = typeScope.getFQCN();
                     searchTargets.add(firstFQCN + ClassNameUtils.INNER_MARK + finalSym);
                   });
+
+          source.usingClasses.forEach(
+              clazz -> {
+                if (ClassNameUtils.getSimpleName(clazz).equals(finalSym)) {
+                  searchTargets.add(clazz);
+                }
+              });
         }
       } else {
         searchTargets.add(fqcn);
@@ -559,7 +566,7 @@ public class LocationSearcher {
 
       scope.addAnnotation(TelemetryUtils.annotationBuilder().put("fqcn", fqcn).build("args"));
 
-      Project project = this.projectSupplier.get();
+      final Project project = this.projectSupplier.get();
       return existsFQCN(project.getAllSourcesWithDependencies(), fqcn)
           .flatMap(
               f -> {
@@ -571,7 +578,7 @@ public class LocationSearcher {
                       .map(
                           cs -> {
                             final ClassScope match = getMatchClassScope(cs, fqcn);
-                            if (match == null) {
+                            if (isNull(match)) {
                               return null;
                             }
                             return new Location(

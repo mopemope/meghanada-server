@@ -83,7 +83,7 @@ public class SourceCacheSubscriber {
           callerMap.put(clazz, set);
         }
       }
-      source.usingClasses.clear();
+      // source.usingClasses.clear();
     }
 
     if (!isDiagnostics) {

@@ -28,10 +28,12 @@ public class SourceTest extends GradleTestBase {
   @BeforeClass
   public static void setup() throws Exception {
     GradleTestBase.setupReflector(false);
+    Thread.sleep(1000 * 1);
   }
 
   @AfterClass
   public static void shutdown() throws Exception {
+    Thread.sleep(1000 * 1);
     GradleTestBase.shutdown();
   }
 

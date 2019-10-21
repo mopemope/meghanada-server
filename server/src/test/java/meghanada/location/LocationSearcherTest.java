@@ -7,10 +7,12 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import meghanada.GradleTestBase;
+import meghanada.analyze.CompileResult;
 import meghanada.cache.GlobalCache;
 import meghanada.config.Config;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 public class LocationSearcherTest extends GradleTestBase {
@@ -19,7 +21,9 @@ public class LocationSearcherTest extends GradleTestBase {
   @BeforeClass
   public static void setup() throws Exception {
     GradleTestBase.setupReflector(false);
-    Thread.sleep(1000 * 1);
+    CompileResult compileResult1 = project.compileJava();
+    CompileResult compileResult2 = project.compileTestJava();
+    Thread.sleep(1000 * 5);
   }
 
   @AfterClass
@@ -199,7 +203,7 @@ public class LocationSearcherTest extends GradleTestBase {
             .orElse(null);
     assertNotNull(result);
     assertTrue(result.getPath().contains("LocationSearcher.java"));
-    assertEquals(859, result.getLine());
+    assertEquals(866, result.getLine());
     assertEquals(30, result.getColumn());
   }
 
@@ -217,7 +221,7 @@ public class LocationSearcherTest extends GradleTestBase {
         timeIt(
                 () -> {
                   System.setProperty("disable-source-jar", "true");
-                  return searcher.searchDeclarationLocation(f, 738, 24, "decompileArchive");
+                  return searcher.searchDeclarationLocation(f, 745, 24, "decompileArchive");
                 })
             .orElse(null);
     assertNotNull(result);
@@ -390,6 +394,25 @@ public class LocationSearcherTest extends GradleTestBase {
     assertTrue(result.getPath().contains(".java"));
     assertEquals(21, result.getLine());
     assertEquals(14, result.getColumn());
+  }
+
+  @Ignore
+  @Test
+  public void testJumpClass05() throws Exception {
+    File f =
+        new File(
+                project.getProjectRootPath(),
+                "./src/main/java/meghanada/session/subscribe/IdleMonitorSubscriber.java")
+            .getCanonicalFile();
+    assertTrue(f.exists());
+
+    LocationSearcher searcher = getSearcher();
+    System.setProperty("disable-source-jar", "true");
+    Location result = searcher.searchDeclarationLocation(f, 80, 47, "IdleEvent").orElse(null);
+    assertNotNull(result);
+    assertTrue(result.getPath().contains(".java"));
+    assertEquals(160, result.getLine());
+    assertEquals(3, result.getColumn());
   }
 
   @Test
