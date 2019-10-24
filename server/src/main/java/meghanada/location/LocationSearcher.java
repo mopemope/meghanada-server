@@ -546,8 +546,15 @@ public class LocationSearcher {
 
           source.usingClasses.forEach(
               clazz -> {
-                if (ClassNameUtils.getSimpleName(clazz).equals(finalSym)) {
+                String name = ClassNameUtils.getSimpleName(clazz);
+                if (name.equals(finalSym)) {
                   searchTargets.add(clazz);
+                } else if (name.contains("$")) {
+                  for (String s : name.split("$")) {
+                    if (s.endsWith(finalSym)) {
+                      searchTargets.add(clazz);
+                    }
+                  }
                 }
               });
         }

@@ -1336,12 +1336,6 @@ public class TreeAnalyzer {
     Name simpleName = classDecl.getSimpleName();
 
     JCTree.JCModifiers modifiers = classDecl.getModifiers();
-    int modPos = modifiers.pos;
-    int modEndPos = context.endPosTable.getEndPos(modifiers);
-    int modLen = 0;
-    if (modEndPos > 0) {
-      modLen = modEndPos - modPos + 1;
-    }
     final String classModifiers = parseModifiers(context, modifiers);
 
     analyzeParsedTree(context, classDecl.getExtendsClause());
@@ -1350,7 +1344,7 @@ public class TreeAnalyzer {
     Tree.Kind kind = classDecl.getKind();
     boolean isInterface = kind.equals(Tree.Kind.INTERFACE);
     boolean isEnum = kind.equals(Tree.Kind.ENUM);
-    int nameStartPos = startPos + modLen;
+    int nameStartPos = startPos;
     if (isInterface) {
       nameStartPos += 10;
     } else if (isEnum) {
