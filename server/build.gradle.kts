@@ -11,7 +11,7 @@ plugins {
     maven
     `maven-publish`
     application
-    id("com.github.johnrengelman.shadow") version "5.0.0"
+    id("com.github.johnrengelman.shadow") version "5.1.0"
     id("com.jfrog.bintray") version "1.8.4"
 }
 
@@ -35,7 +35,7 @@ val date: String = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-
 val applicationName = "meghanada"
 
 val junitVersion = "5.5.2"
-val gradleVersion = "5.6.2"
+val gradleVersion = "5.6.3"
 val log4jVersion = "2.12.1"
 val xodusVersion = "1.3.124"
 val opencensusVersion = "0.24.0"
@@ -66,7 +66,7 @@ dependencies {
     implementation("org.gradle:gradle-tooling-api:$gradleVersion")
     implementation("com.google.guava:guava:28.1-jre")
     implementation("org.ow2.asm:asm:7.2")
-    implementation("com.typesafe:config:1.3.4")
+    implementation("com.typesafe:config:1.4.0")
     implementation("org.atteo:evo-inflector:1.2.2")
 
     implementation("org.junit.jupiter:junit-jupiter-api:$junitVersion")
