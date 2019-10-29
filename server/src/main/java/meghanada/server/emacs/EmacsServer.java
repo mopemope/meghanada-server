@@ -240,8 +240,8 @@ public class EmacsServer implements Server {
             .get(
                 args -> {
                   // ls : List Symbols
-                  // usage: ls
-                  handler.listSymbols(id, false);
+                  // usage: ls keyword
+                  handler.listSymbols(id, args.get(0));
                   return true;
                 })
             .when(headTail(eq("sd"), any()))

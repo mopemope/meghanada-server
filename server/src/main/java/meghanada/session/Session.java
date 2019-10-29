@@ -60,11 +60,13 @@ import meghanada.project.meghanada.MeghanadaProject;
 import meghanada.reference.Reference;
 import meghanada.reference.ReferenceSearcher;
 import meghanada.reflect.CandidateUnit;
+import meghanada.reflect.MemberDescriptor;
 import meghanada.reflect.asm.CachedASMReflector;
 import meghanada.system.Executor;
 import meghanada.telemetry.TelemetryUtils;
 import meghanada.typeinfo.TypeInfo;
 import meghanada.typeinfo.TypeInfoSearcher;
+import meghanada.utils.ClassNameUtils;
 import meghanada.utils.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -759,22 +761,30 @@ public class Session {
     return Optional.empty();
   }
 
-  public synchronized Collection<String> listSymbols(final boolean global)
+  public synchronized Collection<String> listSymbols(final String keyword)
       throws ExecutionException, IOException {
-
-    return CachedASMReflector.getInstance()
+    CachedASMReflector reflector = CachedASMReflector.getInstance();
+    return reflector
         .getGlobalClassIndex()
         .values()
         .parallelStream()
-        .filter(
+        .filter(c -> !c.getFilePath().endsWith(".jar"))
+        .flatMap(
             c -> {
-              if (global) {
-                return true;
+              List<String> results = new ArrayList<>(8);
+              String fqcn = c.getRawDeclaration();
+              String clazzName = ClassNameUtils.getSimpleName(fqcn);
+              if (clazzName.toLowerCase().contains(keyword)) {
+                results.add(String.format("%s (%s)", clazzName, ClassNameUtils.getPackage(fqcn)));
               }
-              return !c.getFilePath().endsWith(".jar");
+              for (MemberDescriptor md : reflector.reflect(fqcn)) {
+                if (md.getName().toLowerCase().contains(keyword)) {
+                  results.add(
+                      String.format("%s (%s)", md.getDisplayDeclaration(), md.getDeclaringClass()));
+                }
+              }
+              return results.stream();
             })
-        .map(c -> c.getRawDeclaration())
-        .sorted()
         .collect(Collectors.toList());
   }
 

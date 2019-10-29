@@ -353,13 +353,14 @@ public class CommandHandler {
     }
   }
 
-  public void listSymbols(long id, boolean global) {
+  public void listSymbols(long id, final String keyword) {
     long startTime = System.nanoTime();
     String name = "Meghanada/listSymbols";
     try (TelemetryUtils.ParentSpan span = TelemetryUtils.startExplicitParentSpan(name);
         TelemetryUtils.ScopedSpan scope = TelemetryUtils.withSpan(span.getSpan())) {
-      scope.addAnnotation(TelemetryUtils.annotationBuilder().put("global", global).build("args"));
-      String out = outputFormatter.listSymbols(id, String.join("\n", session.listSymbols(global)));
+
+      scope.addAnnotation(TelemetryUtils.annotationBuilder().put("keyword", keyword).build("args"));
+      String out = outputFormatter.listSymbols(id, String.join("\n", session.listSymbols(keyword)));
       writer.write(out);
       writer.newLine();
       span.setStatusOK();
