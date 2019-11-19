@@ -7,11 +7,12 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
 plugins {
-    id("java")
-    id("maven")
-    id("application")
-    id("com.github.johnrengelman.shadow").version("5.0.0")
-    id("com.jfrog.bintray").version("1.8.4")
+    java
+    maven
+    `maven-publish`
+    application
+    id("com.github.johnrengelman.shadow") version "5.1.0"
+    id("com.jfrog.bintray") version "1.8.4"
 }
 
 val group = "meghanada"
@@ -66,22 +67,42 @@ bintray {
         setLabels("java", "emacs")
 
         version(delegateClosureOf<BintrayExtension.VersionConfig> {
-            name = "$setupVersion"
+            name = setupVersion
             desc = "Meghanada Server setup $setupVersion"
         })
 
     })
 }
 
+publishing {
+    repositories {
+        maven {
+            name = "GitHubPackages"
+            url = uri("https://maven.pkg.github.com/mopemope/meganada-server")
+            credentials {
+                username = System.getenv("GPR_USER")
+                password = System.getenv("GPR_API_KEY")
+            }
+        }
+    }
+    publications {
+        register("gpr", MavenPublication::class) {
+            from(components["java"])
+            this.artifactId = "meghanada-setup"
+        }
+    }
+}
 
 tasks {
 
     val processResources by existing
     val classes by existing
-    val shadowJar by existing
     val clean by existing
 
-    withType<ShadowJar> {}
+    val shadowJar = withType<ShadowJar> {
+        classifier = null
+    }
+
 
     val embedVersion = register<Copy>("embedVersion") {
         from("src/main/resources/VERSION")
@@ -94,6 +115,10 @@ tasks {
         dependsOn(embedVersion)
     }
 
+    named("publishGprPublicationToGitHubPackagesRepository") {
+        dependsOn(shadowJar)
+    }
+
     val installEmacsHome = register<Copy>("installEmacsHome") {
         val home = System.getProperty("user.home")
         from("build/libs/meghanada-setup-${setupVersion}.jar")
@@ -102,8 +127,8 @@ tasks {
     }
 
     clean {
-        doLast({
+        doLast {
             file(".meghanada").deleteRecursively()
-        })
+        }
     }
 }

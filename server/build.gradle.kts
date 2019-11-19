@@ -7,15 +7,16 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
 plugins {
-    id("java")
-    id("maven")
-    id("application")
-    id("com.github.johnrengelman.shadow").version("5.0.0")
-    id("com.jfrog.bintray").version("1.8.4")
+    java
+    maven
+    `maven-publish`
+    application
+    id("com.github.johnrengelman.shadow") version "5.1.0"
+    id("com.jfrog.bintray") version "1.8.4"
 }
 
 val group = "io.github.mopemope"
-var serverVersion = "1.2.0"
+var serverVersion = "1.2.1"
 var buildVersion = "release"
 
 val gitFile = File("./.git")
@@ -33,11 +34,11 @@ val longVersion = "$serverVersion-$buildVersion"
 val date: String = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss"))
 val applicationName = "meghanada"
 
-val junitVersion = "5.4.0"
-val gradleVersion = "5.4.1"
-val log4jVersion = "2.11.2"
-val xodusVersion = "1.3.0"
-val opencensusVersion = "0.22.1"
+val junitVersion = "5.5.2"
+val gradleVersion = "6.0.1"
+val log4jVersion = "2.12.1"
+val xodusVersion = "1.3.124"
+val opencensusVersion = "0.24.0"
 
 base {
     archivesBaseName = applicationName
@@ -57,29 +58,29 @@ dependencies {
     implementation("org.apache.maven:maven-model-builder:3.6.2")
     implementation("com.leacox.motif:motif:0.1")
     implementation("com.leacox.motif:motif-hamcrest:0.1")
-    implementation("com.github.javaparser:javaparser-symbol-solver-core:3.15.3")
+    implementation("com.github.javaparser:javaparser-core:3.15.5")
     implementation("org.apache.logging.log4j:log4j-core:$log4jVersion")
     implementation("org.apache.logging.log4j:log4j-api:$log4jVersion")
     implementation("org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion")
     implementation("commons-cli:commons-cli:1.4")
     implementation("org.gradle:gradle-tooling-api:$gradleVersion")
     implementation("com.google.guava:guava:28.1-jre")
-    implementation("org.ow2.asm:asm:7.1")
-    implementation("com.typesafe:config:1.3.4")
+    implementation("org.ow2.asm:asm:7.2")
+    implementation("com.typesafe:config:1.4.0")
     implementation("org.atteo:evo-inflector:1.2.2")
 
     implementation("org.junit.jupiter:junit-jupiter-api:$junitVersion")
     implementation("org.junit.jupiter:junit-jupiter-params:$junitVersion")
     implementation("org.junit.jupiter:junit-jupiter-engine:$junitVersion")
     implementation("org.junit.vintage:junit-vintage-engine:$junitVersion")
-    implementation("org.junit.platform:junit-platform-launcher:1.4.0")
+    implementation("org.junit.platform:junit-platform-launcher:1.5.2")
 
     implementation("com.android.tools.build:builder-model:3.4.0")
     implementation("io.takari.junit:takari-cpsuite:1.2.7")
     implementation("org.jboss.windup.decompiler:decompiler-api:4.2.1.Final")
     implementation("org.jboss.windup.decompiler:decompiler-fernflower:4.2.1.Final")
     implementation("com.google.code.findbugs:jsr305:3.0.2")
-    implementation("org.eclipse.jdt:org.eclipse.jdt.core:3.17.0")
+    implementation("org.eclipse.jdt:org.eclipse.jdt.core:3.19.0")
     implementation("de.ruedigermoeller:fst:2.56")
 
     implementation("org.jetbrains.xodus:xodus-query:$xodusVersion")
@@ -97,7 +98,7 @@ dependencies {
     implementation("io.opencensus:opencensus-exporter-trace-stackdriver:$opencensusVersion")
     implementation("io.opencensus:opencensus-exporter-stats-stackdriver:$opencensusVersion")
 
-    implementation("com.github.oshi:oshi-core:3.13.2")
+    implementation("com.github.oshi:oshi-core:3.13.3")
 }
 
 application {
@@ -125,21 +126,39 @@ bintray {
         setLabels("java", "emacs")
 
         version(delegateClosureOf<BintrayExtension.VersionConfig> {
-            name = "$serverVersion"
+            name = serverVersion
             desc = "Meghanada Server $serverVersion"
         })
 
     })
 }
 
+publishing {
+    repositories {
+        maven {
+            name = "GitHubPackages"
+            url = uri("https://maven.pkg.github.com/mopemope/meghanada-server")
+            credentials {
+                username = System.getenv("GPR_USER")
+                password = System.getenv("GPR_API_KEY")
+            }
+        }
+    }
+    publications {
+        register("gpr", MavenPublication::class) {
+            from(components["java"])
+            this.artifactId = "meghanada-server"
+        }
+    }
+}
+
 tasks {
 
     val processResources by existing
     val classes by existing
-    val shadowJar by existing
     val clean by existing
 
-    withType<ShadowJar> {
+    val shadowJar = withType<ShadowJar> {
         mergeServiceFiles()
         classifier = null
         exclude("tools.jar")
@@ -167,6 +186,9 @@ tasks {
     classes {
         dependsOn(embedVersion)
     }
+    named("publishGprPublicationToGitHubPackagesRepository") {
+        dependsOn(shadowJar)
+    }
 
     val installEmacsHome = register<Copy>("installEmacsHome") {
         val home = System.getProperty("user.home")
@@ -176,8 +198,8 @@ tasks {
     }
 
     clean {
-        doLast({
+        doLast {
             file(".meghanada").deleteRecursively()
-        })
+        }
     }
 }

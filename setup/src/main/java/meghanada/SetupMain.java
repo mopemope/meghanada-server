@@ -44,7 +44,7 @@ public class SetupMain {
     return version;
   }
 
-  public static void main(String args[]) throws ParseException, IOException {
+  public static void main(String[] args) throws ParseException, IOException {
     final String version = getVersion();
     System.setProperty("meghanada-setup.version", version);
     final Options options = buildOptions();

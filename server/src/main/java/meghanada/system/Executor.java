@@ -105,11 +105,11 @@ public class Executor {
   }
 
   public <T> CompletableFutures<T> completableFutures(int cap) {
-    return new Executor.CompletableFutures<T>(cap);
+    return new Executor.CompletableFutures<>(cap);
   }
 
   public void execute(Runnable runnable) {
-    this.fixedThreadPool.execute(runnable);
+    this.executorService.execute(runnable);
   }
 
   public static class CompletableFutures<T> {

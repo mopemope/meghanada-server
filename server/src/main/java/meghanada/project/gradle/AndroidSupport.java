@@ -77,8 +77,7 @@ class AndroidSupport {
     String name = path.substring(1);
     File childDir = new File(root, name);
     GradleConnector childConnector = GradleConnector.newConnector().forProjectDirectory(childDir);
-    ProjectConnection childConnection = childConnector.connect();
-    try {
+    try (ProjectConnection childConnection = childConnector.connect()) {
       ModelBuilder<AndroidProject> modelBuilder =
           childConnection
               .model(AndroidProject.class)
@@ -90,8 +89,6 @@ class AndroidSupport {
     } catch (Exception e) {
       log.debug("not android project", e);
       return null;
-    } finally {
-      childConnection.close();
     }
   }
 
@@ -472,8 +469,7 @@ class AndroidSupport {
   }
 
   void prepareCompileAndroidJava() {
-    ProjectConnection connection = this.project.getProjectConnection();
-    try {
+    try (ProjectConnection connection = this.project.getProjectConnection()) {
       BuildLauncher buildLauncher = connection.newBuild();
       String genTask = this.project.getName() + this.genSourceTaskName;
       buildLauncher.forTasks(genTask).run();
@@ -493,8 +489,6 @@ class AndroidSupport {
         CachedASMReflector.getInstance().createClassIndexes(jars);
         this.project.resetCachedClasspath();
       }
-    } finally {
-      connection.close();
     }
   }
 
@@ -510,8 +504,7 @@ class AndroidSupport {
   }
 
   private void prepareCompileAndroidTestJavaV2() {
-    ProjectConnection connection = this.project.getProjectConnection();
-    try {
+    try (ProjectConnection connection = this.project.getProjectConnection()) {
       BuildLauncher buildLauncher = connection.newBuild();
       String genTestTask = this.project.getName() + genUnitTestTaskName;
       String genAndroidTestTask = this.project.getName() + genAndroidTestTaskName;
@@ -533,8 +526,6 @@ class AndroidSupport {
         CachedASMReflector.getInstance().createClassIndexes(jars);
         this.project.resetCachedClasspath();
       }
-    } finally {
-      connection.close();
     }
   }
 

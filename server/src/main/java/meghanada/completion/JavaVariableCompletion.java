@@ -55,6 +55,7 @@ public class JavaVariableCompletion {
     return globalCache.getSource(file.getCanonicalFile());
   }
 
+  @SuppressWarnings("try")
   public Optional<LocalVariable> localVariable(final File file, final int line)
       throws ExecutionException, IOException {
 
@@ -69,6 +70,7 @@ public class JavaVariableCompletion {
     }
   }
 
+  @SuppressWarnings("try")
   Optional<LocalVariable> createLocalVariable(
       final AccessSymbol accessSymbol, final String returnType) {
 

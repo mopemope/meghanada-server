@@ -431,6 +431,7 @@ public class LocationSearcher {
     }
   }
 
+  @SuppressWarnings("try")
   private Optional<Location> searchMethodCallLocation(MethodCall mc) {
 
     try (TelemetryUtils.ScopedSpan scope =
@@ -542,6 +543,20 @@ public class LocationSearcher {
                     final String firstFQCN = typeScope.getFQCN();
                     searchTargets.add(firstFQCN + ClassNameUtils.INNER_MARK + finalSym);
                   });
+
+          source.usingClasses.forEach(
+              clazz -> {
+                String name = ClassNameUtils.getSimpleName(clazz);
+                if (name.equals(finalSym)) {
+                  searchTargets.add(clazz);
+                } else if (name.contains("$")) {
+                  for (String s : name.split("$")) {
+                    if (s.endsWith(finalSym)) {
+                      searchTargets.add(clazz);
+                    }
+                  }
+                }
+              });
         }
       } else {
         searchTargets.add(fqcn);
@@ -558,7 +573,7 @@ public class LocationSearcher {
 
       scope.addAnnotation(TelemetryUtils.annotationBuilder().put("fqcn", fqcn).build("args"));
 
-      Project project = this.projectSupplier.get();
+      final Project project = this.projectSupplier.get();
       return existsFQCN(project.getAllSourcesWithDependencies(), fqcn)
           .flatMap(
               f -> {
@@ -570,7 +585,7 @@ public class LocationSearcher {
                       .map(
                           cs -> {
                             final ClassScope match = getMatchClassScope(cs, fqcn);
-                            if (match == null) {
+                            if (isNull(match)) {
                               return null;
                             }
                             return new Location(
@@ -592,6 +607,7 @@ public class LocationSearcher {
     }
   }
 
+  @SuppressWarnings("try")
   private Location searchFromSrcZip(final SearchContext context) throws IOException {
 
     try (TelemetryUtils.ScopedSpan scope =
@@ -636,6 +652,7 @@ public class LocationSearcher {
     }
   }
 
+  @SuppressWarnings("try")
   private Location searchFromDependency(final SearchContext context) throws IOException {
 
     try (TelemetryUtils.ScopedSpan scope =
@@ -686,6 +703,7 @@ public class LocationSearcher {
     }
   }
 
+  @SuppressWarnings("try")
   private Location getLocationFromSrcOrDecompile(
       final SearchContext context,
       final File classFile,
@@ -716,6 +734,7 @@ public class LocationSearcher {
     }
   }
 
+  @SuppressWarnings("try")
   private Location searchLocationFromDecompileFile(
       SearchContext context, String searchFQCN, File classFile, String tempDir) throws IOException {
 
@@ -791,6 +810,7 @@ public class LocationSearcher {
     }
   }
 
+  @SuppressWarnings("try")
   private File copyFromSrcZip(final String searchFQCN, final File srcZip) throws IOException {
 
     try (TelemetryUtils.ScopedSpan scope =

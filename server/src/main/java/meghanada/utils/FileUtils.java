@@ -316,6 +316,7 @@ public final class FileUtils {
     }
   }
 
+  @SuppressWarnings("try")
   public static Collection<File> getPackagePrivateSource(final List<File> compileFiles) {
     try (TelemetryUtils.ScopedSpan scope =
         TelemetryUtils.startScopedSpan("FileUtils.getPackagePrivateSource")) {
@@ -325,6 +326,7 @@ public final class FileUtils {
     }
   }
 
+  @SuppressWarnings("try")
   public static List<File> getModifiedSources(
       final File projectRoot,
       final List<File> sourceFiles,
@@ -387,6 +389,7 @@ public final class FileUtils {
     return new String(encoded, StandardCharsets.UTF_8);
   }
 
+  @SuppressWarnings("try")
   public static List<String> readLines(File file) throws IOException {
     try (TelemetryUtils.ScopedSpan scope = TelemetryUtils.startScopedSpan("FileUtils.readLines")) {
       List<String> lines;
@@ -400,6 +403,7 @@ public final class FileUtils {
     }
   }
 
+  @SuppressWarnings("try")
   public static void readRangeLines(File file, long start, long end, Consumer<String> fn)
       throws IOException {
 

@@ -155,6 +155,7 @@ public class CachedASMReflector {
     return globalClassIndex;
   }
 
+  @SuppressWarnings("try")
   public void createClassIndexes() {
     try (TelemetryUtils.ScopedSpan scope =
         TelemetryUtils.startScopedSpan("CachedASMReflector.createClassIndexes")) {
