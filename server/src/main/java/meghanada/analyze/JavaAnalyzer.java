@@ -299,17 +299,35 @@ public class JavaAnalyzer {
   }
 
   private void setJavacArgs(Config config, List<String> compileOptions) {
-    if (this.compileTarget.equals("1.8")) {
-      compileOptions.addAll(config.getJava8JavacArgs());
-    } else if (this.compileTarget.equals("1.9") || this.compileTarget.equals("9")) {
-      compileOptions.addAll(config.getJava9JavacArgs());
-    } else if (this.compileTarget.equals("1.10") || this.compileTarget.equals("10")) {
-      compileOptions.addAll(config.getJava10JavacArgs());
-    } else if (this.compileTarget.equals("1.11") || this.compileTarget.equals("11")) {
-      compileOptions.addAll(config.getJava11JavacArgs());
-    } else if (this.compileTarget.equals("1.12") || this.compileTarget.equals("12")) {
-      compileOptions.addAll(config.getJava12JavacArgs());
-    }
+      switch (this.compileTarget) {
+      case "1.8":
+          compileOptions.addAll(config.getJava8JavacArgs());
+          break;
+      case "1.9":
+      case "9":
+          compileOptions.addAll(config.getJava9JavacArgs());
+          break;
+      case "1.10":
+      case "10":
+          compileOptions.addAll(config.getJava10JavacArgs());
+          break;
+      case "1.11":
+      case "11":
+          compileOptions.addAll(config.getJava11JavacArgs());
+          break;
+      case "1.12":
+      case "12":
+          compileOptions.addAll(config.getJava12JavacArgs());
+          break;
+      case "1.13":
+      case "13":
+          compileOptions.addAll(config.getJava13JavacArgs());
+          break;
+      case "1.14":
+      case "14":
+          compileOptions.addAll(config.getJava14JavacArgs());
+          break;         
+      }
   }
 
   private static class JavaSourceFromString extends SimpleJavaFileObject {
