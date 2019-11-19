@@ -29,9 +29,8 @@ public class Executor {
   private final EventBus eventBus;
 
   private Executor() {
-    int size = Runtime.getRuntime().availableProcessors() * 2;
     this.executorService = Executors.newCachedThreadPool();
-    this.fixedThreadPool = Executors.newFixedThreadPool(size);
+    this.fixedThreadPool = Executors.newFixedThreadPool(getThreadPoolSize());
     this.eventBus =
         new AsyncEventBus(
             executorService,
@@ -57,6 +56,10 @@ public class Executor {
       executor = new Executor();
     }
     return executor;
+  }
+
+  public static int getThreadPoolSize() {
+    return Runtime.getRuntime().availableProcessors() * 8;
   }
 
   public ExecutorService getCachedExecutorService() {
