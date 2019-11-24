@@ -53,7 +53,7 @@ public class FileWatchEventSubscriber extends AbstractSubscriber {
     final File file = event.getFile();
 
     final String name = file.getName();
-    if (name.endsWith(Project.GRADLE_PROJECT_FILE)
+    if (name.endsWith(Project.GRADLE_PROJECT_EXT)
         || name.endsWith(Project.GRADLE_KTS_PROJECT_FILE)
         || name.endsWith(Project.MVN_PROJECT_FILE)
         || name.endsWith(Project.ECLIPSE_PROJECT_FILE)

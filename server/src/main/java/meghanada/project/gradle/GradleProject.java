@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
@@ -103,9 +104,7 @@ public class GradleProject extends Project {
         break;
       }
 
-      File gradle = new File(dir, Project.GRADLE_PROJECT_FILE);
-      File gradleKts = new File(dir, Project.GRADLE_KTS_PROJECT_FILE);
-      if (!gradle.exists() && !gradleKts.exists()) {
+      if (!isGradleProject(dir).isPresent()) {
         break;
       }
       result = dir;
@@ -149,19 +148,16 @@ public class GradleProject extends Project {
     try (TelemetryUtils.ScopedSpan scope =
             TelemetryUtils.startScopedSpan("GradleProject.parseProject");
         ProjectConnection connection = getProjectConnection()) {
+
       scope.addAnnotation(
           TelemetryUtils.annotationBuilder()
               .put("projectRoot", projectRoot.getPath())
               .put("current", current.getPath())
               .build("args"));
-      if (this.kts) {
-        log.info(
-            "loading gradle project:{}",
-            new File(this.projectRoot, Project.GRADLE_KTS_PROJECT_FILE));
-      } else {
-        log.info(
-            "loading gradle project:{}", new File(this.projectRoot, Project.GRADLE_PROJECT_FILE));
-      }
+
+      log.info(
+          "loading gradle project:{}",
+          new File(this.projectRoot, isGradleProject(this.projectRoot).get()));
 
       BuildEnvironment env = connection.getModel(BuildEnvironment.class);
       String version = env.getGradle().getGradleVersion();
@@ -339,7 +335,11 @@ public class GradleProject extends Project {
     log.debug("test output {}", this.testOutput);
 
     for (final ProjectDependency projectDependency : this.getDependencies()) {
-      log.debug("{} {}", projectDependency.getScope(), projectDependency.getId());
+      log.debug(
+          "Scope:{} Type:{} {} ",
+          projectDependency.getScope(),
+          projectDependency.getType(),
+          projectDependency.getId());
     }
   }
 
@@ -468,12 +468,10 @@ public class GradleProject extends Project {
           scope = "COMPILE";
         }
 
-        if (!scope.equals("PROVIDED")) {
-          final ProjectDependency.Type type = ProjectDependency.getFileType(file);
-          final ProjectDependency projectDependency =
-              new ProjectDependency(id, scope, version, file, type);
-          dependencies.add(projectDependency);
-        }
+        final ProjectDependency.Type type = ProjectDependency.getFileType(file);
+        final ProjectDependency projectDependency =
+            new ProjectDependency(id, scope, version, file, type);
+        dependencies.add(projectDependency);
       } else if (dependency instanceof IdeaModuleDependency) {
         final IdeaModuleDependency moduleDependency = (IdeaModuleDependency) dependency;
         final String scope = moduleDependency.getScope().getScope();
@@ -630,5 +628,21 @@ public class GradleProject extends Project {
 
   public boolean isKTS() {
     return this.kts;
+  }
+
+  public static Optional<String> isGradleProject(File dir) {
+    File[] files = dir.listFiles();
+    if (isNull(files)) {
+      return Optional.empty();
+    }
+
+    for (File f : files) {
+      String name = f.getName();
+      if ((name.endsWith(GRADLE_PROJECT_EXT) || name.endsWith(GRADLE_KTS_PROJECT_FILE))
+          && (!name.equals("settings.gradle") && !name.equals("settings.build.kts"))) {
+        return Optional.of(name);
+      }
+    }
+    return Optional.empty();
   }
 }
