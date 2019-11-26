@@ -127,7 +127,7 @@ public class ClassNameUtils {
   }
 
   public static boolean isPrimitive(final String className) {
-      return boxMap.containsKey(className);
+    return boxMap.containsKey(className);
   }
 
   public static boolean isArray(final String name) {

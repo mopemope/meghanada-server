@@ -301,35 +301,35 @@ public class JavaAnalyzer {
   }
 
   private void setJavacArgs(Config config, List<String> compileOptions) {
-      switch (this.compileTarget) {
+    switch (this.compileTarget) {
       case "1.8":
-          compileOptions.addAll(config.getJava8JavacArgs());
-          break;
+        compileOptions.addAll(config.getJava8JavacArgs());
+        break;
       case "1.9":
       case "9":
-          compileOptions.addAll(config.getJava9JavacArgs());
-          break;
+        compileOptions.addAll(config.getJava9JavacArgs());
+        break;
       case "1.10":
       case "10":
-          compileOptions.addAll(config.getJava10JavacArgs());
-          break;
+        compileOptions.addAll(config.getJava10JavacArgs());
+        break;
       case "1.11":
       case "11":
-          compileOptions.addAll(config.getJava11JavacArgs());
-          break;
+        compileOptions.addAll(config.getJava11JavacArgs());
+        break;
       case "1.12":
       case "12":
-          compileOptions.addAll(config.getJava12JavacArgs());
-          break;
+        compileOptions.addAll(config.getJava12JavacArgs());
+        break;
       case "1.13":
       case "13":
-          compileOptions.addAll(config.getJava13JavacArgs());
-          break;
+        compileOptions.addAll(config.getJava13JavacArgs());
+        break;
       case "1.14":
       case "14":
-          compileOptions.addAll(config.getJava14JavacArgs());
-          break;         
-      }
+        compileOptions.addAll(config.getJava14JavacArgs());
+        break;
+    }
   }
 
   private static class JavaSourceFromString extends SimpleJavaFileObject {

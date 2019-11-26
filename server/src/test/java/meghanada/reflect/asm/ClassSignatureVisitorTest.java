@@ -94,12 +94,11 @@ public class ClassSignatureVisitorTest extends GradleTestBase {
 
   @org.junit.Test
   public void testComplexType1() throws Exception {
-    String fqcn = "com.google.common.cache.ForwardingLoadingCache.SimpleForwardingLoadingCache";
+    String fqcn = "com.google.common.cache.AbstractLoadingCache";
     File jar = getJar("com.google.guava:guava:");
     ClassSignatureVisitor visitor = doAnalyze(jar, fqcn);
 
-    assertEquals("com.google.common.cache.ForwardingLoadingCache.SimpleForwardingLoadingCache", visitor.getName());
-
+    assertEquals(fqcn, visitor.getName());
     List<String> expected = new ArrayList<>();
     expected.add("K");
     expected.add("V");
