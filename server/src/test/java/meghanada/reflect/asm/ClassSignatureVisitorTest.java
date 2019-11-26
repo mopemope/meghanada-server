@@ -98,8 +98,7 @@ public class ClassSignatureVisitorTest extends GradleTestBase {
     File jar = getJar("com.google.guava:guava:");
     ClassSignatureVisitor visitor = doAnalyze(jar, fqcn);
 
-    assertEquals("com.google.common.cache.AbstractLoadingCache", visitor.getName());
-
+    assertEquals(fqcn, visitor.getName());
     List<String> expected = new ArrayList<>();
     expected.add("K");
     expected.add("V");

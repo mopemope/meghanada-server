@@ -108,7 +108,7 @@ public class LocationSearcher {
 
       CompilationUnit compilationUnit;
       try {
-        compilationUnit = StaticJavaParser.parse(targetFile, StandardCharsets.UTF_8);
+        compilationUnit = StaticJavaParser.parse(targetFile);
       } catch (Throwable e) {
         log.warn(e.getMessage(), e);
         return new Location(targetFile.getCanonicalPath(), 0, 0);

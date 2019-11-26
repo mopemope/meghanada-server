@@ -31,3 +31,4 @@ bazel-*
 .#*.*
 /.nb-gradle/
 credentials.json
+*.class
