@@ -85,7 +85,7 @@ public class ParameterNamesIndexer {
 
     try (InputStream in = zipFile.getInputStream(zipEntry)) {
       String fqcn = javaName.substring(0, javaName.length() - 5);
-      CompilationUnit cu = StaticJavaParser.parse(in, StandardCharsets.UTF_8);
+      CompilationUnit cu = StaticJavaParser.parse(in);
       ParameterNameVisitor visitor = new ParameterNameVisitor(fqcn);
       visitor.visit(cu, this);
 
