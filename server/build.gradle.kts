@@ -54,7 +54,7 @@ dependencies {
     val toolsJar = files("$javaHome/../lib/tools.jar")
     implementation(toolsJar)
     implementation("com.google.googlejavaformat:google-java-format:1.7")
-    implementation("org.apache.maven:maven-model-builder:3.6.1")
+    implementation("org.apache.maven:maven-model-builder:3.6.3")
     implementation("com.leacox.motif:motif:0.1")
     implementation("com.leacox.motif:motif-hamcrest:0.1")
     implementation("com.github.javaparser:javaparser-core:3.14.2")
