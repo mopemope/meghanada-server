@@ -11,7 +11,7 @@ plugins {
     maven
     `maven-publish`
     application
-    id("com.github.johnrengelman.shadow") version "5.1.0"
+    id("com.github.johnrengelman.shadow") version "5.2.0"
     id("com.jfrog.bintray") version "1.8.4"
 }
 
@@ -49,6 +49,7 @@ java {
     sourceCompatibility = JavaVersion.VERSION_1_8
     targetCompatibility = JavaVersion.VERSION_1_8
 }
+
 
 dependencies {
     val javaHome: String = System.getProperty("java.home")
@@ -99,6 +100,7 @@ dependencies {
     implementation("io.opencensus:opencensus-exporter-stats-stackdriver:$opencensusVersion")
 
     implementation("com.github.oshi:oshi-core:3.13.3")
+    implementation("com.netflix.devinsight.rewrite:rewrite-core:1.4.0")
 }
 
 application {
@@ -159,6 +161,7 @@ tasks {
     val clean by existing
 
     val shadowJar = withType<ShadowJar> {
+        setZip64(true)
         mergeServiceFiles()
         classifier = null
         exclude("tools.jar")
