@@ -287,6 +287,7 @@ public class ProjectDatabaseHelper {
     return result.orElse(new ConcurrentHashMap<>(32));
   }
 
+  @SuppressWarnings("try")
   public static boolean saveChecksumMap(String projectRoot, Map<String, String> map) {
     try (TelemetryUtils.ScopedSpan scope =
         TelemetryUtils.startScopedSpan("ProjectDatabaseHelper.saveChecksumMap")) {
@@ -340,6 +341,7 @@ public class ProjectDatabaseHelper {
     return result.orElse(new ConcurrentHashMap<>(32));
   }
 
+  @SuppressWarnings("try")
   public static boolean saveCallerMap(String projectRoot, Map<String, Set<String>> map) {
     try (TelemetryUtils.ScopedSpan scope =
         TelemetryUtils.startScopedSpan("ProjectDatabaseHelper.saveCallerMap")) {

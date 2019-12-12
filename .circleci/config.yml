@@ -14,6 +14,8 @@ jobs:
 
       - run: java -version
 
+      - run: sudo apt-get update
+
       - run: sudo apt-get -y install openjdk-8-source
 
       - restore_cache:

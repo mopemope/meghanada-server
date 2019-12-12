@@ -15,7 +15,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
 import meghanada.analyze.CompileResult;
 import meghanada.completion.LocalVariable;
 import meghanada.docs.declaration.Declaration;
@@ -360,9 +359,7 @@ public class CommandHandler {
     try (TelemetryUtils.ParentSpan span = TelemetryUtils.startExplicitParentSpan(name);
         TelemetryUtils.ScopedSpan scope = TelemetryUtils.withSpan(span.getSpan())) {
       scope.addAnnotation(TelemetryUtils.annotationBuilder().put("global", global).build("args"));
-      String out =
-          outputFormatter.listSymbols(
-              id, session.listSymbols(global).stream().collect(Collectors.joining("\n")));
+      String out = outputFormatter.listSymbols(id, String.join("\n", session.listSymbols(global)));
       writer.write(out);
       writer.newLine();
       span.setStatusOK();

@@ -6,7 +6,6 @@ import static java.util.Objects.nonNull;
 import com.google.auth.oauth2.ServiceAccountCredentials;
 import com.google.common.hash.Hashing;
 import com.google.common.io.Resources;
-import io.opencensus.common.Duration;
 import io.opencensus.common.Scope;
 import io.opencensus.exporter.stats.stackdriver.StackdriverStatsConfiguration;
 import io.opencensus.exporter.stats.stackdriver.StackdriverStatsExporter;
@@ -58,13 +57,15 @@ public class TelemetryUtils {
       EndSpanOptions.builder().setSampleToLocalSpanStore(true).build();
   private static final String CREDENTIALS_JSON = "credentials.json";
   private static final Tracer tracer = Tracing.getTracer();
-  private static final Sampler PROBABILITY_SAMPLER_HIGH = Samplers.probabilitySampler(1 / 10.0);
-  private static final Sampler PROBABILITY_SAMPLER_MIDDLE = Samplers.probabilitySampler(1 / 100.0);
+  private static final Sampler PROBABILITY_SAMPLER_HIGH = Samplers.probabilitySampler(1 / 5.0);
+  private static final Sampler PROBABILITY_SAMPLER_MIDDLE = Samplers.probabilitySampler(1 / 10.0);
   private static final Sampler PROBABILITY_SAMPLER_LOW = Samplers.probabilitySampler(1 / 1000.0);
   private static final Sampler NEVER_SAMPLER = Samplers.neverSample();
 
   private static final Measure.MeasureDouble M_COMMAND_LATENCY_MS =
       Measure.MeasureDouble.create("command_latency", "The task latency in milliseconds", "ms");
+  private static final Measure.MeasureLong M_AUTOCOMPLETE_COUNT =
+      Measure.MeasureLong.create("autocomplete", "The number of autocomplete count", "1");
   private static final Measure.MeasureLong M_CLASS_INDEX =
       Measure.MeasureLong.create("class_index_size", "The number of class indexes", "1");
   private static final Measure.MeasureDouble M_MEMBER_CACHE_HIT_RATE =
@@ -78,6 +79,7 @@ public class TelemetryUtils {
       Measure.MeasureDouble.create("memory", "The used memory", "M");
 
   private static final TagKey KEY_COMMAND = TagKey.create("command");
+  private static final TagKey KEY_DESCRIPTION = TagKey.create("description");
   private static final TagKey KEY_UID = TagKey.create("uid");
   private static final String PROJECT_ID = "meghanada-240122";
 
@@ -155,7 +157,6 @@ public class TelemetryUtils {
         URL url = Resources.getResource(CREDENTIALS_JSON);
         StackdriverTraceExporter.createAndRegister(
             StackdriverTraceConfiguration.builder()
-                .setDeadline(Duration.create(60L, 0))
                 .setProjectId(PROJECT_ID)
                 .setCredentials(ServiceAccountCredentials.fromStream(url.openStream()))
                 .build());
@@ -175,8 +176,6 @@ public class TelemetryUtils {
         URL url = Resources.getResource(CREDENTIALS_JSON);
         StackdriverStatsExporter.createAndRegister(
             StackdriverStatsConfiguration.builder()
-                .setExportInterval(Duration.create(60L, 0))
-                .setDeadline(Duration.create(60L, 0))
                 .setProjectId(PROJECT_ID)
                 .setCredentials(ServiceAccountCredentials.fromStream(url.openStream()))
                 .build());
@@ -207,7 +206,8 @@ public class TelemetryUtils {
                     8000.0, // >=8s
                     10000.0 // >=10s
                     )));
-    View[] views =
+    View[] views;
+    views =
         new View[] {
           View.create(
               View.Name.create("meghanada/command_latency"),
@@ -220,19 +220,25 @@ public class TelemetryUtils {
               "The number of class indexes",
               M_CLASS_INDEX,
               Aggregation.LastValue.create(),
-              Collections.unmodifiableList(Arrays.asList(KEY_UID))),
+              Collections.unmodifiableList(Collections.singletonList(KEY_UID))),
+          View.create(
+              View.Name.create("meghanada/autocomplete"),
+              "The number of autocomplete count",
+              M_AUTOCOMPLETE_COUNT,
+              Aggregation.Sum.create(),
+              Collections.unmodifiableList(Arrays.asList(KEY_UID, KEY_DESCRIPTION))),
           View.create(
               View.Name.create("meghanada/member_cache_hit_rate"),
               "The member cache hit rate",
               M_MEMBER_CACHE_HIT_RATE,
               Aggregation.LastValue.create(),
-              Collections.unmodifiableList(Arrays.asList(KEY_UID))),
+              Collections.unmodifiableList(Collections.singletonList(KEY_UID))),
           View.create(
               View.Name.create("meghanada/member_cache_load_exception_rate"),
               "The member cache load exception rate",
               M_MEMBER_CACHE_LOAD_ERROR_RATE,
               Aggregation.LastValue.create(),
-              Collections.unmodifiableList(Arrays.asList(KEY_UID))),
+              Collections.unmodifiableList(Collections.singletonList(KEY_UID))),
           View.create(
               View.Name.create("meghanada/member_cache_miss_rate"),
               "The member cache miss rate",
@@ -253,6 +259,7 @@ public class TelemetryUtils {
     }
   }
 
+  @SuppressWarnings("try")
   public static void recordStat(Measure.MeasureLong ml, Long n) {
     TagContext tctx = tagger.emptyBuilder().build();
     try (Scope ss = tagger.withTagContext(tctx)) {
@@ -260,6 +267,7 @@ public class TelemetryUtils {
     }
   }
 
+  @SuppressWarnings("try")
   public static void recordTaggedStat(TagKey key, String value, Measure.MeasureLong ml, Long n) {
     TagContext tctx = tagger.emptyBuilder().putLocal(key, TagValue.create(value)).build();
     try (Scope ss = tagger.withTagContext(tctx)) {
@@ -267,6 +275,7 @@ public class TelemetryUtils {
     }
   }
 
+  @SuppressWarnings("try")
   public static void recordTaggedStat(
       TagKey key, String value, Measure.MeasureDouble md, Double d) {
     TagContext tctx = tagger.emptyBuilder().putLocal(key, TagValue.create(value)).build();
@@ -275,6 +284,7 @@ public class TelemetryUtils {
     }
   }
 
+  @SuppressWarnings("try")
   public static void recordTaggedStat(
       TagKey[] keys, String[] values, Measure.MeasureDouble md, Double d) {
     TagContextBuilder builder = tagger.emptyBuilder();
@@ -287,6 +297,7 @@ public class TelemetryUtils {
     }
   }
 
+  @SuppressWarnings("try")
   public static void recordTaggedStat(
       TagKey[] keys, String[] values, Measure.MeasureLong md, Long n) {
     TagContextBuilder builder = tagger.emptyBuilder();
@@ -294,13 +305,14 @@ public class TelemetryUtils {
       builder.putLocal(keys[i], TagValue.create(values[i]));
     }
     TagContext tctx = builder.build();
+
     try (Scope ss = tagger.withTagContext(tctx)) {
       statsRecorder.newMeasureMap().put(md, n).record();
     }
   }
 
   public static double sinceInMilliseconds(long startTimeNs) {
-    return (new Double(System.nanoTime() - startTimeNs)) / 1e6;
+    return ((double) (System.nanoTime() - startTimeNs)) / 1e6;
   }
 
   public static void recordCommandLatency(String commandName, double latency) {
@@ -330,6 +342,14 @@ public class TelemetryUtils {
     final double usedMemory = (runtime.totalMemory() - runtime.freeMemory()) / 1024 / 1024;
     TelemetryUtils.recordTaggedStat(
         TelemetryUtils.KEY_UID, getUID(), TelemetryUtils.M_MEMORY, usedMemory);
+  }
+
+  public static void recordSelectedCompletion(String desc, long val) {
+    TelemetryUtils.recordTaggedStat(
+        new TagKey[] {TelemetryUtils.KEY_UID, TelemetryUtils.KEY_DESCRIPTION},
+        new String[] {getUID(), desc},
+        TelemetryUtils.M_AUTOCOMPLETE_COUNT,
+        val);
   }
 
   private static Annotation getBaseAnnotation() {

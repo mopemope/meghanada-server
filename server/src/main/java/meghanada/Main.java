@@ -13,6 +13,7 @@ import java.util.Objects;
 import meghanada.config.Config;
 import meghanada.server.Server;
 import meghanada.server.emacs.EmacsServer;
+import meghanada.system.Executor;
 import meghanada.telemetry.TelemetryUtils;
 import meghanada.utils.ClassPathUtils;
 import meghanada.utils.FileUtils;
@@ -33,7 +34,7 @@ import org.apache.logging.log4j.core.layout.PatternLayout;
 
 public class Main {
 
-  public static final String VERSION = "1.2.0";
+  public static final String VERSION = "1.2.1";
   private static final Logger log = LogManager.getLogger(Main.class);
   private static String version;
 
@@ -60,7 +61,7 @@ public class Main {
         "use java vm: {} {}",
         System.getProperty("java.vm.name"),
         System.getProperty("java.vm.version"));
-    int size = Runtime.getRuntime().availableProcessors() * 2;
+    int size = Executor.getThreadPoolSize();
     System.setProperty(
         "java.util.concurrent.ForkJoinPool.common.parallelism", Integer.toString(size));
     ClassPathUtils.addToolsJar();

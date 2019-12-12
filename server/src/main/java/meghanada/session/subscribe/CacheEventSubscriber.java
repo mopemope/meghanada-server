@@ -15,6 +15,7 @@ import meghanada.reflect.asm.CachedASMReflector;
 import meghanada.session.Session;
 import meghanada.session.SessionEventBus;
 import meghanada.store.ProjectDatabaseHelper;
+import meghanada.system.Executor;
 import meghanada.telemetry.TelemetryUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -29,6 +30,7 @@ public class CacheEventSubscriber extends AbstractSubscriber {
   }
 
   @Subscribe
+  @SuppressWarnings("try")
   public void on(final SessionEventBus.ClassCacheRequest request) {
     try (TelemetryUtils.ParentSpan span =
             TelemetryUtils.startExplicitParentSpan("CacheEventSubscriber/on");
@@ -57,12 +59,14 @@ public class CacheEventSubscriber extends AbstractSubscriber {
 
     final Collection<File> dependentJars = session.getDependentJars();
     final int size = dependentJars.size();
-    timeItF(
-        "create class index ... read " + size + " jars. elapsed:{}",
-        () -> {
-          reflector.addClasspath(dependentJars);
-          reflector.createClassIndexes();
-        });
+    reflector.addClasspath(dependentJars);
+    Executor.getInstance()
+        .execute(
+            () -> {
+              final Stopwatch s = Stopwatch.createStarted();
+              CachedASMReflector.getInstance().createClassIndexes();
+              log.info("create class index ... read " + size + " jars. elapsed:{}", s.stop());
+            });
 
     if (cleanUnusedSource(project)) {
       project.resetCallerMap();

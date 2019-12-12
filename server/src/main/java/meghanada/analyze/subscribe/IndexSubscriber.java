@@ -42,6 +42,7 @@ public class IndexSubscriber {
   }
 
   @Subscribe
+  @SuppressWarnings("try")
   public void on(final JavaAnalyzer.AnalyzedEvent event) {
 
     try (TelemetryUtils.ParentSpan span =

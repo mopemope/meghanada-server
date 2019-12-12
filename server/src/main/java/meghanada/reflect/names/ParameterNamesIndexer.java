@@ -4,7 +4,6 @@ import com.github.javaparser.StaticJavaParser;
 import com.github.javaparser.ast.CompilationUnit;
 import java.io.File;
 import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
 import java.util.Enumeration;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
@@ -85,7 +84,7 @@ public class ParameterNamesIndexer {
 
     try (InputStream in = zipFile.getInputStream(zipEntry)) {
       String fqcn = javaName.substring(0, javaName.length() - 5);
-      CompilationUnit cu = StaticJavaParser.parse(in, StandardCharsets.UTF_8);
+      CompilationUnit cu = StaticJavaParser.parse(in);
       ParameterNameVisitor visitor = new ParameterNameVisitor(fqcn);
       visitor.visit(cu, this);
 

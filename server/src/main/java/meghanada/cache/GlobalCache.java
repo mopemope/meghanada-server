@@ -25,7 +25,7 @@ import org.apache.logging.log4j.Logger;
 
 public class GlobalCache {
 
-  private static final int MEMBER_CACHE_MAX = 512;
+  private static final int MEMBER_CACHE_MAX = 4096;
 
   private static final Logger log = LogManager.getLogger(GlobalCache.class);
 
@@ -222,6 +222,7 @@ public class GlobalCache {
     sourceMap.put(fqcn, path);
   }
 
+  @SuppressWarnings("try")
   public void saveSourceMap() {
     try (TelemetryUtils.ScopedSpan scope =
         TelemetryUtils.startScopedSpan("GlobalCache.saveSourceMap")) {

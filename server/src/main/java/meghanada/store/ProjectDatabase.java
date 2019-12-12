@@ -140,6 +140,7 @@ public class ProjectDatabase {
     }
   }
 
+  @SuppressWarnings("try")
   private static long putObject(Storable s, boolean allowUpdate, StoreTransaction txn) {
 
     try (TelemetryUtils.ScopedSpan ss =
@@ -189,6 +190,7 @@ public class ProjectDatabase {
     }
   }
 
+  @SuppressWarnings("try")
   public static void setSerializeBlobData(Entity entity, String prop, Object obj)
       throws IOException {
 
@@ -218,6 +220,7 @@ public class ProjectDatabase {
     }
   }
 
+  @SuppressWarnings("try")
   private void initWorker() {
 
     if (isNull(this.executorService) || this.executorService.isTerminated()) {
@@ -231,29 +234,23 @@ public class ProjectDatabase {
             while (!this.isTerminated) {
               try {
                 StoreRequest req = blockingQueue.poll(10, TimeUnit.SECONDS);
-                try (TelemetryUtils.ParentSpan span =
-                        TelemetryUtils.startExplicitParentSpan("ProjectDatabase/wokrker");
-                    TelemetryUtils.ScopedSpan scope = TelemetryUtils.withSpan(span.getSpan())) {
+                if (nonNull(req) && !req.isShutdown()) {
+                  mergeAndStore(req);
+                }
+                if (blockingQueue.isEmpty()) {
+                  try (TelemetryUtils.ScopedSpan ss =
+                      TelemetryUtils.startScopedSpan("ProjectDatabase.flushAndSync")) {
 
-                  if (nonNull(req) && !req.isShutdown()) {
-                    mergeAndStore(req);
-                  }
-                  if (blockingQueue.isEmpty()) {
-                    try (TelemetryUtils.ScopedSpan ss =
-                        TelemetryUtils.startScopedSpan("ProjectDatabase.flushAndSync")) {
-
-                      Instant now = Instant.now();
-                      Duration duration = Duration.between(start, now);
-                      long delta = duration.getSeconds();
-                      if (delta > 10) {
-                        EnvironmentImpl environment =
-                            (EnvironmentImpl) this.entityStore.getEnvironment();
-                        environment.flushAndSync();
-                        start = now;
-                      }
+                    Instant now = Instant.now();
+                    Duration duration = Duration.between(start, now);
+                    long delta = duration.getSeconds();
+                    if (delta > 10) {
+                      EnvironmentImpl environment =
+                          (EnvironmentImpl) this.entityStore.getEnvironment();
+                      environment.flushAndSync();
+                      start = now;
                     }
                   }
-                  span.setStatusOK();
                 }
               } catch (Exception e) {
                 log.catching(e);
@@ -263,8 +260,8 @@ public class ProjectDatabase {
     }
   }
 
+  @SuppressWarnings("try")
   private void mergeAndStore(StoreRequest req) {
-
     try (TelemetryUtils.ScopedSpan ss =
         TelemetryUtils.startScopedSpan("ProjectDatabase.mergeAndStore")) {
 
@@ -411,6 +408,7 @@ public class ProjectDatabase {
     return storeObject(s, true);
   }
 
+  @SuppressWarnings("try")
   public long storeObject(Storable s, boolean allowUpdate) {
     try (TelemetryUtils.ScopedSpan ss =
         TelemetryUtils.startScopedSpan("ProjectDatabase.storeObject")) {
@@ -454,6 +452,7 @@ public class ProjectDatabase {
         && delta > WORKER_DURATION;
   }
 
+  @SuppressWarnings("try")
   private void runWorker() {
     if (this.addableWorker()) {
       lastAddWorker = Instant.now();

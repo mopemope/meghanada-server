@@ -37,6 +37,7 @@ public class SourceCacheSubscriber {
     this.checksums = new HashMap<>(2);
   }
 
+  @SuppressWarnings("try")
   private synchronized Map<String, String> getChecksumMap(Project project) {
     try (TelemetryUtils.ScopedSpan scope =
         TelemetryUtils.startScopedSpanLow("SourceCacheSubscriber.getChecksumMap")) {
@@ -82,7 +83,7 @@ public class SourceCacheSubscriber {
           callerMap.put(clazz, set);
         }
       }
-      source.usingClasses.clear();
+      // source.usingClasses.clear();
     }
 
     if (!isDiagnostics) {
@@ -111,6 +112,7 @@ public class SourceCacheSubscriber {
   }
 
   @Subscribe
+  @SuppressWarnings("try")
   public void on(final JavaAnalyzer.AnalyzedEvent event) {
 
     try (TelemetryUtils.ParentSpan span =

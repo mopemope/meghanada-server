@@ -6,6 +6,7 @@ import static meghanada.utils.ClassNameUtils.replaceDescriptorsType;
 import static meghanada.utils.FunctionUtils.wrapIO;
 import static meghanada.utils.FunctionUtils.wrapIOConsumer;
 
+import com.google.common.collect.ImmutableSet;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -63,9 +64,11 @@ public class ASMReflector {
         "org.jboss.forge.roaster._shade.org.eclipse.core.internal"
       };
   private static final Logger log = LogManager.getLogger(ASMReflector.class);
-  private static final String preloadClassPackage = "java.lang.";
+  private static final Set<String> preloadClassPackages =
+      ImmutableSet.of("java.lang", "java.io", "java.util");
+
   private static final Map<String, List<MemberDescriptor>> innerCache =
-      Collections.synchronizedMap(new LRUHashMap<>(1024));
+      Collections.synchronizedMap(new LRUHashMap<>(8192));
   private static ASMReflector asmReflector;
   private final Set<String> allowClass = new HashSet<>(16);
 
@@ -170,7 +173,8 @@ public class ASMReflector {
       isSuper = (Opcodes.ACC_SUPER & access) == Opcodes.ACC_SUPER;
     }
     if (projectOutput || (isPublic || isProtected || isSuper)) {
-      boolean onlyClassName = !className.startsWith(preloadClassPackage);
+      String pkg = ClassNameUtils.getPackage(className);
+      boolean onlyClassName = !preloadClassPackages.contains(pkg);
       ClassAnalyzeVisitor classAnalyzeVisitor =
           new ClassAnalyzeVisitor(className, onlyClassName, false);
       classReader.accept(classAnalyzeVisitor, 0);
@@ -722,9 +726,10 @@ public class ASMReflector {
     }
   }
 
+  @SuppressWarnings("try")
   private void readSuperMembers(File parent, ClassAnalyzeVisitor cv, List<MemberDescriptor> units) {
 
-    try (TelemetryUtils.ScopedSpan scope =
+    try (TelemetryUtils.ScopedSpan ss =
         TelemetryUtils.startScopedSpan("ASMReflector.readSuperMembers")) {
 
       ClassIndex classIndex = cv.getClassIndex();

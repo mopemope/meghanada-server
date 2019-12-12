@@ -391,6 +391,7 @@ public class Session {
     GlobalCache.getInstance().setProjectSupplier(this::getCurrentProject);
   }
 
+  @SuppressWarnings("try")
   public void start() throws IOException {
 
     try (TelemetryUtils.ParentSpan span = TelemetryUtils.startExplicitParentSpan("Session/start");
