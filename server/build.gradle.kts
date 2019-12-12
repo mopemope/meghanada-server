@@ -11,7 +11,7 @@ plugins {
     maven
     `maven-publish`
     application
-    id("com.github.johnrengelman.shadow") version "5.1.0"
+    id("com.github.johnrengelman.shadow") version "5.2.0"
     id("com.jfrog.bintray") version "1.8.4"
 }
 
@@ -159,6 +159,7 @@ tasks {
     val clean by existing
 
     val shadowJar = withType<ShadowJar> {
+        setZip64(true)
         mergeServiceFiles()
         classifier = null
         exclude("tools.jar")
