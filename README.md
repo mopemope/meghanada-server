@@ -1,8 +1,8 @@
 # Meghanada-Server
 
-[![Join the chat at https://gitter.im/mopemope/meghanada-server](https://badges.gitter.im/mopemope/meghanada-server.svg)](https://gitter.im/mopemope/meghanada-server?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) [![Patreon](https://img.shields.io/badge/patreon-become%20a%20patron-red.svg)](https://www.patreon.com/mopemope)
-
-[![CircleCI](https://circleci.com/gh/mopemope/meghanada-server.svg?style=svg)](https://circleci.com/gh/mopemope/meghanada-server)
+[![Join the chat at https://gitter.im/mopemope/meghanada-server](https://badges.gitter.im/mopemope/meghanada-server.svg)](https://gitter.im/mopemope/meghanada-server?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) 
+[![Patreon](https://img.shields.io/badge/patreon-become%20a%20patron-red.svg)](https://www.patreon.com/mopemope)
+[![Github](https://github.com/mopemope/meghanada-server/workflows/Java%20CI/badge.svg)](https://github.com/mopemope/meghanada-server/actions)
 
 A Java IDE Server for your editor. Java IDE-like features to your favourite text editor.
 
