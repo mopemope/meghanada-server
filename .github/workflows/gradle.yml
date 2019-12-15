@@ -15,5 +15,3 @@ jobs:
         java-version: 1.8
     - name: Build with Gradle
       run: ./gradlew build
-    - name: Check
-      run: ./gradlew check
