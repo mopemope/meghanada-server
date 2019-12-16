@@ -125,7 +125,7 @@ public class JavaCompletionTest extends GradleTestBase {
     final Collection<? extends CandidateUnit> logMethod =
         timeIt(() -> completion.completionAt(file, 18, 4, "*log#"));
     logMethod.forEach(a -> System.out.println(a.getDisplayDeclaration()));
-    assertEquals(362, logMethod.size());
+    assertEquals(371, logMethod.size());
   }
 
   @Test

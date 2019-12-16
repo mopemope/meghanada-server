@@ -19,18 +19,18 @@ jobs:
       - run: sudo apt-get -y install openjdk-8-source
 
       - restore_cache:
-          key: meghanada-{{ checksum "build.gradle" }}
+          key: meghanada-{{ checksum "build.gradle.kts" }}
 
       - run: env
 
-      - run: ./gradlew clean compileTestJava
+      - run: ./gradlew clean goJF compileTestJava
 
       - save_cache:
           paths:
             - ~/.gradle
-          key: meghanada-{{ checksum "build.gradle" }}
+          key: meghanada-{{ checksum "build.gradle.kts" }}
 
-      - run: ./gradlew clean check
+      - run: ./gradlew check
 
       - store_test_results:
           path: ./server/build/test-results/test/

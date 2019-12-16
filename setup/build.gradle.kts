@@ -100,9 +100,9 @@ tasks {
     val clean by existing
 
     val shadowJar = withType<ShadowJar> {
+        setZip64(true)
         classifier = null
     }
-
 
     val embedVersion = register<Copy>("embedVersion") {
         from("src/main/resources/VERSION")

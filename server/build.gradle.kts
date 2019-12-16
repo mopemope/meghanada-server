@@ -16,7 +16,7 @@ plugins {
 }
 
 val group = "io.github.mopemope"
-var serverVersion = "1.2.1"
+var serverVersion = "1.3.0"
 var buildVersion = "release"
 
 val gitFile = File("./.git")
@@ -36,7 +36,7 @@ val applicationName = "meghanada"
 
 val junitVersion = "5.5.2"
 val gradleVersion = "6.0.1"
-val log4jVersion = "2.12.1"
+val log4jVersion = "2.13.0"
 val xodusVersion = "1.3.124"
 val opencensusVersion = "0.24.0"
 
@@ -56,10 +56,10 @@ dependencies {
     val toolsJar = files("$javaHome/../lib/tools.jar")
     implementation(toolsJar)
     implementation("com.google.googlejavaformat:google-java-format:1.7")
-    implementation("org.apache.maven:maven-model-builder:3.6.2")
+    implementation("org.apache.maven:maven-model-builder:3.6.3")
     implementation("com.leacox.motif:motif:0.1")
     implementation("com.leacox.motif:motif-hamcrest:0.1")
-    implementation("com.github.javaparser:javaparser-core:3.15.5")
+    implementation("com.github.javaparser:javaparser-core:3.15.6")
     implementation("org.apache.logging.log4j:log4j-core:$log4jVersion")
     implementation("org.apache.logging.log4j:log4j-api:$log4jVersion")
     implementation("org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion")

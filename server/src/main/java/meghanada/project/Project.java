@@ -51,8 +51,8 @@ import org.eclipse.jdt.core.JavaCore;
 
 public abstract class Project implements Serializable, Storable {
 
-  public static final String GRADLE_PROJECT_FILE = "build.gradle";
-  public static final String GRADLE_KTS_PROJECT_FILE = "build.gradle.kts";
+  public static final String GRADLE_PROJECT_EXT = ".gradle";
+  public static final String GRADLE_KTS_PROJECT_FILE = ".gradle.kts";
   public static final String MVN_PROJECT_FILE = "pom.xml";
   public static final String ECLIPSE_PROJECT_FILE = ".project";
 
