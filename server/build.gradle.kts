@@ -16,7 +16,7 @@ plugins {
 }
 
 val group = "io.github.mopemope"
-var serverVersion = "1.2.1"
+var serverVersion = "1.3.0"
 var buildVersion = "release"
 
 val gitFile = File("./.git")
