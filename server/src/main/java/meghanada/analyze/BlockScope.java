@@ -70,13 +70,13 @@ public class BlockScope extends Scope {
   }
 
   public Optional<? extends Scope> getCurrentScope() {
-    final Optional<ExpressionScope> currentExpr = getCurrentExpr();
+    Optional<ExpressionScope> currentExpr = getCurrentExpr();
     if (currentExpr.isPresent()) {
       return currentExpr;
     }
-    final Optional<BlockScope> currentBlock = getCurrentBlock();
+    Optional<BlockScope> currentBlock = getCurrentBlock();
     if (currentBlock.isPresent()) {
-      final Optional<? extends Scope> currentScope = currentBlock.get().getCurrentExpr();
+      Optional<? extends Scope> currentScope = currentBlock.get().getCurrentExpr();
       if (currentScope.isPresent()) {
         return currentScope;
       }
@@ -86,21 +86,21 @@ public class BlockScope extends Scope {
 
   @Override
   public Optional<Variable> findVariable(final int pos) {
-    for (final ExpressionScope expressionScope : this.expressions) {
-      final Optional<Variable> variable = expressionScope.findVariable(pos);
+    for (ExpressionScope expressionScope : this.expressions) {
+      Optional<Variable> variable = expressionScope.findVariable(pos);
       if (variable.isPresent()) {
         return variable;
       }
     }
 
-    for (final BlockScope blockScope : this.scopes) {
-      final Optional<Variable> variable = blockScope.findVariable(pos);
+    for (BlockScope blockScope : this.scopes) {
+      Optional<Variable> variable = blockScope.findVariable(pos);
       if (variable.isPresent()) {
         return variable;
       }
     }
 
-    for (final Variable v : this.variables) {
+    for (Variable v : this.variables) {
       if (v.pos == pos) {
         return Optional.of(v);
       }
@@ -112,11 +112,11 @@ public class BlockScope extends Scope {
   public void dumpVariable() {
     super.dumpVariable();
 
-    for (final ExpressionScope expressionScope : this.expressions) {
+    for (ExpressionScope expressionScope : this.expressions) {
       expressionScope.dumpVariable();
     }
 
-    for (final BlockScope blockScope : this.scopes) {
+    for (BlockScope blockScope : this.scopes) {
       blockScope.dumpVariable();
     }
   }
@@ -125,11 +125,11 @@ public class BlockScope extends Scope {
   public void dumpFieldAccess() {
     super.dumpFieldAccess();
 
-    for (final ExpressionScope expressionScope : this.expressions) {
+    for (ExpressionScope expressionScope : this.expressions) {
       expressionScope.dumpFieldAccess();
     }
 
-    for (final BlockScope blockScope : this.scopes) {
+    for (BlockScope blockScope : this.scopes) {
       blockScope.dumpFieldAccess();
     }
   }
@@ -138,18 +138,18 @@ public class BlockScope extends Scope {
   public void dump() {
     super.dump();
 
-    for (final ExpressionScope expressionScope : this.expressions) {
+    for (ExpressionScope expressionScope : this.expressions) {
       expressionScope.dump();
     }
 
-    for (final BlockScope blockScope : this.scopes) {
+    for (BlockScope blockScope : this.scopes) {
       blockScope.dump();
     }
   }
 
   protected Optional<ExpressionScope> getExpression(final int line) {
     log.traceEntry("line={} expressions={}", line, this.expressions);
-    final Optional<ExpressionScope> result =
+    Optional<ExpressionScope> result =
         this.expressions.stream().filter(expr -> expr.contains(line)).findFirst();
     return log.traceExit(result);
   }
@@ -161,10 +161,10 @@ public class BlockScope extends Scope {
   @Override
   public List<FieldAccess> getFieldAccess(int line) {
     if (this.contains(line)) {
-      for (final BlockScope bs : scopes) {
+      for (BlockScope bs : scopes) {
         if (bs.contains(line)) {
-          for (final ExpressionScope expression : bs.expressions) {
-            final List<FieldAccess> faList = expression.getFieldAccess(line);
+          for (ExpressionScope expression : bs.expressions) {
+            List<FieldAccess> faList = expression.getFieldAccess(line);
             if (!faList.isEmpty()) {
               return faList;
             }
@@ -174,8 +174,8 @@ public class BlockScope extends Scope {
               .collect(Collectors.toList());
         }
       }
-      for (final ExpressionScope expression : this.expressions) {
-        final List<FieldAccess> faList = expression.getFieldAccess(line);
+      for (ExpressionScope expression : this.expressions) {
+        List<FieldAccess> faList = expression.getFieldAccess(line);
         if (!faList.isEmpty()) {
           return faList;
         }
@@ -186,15 +186,15 @@ public class BlockScope extends Scope {
 
   @Override
   public List<MethodCall> getMethodCall(final int line) {
-    for (final BlockScope bs : this.scopes) {
-      final List<MethodCall> methodCalls = bs.getMethodCall(line);
+    for (BlockScope bs : this.scopes) {
+      List<MethodCall> methodCalls = bs.getMethodCall(line);
       if (nonNull(methodCalls) && !methodCalls.isEmpty()) {
         return methodCalls;
       }
     }
 
-    for (final ExpressionScope es : this.expressions) {
-      final List<MethodCall> methodCalls = es.getMethodCall(line);
+    for (ExpressionScope es : this.expressions) {
+      List<MethodCall> methodCalls = es.getMethodCall(line);
       if (nonNull(methodCalls) && !methodCalls.isEmpty()) {
         return methodCalls;
       }
@@ -206,12 +206,12 @@ public class BlockScope extends Scope {
   @Override
   public Set<Variable> getVariables() {
 
-    final Set<Variable> result = new HashSet<>(this.variables);
-    for (final ExpressionScope e : this.expressions) {
+    Set<Variable> result = new HashSet<>(this.variables);
+    for (ExpressionScope e : this.expressions) {
       result.addAll(e.getVariables());
     }
 
-    for (final BlockScope bs : scopes) {
+    for (BlockScope bs : scopes) {
       result.addAll(bs.getVariables());
     }
     return result;
@@ -220,12 +220,12 @@ public class BlockScope extends Scope {
   @Override
   public Collection<FieldAccess> getFieldAccesses() {
 
-    final List<FieldAccess> result = new ArrayList<>(this.fieldAccesses);
-    for (final ExpressionScope e : this.expressions) {
+    List<FieldAccess> result = new ArrayList<>(this.fieldAccesses);
+    for (ExpressionScope e : this.expressions) {
       result.addAll(e.getFieldAccesses());
     }
 
-    for (final BlockScope bs : scopes) {
+    for (BlockScope bs : scopes) {
       result.addAll(bs.getFieldAccesses());
     }
     return result;
@@ -234,12 +234,12 @@ public class BlockScope extends Scope {
   @Override
   public Collection<MethodCall> getMethodCalls() {
 
-    final List<MethodCall> result = new ArrayList<>(this.methodCalls);
-    for (final ExpressionScope e : this.expressions) {
+    List<MethodCall> result = new ArrayList<>(this.methodCalls);
+    for (ExpressionScope e : this.expressions) {
       result.addAll(e.getMethodCalls());
     }
 
-    for (final BlockScope bs : scopes) {
+    for (BlockScope bs : scopes) {
       result.addAll(bs.getMethodCalls());
     }
     return result;
@@ -248,14 +248,33 @@ public class BlockScope extends Scope {
   @Override
   public Collection<AccessSymbol> getAccessSymbols() {
 
-    final List<AccessSymbol> result = new ArrayList<>(this.getAccessSymbols());
-    for (final ExpressionScope e : this.expressions) {
+    List<AccessSymbol> result = new ArrayList<>(this.getAccessSymbols());
+    for (ExpressionScope e : this.expressions) {
       result.addAll(e.getAccessSymbols());
     }
 
-    for (final BlockScope bs : scopes) {
+    for (BlockScope bs : scopes) {
       result.addAll(bs.getAccessSymbols());
     }
     return result;
+  }
+
+  @Override
+  public List<Variable> getLocalVariables(final int line) {
+    for (BlockScope bs : this.scopes) {
+      List<Variable> vs = bs.getLocalVariables(line);
+      if (nonNull(vs) && !vs.isEmpty()) {
+        return vs;
+      }
+    }
+
+    for (ExpressionScope es : this.expressions) {
+      List<Variable> vs = es.getLocalVariables(line);
+      if (nonNull(vs) && !vs.isEmpty()) {
+        return vs;
+      }
+    }
+
+    return super.getLocalVariables(line);
   }
 }
