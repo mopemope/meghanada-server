@@ -9,6 +9,8 @@ import static org.apache.lucene.document.Field.Store.YES;
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
+import com.google.common.hash.BloomFilter;
+import com.google.common.hash.Funnels;
 import com.sun.source.tree.LineMap;
 import java.io.BufferedReader;
 import java.io.File;
@@ -17,7 +19,6 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Serializable;
 import java.io.UncheckedIOException;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -66,7 +67,7 @@ public class Source implements Serializable, Storable, SearchIndexable {
   public static final String LINK_FIELD_ACCESS = "fieldAccess";
   public static final String LINK_METHOD_CALL = "methodCall";
   public static final String LINK_SOURCE = "source";
-  private static final long serialVersionUID = 8712967042785424554L;
+  private static final long serialVersionUID = -4115484075118150793L;
   private static final Logger log = LogManager.getLogger(Source.class);
 
   public final Set<String> importClasses = new HashSet<>(16);
@@ -86,12 +87,15 @@ public class Source implements Serializable, Storable, SearchIndexable {
   private long classStartLine;
   private long pkgStartLine;
   private Map<String, String> importMap;
+  private BloomFilter<String> methodCallsBF;
 
   private transient List<LineRange> lineRange;
   private transient LineMap lineMap;
 
   public Source(String filePath) {
     this.filePath = filePath;
+    this.methodCallsBF =
+        BloomFilter.create(Funnels.stringFunnel(StandardCharsets.UTF_8), 100000, 0.01);
   }
 
   public Source(String filePath, LineMap lineMap) {
@@ -130,6 +134,7 @@ public class Source implements Serializable, Storable, SearchIndexable {
     if (isNull(fqcn)) {
       return;
     }
+
     classIndex.computeIfPresent(
         fqcn,
         (key, index) -> {
@@ -190,7 +195,7 @@ public class Source implements Serializable, Storable, SearchIndexable {
   }
 
   public Optional<ClassScope> getCurrentClass() {
-    final ClassScope classScope = this.currentClassScope.peek();
+    ClassScope classScope = this.currentClassScope.peek();
     if (nonNull(classScope)) {
       return classScope.getCurrentClass();
     }
@@ -225,14 +230,14 @@ public class Source implements Serializable, Storable, SearchIndexable {
     }
 
     int last = 1;
-    final List<LineRange> list = new ArrayList<>(256);
-    try (final BufferedReader br =
+    List<LineRange> list = new ArrayList<>(256);
+    try (BufferedReader br =
         new BufferedReader(
-            new InputStreamReader(new FileInputStream(file), Charset.forName("UTF-8")))) {
+            new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8))) {
       String s;
       while ((s = br.readLine()) != null) {
-        final int length = s.length();
-        final LineRange range = new LineRange(last, last + length);
+        int length = s.length();
+        LineRange range = new LineRange(last, last + length);
         list.add(range);
       }
     }
@@ -252,12 +257,12 @@ public class Source implements Serializable, Storable, SearchIndexable {
 
     int line = 1;
     try {
-      final List<LineRange> ranges = getRanges(this.getFile());
-      for (final LineRange r : ranges) {
+      List<LineRange> ranges = getRanges(this.getFile());
+      for (LineRange r : ranges) {
         if (r.contains(pos)) {
           return new Position(line, pos + 1);
         }
-        final Integer last = r.getEndPos();
+        int last = r.getEndPos();
         pos -= last;
         line++;
       }
@@ -277,8 +282,8 @@ public class Source implements Serializable, Storable, SearchIndexable {
   }
 
   public Optional<Variable> findVariable(final int pos) {
-    for (final ClassScope cs : classScopes) {
-      final Optional<Variable> variable = cs.findVariable(pos);
+    for (ClassScope cs : classScopes) {
+      Optional<Variable> variable = cs.findVariable(pos);
       if (variable.isPresent()) {
         return variable;
       }
@@ -288,24 +293,24 @@ public class Source implements Serializable, Storable, SearchIndexable {
   }
 
   public void dumpVariable() {
-    final EntryMessage entryMessage = log.traceEntry("{}", Strings.repeat("*", 80));
-    for (final ClassScope cs : classScopes) {
+    EntryMessage entryMessage = log.traceEntry("{}", Strings.repeat("*", 80));
+    for (ClassScope cs : classScopes) {
       cs.dumpVariable();
     }
     log.traceExit(entryMessage);
   }
 
   public void dumpFieldAccess() {
-    final EntryMessage entryMessage = log.traceEntry("{}", Strings.repeat("*", 80));
-    for (final ClassScope cs : classScopes) {
+    EntryMessage entryMessage = log.traceEntry("{}", Strings.repeat("*", 80));
+    for (ClassScope cs : classScopes) {
       cs.dumpFieldAccess();
     }
     log.traceExit(entryMessage);
   }
 
   public void dump() {
-    final EntryMessage entryMessage = log.traceEntry("{}", Strings.repeat("*", 80));
-    for (final ClassScope cs : classScopes) {
+    EntryMessage entryMessage = log.traceEntry("{}", Strings.repeat("*", 80));
+    for (ClassScope cs : classScopes) {
       cs.dump();
     }
     log.trace("unused={}", this.unused);
@@ -314,18 +319,18 @@ public class Source implements Serializable, Storable, SearchIndexable {
   }
 
   public Optional<AccessSymbol> getExpressionReturn(final int line) {
-    final Scope scope = Scope.getScope(line, this.classScopes);
+    Scope scope = Scope.getScope(line, this.classScopes);
     if (nonNull(scope) && (scope instanceof TypeScope)) {
-      final TypeScope typeScope = (TypeScope) scope;
+      TypeScope typeScope = (TypeScope) scope;
       return Optional.ofNullable(typeScope.getExpressionReturn(line));
     }
     return Optional.empty();
   }
 
   public Optional<ExpressionScope> getExpression(final int line) {
-    final Scope scope = Scope.getScope(line, this.classScopes);
+    Scope scope = Scope.getScope(line, this.classScopes);
     if (nonNull(scope) && (scope instanceof TypeScope)) {
-      final TypeScope typeScope = (TypeScope) scope;
+      TypeScope typeScope = (TypeScope) scope;
       return typeScope.getExpression(line);
     }
     return Optional.empty();
@@ -336,7 +341,7 @@ public class Source implements Serializable, Storable, SearchIndexable {
   }
 
   public Optional<TypeScope> getTypeScope(final int line) {
-    final TypeScope scope = getTypeScope(line, this.classScopes);
+    TypeScope scope = getTypeScope(line, this.classScopes);
     if (nonNull(scope)) {
       return Optional.of(scope);
     }
@@ -362,27 +367,27 @@ public class Source implements Serializable, Storable, SearchIndexable {
       final int line, final int column, final boolean onlyName) {
     try (TelemetryUtils.ScopedSpan ss =
         TelemetryUtils.startScopedSpan("LocationSearcher.searchMethodCall")) {
-      ss.addAnnotation(
+      TelemetryUtils.ScopedSpan.addAnnotation(
           TelemetryUtils.annotationBuilder()
               .put("line", line)
               .put("column", column)
               .put("onlyName", onlyName)
               .build("args"));
       int col = column;
-      final Scope scope = Scope.getInnerScope(line, this.classScopes);
+      Scope scope = Scope.getInnerScope(line, this.classScopes);
       if (nonNull(scope)) {
-        final Collection<MethodCall> symbols = scope.getMethodCall(line);
-        final int size = symbols.size();
+        Collection<MethodCall> symbols = scope.getMethodCall(line);
+        int size = symbols.size();
         log.trace("variables:{}", symbols);
         if (onlyName) {
-          for (final MethodCall methodCall : symbols) {
+          for (MethodCall methodCall : symbols) {
             if (methodCall.nameContains(col)) {
               return Optional.of(methodCall);
             }
           }
         } else {
           while (size > 0 && col-- > 0) {
-            for (final MethodCall methodCallSymbol : symbols) {
+            for (MethodCall methodCallSymbol : symbols) {
               if (methodCallSymbol.containsColumn(col)) {
                 return Optional.of(methodCallSymbol);
               }
@@ -405,7 +410,7 @@ public class Source implements Serializable, Storable, SearchIndexable {
           return log.traceExit(symbols);
         }
       }
-      final List<MethodCall> callSymbols = scope.getMethodCall(line);
+      List<MethodCall> callSymbols = scope.getMethodCall(line);
       return log.traceExit(callSymbols);
     }
     return log.traceExit(Collections.emptyList());
@@ -427,7 +432,7 @@ public class Source implements Serializable, Storable, SearchIndexable {
   }
 
   public Map<String, Variable> getDeclaratorMap(final int line) {
-    final Scope scope = Scope.getInnerScope(line, this.classScopes);
+    Scope scope = Scope.getInnerScope(line, this.classScopes);
     if (nonNull(scope)) {
       return scope.getDeclaratorMap();
     }
@@ -435,7 +440,7 @@ public class Source implements Serializable, Storable, SearchIndexable {
   }
 
   public Map<String, Variable> getVariableMap(final int line) {
-    final Scope scope = Scope.getInnerScope(line, this.classScopes);
+    Scope scope = Scope.getInnerScope(line, this.classScopes);
     if (nonNull(scope)) {
       return scope.getVariableMap();
     }
@@ -443,7 +448,7 @@ public class Source implements Serializable, Storable, SearchIndexable {
   }
 
   public Optional<Variable> getVariable(final int line, final int col) {
-    final Scope scope = Scope.getInnerScope(line, this.classScopes);
+    Scope scope = Scope.getInnerScope(line, this.classScopes);
     if (nonNull(scope)) {
       return scope.getVariables().stream()
           .filter(
@@ -454,9 +459,9 @@ public class Source implements Serializable, Storable, SearchIndexable {
   }
 
   public List<MemberDescriptor> getAllMember() {
-    final List<MemberDescriptor> memberDescriptors = new ArrayList<>(8);
-    for (final TypeScope typeScope : this.classScopes) {
-      final List<MemberDescriptor> result = typeScope.getMemberDescriptors();
+    List<MemberDescriptor> memberDescriptors = new ArrayList<>(8);
+    for (TypeScope typeScope : this.classScopes) {
+      List<MemberDescriptor> result = typeScope.getMemberDescriptors();
       if (nonNull(result)) {
         memberDescriptors.addAll(result);
       }
@@ -468,19 +473,19 @@ public class Source implements Serializable, Storable, SearchIndexable {
       final int line, final int column, final String name) {
     try (TelemetryUtils.ScopedSpan ss =
         TelemetryUtils.startScopedSpan("Source.searchFieldAccess")) {
-      ss.addAnnotation(
+      TelemetryUtils.ScopedSpan.addAnnotation(
           TelemetryUtils.annotationBuilder()
               .put("line", line)
               .put("column", column)
               .put("symbol", name)
               .build("args"));
-      final Scope scope = Scope.getScope(line, this.classScopes);
+      Scope scope = Scope.getScope(line, this.classScopes);
       if (nonNull(scope) && (scope instanceof TypeScope)) {
-        final TypeScope ts = (TypeScope) scope;
-        final Collection<FieldAccess> fieldAccesses = ts.getFieldAccess(line);
-        for (final FieldAccess fa : fieldAccesses) {
-          final Range range = fa.range;
-          final Position begin = fa.range.begin;
+        TypeScope ts = (TypeScope) scope;
+        Collection<FieldAccess> fieldAccesses = ts.getFieldAccess(line);
+        for (FieldAccess fa : fieldAccesses) {
+          Range range = fa.range;
+          Position begin = fa.range.begin;
           if (range.begin.line == line && range.containsColumn(column) && fa.name.equals(name)) {
             return Optional.of(fa);
           }
@@ -495,16 +500,16 @@ public class Source implements Serializable, Storable, SearchIndexable {
   }
 
   private Map<String, List<String>> searchMissingImport(boolean addAll) {
-    final CachedASMReflector reflector = CachedASMReflector.getInstance();
+    CachedASMReflector reflector = CachedASMReflector.getInstance();
 
     // search missing imports
-    final Map<String, List<String>> ask = new HashMap<>(4);
+    Map<String, List<String>> ask = new HashMap<>(4);
 
     log.debug("unknown class size:{} classes:{}", this.unknown.size(), this.unknown);
-    final Map<String, String> importedClassMap = this.getImportedClassMap();
-    for (final String clazzName : this.unknown) {
+    Map<String, String> importedClassMap = this.getImportedClassMap();
+    for (String clazzName : this.unknown) {
       String searchWord = ClassNameUtils.removeTypeAndArray(clazzName);
-      final int i = searchWord.indexOf('.');
+      int i = searchWord.indexOf('.');
       if (i > 0) {
         searchWord = searchWord.substring(0, i);
       }
@@ -518,8 +523,7 @@ public class Source implements Serializable, Storable, SearchIndexable {
       }
 
       log.debug("search unknown class : '{}' ...", searchWord);
-      final Collection<? extends CandidateUnit> findUnits =
-          reflector.searchClasses(searchWord, true);
+      Collection<? extends CandidateUnit> findUnits = reflector.searchClasses(searchWord, true);
       log.debug("find candidate units : {}", findUnits);
 
       if (findUnits.size() == 0) {
@@ -527,9 +531,9 @@ public class Source implements Serializable, Storable, SearchIndexable {
       }
       if (findUnits.size() == 1) {
 
-        final CandidateUnit[] candidateUnits = findUnits.toArray(new CandidateUnit[1]);
-        final String declaration = candidateUnits[0].getDeclaration();
-        final String pa = ClassNameUtils.getPackage(declaration);
+        CandidateUnit[] candidateUnits = findUnits.toArray(new CandidateUnit[1]);
+        String declaration = candidateUnits[0].getDeclaration();
+        String pa = ClassNameUtils.getPackage(declaration);
         if (pa.equals("java.lang")) {
           continue;
         }
@@ -542,7 +546,7 @@ public class Source implements Serializable, Storable, SearchIndexable {
           ask.put(clazzName, Collections.singletonList(candidateUnits[0].getDeclaration()));
         }
       } else {
-        final List<String> imports =
+        List<String> imports =
             findUnits.stream().map(CandidateUnit::getDeclaration).collect(Collectors.toList());
         if (!imports.isEmpty()) {
           ask.put(clazzName, imports);
@@ -556,9 +560,9 @@ public class Source implements Serializable, Storable, SearchIndexable {
     this.invalidateCache(this.classScopes);
   }
 
-  private void invalidateCache(final List<ClassScope> classScopes) {
-    final GlobalCache globalCache = GlobalCache.getInstance();
-    for (final ClassScope classScope : classScopes) {
+  private void invalidateCache(List<ClassScope> classScopes) {
+    GlobalCache globalCache = GlobalCache.getInstance();
+    for (ClassScope classScope : classScopes) {
       globalCache.invalidateMemberDescriptors(classScope.getFQCN());
       this.invalidateCache(classScope.classScopes);
     }
@@ -571,14 +575,14 @@ public class Source implements Serializable, Storable, SearchIndexable {
     }
 
     // shallow copy
-    final Map<String, String> importMap = new HashMap<>(this.getImportedClassMap());
+    Map<String, String> importMap = new HashMap<>(this.getImportedClassMap());
 
     log.debug("unused:{}", this.unused);
     // remove unused
     this.unused.forEach(k -> importMap.values().remove(k));
     log.debug("importMap:{}", importMap);
 
-    final Map<String, List<String>> missingImport = this.searchMissingImport(false);
+    Map<String, List<String>> missingImport = this.searchMissingImport(false);
     log.debug("missingImport:{}", missingImport);
 
     if (missingImport.size() > 0) {
@@ -589,33 +593,33 @@ public class Source implements Serializable, Storable, SearchIndexable {
     // create optimize import
     // 1. count import pkg
     // 2. sort
-    final Map<String, List<String>> optimizeMap = new HashMap<>(32);
+    Map<String, List<String>> optimizeMap = new HashMap<>(32);
     importMap
         .values()
         .forEach(
             fqcn -> {
-              final String packageName = ClassNameUtils.getPackage(fqcn);
+              String packageName = ClassNameUtils.getPackage(fqcn);
               if (packageName.equals("java.lang")) {
                 return;
               }
               if (optimizeMap.containsKey(packageName)) {
-                final List<String> list = optimizeMap.get(packageName);
+                List<String> list = optimizeMap.get(packageName);
                 list.add(fqcn);
               } else {
-                final List<String> list = new ArrayList<>(1);
+                List<String> list = new ArrayList<>(1);
                 list.add(fqcn);
                 optimizeMap.put(packageName, list);
               }
             });
 
-    final List<String> optimized =
+    List<String> optimized =
         optimizeMap.values().stream()
             .map(
                 imports -> {
                   if (imports.size() >= 100000) {
-                    final String sample = imports.get(0);
-                    final String pkg = ClassNameUtils.getPackage(sample);
-                    final List<String> result = new ArrayList<>(4);
+                    String sample = imports.get(0);
+                    String pkg = ClassNameUtils.getPackage(sample);
+                    List<String> result = new ArrayList<>(4);
                     result.add(pkg + ".*");
                     return result;
                   }
@@ -634,7 +638,7 @@ public class Source implements Serializable, Storable, SearchIndexable {
     if (this.hasCompileError) {
       return false;
     }
-    final String key = System.getProperty(REPORT_UNKNOWN_TREE);
+    String key = System.getProperty(REPORT_UNKNOWN_TREE);
     return nonNull(key) && key.equals("true");
   }
 
@@ -652,16 +656,16 @@ public class Source implements Serializable, Storable, SearchIndexable {
       return false;
     }
 
-    for (final ClassScope classScope : this.classScopes) {
+    for (ClassScope classScope : this.classScopes) {
       if (Source.includeInnerClass(classScope, fqcn)) {
         return false;
       }
     }
 
-    final CachedASMReflector reflector = CachedASMReflector.getInstance();
+    CachedASMReflector reflector = CachedASMReflector.getInstance();
     if (fqcn.startsWith(this.packageName)) {
-      final Map<String, String> packageClasses = reflector.getPackageClasses(this.packageName);
-      final boolean find =
+      Map<String, String> packageClasses = reflector.getPackageClasses(this.packageName);
+      boolean find =
           packageClasses.values().stream()
               .filter(s -> s.equals(fqcn))
               .map(s -> true)
@@ -685,29 +689,20 @@ public class Source implements Serializable, Storable, SearchIndexable {
   }
 
   public String getImportedClassFQCN(final String shortName, @Nullable final String defaultValue) {
-    try (TelemetryUtils.ScopedSpan scope =
-        TelemetryUtils.startScopedSpanLow("Source.getImportedClassFQCN")) {
-      scope.addAnnotation(
-          TelemetryUtils.annotationBuilder()
-              .put("shortName", shortName)
-              .put("defaultValue", defaultValue)
-              .build("args"));
-
-      return this.importClasses.stream()
-          .filter(
-              s -> {
-                if (s.indexOf('.') > 0) {
-                  return s.endsWith('.' + shortName);
-                }
-                return s.endsWith(shortName);
-              })
-          .findFirst()
-          .orElseGet(
-              () ->
-                  CachedASMReflector.getInstance()
-                      .getStandardClasses()
-                      .getOrDefault(shortName, defaultValue));
-    }
+    return this.importClasses.stream()
+        .filter(
+            s -> {
+              if (s.indexOf('.') > 0) {
+                return s.endsWith('.' + shortName);
+              }
+              return s.endsWith(shortName);
+            })
+        .findFirst()
+        .orElseGet(
+            () ->
+                CachedASMReflector.getInstance()
+                    .getStandardClasses()
+                    .getOrDefault(shortName, defaultValue));
   }
 
   public Map<String, String> getImportedClassMap() {
@@ -716,14 +711,13 @@ public class Source implements Serializable, Storable, SearchIndexable {
       return this.importMap;
     }
 
-    final Map<String, String> map = new HashMap<>(32);
-    for (final String s : this.importClasses) {
-      final String key = ClassNameUtils.getSimpleName(s);
+    Map<String, String> map = new HashMap<>(32);
+    for (String s : this.importClasses) {
+      String key = ClassNameUtils.getSimpleName(s);
       map.putIfAbsent(key, s);
     }
 
-    final Map<String, String> standardClasses =
-        CachedASMReflector.getInstance().getStandardClasses();
+    Map<String, String> standardClasses = CachedASMReflector.getInstance().getStandardClasses();
     map.putAll(standardClasses);
 
     this.importMap = map;
@@ -734,7 +728,7 @@ public class Source implements Serializable, Storable, SearchIndexable {
     if (isNull(unknown)) {
       return;
     }
-    final String trimed = unknown.trim();
+    String trimed = unknown.trim();
     if (!trimed.isEmpty()) {
       this.unknown.add(trimed);
     }
@@ -787,8 +781,8 @@ public class Source implements Serializable, Storable, SearchIndexable {
 
   public Collection<Variable> getVariables() {
 
-    final Set<Variable> result = new HashSet<>(8);
-    for (final ClassScope c : this.classScopes) {
+    Set<Variable> result = new HashSet<>(8);
+    for (ClassScope c : this.classScopes) {
       result.addAll(c.getVariables());
     }
 
@@ -797,8 +791,8 @@ public class Source implements Serializable, Storable, SearchIndexable {
 
   public Collection<FieldAccess> getFieldAccesses() {
 
-    final List<FieldAccess> result = new ArrayList<>(8);
-    for (final ClassScope c : this.classScopes) {
+    List<FieldAccess> result = new ArrayList<>(8);
+    for (ClassScope c : this.classScopes) {
       result.addAll(c.getFieldAccesses());
     }
 
@@ -806,22 +800,31 @@ public class Source implements Serializable, Storable, SearchIndexable {
   }
 
   public Collection<MethodCall> getMethodCalls() {
-
-    final List<MethodCall> result = new ArrayList<>(8);
-    for (final ClassScope c : this.classScopes) {
+    List<MethodCall> result = new ArrayList<>(8);
+    for (ClassScope c : this.classScopes) {
       result.addAll(c.getMethodCalls());
     }
-
     return result;
   }
 
-  public Collection<AccessSymbol> getAccessSymbols() {
+  public void buildMethodCallsBF() {
+    for (ClassScope c : this.classScopes) {
+      for (MethodCall call : c.getMethodCalls()) {
+        String declaringClass = call.declaringClass;
+        this.methodCallsBF.put(declaringClass + "#" + call.name);
+      }
+    }
+  }
 
-    final List<AccessSymbol> result = new ArrayList<>(8);
-    for (final ClassScope c : this.classScopes) {
+  public boolean mightContainMethodCall(String methodCall) {
+    return this.methodCallsBF.mightContain(methodCall);
+  }
+
+  public Collection<AccessSymbol> getAccessSymbols() {
+    List<AccessSymbol> result = new ArrayList<>(8);
+    for (ClassScope c : this.classScopes) {
       result.addAll(c.getAccessSymbols());
     }
-
     return result;
   }
 
@@ -864,14 +867,14 @@ public class Source implements Serializable, Storable, SearchIndexable {
   }
 
   private Collection<? extends Document> createSourceTextIndices() {
-    final List<Document> documents = new ArrayList<>(128);
-    try (final BufferedReader br =
+    List<Document> documents = new ArrayList<>(128);
+    try (BufferedReader br =
         new BufferedReader(
             new InputStreamReader(new FileInputStream(this.filePath), StandardCharsets.UTF_8))) {
       long lineNumber = 1;
       String s;
       while ((s = br.readLine()) != null) {
-        final Document doc = getBaseDocument(lineNumber);
+        Document doc = getBaseDocument(lineNumber);
         doc.add(new TextField(CODE.getName(), s, YES));
 
         if (this.indexWords.containsKey(lineNumber)) {
@@ -884,9 +887,9 @@ public class Source implements Serializable, Storable, SearchIndexable {
                 return sortNo1.compareTo(sortNo2);
               });
           for (IndexableWord word : words) {
-            final IndexableWord.Field field = word.field;
-            final String val = word.word;
-            final String name = field.getName();
+            IndexableWord.Field field = word.field;
+            String val = word.word;
+            String name = field.getName();
             if (field.isCategorize()) {
               if (nonNull(name)) {
                 doc.add(new StringField(SearchIndexable.CATEGORY, name, YES));
@@ -913,14 +916,14 @@ public class Source implements Serializable, Storable, SearchIndexable {
   }
 
   private Document getBaseDocument(long lineNumber) {
-    final Document doc = new Document();
+    Document doc = new Document();
     doc.add(new StringField(SearchIndexable.GROUP_ID, this.filePath, YES));
     doc.add(new StringField(SearchIndexable.LINE_NUMBER, Long.toString(lineNumber), YES));
     return doc;
   }
 
   public void addIndexWord(IndexableWord.Field field, long line, long column, String word) {
-    final IndexableWord indexableWord = new IndexableWord(field, line, column, word);
+    IndexableWord indexableWord = new IndexableWord(field, line, column, word);
     if (this.indexWords.containsKey(line)) {
       List<IndexableWord> words = this.indexWords.get(line);
       words.add(indexableWord);

@@ -550,11 +550,7 @@ public class ClassNameUtils {
       boolean result =
           reflector
               .getSuperClassStream(argClassName)
-              .anyMatch(
-                  s -> {
-                    String cls = ClassNameUtils.getClassName(s);
-                    return cls.equals(paramClassName);
-                  });
+              .anyMatch(s -> ClassNameUtils.getClassName(s).equals(paramClassName));
       if (!result) {
         return false;
       }

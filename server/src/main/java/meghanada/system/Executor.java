@@ -107,7 +107,7 @@ public class Executor {
     }
   }
 
-  public <T> CompletableFutures<T> completableFutures(int cap) {
+  public static <T> CompletableFutures<T> completableFutures(int cap) {
     return new Executor.CompletableFutures<>(cap);
   }
 

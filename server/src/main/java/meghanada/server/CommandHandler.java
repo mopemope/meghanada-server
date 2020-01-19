@@ -61,7 +61,8 @@ public class CommandHandler {
     String name = "Meghanada/changeProject";
     try (TelemetryUtils.ParentSpan span = TelemetryUtils.startExplicitParentSpan(name);
         TelemetryUtils.ScopedSpan scope = TelemetryUtils.withSpan(span.getSpan())) {
-      scope.addAnnotation(TelemetryUtils.annotationBuilder().put("path", path).build("args"));
+      TelemetryUtils.ScopedSpan.addAnnotation(
+          TelemetryUtils.annotationBuilder().put("path", path).build("args"));
       String canonicalPath = new File(path).getCanonicalPath();
       boolean result = session.changeProject(canonicalPath);
       String out = outputFormatter.changeProject(id, result);
@@ -81,7 +82,8 @@ public class CommandHandler {
     String name = "Meghanada/diagnostics";
     try (TelemetryUtils.ParentSpan span = TelemetryUtils.startExplicitParentSpan(name);
         TelemetryUtils.ScopedSpan scope = TelemetryUtils.withSpan(span.getSpan())) {
-      scope.addAnnotation(TelemetryUtils.annotationBuilder().put("path", path).build("args"));
+      TelemetryUtils.ScopedSpan.addAnnotation(
+          TelemetryUtils.annotationBuilder().put("path", path).build("args"));
       File f = new File(path);
       String contents = org.apache.commons.io.FileUtils.readFileToString(f);
       CompileResult compileResult = session.diagnosticString(path, contents);
@@ -102,7 +104,7 @@ public class CommandHandler {
     String name = "Meghanada/diagnostics/2";
     try (TelemetryUtils.ParentSpan span = TelemetryUtils.startExplicitParentSpan(name);
         TelemetryUtils.ScopedSpan scope = TelemetryUtils.withSpan(span.getSpan())) {
-      scope.addAnnotation(
+      TelemetryUtils.ScopedSpan.addAnnotation(
           TelemetryUtils.annotationBuilder()
               .put("sourceFile", sourceFile)
               .put("tmpSourceFile", tmpSourceFile)
@@ -135,7 +137,8 @@ public class CommandHandler {
     String name = "Meghanada/compile";
     try (TelemetryUtils.ParentSpan span = TelemetryUtils.startExplicitParentSpan(name);
         TelemetryUtils.ScopedSpan scope = TelemetryUtils.withSpan(span.getSpan())) {
-      scope.addAnnotation(TelemetryUtils.annotationBuilder().put("path", path).build("args"));
+      TelemetryUtils.ScopedSpan.addAnnotation(
+          TelemetryUtils.annotationBuilder().put("path", path).build("args"));
       String canonicalPath = new File(path).getCanonicalPath();
       CompileResult compileResult = session.compileFile(canonicalPath);
       String out = outputFormatter.compile(id, compileResult, canonicalPath);
@@ -155,7 +158,8 @@ public class CommandHandler {
     String name = "Meghanada/compileProject";
     try (TelemetryUtils.ParentSpan span = TelemetryUtils.startExplicitParentSpan(name);
         TelemetryUtils.ScopedSpan scope = TelemetryUtils.withSpan(span.getSpan())) {
-      scope.addAnnotation(TelemetryUtils.annotationBuilder().put("path", path).build("args"));
+      TelemetryUtils.ScopedSpan.addAnnotation(
+          TelemetryUtils.annotationBuilder().put("path", path).build("args"));
       CompileResult compileResult = session.compileProject(path, true);
       String out = outputFormatter.compileProject(id, compileResult);
       writer.write(out);
@@ -174,7 +178,7 @@ public class CommandHandler {
     String name = "Meghanada/autocomplete";
     try (TelemetryUtils.ParentSpan span = TelemetryUtils.startExplicitParentSpan(name);
         TelemetryUtils.ScopedSpan scope = TelemetryUtils.withSpan(span.getSpan())) {
-      scope.addAnnotation(
+      TelemetryUtils.ScopedSpan.addAnnotation(
           TelemetryUtils.annotationBuilder()
               .put("path", path)
               .put("line", line)
@@ -202,7 +206,7 @@ public class CommandHandler {
     String name = "Meghanada/runJUnit";
     try (TelemetryUtils.ParentSpan span = TelemetryUtils.startExplicitParentSpan(name);
         TelemetryUtils.ScopedSpan scope = TelemetryUtils.withSpan(span.getSpan())) {
-      scope.addAnnotation(
+      TelemetryUtils.ScopedSpan.addAnnotation(
           TelemetryUtils.annotationBuilder()
               .put("path", path)
               .put("test", test)
@@ -236,7 +240,8 @@ public class CommandHandler {
     String name = "Meghanada/parse";
     try (TelemetryUtils.ParentSpan span = TelemetryUtils.startExplicitParentSpan(name);
         TelemetryUtils.ScopedSpan scope = TelemetryUtils.withSpan(span.getSpan())) {
-      scope.addAnnotation(TelemetryUtils.annotationBuilder().put("path", path).build("args"));
+      TelemetryUtils.ScopedSpan.addAnnotation(
+          TelemetryUtils.annotationBuilder().put("path", path).build("args"));
       boolean result = session.parseFile(path);
       String out = outputFormatter.parse(id, result);
       writer.write(out);
@@ -255,7 +260,7 @@ public class CommandHandler {
     String name = "Meghanada/addImport";
     try (TelemetryUtils.ParentSpan span = TelemetryUtils.startExplicitParentSpan(name);
         TelemetryUtils.ScopedSpan scope = TelemetryUtils.withSpan(span.getSpan())) {
-      scope.addAnnotation(
+      TelemetryUtils.ScopedSpan.addAnnotation(
           TelemetryUtils.annotationBuilder().put("path", path).put("fqcn", fqcn).build("args"));
       boolean result = session.addImport(path, fqcn);
       String out = outputFormatter.addImport(id, result, ClassNameUtils.replaceInnerMark(fqcn));
@@ -278,7 +283,7 @@ public class CommandHandler {
     try (TelemetryUtils.ParentSpan span =
             TelemetryUtils.startExplicitParentSpan("Meghanada/optimizeImport");
         TelemetryUtils.ScopedSpan scope = TelemetryUtils.withSpan(span.getSpan())) {
-      scope.addAnnotation(
+      TelemetryUtils.ScopedSpan.addAnnotation(
           TelemetryUtils.annotationBuilder()
               .put("sourceFile", sourceFile)
               .put("tmpSourceFile", tmpSourceFile)
@@ -302,7 +307,8 @@ public class CommandHandler {
     String name = "Meghanada/importAll";
     try (TelemetryUtils.ParentSpan span = TelemetryUtils.startExplicitParentSpan(name);
         TelemetryUtils.ScopedSpan scope = TelemetryUtils.withSpan(span.getSpan())) {
-      scope.addAnnotation(TelemetryUtils.annotationBuilder().put("path", path).build("args"));
+      TelemetryUtils.ScopedSpan.addAnnotation(
+          TelemetryUtils.annotationBuilder().put("path", path).build("args"));
       Map<String, List<String>> result = session.searchMissingImport(path);
       String out = outputFormatter.importAll(id, result);
       writer.write(out);
@@ -321,7 +327,8 @@ public class CommandHandler {
     String name = "Meghanada/switchTest";
     try (TelemetryUtils.ParentSpan span = TelemetryUtils.startExplicitParentSpan(name);
         TelemetryUtils.ScopedSpan scope = TelemetryUtils.withSpan(span.getSpan())) {
-      scope.addAnnotation(TelemetryUtils.annotationBuilder().put("path", path).build("args"));
+      TelemetryUtils.ScopedSpan.addAnnotation(
+          TelemetryUtils.annotationBuilder().put("path", path).build("args"));
       String openPath = session.switchTest(path).orElse(path);
       String out = outputFormatter.switchTest(id, openPath);
       writer.write(out);
@@ -340,7 +347,7 @@ public class CommandHandler {
     String name = "Meghanada/ping";
     try (TelemetryUtils.ParentSpan span = TelemetryUtils.startExplicitParentSpan(name);
         TelemetryUtils.ScopedSpan scope = TelemetryUtils.withSpan(span.getSpan())) {
-      scope.addAnnotation(TelemetryUtils.annotationBuilder().build("args"));
+      TelemetryUtils.ScopedSpan.addAnnotation(TelemetryUtils.annotationBuilder().build("args"));
       String out = outputFormatter.ping(id, "pong");
       writer.write(out);
       writer.newLine();
@@ -358,7 +365,8 @@ public class CommandHandler {
     String name = "Meghanada/listSymbols";
     try (TelemetryUtils.ParentSpan span = TelemetryUtils.startExplicitParentSpan(name);
         TelemetryUtils.ScopedSpan scope = TelemetryUtils.withSpan(span.getSpan())) {
-      scope.addAnnotation(TelemetryUtils.annotationBuilder().put("global", global).build("args"));
+      TelemetryUtils.ScopedSpan.addAnnotation(
+          TelemetryUtils.annotationBuilder().put("global", global).build("args"));
       String out = outputFormatter.listSymbols(id, String.join("\n", session.listSymbols(global)));
       writer.write(out);
       writer.newLine();
@@ -376,7 +384,7 @@ public class CommandHandler {
     String name = "Meghanada/jumpSymbol";
     try (TelemetryUtils.ParentSpan span = TelemetryUtils.startExplicitParentSpan(name);
         TelemetryUtils.ScopedSpan scope = TelemetryUtils.withSpan(span.getSpan())) {
-      scope.addAnnotation(
+      TelemetryUtils.ScopedSpan.addAnnotation(
           TelemetryUtils.annotationBuilder().put("line", line).put("column", column).build("args"));
       int lineInt = Integer.parseInt(line);
       int columnInt = Integer.parseInt(column);
@@ -401,7 +409,7 @@ public class CommandHandler {
     String name = "Meghanada/jumpDeclaration";
     try (TelemetryUtils.ParentSpan span = TelemetryUtils.startExplicitParentSpan(name);
         TelemetryUtils.ScopedSpan scope = TelemetryUtils.withSpan(span.getSpan())) {
-      scope.addAnnotation(
+      TelemetryUtils.ScopedSpan.addAnnotation(
           TelemetryUtils.annotationBuilder()
               .put("line", line)
               .put("column", column)
@@ -430,7 +438,7 @@ public class CommandHandler {
     String name = "Meghanada/backJump";
     try (TelemetryUtils.ParentSpan span = TelemetryUtils.startExplicitParentSpan(name);
         TelemetryUtils.ScopedSpan scope = TelemetryUtils.withSpan(span.getSpan())) {
-      scope.addAnnotation(TelemetryUtils.annotationBuilder().build("args"));
+      TelemetryUtils.ScopedSpan.addAnnotation(TelemetryUtils.annotationBuilder().build("args"));
       Location location = session.backDeclaration().orElseGet(() -> new Location("", -1, -1));
       String out = outputFormatter.jumpDeclaration(id, location);
       writer.write(out);
@@ -450,7 +458,7 @@ public class CommandHandler {
     try (TelemetryUtils.ParentSpan span = TelemetryUtils.startExplicitParentSpan(name);
         TelemetryUtils.ScopedSpan scope = TelemetryUtils.withSpan(span.getSpan());
         InputStream in = this.session.runTask(tasks)) {
-      scope.addAnnotation(
+      TelemetryUtils.ScopedSpan.addAnnotation(
           TelemetryUtils.annotationBuilder().put("tasks", tasks.toString()).build("args"));
       String taskStr = Joiner.on(" ").join(tasks);
       writer.write("run task: ");
@@ -478,7 +486,7 @@ public class CommandHandler {
     String name = "Meghanada/clearCache";
     try (TelemetryUtils.ParentSpan span = TelemetryUtils.startExplicitParentSpan(name);
         TelemetryUtils.ScopedSpan scope = TelemetryUtils.withSpan(span.getSpan())) {
-      scope.addAnnotation(TelemetryUtils.annotationBuilder().build("args"));
+      TelemetryUtils.ScopedSpan.addAnnotation(TelemetryUtils.annotationBuilder().build("args"));
       boolean result = this.session.clearCache();
       String out = outputFormatter.clearCache(id, result);
       writer.write(out);
@@ -497,7 +505,8 @@ public class CommandHandler {
     String name = "Meghanada/localVariable";
     try (TelemetryUtils.ParentSpan span = TelemetryUtils.startExplicitParentSpan(name);
         TelemetryUtils.ScopedSpan scope = TelemetryUtils.withSpan(span.getSpan())) {
-      scope.addAnnotation(TelemetryUtils.annotationBuilder().put("line", line).build("args"));
+      TelemetryUtils.ScopedSpan.addAnnotation(
+          TelemetryUtils.annotationBuilder().put("line", line).build("args"));
       int lineInt = Integer.parseInt(line);
       Optional<LocalVariable> localVariable = session.localVariable(path, lineInt);
       if (localVariable.isPresent()) {
@@ -523,7 +532,8 @@ public class CommandHandler {
     String name = "Meghanada/formatCode";
     try (TelemetryUtils.ParentSpan span = TelemetryUtils.startExplicitParentSpan(name);
         TelemetryUtils.ScopedSpan scope = TelemetryUtils.withSpan(span.getSpan())) {
-      scope.addAnnotation(TelemetryUtils.annotationBuilder().put("path", path).build("args"));
+      TelemetryUtils.ScopedSpan.addAnnotation(
+          TelemetryUtils.annotationBuilder().put("path", path).build("args"));
       String canonicalPath = new File(path).getCanonicalPath();
       session.formatCode(canonicalPath);
       writer.write(outputFormatter.formatCode(id, canonicalPath));
@@ -542,7 +552,7 @@ public class CommandHandler {
     String name = "Meghanada/showDeclaration";
     try (TelemetryUtils.ParentSpan span = TelemetryUtils.startExplicitParentSpan(name);
         TelemetryUtils.ScopedSpan scope = TelemetryUtils.withSpan(span.getSpan())) {
-      scope.addAnnotation(
+      TelemetryUtils.ScopedSpan.addAnnotation(
           TelemetryUtils.annotationBuilder()
               .put("path", path)
               .put("line", line)
@@ -573,7 +583,7 @@ public class CommandHandler {
     String name = "Meghanada/execMain";
     try (TelemetryUtils.ParentSpan span = TelemetryUtils.startExplicitParentSpan(name);
         TelemetryUtils.ScopedSpan scope = TelemetryUtils.withSpan(span.getSpan())) {
-      scope.addAnnotation(
+      TelemetryUtils.ScopedSpan.addAnnotation(
           TelemetryUtils.annotationBuilder().put("path", path).put("debug", debug).build("args"));
       InputStream in;
       try {
@@ -585,7 +595,7 @@ public class CommandHandler {
           return;
         }
       } catch (Throwable t) {
-        scope.setStatusINTERNAL(t.getMessage());
+        TelemetryUtils.ScopedSpan.setStatusINTERNAL(t.getMessage());
         writeError(id, t);
         return;
       }
@@ -613,7 +623,7 @@ public class CommandHandler {
         writer.newLine();
         span.setStatusOK();
       } catch (Throwable t) {
-        scope.setStatusINTERNAL(t.getMessage());
+        TelemetryUtils.ScopedSpan.setStatusINTERNAL(t.getMessage());
         writeError(id, t);
       }
 
@@ -630,7 +640,7 @@ public class CommandHandler {
     String name = "Meghanada/reference";
     try (TelemetryUtils.ParentSpan span = TelemetryUtils.startExplicitParentSpan(name);
         TelemetryUtils.ScopedSpan scope = TelemetryUtils.withSpan(span.getSpan())) {
-      scope.addAnnotation(
+      TelemetryUtils.ScopedSpan.addAnnotation(
           TelemetryUtils.annotationBuilder()
               .put("path", path)
               .put("line", line)
@@ -658,7 +668,7 @@ public class CommandHandler {
     String name = "Meghanada/typeInfo";
     try (TelemetryUtils.ParentSpan span = TelemetryUtils.startExplicitParentSpan(name);
         TelemetryUtils.ScopedSpan scope = TelemetryUtils.withSpan(span.getSpan())) {
-      scope.addAnnotation(
+      TelemetryUtils.ScopedSpan.addAnnotation(
           TelemetryUtils.annotationBuilder()
               .put("path", path)
               .put("line", line)
@@ -692,7 +702,8 @@ public class CommandHandler {
     String name = "Meghanada/searchEverywhere";
     try (TelemetryUtils.ParentSpan span = TelemetryUtils.startExplicitParentSpan(name);
         TelemetryUtils.ScopedSpan scope = TelemetryUtils.withSpan(span.getSpan())) {
-      scope.addAnnotation(TelemetryUtils.annotationBuilder().put("query", query).build("args"));
+      TelemetryUtils.ScopedSpan.addAnnotation(
+          TelemetryUtils.annotationBuilder().put("query", query).build("args"));
       Optional<SearchResults> results = Session.searchEverywhere(query);
       if (results.isPresent()) {
         String out = outputFormatter.searchEverywhere(id, results.get());
@@ -718,7 +729,7 @@ public class CommandHandler {
     String name = "Meghanada/killRunningProcess";
     try (TelemetryUtils.ParentSpan span = TelemetryUtils.startExplicitParentSpan(name);
         TelemetryUtils.ScopedSpan scope = TelemetryUtils.withSpan(span.getSpan())) {
-      scope.addAnnotation(TelemetryUtils.annotationBuilder().build("args"));
+      TelemetryUtils.ScopedSpan.addAnnotation(TelemetryUtils.annotationBuilder().build("args"));
       session.killRunningProcess();
       String out = outputFormatter.killRunningProcess(id);
       writer.write(out);
@@ -738,7 +749,7 @@ public class CommandHandler {
     String name = "Meghanada/showProject";
     try (TelemetryUtils.ParentSpan span = TelemetryUtils.startExplicitParentSpan(name);
         TelemetryUtils.ScopedSpan scope = TelemetryUtils.withSpan(span.getSpan())) {
-      scope.addAnnotation(TelemetryUtils.annotationBuilder().build("args"));
+      TelemetryUtils.ScopedSpan.addAnnotation(TelemetryUtils.annotationBuilder().build("args"));
       String s = session.showProject();
       String out = outputFormatter.showProject(id, s);
       writer.write(out);
@@ -759,7 +770,7 @@ public class CommandHandler {
     String name = "Meghanada/autocompleteResolve";
     try (TelemetryUtils.ParentSpan span = TelemetryUtils.startExplicitParentSpan(name);
         TelemetryUtils.ScopedSpan scope = TelemetryUtils.withSpan(span.getSpan())) {
-      scope.addAnnotation(
+      TelemetryUtils.ScopedSpan.addAnnotation(
           TelemetryUtils.annotationBuilder()
               .put("path", path)
               .put("line", line)
@@ -789,7 +800,7 @@ public class CommandHandler {
     String name = "Meghanada/importAtPoint";
     try (TelemetryUtils.ParentSpan span = TelemetryUtils.startExplicitParentSpan(name);
         TelemetryUtils.ScopedSpan scope = TelemetryUtils.withSpan(span.getSpan())) {
-      scope.addAnnotation(
+      TelemetryUtils.ScopedSpan.addAnnotation(
           TelemetryUtils.annotationBuilder()
               .put("path", path)
               .put("line", line)

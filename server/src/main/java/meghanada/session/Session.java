@@ -98,7 +98,8 @@ public class Session {
   public static Session createSession(String root) throws IOException {
     try (TelemetryUtils.ScopedSpan scope =
         TelemetryUtils.startScopedSpan("Session.createSession")) {
-      scope.addAnnotation(TelemetryUtils.annotationBuilder().put("root", root).build("args"));
+      TelemetryUtils.ScopedSpan.addAnnotation(
+          TelemetryUtils.annotationBuilder().put("root", root).build("args"));
       return createSession(new File(root));
     }
   }
@@ -162,7 +163,7 @@ public class Session {
 
     try (TelemetryUtils.ScopedSpan scope = TelemetryUtils.startScopedSpan("Session.loadProject")) {
 
-      scope.addAnnotation(
+      TelemetryUtils.ScopedSpan.addAnnotation(
           TelemetryUtils.annotationBuilder()
               .put("projectRoot", projectRoot.getPath())
               .put("targetFile", targetFile)
@@ -274,24 +275,24 @@ public class Session {
 
         if (gradleProject.isPresent() && gradleProject.get().endsWith(Project.GRADLE_PROJECT_EXT)) {
           log.debug("find gradle project {}", gradleProject.get());
-          scope.addAnnotation("find gradle project");
+          TelemetryUtils.ScopedSpan.addAnnotation("find gradle project");
           return base;
         } else if (gradleProject.isPresent()
             && gradleProject.get().endsWith(Project.GRADLE_KTS_PROJECT_FILE)) {
           log.debug("find gradle(kts) project {}", gradleProject.get());
-          scope.addAnnotation("find gradle(kts) project");
+          TelemetryUtils.ScopedSpan.addAnnotation("find gradle(kts) project");
           return base;
         } else if (mvn.exists()) {
           log.debug("find mvn project {}", mvn);
-          scope.addAnnotation("find mvn project");
+          TelemetryUtils.ScopedSpan.addAnnotation("find mvn project");
           return base;
         } else if (eclipse.exists()) {
           log.debug("find eclipse project {}", eclipse);
-          scope.addAnnotation("find eclipse project");
+          TelemetryUtils.ScopedSpan.addAnnotation("find eclipse project");
           return base;
         } else if (meghanada.exists()) {
           log.debug("find meghanada project {}", meghanada);
-          scope.addAnnotation("find meghanada project");
+          TelemetryUtils.ScopedSpan.addAnnotation("find meghanada project");
           return base;
         }
 
@@ -314,7 +315,7 @@ public class Session {
     try (TelemetryUtils.ScopedSpan scope =
         TelemetryUtils.startScopedSpan("Session.searchAndChangeProject")) {
 
-      scope.addAnnotation(
+      TelemetryUtils.ScopedSpan.addAnnotation(
           TelemetryUtils.annotationBuilder().put("base", base.getPath()).build("args"));
 
       final File projectRoot = Session.findProjectRoot(base);
@@ -470,7 +471,8 @@ public class Session {
     try (TelemetryUtils.ScopedSpan scope =
         TelemetryUtils.startScopedSpan("Session.changeProject")) {
 
-      scope.addAnnotation(TelemetryUtils.annotationBuilder().put("path", path).build("args"));
+      TelemetryUtils.ScopedSpan.addAnnotation(
+          TelemetryUtils.annotationBuilder().put("path", path).build("args"));
 
       final File file = new File(path);
       if (this.started) {
@@ -619,7 +621,7 @@ public class Session {
     try (TelemetryUtils.ScopedSpan scope =
         TelemetryUtils.startScopedSpan("Session.parseJavaSource")) {
 
-      scope.addAnnotation(
+      TelemetryUtils.ScopedSpan.addAnnotation(
           TelemetryUtils.annotationBuilder().put("file", file.getPath()).build("args"));
 
       if (!FileUtils.isJavaFile(file)) {
@@ -990,7 +992,7 @@ public class Session {
     try (TelemetryUtils.ScopedSpan scope =
         TelemetryUtils.startScopedSpan("Session.loadDefaultProject")) {
 
-      scope.addAnnotation(
+      TelemetryUtils.ScopedSpan.addAnnotation(
           TelemetryUtils.annotationBuilder().put("root", root.getPath()).build("args"));
 
       root = root.getCanonicalFile();

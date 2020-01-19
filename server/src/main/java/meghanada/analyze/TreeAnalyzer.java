@@ -538,6 +538,7 @@ public class TreeAnalyzer {
     SourceContext context = new SourceContext(source);
     analyzeCompilationUnitTree(context, cut);
     source.resetLineRange();
+    source.buildMethodCallsBF();
     return source;
   }
 

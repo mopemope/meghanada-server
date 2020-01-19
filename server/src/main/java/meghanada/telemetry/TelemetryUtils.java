@@ -473,7 +473,7 @@ public class TelemetryUtils {
   public static class ParentSpan implements Closeable {
 
     private final Span span;
-    private final Map<String, AttributeValue> attrs = new HashMap<>();
+    private final Map<String, AttributeValue> attrs = new HashMap<>(8);
 
     ParentSpan(Span span, String name) {
       this.span = span;
@@ -519,15 +519,15 @@ public class TelemetryUtils {
       this.scope = scope;
     }
 
-    public void addAnnotation(Annotation annotation) {
+    public static void addAnnotation(Annotation annotation) {
       TelemetryUtils.addAnnotaion(annotation);
     }
 
-    public void addAnnotation(String annotation) {
+    public static void addAnnotation(String annotation) {
       TelemetryUtils.addAnnotaion(annotation);
     }
 
-    public void setStatusINTERNAL(String message) {
+    public static void setStatusINTERNAL(String message) {
       TelemetryUtils.setStatusINTERNAL(message);
     }
 

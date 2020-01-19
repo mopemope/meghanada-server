@@ -87,7 +87,8 @@ public class GlobalCache {
     try (TelemetryUtils.ScopedSpan scope =
         TelemetryUtils.startScopedSpanLow("GlobalCache.getMemberDescriptors")) {
 
-      scope.addAnnotation(TelemetryUtils.annotationBuilder().put("fqcn", fqcn).build("args"));
+      TelemetryUtils.ScopedSpan.addAnnotation(
+          TelemetryUtils.annotationBuilder().put("fqcn", fqcn).build("args"));
 
       return this.memberCache.get(fqcn);
     } finally {
@@ -100,7 +101,8 @@ public class GlobalCache {
     try (TelemetryUtils.ScopedSpan scope =
         TelemetryUtils.startScopedSpanLow("GlobalCache.loadMemberDescriptors")) {
 
-      scope.addAnnotation(TelemetryUtils.annotationBuilder().put("fqcn", fqcn).build("args"));
+      TelemetryUtils.ScopedSpan.addAnnotation(
+          TelemetryUtils.annotationBuilder().put("fqcn", fqcn).build("args"));
 
       List<MemberDescriptor> descriptors = this.memberCacheLoader.load(fqcn);
       this.memberCache.put(fqcn, descriptors);
@@ -158,7 +160,7 @@ public class GlobalCache {
     try (TelemetryUtils.ScopedSpan scope =
         TelemetryUtils.startScopedSpan("GlobalCache.getSource")) {
 
-      scope.addAnnotation(
+      TelemetryUtils.ScopedSpan.addAnnotation(
           TelemetryUtils.annotationBuilder().put("file", file.getPath()).build("args"));
 
       final LoadingCache<File, Source> sourceCache = this.getSourceCache();
@@ -171,7 +173,7 @@ public class GlobalCache {
     try (TelemetryUtils.ScopedSpan scope =
         TelemetryUtils.startScopedSpan("GlobalCache.loadSource")) {
 
-      scope.addAnnotation(
+      TelemetryUtils.ScopedSpan.addAnnotation(
           TelemetryUtils.annotationBuilder().put("file", file.getPath()).build("args"));
 
       final LoadingCache<File, Source> sourceCache = this.getSourceCache();
@@ -210,7 +212,8 @@ public class GlobalCache {
     try (TelemetryUtils.ScopedSpan scope =
         TelemetryUtils.startScopedSpan("GlobalCache.getSourceMap")) {
 
-      scope.addAnnotation(TelemetryUtils.annotationBuilder().put("fqcn", fqcn).build("args"));
+      TelemetryUtils.ScopedSpan.addAnnotation(
+          TelemetryUtils.annotationBuilder().put("fqcn", fqcn).build("args"));
 
       Map<String, String> sourceMap = this.getSourceMapCache();
       return Optional.ofNullable(sourceMap.get(fqcn));

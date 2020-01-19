@@ -67,7 +67,7 @@ public class JavaFormatter {
   public static String formatGoogleStyle(final String content) {
     try (TelemetryUtils.ScopedSpan scope =
         TelemetryUtils.startScopedSpan("JavaFormatter.formatGoogleStyle")) {
-      scope.addAnnotation(
+      TelemetryUtils.ScopedSpan.addAnnotation(
           TelemetryUtils.annotationBuilder().put("size", content.length()).build("args"));
       return getGoogleFormatter().formatSourceAndFixImports(content);
     } catch (Throwable e) {
@@ -78,7 +78,7 @@ public class JavaFormatter {
   public static String formatEclipseStyle(final Properties prop, final String content) {
     try (TelemetryUtils.ScopedSpan scope =
         TelemetryUtils.startScopedSpan("JavaFormatter.formatEclipseStyle")) {
-      scope.addAnnotation(
+      TelemetryUtils.ScopedSpan.addAnnotation(
           TelemetryUtils.annotationBuilder().put("size", content.length()).build("args"));
 
       final CodeFormatter codeFormatter = ToolFactory.createCodeFormatter(prop);

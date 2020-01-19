@@ -49,7 +49,7 @@ public class JavaImportCompletion {
     try (TelemetryUtils.ScopedSpan scope =
         TelemetryUtils.startScopedSpan("JavaCompletion.searchFieldAndMethods")) {
 
-      scope.addAnnotation(
+      TelemetryUtils.ScopedSpan.addAnnotation(
           TelemetryUtils.annotationBuilder()
               .put("source", source.getFile().getPath())
               .put("line", line)
@@ -82,7 +82,7 @@ public class JavaImportCompletion {
     try (TelemetryUtils.ScopedSpan scope =
         TelemetryUtils.startScopedSpan("JavaCompletion.searchMethodCall")) {
 
-      scope.addAnnotation(
+      TelemetryUtils.ScopedSpan.addAnnotation(
           TelemetryUtils.annotationBuilder()
               .put("source", source.getFile().getPath())
               .put("line", line)
@@ -131,7 +131,7 @@ public class JavaImportCompletion {
     try (TelemetryUtils.ScopedSpan scope =
         TelemetryUtils.startScopedSpan("JavaCompletion.searchMethodCall")) {
 
-      scope.addAnnotation(
+      TelemetryUtils.ScopedSpan.addAnnotation(
           TelemetryUtils.annotationBuilder()
               .put("source", source.getFile().getPath())
               .put("line", line)

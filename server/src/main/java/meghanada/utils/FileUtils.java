@@ -65,7 +65,7 @@ public final class FileUtils {
     try (TelemetryUtils.ScopedSpan scope =
         TelemetryUtils.startScopedSpanLow("FileUtils.getChecksum")) {
 
-      scope.addAnnotation(
+      TelemetryUtils.ScopedSpan.addAnnotation(
           TelemetryUtils.annotationBuilder().put("file", file.getPath()).build("args"));
 
       if (!file.exists()) {
@@ -115,7 +115,7 @@ public final class FileUtils {
     try (TelemetryUtils.ScopedSpan scope =
         TelemetryUtils.startScopedSpan("FileUtils.collectFiles")) {
 
-      scope.addAnnotation(
+      TelemetryUtils.ScopedSpan.addAnnotation(
           TelemetryUtils.annotationBuilder()
               .put("root", root.getPath())
               .put("ext", ext)
@@ -148,7 +148,7 @@ public final class FileUtils {
     try (TelemetryUtils.ScopedSpan scope =
         TelemetryUtils.startScopedSpan("FileUtils.collectFile")) {
 
-      scope.addAnnotation(
+      TelemetryUtils.ScopedSpan.addAnnotation(
           TelemetryUtils.annotationBuilder()
               .put("root", root.getPath())
               .put("ext", ext)
@@ -193,7 +193,7 @@ public final class FileUtils {
   public static String findProjectID(final File root, final String target) throws IOException {
     try (TelemetryUtils.ScopedSpan scope =
         TelemetryUtils.startScopedSpan("FileUtils.findProjectID")) {
-      scope.addAnnotation(
+      TelemetryUtils.ScopedSpan.addAnnotation(
           TelemetryUtils.annotationBuilder()
               .put("root", root.getPath())
               .put("target", target)
@@ -250,7 +250,7 @@ public final class FileUtils {
       throws IOException {
     try (TelemetryUtils.ScopedSpan scope =
         TelemetryUtils.startScopedSpan("FileUtils.getSourceFile")) {
-      scope.addAnnotation(
+      TelemetryUtils.ScopedSpan.addAnnotation(
           TelemetryUtils.annotationBuilder()
               .put("importClass", importClass)
               .put("sourceRoots", sourceRoots.toString())
@@ -271,7 +271,7 @@ public final class FileUtils {
 
     try (TelemetryUtils.ScopedSpan scope =
         TelemetryUtils.startScopedSpan("FileUtils.hasClassFile")) {
-      scope.addAnnotation(
+      TelemetryUtils.ScopedSpan.addAnnotation(
           TelemetryUtils.annotationBuilder()
               .put("sourceRoot", sourceRoots.toString())
               .put("out", out.getPath())
@@ -295,7 +295,7 @@ public final class FileUtils {
 
     try (TelemetryUtils.ScopedSpan scope =
         TelemetryUtils.startScopedSpan("FileUtils.getClassFile")) {
-      scope.addAnnotation(
+      TelemetryUtils.ScopedSpan.addAnnotation(
           TelemetryUtils.annotationBuilder()
               .put("sourceRoot", sourceRoots.toString())
               .put("out", out.getPath())
@@ -433,7 +433,8 @@ public final class FileUtils {
       throws IOException {
     try (TelemetryUtils.ScopedSpan scope =
         TelemetryUtils.startScopedSpan("FileUtils.formatJavaFile")) {
-      scope.addAnnotation(TelemetryUtils.annotationBuilder().put("path", path).build("args"));
+      TelemetryUtils.ScopedSpan.addAnnotation(
+          TelemetryUtils.annotationBuilder().put("path", path).build("args"));
       final String content = readFile(path);
       final String formatted = JavaFormatter.formatEclipseStyle(properties, content);
       Files.write(
@@ -447,7 +448,8 @@ public final class FileUtils {
   public static void formatJavaFile(final String path) throws IOException {
     try (TelemetryUtils.ScopedSpan scope =
         TelemetryUtils.startScopedSpan("FileUtils.formatJavaFile")) {
-      scope.addAnnotation(TelemetryUtils.annotationBuilder().put("path", path).build("args"));
+      TelemetryUtils.ScopedSpan.addAnnotation(
+          TelemetryUtils.annotationBuilder().put("path", path).build("args"));
       final String content = readFile(path);
       final String formatted = JavaFormatter.formatGoogleStyle(content);
       Files.write(
@@ -471,7 +473,7 @@ public final class FileUtils {
 
   public static Optional<File> existsFQCN(final Set<File> roots, final String fqcn) {
     try (TelemetryUtils.ScopedSpan scope = TelemetryUtils.startScopedSpan("FileUtils.existsFQCN")) {
-      scope.addAnnotation(
+      TelemetryUtils.ScopedSpan.addAnnotation(
           TelemetryUtils.annotationBuilder()
               .put("roots", roots.toString())
               .put("fqcn", fqcn)
@@ -495,7 +497,7 @@ public final class FileUtils {
   private static File convertFQCNToFile(final File root, final String fqcn) {
     try (TelemetryUtils.ScopedSpan scope =
         TelemetryUtils.startScopedSpan("FileUtils.convertFQCNToFile")) {
-      scope.addAnnotation(
+      TelemetryUtils.ScopedSpan.addAnnotation(
           TelemetryUtils.annotationBuilder().put("roots", root.getPath()).build("args"));
       final String clazzName = ClassNameUtils.getParentClass(fqcn);
       final String path = StringUtils.replace(clazzName, ".", File.separator) + FileUtils.JAVA_EXT;
@@ -506,7 +508,7 @@ public final class FileUtils {
   public static Optional<Source> getSource(final File file) throws IOException, ExecutionException {
     try (TelemetryUtils.ScopedSpan scope = TelemetryUtils.startScopedSpan("FileUtils.getSource")) {
 
-      scope.addAnnotation(
+      TelemetryUtils.ScopedSpan.addAnnotation(
           TelemetryUtils.annotationBuilder().put("file", file.getPath()).build("args"));
 
       final GlobalCache globalCache = GlobalCache.getInstance();
@@ -520,7 +522,7 @@ public final class FileUtils {
     try (TelemetryUtils.ScopedSpan scope =
         TelemetryUtils.startScopedSpanLow("FileUtils.convertPathToClass")) {
 
-      scope.addAnnotation(
+      TelemetryUtils.ScopedSpan.addAnnotation(
           TelemetryUtils.annotationBuilder()
               .put("roots", roots.toString())
               .put("file", file.getPath())
@@ -542,7 +544,7 @@ public final class FileUtils {
     try (TelemetryUtils.ScopedSpan scope =
         TelemetryUtils.startScopedSpanLow("FileUtils.convertPathToClass")) {
 
-      scope.addAnnotation(
+      TelemetryUtils.ScopedSpan.addAnnotation(
           TelemetryUtils.annotationBuilder()
               .put("root", root.getPath())
               .put("file", file.getPath())

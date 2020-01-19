@@ -80,7 +80,7 @@ public class ProjectDatabaseHelper {
     try (TelemetryUtils.ScopedSpan scope =
         TelemetryUtils.startScopedSpan("ProjectDatabaseHelper.getClassIndexes")) {
 
-      scope.addAnnotation(
+      TelemetryUtils.ScopedSpan.addAnnotation(
           TelemetryUtils.annotationBuilder().put("filePath", filePath).build("args"));
 
       ProjectDatabase database = ProjectDatabase.getInstance();

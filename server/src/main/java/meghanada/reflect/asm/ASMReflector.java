@@ -287,7 +287,7 @@ public class ASMReflector {
     try (TelemetryUtils.ScopedSpan scope =
         TelemetryUtils.startScopedSpan("ASMReflector.getClasses")) {
 
-      scope.addAnnotation(
+      TelemetryUtils.ScopedSpan.addAnnotation(
           TelemetryUtils.annotationBuilder().put("file", file.getPath()).build("args"));
 
       Map<ClassIndex, File> indexes = new ConcurrentHashMap<>(32);
@@ -382,7 +382,7 @@ public class ASMReflector {
     try (TelemetryUtils.ScopedSpan scope =
         TelemetryUtils.startScopedSpan("ASMReflector.reflectAll")) {
 
-      scope.addAnnotation(
+      TelemetryUtils.ScopedSpan.addAnnotation(
           TelemetryUtils.annotationBuilder().put("info", info.toString()).build("args"));
 
       collect =
@@ -450,7 +450,7 @@ public class ASMReflector {
     try (TelemetryUtils.ScopedSpan scope =
         TelemetryUtils.startScopedSpan("ASMReflector.reflectAll/3")) {
 
-      scope.addAnnotation(
+      TelemetryUtils.ScopedSpan.addAnnotation(
           TelemetryUtils.annotationBuilder()
               .put("file", file.getPath())
               .put("topClass", topClass)
@@ -631,7 +631,7 @@ public class ASMReflector {
 
     try (TelemetryUtils.ScopedSpan scope = TelemetryUtils.startScopedSpan("ASMReflector.reflect")) {
 
-      scope.addAnnotation(
+      TelemetryUtils.ScopedSpan.addAnnotation(
           TelemetryUtils.annotationBuilder()
               .put("file", file.getPath())
               .put("name", name)
@@ -701,7 +701,7 @@ public class ASMReflector {
     try (TelemetryUtils.ScopedSpan scope =
         TelemetryUtils.startScopedSpan("ASMReflector.getMembersFromClassFile")) {
 
-      scope.addAnnotation(
+      TelemetryUtils.ScopedSpan.addAnnotation(
           TelemetryUtils.annotationBuilder()
               .put("file", file.getPath())
               .put("fqcn", fqcn)
@@ -767,7 +767,8 @@ public class ASMReflector {
     try (TelemetryUtils.ScopedSpan scope =
         TelemetryUtils.startScopedSpan("ASMReflector.getReflectInfo")) {
 
-      scope.addAnnotation(TelemetryUtils.annotationBuilder().put("fqcn", fqcn).build("args"));
+      TelemetryUtils.ScopedSpan.addAnnotation(
+          TelemetryUtils.annotationBuilder().put("fqcn", fqcn).build("args"));
 
       InheritanceInfo info = new InheritanceInfo(fqcn);
       InheritanceInfo reflectInfo = this.searchReflectInfo(index, fqcn, info);
@@ -782,7 +783,8 @@ public class ASMReflector {
     try (TelemetryUtils.ScopedSpan scope =
         TelemetryUtils.startScopedSpan("ASMReflector.searchReflectInfo")) {
 
-      scope.addAnnotation(TelemetryUtils.annotationBuilder().put("name", name).build("args"));
+      TelemetryUtils.ScopedSpan.addAnnotation(
+          TelemetryUtils.annotationBuilder().put("name", name).build("args"));
 
       for (Map.Entry<String, ClassIndex> entry : index.entrySet()) {
         ClassIndex classIndex = entry.getValue();
@@ -942,13 +944,13 @@ public class ASMReflector {
     return count.get();
   }
 
-  private List<String> loadFromInnerCache(
+  private static List<String> loadFromInnerCache(
       String mainClass, List<String> targets, List<MemberDescriptor> results) {
 
     try (TelemetryUtils.ScopedSpan scope =
         TelemetryUtils.startScopedSpan("ASMReflector.loadFromInnerCache")) {
 
-      scope.addAnnotation(
+      TelemetryUtils.ScopedSpan.addAnnotation(
           TelemetryUtils.annotationBuilder().put("mainClass", mainClass).build("args"));
 
       for (Iterator<String> it = targets.iterator(); it.hasNext(); ) {
@@ -973,7 +975,8 @@ public class ASMReflector {
     try (TelemetryUtils.ScopedSpan scope =
         TelemetryUtils.startScopedSpan("ASMReflector.cacheMember")) {
 
-      scope.addAnnotation(TelemetryUtils.annotationBuilder().put("key", key).build("args"));
+      TelemetryUtils.ScopedSpan.addAnnotation(
+          TelemetryUtils.annotationBuilder().put("key", key).build("args"));
 
       List<MemberDescriptor> list = innerCache.get(key);
       if (nonNull(list)) {

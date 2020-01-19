@@ -117,7 +117,7 @@ public class ModuleHelper {
   public static Optional<ClassData> pathToClassData(Path p) {
     try (TelemetryUtils.ScopedSpan scope =
         TelemetryUtils.startScopedSpan("ModuleHelper.pathToClassData")) {
-      scope.addAnnotation(
+      TelemetryUtils.ScopedSpan.addAnnotation(
           TelemetryUtils.annotationBuilder().put("path", p.toString()).build("args"));
 
       if (p.startsWith(File.separator + "modules" + File.separator)) {

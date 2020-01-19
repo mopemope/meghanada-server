@@ -57,28 +57,28 @@ public class SourceCacheSubscriber {
     Map<String, Set<String>> callerMap = project.getCallerMap();
     Map<String, String> checksumMap = this.getChecksumMap(project);
 
-    final Config config = Config.load();
-    final boolean useSourceCache = config.useSourceCache();
+    Config config = Config.load();
+    boolean useSourceCache = config.useSourceCache();
     if (!useSourceCache) {
       return;
     }
 
-    final File sourceFile = source.getFile();
-    final String path = sourceFile.getCanonicalPath();
-    final GlobalCache globalCache = GlobalCache.getInstance();
-    final List<ClassScope> classScopes = source.getClassScopes();
-    for (final ClassScope cs : classScopes) {
+    File sourceFile = source.getFile();
+    String path = sourceFile.getCanonicalPath();
+    GlobalCache globalCache = GlobalCache.getInstance();
+    List<ClassScope> classScopes = source.getClassScopes();
+    for (ClassScope cs : classScopes) {
 
-      final String fqcn = cs.getFQCN();
+      String fqcn = cs.getFQCN();
       globalCache.replaceSourceMap(fqcn, source.getFile().getCanonicalPath());
 
       for (String clazz : source.usingClasses) {
         if (callerMap.containsKey(clazz)) {
-          final Set<String> set = callerMap.get(clazz);
+          Set<String> set = callerMap.get(clazz);
           set.add(fqcn);
           callerMap.put(clazz, set);
         } else {
-          final Set<String> set = new HashSet<>(16);
+          Set<String> set = new HashSet<>(16);
           set.add(fqcn);
           callerMap.put(clazz, set);
         }
@@ -92,7 +92,7 @@ public class SourceCacheSubscriber {
 
     globalCache.replaceSource(source);
     if (!source.hasCompileError) {
-      final String md5sum = FileUtils.getChecksum(sourceFile);
+      String md5sum = FileUtils.getChecksum(sourceFile);
       checksumMap.put(path, md5sum);
       ProjectDatabaseHelper.saveSource(source);
     } else {
@@ -119,13 +119,13 @@ public class SourceCacheSubscriber {
             TelemetryUtils.startExplicitParentSpan("SourceCacheSubscriber/on");
         TelemetryUtils.ScopedSpan scope = TelemetryUtils.withSpan(span.getSpan())) {
 
-      scope.addAnnotation(
+      TelemetryUtils.ScopedSpan.addAnnotation(
           TelemetryUtils.annotationBuilder()
               .put("diagnostics", event.diagnostics)
               .put("size", event.analyzedMap.size())
               .build("event"));
 
-      final Map<File, Source> analyzedMap = event.analyzedMap;
+      Map<File, Source> analyzedMap = event.analyzedMap;
 
       try (TelemetryUtils.ScopedSpan child =
           TelemetryUtils.startScopedSpan("SourceCacheSubscriber.analyzed")) {

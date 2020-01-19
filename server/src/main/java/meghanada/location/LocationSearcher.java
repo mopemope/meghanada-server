@@ -70,6 +70,7 @@ public class LocationSearcher {
   private static final String TEMP_DECOMPILE_DIR = "meghanada_decompile";
   private static final Logger log = LogManager.getLogger(LocationSearcher.class);
   private static final Pattern IMPORT_RE = Pattern.compile("import .*\\d;$");
+  private static final Pattern $ = Pattern.compile("$");
 
   private final List<LocationSearchFunction> functions;
   private final Map<String, File> copiedSrcFile = new HashMap<>(16);
@@ -86,7 +87,7 @@ public class LocationSearcher {
     try (TelemetryUtils.ScopedSpan scope =
         TelemetryUtils.startScopedSpan("LocationSearcher.getSource")) {
 
-      scope.addAnnotation(
+      TelemetryUtils.ScopedSpan.addAnnotation(
           TelemetryUtils.annotationBuilder().put("file", file.getPath()).build("args"));
 
       final GlobalCache globalCache = GlobalCache.getInstance();
@@ -100,7 +101,7 @@ public class LocationSearcher {
     try (TelemetryUtils.ScopedSpan scope =
         TelemetryUtils.startScopedSpan("LocationSearcher.searchLocationFromFile")) {
 
-      scope.addAnnotation(
+      TelemetryUtils.ScopedSpan.addAnnotation(
           TelemetryUtils.annotationBuilder()
               .put("fqcn", fqcn)
               .put("targetFile", targetFile.getPath())
@@ -196,7 +197,7 @@ public class LocationSearcher {
     try (TelemetryUtils.ScopedSpan scope =
         TelemetryUtils.startScopedSpan("LocationSearcher.getFieldLocation")) {
 
-      scope.addAnnotation(
+      TelemetryUtils.ScopedSpan.addAnnotation(
           TelemetryUtils.annotationBuilder().put("targetFile", targetFile.getPath()).build("args"));
 
       final List<VariableDeclarator> variables = declaration.getVariables();
@@ -309,7 +310,7 @@ public class LocationSearcher {
     try (TelemetryUtils.ScopedSpan scope =
         TelemetryUtils.startScopedSpan("LocationSearcher.getMatchField")) {
 
-      scope.addAnnotation(
+      TelemetryUtils.ScopedSpan.addAnnotation(
           TelemetryUtils.annotationBuilder()
               .put("fqcn", fqcn)
               .put("fieldName", fieldName)
@@ -329,7 +330,7 @@ public class LocationSearcher {
     try (TelemetryUtils.ScopedSpan scope =
         TelemetryUtils.startScopedSpan("LocationSearcher.searchLocalVariable")) {
 
-      scope.addAnnotation(
+      TelemetryUtils.ScopedSpan.addAnnotation(
           TelemetryUtils.annotationBuilder()
               .put("source", source.getFile().getPath())
               .put("line", line)
@@ -386,7 +387,7 @@ public class LocationSearcher {
     try (TelemetryUtils.ScopedSpan scope =
         TelemetryUtils.startScopedSpan("LocationSearcher.searchDeclarationLocation")) {
 
-      scope.addAnnotation(
+      TelemetryUtils.ScopedSpan.addAnnotation(
           TelemetryUtils.annotationBuilder()
               .put("line", line)
               .put("column", column)
@@ -418,7 +419,7 @@ public class LocationSearcher {
     try (TelemetryUtils.ScopedSpan scope =
         TelemetryUtils.startScopedSpan("LocationSearcher.searchMethodCall")) {
 
-      scope.addAnnotation(
+      TelemetryUtils.ScopedSpan.addAnnotation(
           TelemetryUtils.annotationBuilder()
               .put("source", source.getFile().getPath())
               .put("line", line)
@@ -474,7 +475,7 @@ public class LocationSearcher {
     try (TelemetryUtils.ScopedSpan scope =
         TelemetryUtils.startScopedSpan("LocationSearcher.getMethodLocationFromProject")) {
 
-      scope.addAnnotation(
+      TelemetryUtils.ScopedSpan.addAnnotation(
           TelemetryUtils.annotationBuilder().put("methodName", methodName).build("args"));
 
       Source declaringClassSrc = getSource(file);
@@ -509,7 +510,7 @@ public class LocationSearcher {
     try (TelemetryUtils.ScopedSpan scope =
         TelemetryUtils.startScopedSpan("LocationSearcher.searchClassOrInterface")) {
 
-      scope.addAnnotation(
+      TelemetryUtils.ScopedSpan.addAnnotation(
           TelemetryUtils.annotationBuilder()
               .put("source", source.getFile().getPath())
               .put("line", line)
@@ -550,7 +551,7 @@ public class LocationSearcher {
                 if (name.equals(finalSym)) {
                   searchTargets.add(clazz);
                 } else if (name.contains("$")) {
-                  for (String s : name.split("$")) {
+                  for (String s : $.split(name)) {
                     if (s.endsWith(finalSym)) {
                       searchTargets.add(clazz);
                     }
@@ -571,7 +572,8 @@ public class LocationSearcher {
     try (TelemetryUtils.ScopedSpan scope =
         TelemetryUtils.startScopedSpan("LocationSearcher.getFQCNLocation")) {
 
-      scope.addAnnotation(TelemetryUtils.annotationBuilder().put("fqcn", fqcn).build("args"));
+      TelemetryUtils.ScopedSpan.addAnnotation(
+          TelemetryUtils.annotationBuilder().put("fqcn", fqcn).build("args"));
 
       final Project project = this.projectSupplier.get();
       return existsFQCN(project.getAllSourcesWithDependencies(), fqcn)
@@ -874,7 +876,7 @@ public class LocationSearcher {
     try (TelemetryUtils.ScopedSpan scope =
         TelemetryUtils.startScopedSpan("LocationSearcher.searchFieldAccess")) {
 
-      scope.addAnnotation(
+      TelemetryUtils.ScopedSpan.addAnnotation(
           TelemetryUtils.annotationBuilder()
               .put("source", source.getFile().getPath())
               .put("line", line)
@@ -923,7 +925,7 @@ public class LocationSearcher {
     try (TelemetryUtils.ScopedSpan scope =
         TelemetryUtils.startScopedSpan("LocationSearcher.getFieldLocationFromProject")) {
 
-      scope.addAnnotation(
+      TelemetryUtils.ScopedSpan.addAnnotation(
           TelemetryUtils.annotationBuilder()
               .put("fqcn", fqcn)
               .put("fieldName", fieldName)

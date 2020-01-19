@@ -144,7 +144,7 @@ public abstract class Project implements Serializable, Storable {
 
   public static Project loadProject(final String projectRoot) throws Exception {
     try (TelemetryUtils.ScopedSpan scope = TelemetryUtils.startScopedSpan("Project.loadProject")) {
-      scope.addAnnotation(
+      TelemetryUtils.ScopedSpan.addAnnotation(
           TelemetryUtils.annotationBuilder().put("projectRoot", projectRoot).build("args"));
       Project tempProject = ProjectDatabaseHelper.loadProject(projectRoot);
       if (tempProject != null) {

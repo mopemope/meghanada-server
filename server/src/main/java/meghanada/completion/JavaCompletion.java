@@ -78,7 +78,7 @@ public class JavaCompletion {
     try (TelemetryUtils.ScopedSpan scope =
         TelemetryUtils.startScopedSpan("JavaCompletion.annotationCompletion")) {
 
-      scope.addAnnotation(
+      TelemetryUtils.ScopedSpan.addAnnotation(
           TelemetryUtils.annotationBuilder()
               .put("source", source.getFile().getPath())
               .put("line", line)
@@ -218,7 +218,7 @@ public class JavaCompletion {
     try (TelemetryUtils.ScopedSpan scope =
         TelemetryUtils.startScopedSpan("JavaCompletion.completionSuper")) {
 
-      scope.addAnnotation(
+      TelemetryUtils.ScopedSpan.addAnnotation(
           TelemetryUtils.annotationBuilder()
               .put("source", source.getFile().getPath())
               .put("line", line)
@@ -282,7 +282,7 @@ public class JavaCompletion {
     try (TelemetryUtils.ScopedSpan scope =
         TelemetryUtils.startScopedSpan("JavaCompletion.completionNewKeyword")) {
 
-      scope.addAnnotation(
+      TelemetryUtils.ScopedSpan.addAnnotation(
           TelemetryUtils.annotationBuilder()
               .put("source", source.getFile().getPath())
               .build("args"));
@@ -301,7 +301,7 @@ public class JavaCompletion {
     try (TelemetryUtils.ScopedSpan scope =
         TelemetryUtils.startScopedSpan("JavaCompletion.completionThis")) {
 
-      scope.addAnnotation(
+      TelemetryUtils.ScopedSpan.addAnnotation(
           TelemetryUtils.annotationBuilder()
               .put("source", source.getFile().getPath())
               .put("line", line)
@@ -326,7 +326,7 @@ public class JavaCompletion {
     try (TelemetryUtils.ScopedSpan scope =
         TelemetryUtils.startScopedSpan("JavaCompletion.completionSymbols")) {
 
-      scope.addAnnotation(
+      TelemetryUtils.ScopedSpan.addAnnotation(
           TelemetryUtils.annotationBuilder()
               .put("source", source.getFile().getPath())
               .put("line", line)
@@ -407,7 +407,7 @@ public class JavaCompletion {
     try (TelemetryUtils.ScopedSpan scope =
         TelemetryUtils.startScopedSpan("JavaCompletion.completionAnnotationValue")) {
 
-      scope.addAnnotation(
+      TelemetryUtils.ScopedSpan.addAnnotation(
           TelemetryUtils.annotationBuilder()
               .put("source", source.getFile().getPath())
               .put("line", line)
@@ -576,7 +576,7 @@ public class JavaCompletion {
     try (TelemetryUtils.ScopedSpan scope =
         TelemetryUtils.startScopedSpan("JavaCompletion.completionFieldsOrMethods")) {
 
-      scope.addAnnotation(
+      TelemetryUtils.ScopedSpan.addAnnotation(
           TelemetryUtils.annotationBuilder()
               .put("file", source.getFile().getPath())
               .put("line", line)
@@ -601,7 +601,7 @@ public class JavaCompletion {
       try (TelemetryUtils.ScopedSpan child =
           TelemetryUtils.startScopedSpan("JavaCompletion.staticImportMethod")) {
 
-        child.addAnnotation(
+        TelemetryUtils.ScopedSpan.addAnnotation(
             TelemetryUtils.annotationBuilder()
                 .put("file", source.getFile().getPath())
                 .put("line", line)
@@ -627,7 +627,7 @@ public class JavaCompletion {
 
       try (TelemetryUtils.ScopedSpan child =
           TelemetryUtils.startScopedSpan("JavaCompletion.classStatucMethod")) {
-        child.addAnnotation(
+        TelemetryUtils.ScopedSpan.addAnnotation(
             TelemetryUtils.annotationBuilder()
                 .put("file", source.getFile().getPath())
                 .put("line", line)
@@ -651,7 +651,7 @@ public class JavaCompletion {
 
       try (TelemetryUtils.ScopedSpan child =
           TelemetryUtils.startScopedSpan("JavaCompletion.localVar")) {
-        child.addAnnotation(
+        TelemetryUtils.ScopedSpan.addAnnotation(
             TelemetryUtils.annotationBuilder()
                 .put("file", source.getFile().getPath())
                 .put("line", line)
@@ -672,7 +672,7 @@ public class JavaCompletion {
 
       try (TelemetryUtils.ScopedSpan child =
           TelemetryUtils.startScopedSpan("JavaCompletion.fieldAccess")) {
-        child.addAnnotation(
+        TelemetryUtils.ScopedSpan.addAnnotation(
             TelemetryUtils.annotationBuilder()
                 .put("file", source.getFile().getPath())
                 .put("line", line)
@@ -693,7 +693,7 @@ public class JavaCompletion {
 
       try (TelemetryUtils.ScopedSpan child =
           TelemetryUtils.startScopedSpan("JavaCompletion.localFieldAccess")) {
-        child.addAnnotation(
+        TelemetryUtils.ScopedSpan.addAnnotation(
             TelemetryUtils.annotationBuilder()
                 .put("file", source.getFile().getPath())
                 .put("line", line)
@@ -715,7 +715,7 @@ public class JavaCompletion {
 
       try (TelemetryUtils.ScopedSpan child =
           TelemetryUtils.startScopedSpan("JavaCompletion.java.lang.StatndardMethod")) {
-        child.addAnnotation(
+        TelemetryUtils.ScopedSpan.addAnnotation(
             TelemetryUtils.annotationBuilder()
                 .put("file", source.getFile().getPath())
                 .put("line", line)
@@ -731,7 +731,7 @@ public class JavaCompletion {
 
       try (TelemetryUtils.ScopedSpan child =
           TelemetryUtils.startScopedSpan("JavaCompletion.ownMembers")) {
-        child.addAnnotation(
+        TelemetryUtils.ScopedSpan.addAnnotation(
             TelemetryUtils.annotationBuilder()
                 .put("file", source.getFile().getPath())
                 .put("line", line)
@@ -807,7 +807,7 @@ public class JavaCompletion {
       {
         try (TelemetryUtils.ScopedSpan child =
             TelemetryUtils.startScopedSpan("JavaCompletion.getExpressionReturn")) {
-          child.addAnnotation(
+          TelemetryUtils.ScopedSpan.addAnnotation(
               TelemetryUtils.annotationBuilder()
                   .put("file", source.getFile().getPath())
                   .put("line", line)
@@ -825,7 +825,7 @@ public class JavaCompletion {
 
         try (TelemetryUtils.ScopedSpan child =
             TelemetryUtils.startScopedSpan("JavaCompletion.getExpressionReturn-1")) {
-          child.addAnnotation(
+          TelemetryUtils.ScopedSpan.addAnnotation(
               TelemetryUtils.annotationBuilder()
                   .put("file", source.getFile().getPath())
                   .put("line", line)
@@ -1134,7 +1134,7 @@ public class JavaCompletion {
     try (TelemetryUtils.ScopedSpan scope =
         TelemetryUtils.startScopedSpan("JavaCompletion.getSource")) {
 
-      scope.addAnnotation(
+      TelemetryUtils.ScopedSpan.addAnnotation(
           TelemetryUtils.annotationBuilder().put("file", file.getPath()).build("args"));
 
       final GlobalCache globalCache = GlobalCache.getInstance();
@@ -1148,7 +1148,7 @@ public class JavaCompletion {
     try (TelemetryUtils.ScopedSpan scope =
         TelemetryUtils.startScopedSpan("JavaCompletion.completionAt")) {
 
-      scope.addAnnotation(
+      TelemetryUtils.ScopedSpan.addAnnotation(
           TelemetryUtils.annotationBuilder()
               .put("file", file.getPath())
               .put("line", line)
@@ -1171,7 +1171,7 @@ public class JavaCompletion {
     try (TelemetryUtils.ScopedSpan scope =
         TelemetryUtils.startScopedSpan("JavaCompletion.completionAtInternal")) {
 
-      scope.addAnnotation(
+      TelemetryUtils.ScopedSpan.addAnnotation(
           TelemetryUtils.annotationBuilder()
               .put("file", file.getPath())
               .put("line", line)
@@ -1211,7 +1211,7 @@ public class JavaCompletion {
     try (TelemetryUtils.ScopedSpan scope =
         TelemetryUtils.startScopedSpan("JavaCompletion.specialCompletion")) {
 
-      scope.addAnnotation(
+      TelemetryUtils.ScopedSpan.addAnnotation(
           TelemetryUtils.annotationBuilder()
               .put("source", source.getFile().getPath())
               .put("line", line)
@@ -1269,7 +1269,7 @@ public class JavaCompletion {
     try (TelemetryUtils.ScopedSpan scope =
         TelemetryUtils.startScopedSpan("JavaCompletion.completionMethods")) {
 
-      scope.addAnnotation(
+      TelemetryUtils.ScopedSpan.addAnnotation(
           TelemetryUtils.annotationBuilder()
               .put("source", source.getFile().getPath())
               .put("line", line)

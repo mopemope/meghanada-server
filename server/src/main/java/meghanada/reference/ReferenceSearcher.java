@@ -53,7 +53,7 @@ public class ReferenceSearcher {
     this.functions = getSearchFunctions();
   }
 
-  private static Optional<SearchCondition> searchMemberCondition(
+  private static Optional<SearchCondition> createMemberCondition(
       Source source, int line, int col, String symbol) {
 
     EntryMessage msg = log.traceEntry("line={} col={} symbol={}", line, col, symbol);
@@ -92,7 +92,7 @@ public class ReferenceSearcher {
     return Optional.empty();
   }
 
-  private static Optional<SearchCondition> searchFieldAccessCondition(
+  private static Optional<SearchCondition> createFieldAccessCondition(
       Source source, int line, int col, String symbol) {
 
     EntryMessage msg = log.traceEntry("line={} col={} symbol={}", line, col, symbol);
@@ -128,7 +128,7 @@ public class ReferenceSearcher {
     return Optional.empty();
   }
 
-  private static Optional<SearchCondition> searchMethodCallCondition(
+  private static Optional<SearchCondition> createMethodCallCondition(
       Source source, int line, int col, String symbol) {
 
     EntryMessage msg = log.traceEntry("line={} col={} symbol={}", line, col, symbol);
@@ -172,17 +172,17 @@ public class ReferenceSearcher {
 
   private static List<SearchFunction> getSearchFunctions() {
     List<SearchFunction> list = new ArrayList<>(3);
-    list.add(ReferenceSearcher::searchMemberCondition);
-    list.add(ReferenceSearcher::searchFieldAccessCondition);
-    list.add(ReferenceSearcher::searchMethodCallCondition);
-    list.add(ReferenceSearcher::searchClassCondition);
+    list.add(ReferenceSearcher::createMemberCondition);
+    list.add(ReferenceSearcher::createFieldAccessCondition);
+    list.add(ReferenceSearcher::createMethodCallCondition);
+    list.add(ReferenceSearcher::createClassCondition);
     return list;
   }
 
-  private static Optional<SearchCondition> searchClassCondition(
+  private static Optional<SearchCondition> createClassCondition(
       Source source, int line, int col, String symbol) {
-    final CachedASMReflector reflector = CachedASMReflector.getInstance();
-    final EntryMessage entryMessage = log.traceEntry("line={} col={} symbol={}", line, col, symbol);
+    CachedASMReflector reflector = CachedASMReflector.getInstance();
+    EntryMessage entryMessage = log.traceEntry("line={} col={} symbol={}", line, col, symbol);
     Optional<SearchCondition> result;
     String fqcn = source.getImportedClassFQCN(symbol, null);
     if (isNull(fqcn)) {
@@ -202,15 +202,15 @@ public class ReferenceSearcher {
                     })
                 .orElseGet(
                     () -> {
-                      final Set<String> parents = new HashSet<>(8);
-                      for (final ClassScope classScope : source.getClassScopes()) {
-                        final String className = classScope.getFQCN();
+                      Set<String> parents = new HashSet<>(8);
+                      for (ClassScope classScope : source.getClassScopes()) {
+                        String className = classScope.getFQCN();
                         parents.add(className);
                       }
                       parents.addAll(source.importClasses);
 
-                      for (final ClassIndex index : reflector.searchInnerClasses(parents)) {
-                        final String returnType = index.getReturnType();
+                      for (ClassIndex index : reflector.searchInnerClasses(parents)) {
+                        String returnType = index.getReturnType();
                         if (returnType.endsWith(symbol)) {
                           SearchCondition sc =
                               new SearchCondition(
@@ -271,6 +271,11 @@ public class ReferenceSearcher {
 
   private static List<Reference> searchMethodCallReferences(Source src, SearchCondition sc)
       throws IOException {
+
+    if (!src.mightContainMethodCall(sc.declaringClass + "#" + sc.name)) {
+      return Collections.emptyList();
+    }
+
     List<String> lines = FileUtils.readLines(src.getFile());
     int size = lines.size();
     List<Reference> result = new ArrayList<>(size);
@@ -403,13 +408,12 @@ public class ReferenceSearcher {
       return Collections.emptyList();
     }
 
-    if (cond.isPresent()) {
-      SearchCondition sc = cond.get();
-      List<Reference> list = ReferenceSearcher.searchReferences(sc);
-      if (nonNull(list)) {
-        return list;
-      }
+    SearchCondition sc = cond.get();
+    List<Reference> list = ReferenceSearcher.searchReferences(sc);
+    if (nonNull(list)) {
+      return list;
     }
+
     return Collections.emptyList();
   }
 

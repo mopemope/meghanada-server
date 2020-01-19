@@ -117,7 +117,7 @@ public class JavaAnalyzer {
         TelemetryUtils.ScopedSpan scope =
             TelemetryUtils.startScopedSpan("JavaAnalyzer.runAnalyzeAndCompile")) {
 
-      scope.addAnnotation(
+      TelemetryUtils.ScopedSpan.addAnnotation(
           TelemetryUtils.annotationBuilder()
               .put("classpath", classpath)
               .put("out", out)
@@ -155,7 +155,7 @@ public class JavaAnalyzer {
 
       Iterable<? extends CompilationUnitTree> parsedIter;
       try (TelemetryUtils.ScopedSpan child = TelemetryUtils.startScopedSpan("javacTask.parse")) {
-        child.addAnnotation(
+        TelemetryUtils.ScopedSpan.addAnnotation(
             TelemetryUtils.annotationBuilder()
                 .put("javac arg", config.getJavacArg())
                 .put("size", compileFiles.size())
@@ -164,7 +164,7 @@ public class JavaAnalyzer {
       }
 
       try (TelemetryUtils.ScopedSpan child = TelemetryUtils.startScopedSpan("javacTask.analyze")) {
-        child.addAnnotation(
+        TelemetryUtils.ScopedSpan.addAnnotation(
             TelemetryUtils.annotationBuilder()
                 .put("javac arg", config.getJavacArg())
                 .put("size", compileFiles.size())
@@ -211,7 +211,7 @@ public class JavaAnalyzer {
             compiler.getStandardFileManager(null, null, Charset.forName("UTF-8"));
         TelemetryUtils.ScopedSpan scope =
             TelemetryUtils.startScopedSpan("JavaAnalyzer.runAnalyzeAndCompile")) {
-      scope.addAnnotation(
+      TelemetryUtils.ScopedSpan.addAnnotation(
           TelemetryUtils.annotationBuilder()
               .put("classpath", classpath)
               .put("out", out)
@@ -252,7 +252,7 @@ public class JavaAnalyzer {
 
       Iterable<? extends CompilationUnitTree> parsedIter;
       try (TelemetryUtils.ScopedSpan child = TelemetryUtils.startScopedSpan("javacTask.parse")) {
-        child.addAnnotation(
+        TelemetryUtils.ScopedSpan.addAnnotation(
             TelemetryUtils.annotationBuilder()
                 .put("javac arg", config.getJavacArg())
                 .put("size", compilationUnits.size())
@@ -265,7 +265,7 @@ public class JavaAnalyzer {
       }
 
       try (TelemetryUtils.ScopedSpan child = TelemetryUtils.startScopedSpan("javacTask.analyze")) {
-        child.addAnnotation(
+        TelemetryUtils.ScopedSpan.addAnnotation(
             TelemetryUtils.annotationBuilder()
                 .put("javac arg", config.getJavacArg().toString())
                 .put("size", compilationUnits.size())

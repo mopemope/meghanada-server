@@ -11,7 +11,7 @@ public class MethodParameterNames implements Serializable {
 
   private static final long serialVersionUID = 6556924934040150075L;
   // key = methodName: val = Set
-  public final Map<String, List<List<ParameterName>>> names = new HashMap<>();
+  public final Map<String, List<List<ParameterName>>> names = new HashMap<>(8);
   public String className;
 
   @Override

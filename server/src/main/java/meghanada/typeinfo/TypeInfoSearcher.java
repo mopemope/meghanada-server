@@ -44,7 +44,7 @@ public class TypeInfoSearcher {
     try (TelemetryUtils.ScopedSpan ss =
         TelemetryUtils.startScopedSpan("TypeInfoSearcher.createTypeInfo")) {
 
-      ss.addAnnotation(
+      TelemetryUtils.ScopedSpan.addAnnotation(
           TelemetryUtils.annotationBuilder()
               .put("fqcn", fqcn)
               .put("className", clsName)
@@ -79,7 +79,7 @@ public class TypeInfoSearcher {
     try (TelemetryUtils.ScopedSpan ss =
         TelemetryUtils.startScopedSpan("TypeInfoSearcher.createTypeInfo")) {
 
-      ss.addAnnotation(
+      TelemetryUtils.ScopedSpan.addAnnotation(
           TelemetryUtils.annotationBuilder()
               .put("fqcn", fqcn)
               .put("className", clsName)
@@ -138,7 +138,7 @@ public class TypeInfoSearcher {
     try (TelemetryUtils.ScopedSpan ss =
         TelemetryUtils.startScopedSpan("TypeInfoSearcher.createTypeInfo")) {
 
-      ss.addAnnotation(
+      TelemetryUtils.ScopedSpan.addAnnotation(
           TelemetryUtils.annotationBuilder()
               .put("source", source.getFile().getPath())
               .put("line", line)
@@ -187,7 +187,7 @@ public class TypeInfoSearcher {
 
     try (TelemetryUtils.ScopedSpan ss = TelemetryUtils.startScopedSpan("TypeInfoSearcher.search")) {
 
-      ss.addAnnotation(
+      TelemetryUtils.ScopedSpan.addAnnotation(
           TelemetryUtils.annotationBuilder()
               .put("source", source.getFile().getPath())
               .put("line", line)
@@ -242,7 +242,7 @@ public class TypeInfoSearcher {
 
     try (TelemetryUtils.ScopedSpan ss = TelemetryUtils.startScopedSpan("TypeInfoSearcher.search")) {
 
-      ss.addAnnotation(
+      TelemetryUtils.ScopedSpan.addAnnotation(
           TelemetryUtils.annotationBuilder()
               .put("file", file.getPath())
               .put("line", line)

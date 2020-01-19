@@ -35,7 +35,7 @@ public class EclipseProject extends Project {
   public Project parseProject(File projectRoot, File current) throws ProjectParseException {
     try (TelemetryUtils.ScopedSpan scope =
         TelemetryUtils.startScopedSpan("EclipseProject.parseProject")) {
-      scope.addAnnotation(
+      TelemetryUtils.ScopedSpan.addAnnotation(
           TelemetryUtils.annotationBuilder()
               .put("projectRoot", projectRoot.getPath())
               .put("current", current.getPath())

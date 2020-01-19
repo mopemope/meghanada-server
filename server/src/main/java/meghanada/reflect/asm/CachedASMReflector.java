@@ -431,7 +431,7 @@ public class CachedASMReflector {
     try (TelemetryUtils.ScopedSpan ss =
         TelemetryUtils.startScopedSpan("CachedASMReflector.getSuperClassInternal")) {
 
-      ss.addAnnotation(
+      TelemetryUtils.ScopedSpan.addAnnotation(
           TelemetryUtils.annotationBuilder().put("className", className).build("args"));
 
       Set<String> result = new LinkedHashSet<>(4);

@@ -129,7 +129,7 @@ public class CacheEventSubscriber extends AbstractSubscriber {
             fqcn -> {
               try (TelemetryUtils.ScopedSpan scope =
                   TelemetryUtils.startScopedSpan("CacheEventSubscriber.createStandardClassCache")) {
-                scope.addAnnotation(
+                TelemetryUtils.ScopedSpan.addAnnotation(
                     TelemetryUtils.annotationBuilder().put("fqcn", fqcn).build("args"));
                 globalCache.loadMemberDescriptors(fqcn);
               } catch (Exception e) {
@@ -151,7 +151,7 @@ public class CacheEventSubscriber extends AbstractSubscriber {
             fqcn -> {
               try (TelemetryUtils.ScopedSpan scope =
                   TelemetryUtils.startScopedSpan("CacheEventSubscriber.createClassCache")) {
-                scope.addAnnotation(
+                TelemetryUtils.ScopedSpan.addAnnotation(
                     TelemetryUtils.annotationBuilder().put("fqcn", fqcn).build("args"));
                 globalCache.loadMemberDescriptors(fqcn);
               } catch (Exception e) {

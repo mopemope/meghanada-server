@@ -40,7 +40,8 @@ class MemberCacheLoader extends CacheLoader<String, List<MemberDescriptor>>
   private static Optional<List<MemberDescriptor>> getCachedMemberDescriptors(String fqcn) {
     try (TelemetryUtils.ScopedSpan scope =
         TelemetryUtils.startScopedSpan("MemberCacheLoader.getCachedMemberDescriptors")) {
-      scope.addAnnotation(TelemetryUtils.annotationBuilder().put("fqcn", fqcn).build("args"));
+      TelemetryUtils.ScopedSpan.addAnnotation(
+          TelemetryUtils.annotationBuilder().put("fqcn", fqcn).build("args"));
       return ProjectDatabaseHelper.getMemberDescriptors(fqcn);
     }
   }
@@ -64,7 +65,7 @@ class MemberCacheLoader extends CacheLoader<String, List<MemberDescriptor>>
     try (TelemetryUtils.ScopedSpan scope =
         TelemetryUtils.startScopedSpan("MemberCacheLoader.storeMembers")) {
 
-      scope.addAnnotation(
+      TelemetryUtils.ScopedSpan.addAnnotation(
           TelemetryUtils.annotationBuilder()
               .put("fqcn", fqcn)
               .put("list.size", list.size())
@@ -100,7 +101,7 @@ class MemberCacheLoader extends CacheLoader<String, List<MemberDescriptor>>
     try (TelemetryUtils.ScopedSpan scope =
         TelemetryUtils.startScopedSpan("MemberCacheLoader.load")) {
 
-      scope.addAnnotation(
+      TelemetryUtils.ScopedSpan.addAnnotation(
           TelemetryUtils.annotationBuilder().put("className", className).build("args"));
 
       final ClassName cn = new ClassName(className);
@@ -145,7 +146,8 @@ class MemberCacheLoader extends CacheLoader<String, List<MemberDescriptor>>
     try (TelemetryUtils.ScopedSpan scope =
         TelemetryUtils.startScopedSpan("MemberCacheLoader.loadFromReflector")) {
 
-      scope.addAnnotation(TelemetryUtils.annotationBuilder().put("fqcn", fqcn).build("args"));
+      TelemetryUtils.ScopedSpan.addAnnotation(
+          TelemetryUtils.annotationBuilder().put("fqcn", fqcn).build("args"));
 
       final String initName = ClassNameUtils.getSimpleName(fqcn);
       final ASMReflector asmReflector = ASMReflector.getInstance();

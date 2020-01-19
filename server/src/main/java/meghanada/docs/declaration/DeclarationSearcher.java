@@ -58,7 +58,7 @@ public class DeclarationSearcher {
     try (TelemetryUtils.ScopedSpan ss =
         TelemetryUtils.startScopedSpan("DeclarationSearcher.searchLocalVariable")) {
 
-      ss.addAnnotation(
+      TelemetryUtils.ScopedSpan.addAnnotation(
           TelemetryUtils.annotationBuilder()
               .put("source", source.getFile().getPath())
               .put("line", line)
@@ -96,7 +96,7 @@ public class DeclarationSearcher {
     try (TelemetryUtils.ScopedSpan scope =
         TelemetryUtils.startScopedSpan("DeclarationSearcher.searchReserved")) {
 
-      scope.addAnnotation(
+      TelemetryUtils.ScopedSpan.addAnnotation(
           TelemetryUtils.annotationBuilder()
               .put("source", source.getFile().getPath())
               .put("line", line)
@@ -129,7 +129,7 @@ public class DeclarationSearcher {
     try (TelemetryUtils.ScopedSpan ss =
         TelemetryUtils.startScopedSpan("DeclarationSearcher.searchField")) {
 
-      ss.addAnnotation(
+      TelemetryUtils.ScopedSpan.addAnnotation(
           TelemetryUtils.annotationBuilder()
               .put("source", source.getFile().getPath())
               .put("line", line)
@@ -196,7 +196,7 @@ public class DeclarationSearcher {
     try (TelemetryUtils.ScopedSpan ss =
         TelemetryUtils.startScopedSpan("DeclarationSearcher.searchMethodCall")) {
 
-      ss.addAnnotation(
+      TelemetryUtils.ScopedSpan.addAnnotation(
           TelemetryUtils.annotationBuilder()
               .put("source", source.getFile().getPath())
               .put("line", line)
@@ -246,7 +246,7 @@ public class DeclarationSearcher {
     try (TelemetryUtils.ScopedSpan ss =
         TelemetryUtils.startScopedSpan("DeclarationSearcher.searchClassOrInterface")) {
 
-      ss.addAnnotation(
+      TelemetryUtils.ScopedSpan.addAnnotation(
           TelemetryUtils.annotationBuilder()
               .put("source", source.getFile().getPath())
               .put("line", line)

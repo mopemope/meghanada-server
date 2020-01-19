@@ -149,7 +149,7 @@ public class GradleProject extends Project {
             TelemetryUtils.startScopedSpan("GradleProject.parseProject");
         ProjectConnection connection = getProjectConnection()) {
 
-      scope.addAnnotation(
+      TelemetryUtils.ScopedSpan.addAnnotation(
           TelemetryUtils.annotationBuilder()
               .put("projectRoot", projectRoot.getPath())
               .put("current", current.getPath())
