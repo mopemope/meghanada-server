@@ -124,7 +124,7 @@ public class ProjectDatabase {
         } catch (ExodusException e) {
           // wait transaction
           try {
-            Thread.sleep(1000 * 1);
+            Thread.sleep(1000);
           } catch (InterruptedException e1) {
             log.catching(e1);
           }

@@ -30,7 +30,7 @@ public class StringUtils {
   static {
     javaEscaper =
         Escapers.builder()
-            .addEscape('\'', "\\\'")
+            .addEscape('\'', "\\'")
             .addEscape('\"', "\\\"")
             .addEscape('\\', "\\\\")
             .addEscape('\t', "\\t")

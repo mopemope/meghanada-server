@@ -5,6 +5,8 @@ import com.github.javaparser.ast.CompilationUnit;
 import java.io.File;
 import java.io.InputStream;
 import java.util.Enumeration;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import meghanada.cache.GlobalCache;
@@ -33,6 +35,7 @@ public class ParameterNamesIndexer {
       FSTConfiguration.createDefaultConfiguration();
 
   private static final Logger log = LogManager.getLogger(ParameterNamesIndexer.class);
+  private static final Pattern DOT_PTRN = Pattern.compile(".", Pattern.LITERAL);
 
   static {
     fstConfiguration.registerClass(ParameterName.class, MethodParameterNames.class);
@@ -93,8 +96,12 @@ public class ParameterNamesIndexer {
         if (mpn.names.size() > 0) {
           // log.debug("{} {}", javaName, mpn.className);
           String pkg = ClassNameUtils.getPackage(fqcn);
-          String dirPath = pkg.replace(".", "/");
-          String fileName = mpn.className.substring(pkg.length() + 1).replace(".", "$") + ".param";
+          String dirPath = DOT_PTRN.matcher(pkg).replaceAll(Matcher.quoteReplacement("/"));
+          String fileName =
+              DOT_PTRN
+                      .matcher(mpn.className.substring(pkg.length() + 1))
+                      .replaceAll(Matcher.quoteReplacement("$"))
+                  + ".param";
 
           File outFile = new File("./resources/params/" + dirPath, fileName);
           boolean result = outFile.getParentFile().mkdirs();

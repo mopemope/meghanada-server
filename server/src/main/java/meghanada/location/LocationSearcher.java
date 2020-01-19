@@ -647,10 +647,7 @@ public class LocationSearcher {
       if (!temp.setReadOnly()) {
         log.warn("{} setReadOnly fail", temp);
       }
-      if (loc != null) {
-        return loc;
-      }
-      return null;
+      return loc;
     }
   }
 

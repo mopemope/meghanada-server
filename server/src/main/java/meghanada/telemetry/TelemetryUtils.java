@@ -244,13 +244,13 @@ public class TelemetryUtils {
               "The member cache miss rate",
               M_MEMBER_CACHE_MISS_RATE,
               Aggregation.LastValue.create(),
-              Collections.unmodifiableList(Arrays.asList(KEY_UID))),
+              Collections.unmodifiableList(Collections.singletonList(KEY_UID))),
           View.create(
               View.Name.create("meghanada/vm_memory"),
               "The vm memory",
               M_MEMORY,
               Aggregation.LastValue.create(),
-              Collections.unmodifiableList(Arrays.asList(KEY_UID))),
+              Collections.unmodifiableList(Collections.singletonList(KEY_UID))),
         };
 
     ViewManager vmgr = Stats.getViewManager();
@@ -541,7 +541,7 @@ public class TelemetryUtils {
 
     private Map<String, AttributeValue> map = new HashMap<>(8);
 
-    public boolean isMask() {
+    public static boolean isMask() {
       return enabledExporter;
     }
 

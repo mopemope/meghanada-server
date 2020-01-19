@@ -193,13 +193,11 @@ public class TreeAnalyzer {
     Variable variable = new Variable(kind.toString(), preferredPos, range);
     if (nonNull(value)) {
       variable.fqcn = value.getClass().getCanonicalName();
-      variable.argumentIndex = context.argumentIndex;
-      context.setArgumentFQCN(variable.fqcn);
     } else {
       variable.fqcn = "<null>";
-      variable.argumentIndex = context.argumentIndex;
-      context.setArgumentFQCN(variable.fqcn);
     }
+    variable.argumentIndex = context.argumentIndex;
+    context.setArgumentFQCN(variable.fqcn);
     src.getCurrentScope()
         .ifPresent(
             scope -> {
@@ -2048,7 +2046,7 @@ public class TreeAnalyzer {
         } else {
           if (src.isReportUnknown()) {
             log.warn(
-                "unknown expression expression={} {}",
+                "unknown expression expression={} {} {}",
                 expression,
                 expression.getClass(),
                 src.filePath);
@@ -2085,7 +2083,7 @@ public class TreeAnalyzer {
         } else {
           if (src.isReportUnknown()) {
             log.warn(
-                "unknown expression expression={} {}",
+                "unknown expression expression={} {} {}",
                 expression,
                 expression.getClass(),
                 src.filePath);

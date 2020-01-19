@@ -12,12 +12,15 @@ import com.github.javaparser.ast.expr.SimpleName;
 import com.github.javaparser.ast.visitor.VoidVisitorAdapter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class ParameterNameVisitor extends VoidVisitorAdapter<Object> {
 
   private static final Logger log = LogManager.getLogger(ParameterNameVisitor.class);
+  private static final Pattern COMPILE = Pattern.compile("[]", Pattern.LITERAL);
   final String originClassName;
   String pkg;
   String className;
@@ -84,14 +87,14 @@ public class ParameterNameVisitor extends VoidVisitorAdapter<Object> {
       List<List<ParameterName>> parameterNames =
           names.names.computeIfAbsent(methodName, k -> new ArrayList<>(4));
 
-      final List<ParameterName> temp = new ArrayList<>();
+      final List<ParameterName> temp = new ArrayList<>(8);
       for (final Parameter parameter : parameters) {
         ParameterName parameterName = new ParameterName();
         String type = parameter.getType().toString();
         String name = parameter.getName().getIdentifier();
         if (name.contains("[]")) {
           type = type + "[]";
-          name = name.replace("[]", "");
+          name = COMPILE.matcher(name).replaceAll(Matcher.quoteReplacement(""));
         }
         parameterName.type = type;
         parameterName.name = name;

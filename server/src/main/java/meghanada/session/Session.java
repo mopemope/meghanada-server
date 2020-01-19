@@ -146,7 +146,7 @@ public class Session {
         log.debug("find eclipse project {}", eclipse);
         return loadProject(base, Project.ECLIPSE_PROJECT_FILE, current);
       } else if (meghanada.exists()) {
-        log.debug("find meghanada project {}", meghanada, current);
+        log.debug("find meghanada project {} {}", meghanada, current);
         return loadProject(base, Config.MEGHANADA_CONF_FILE, current);
       }
 

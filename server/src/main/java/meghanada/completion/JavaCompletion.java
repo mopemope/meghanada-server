@@ -124,9 +124,6 @@ public class JavaCompletion {
       final String prefix, final Config.CompletionType type) {
     CompletionMatcher matcher;
     switch (type) {
-      case PREFIX:
-        matcher = new PrefixMatcher(prefix, true);
-        break;
       case CONTAINS:
         matcher = new ContainsMatcher(prefix, true);
         break;
@@ -146,9 +143,6 @@ public class JavaCompletion {
       final String prefix, final Config.CompletionType type) {
     CompletionMatcher matcher;
     switch (type) {
-      case PREFIX:
-        matcher = new PrefixMatcher(prefix, true);
-        break;
       case CONTAINS:
         matcher = new ContainsMatcher(prefix, true);
         break;

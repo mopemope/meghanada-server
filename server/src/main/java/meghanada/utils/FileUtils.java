@@ -9,7 +9,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.UncheckedIOException;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.AccessDeniedException;
 import java.nio.file.FileVisitResult;
@@ -364,12 +363,8 @@ public final class FileUtils {
                           // not modify
                           return false;
                         }
-                        // update
-                        map.put(path, md5sum);
-                      } else {
-                        // save checksum
-                        map.put(path, md5sum);
                       }
+                      map.put(path, md5sum);
                     } catch (IOException e) {
                       throw new UncheckedIOException(e);
                     }
@@ -412,7 +407,7 @@ public final class FileUtils {
 
       try (final BufferedReader br =
           new BufferedReader(
-              new InputStreamReader(new FileInputStream(file), Charset.forName("UTF-8")))) {
+              new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8))) {
         String s;
         long i = 0;
         while ((s = br.readLine()) != null) {

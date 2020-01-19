@@ -205,14 +205,16 @@ class AndroidSupport {
     Map<String, Set<File>> androidSources = AndroidSupport.getAndroidSources(defaultConfig);
     Set<ProjectDependency> dependencies = this.getAndroidDependencies(androidProject);
 
-    this.project.getSources().addAll(androidSources.getOrDefault(SOURCES_KEY, new HashSet<>()));
-    this.project.getResources().addAll(androidSources.getOrDefault(RESOURCES_KEY, new HashSet<>()));
+    this.project.getSources().addAll(androidSources.getOrDefault(SOURCES_KEY, new HashSet<>(0)));
+    this.project
+        .getResources()
+        .addAll(androidSources.getOrDefault(RESOURCES_KEY, new HashSet<>(0)));
     this.project
         .getTestSources()
-        .addAll(androidSources.getOrDefault(TEST_SOURCES_KEY, new HashSet<>()));
+        .addAll(androidSources.getOrDefault(TEST_SOURCES_KEY, new HashSet<>(0)));
     this.project
         .getTestResources()
-        .addAll(androidSources.getOrDefault(AndroidSupport.TEST_RESOURCES_KEY, new HashSet<>()));
+        .addAll(androidSources.getOrDefault(AndroidSupport.TEST_RESOURCES_KEY, new HashSet<>(0)));
     this.project.getDependencies().addAll(dependencies);
 
     // merge other project
@@ -447,7 +449,7 @@ class AndroidSupport {
 
   private static Map<String, Set<File>> getAndroidSources(ProductFlavorContainer defaultConfig) {
 
-    Map<String, Set<File>> sources = new HashMap<>();
+    Map<String, Set<File>> sources = new HashMap<>(8);
     ProductFlavor productFlavor = defaultConfig.getProductFlavor();
     String name = productFlavor.getName();
 

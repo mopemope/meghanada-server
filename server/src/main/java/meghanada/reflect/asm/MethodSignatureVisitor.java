@@ -154,10 +154,8 @@ class MethodSignatureVisitor extends SignatureVisitor {
     if (this.formalType == null) {
       this.formalType = new TypeInfo("", "");
       this.formalType.typeParameters = new ArrayList<>(4);
-      this.formalType.typeParameters.add(new TypeInfo(s, s));
-    } else {
-      this.formalType.typeParameters.add(new TypeInfo(s, s));
     }
+    this.formalType.typeParameters.add(new TypeInfo(s, s));
     log.traceExit(message);
   }
 

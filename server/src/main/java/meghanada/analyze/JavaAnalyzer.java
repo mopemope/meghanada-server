@@ -9,7 +9,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URI;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -113,7 +113,7 @@ public class JavaAnalyzer {
     final Config config = Config.load();
 
     try (final StandardJavaFileManager fileManager =
-            compiler.getStandardFileManager(null, null, Charset.forName("UTF-8"));
+            compiler.getStandardFileManager(null, null, StandardCharsets.UTF_8);
         TelemetryUtils.ScopedSpan scope =
             TelemetryUtils.startScopedSpan("JavaAnalyzer.runAnalyzeAndCompile")) {
 
@@ -208,7 +208,7 @@ public class JavaAnalyzer {
     final Config config = Config.load();
 
     try (final StandardJavaFileManager fileManager =
-            compiler.getStandardFileManager(null, null, Charset.forName("UTF-8"));
+            compiler.getStandardFileManager(null, null, StandardCharsets.UTF_8);
         TelemetryUtils.ScopedSpan scope =
             TelemetryUtils.startScopedSpan("JavaAnalyzer.runAnalyzeAndCompile")) {
       TelemetryUtils.ScopedSpan.addAnnotation(
@@ -267,7 +267,7 @@ public class JavaAnalyzer {
       try (TelemetryUtils.ScopedSpan child = TelemetryUtils.startScopedSpan("javacTask.analyze")) {
         TelemetryUtils.ScopedSpan.addAnnotation(
             TelemetryUtils.annotationBuilder()
-                .put("javac arg", config.getJavacArg().toString())
+                .put("javac arg", config.getJavacArg())
                 .put("size", compilationUnits.size())
                 .build("compile option"));
         javacTask.analyze();

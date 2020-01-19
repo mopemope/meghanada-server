@@ -80,11 +80,11 @@ public class IndexDatabase {
     }
     if (isNull(this.environment) || isNull(this.searcher)) {
       File indexDir = new File(loc, "index");
-      Environment env = Environments.newContextualInstance(indexDir);
+      ContextualEnvironment env = Environments.newContextualInstance(indexDir);
       String location = env.getLocation();
       log.debug("open index database {}", location);
       try {
-        this.searcher = new DocumentSearcher((ContextualEnvironment) env);
+        this.searcher = new DocumentSearcher(env);
         this.environment = env;
       } catch (IOException e) {
         throw new UncheckedIOException(e);

@@ -18,6 +18,7 @@ public class MethodScope extends BlockScope {
 
   private static final Logger log = LogManager.getLogger(MethodScope.class);
   private static final long serialVersionUID = -5255555840551352713L;
+  public static final String[] STRINGS = new String[0];
   public final String declaringClass;
   public final List<String> parameters = new ArrayList<>(3);
   public boolean vararg;
@@ -206,6 +207,6 @@ public class MethodScope extends BlockScope {
   }
 
   private String[] getExceptions() {
-    return this.exceptions.toArray(new String[0]);
+    return this.exceptions.toArray(STRINGS);
   }
 }

@@ -61,12 +61,7 @@ public class ProjectDependency implements Serializable {
   }
 
   public File getFile() {
-    if (type.equals(Type.PROJECT)) {
-      // eval project
-      return file;
-    } else {
-      return file;
-    }
+    return file;
   }
 
   @Override
