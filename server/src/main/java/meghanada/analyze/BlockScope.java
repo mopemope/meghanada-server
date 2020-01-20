@@ -259,18 +259,17 @@ public class BlockScope extends Scope {
     return result;
   }
 
-  @Override
-  public List<Variable> getLocalVariables(final int line) {
+  public Optional<List<Variable>> getLocalVariables(final int line) {
     for (BlockScope bs : this.scopes) {
-      List<Variable> vs = bs.getLocalVariables(line);
-      if (nonNull(vs) && !vs.isEmpty()) {
+      Optional<List<Variable>> vs = bs.getLocalVariables(line);
+      if (vs.isPresent()) {
         return vs;
       }
     }
 
     for (ExpressionScope es : this.expressions) {
-      List<Variable> vs = es.getLocalVariables(line);
-      if (nonNull(vs) && !vs.isEmpty()) {
+      Optional<List<Variable>> vs = es.getLocalVariables(line);
+      if (vs.isPresent()) {
         return vs;
       }
     }
