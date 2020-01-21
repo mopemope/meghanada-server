@@ -145,6 +145,7 @@ public class GradleProject extends Project {
   }
 
   @Override
+  @SuppressWarnings("try")
   public Project parseProject(File projectRoot, File current) throws ProjectParseException {
     try (TelemetryUtils.ScopedSpan scope =
             TelemetryUtils.startScopedSpan("GradleProject.parseProject");

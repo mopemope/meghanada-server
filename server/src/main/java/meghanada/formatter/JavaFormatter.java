@@ -64,6 +64,7 @@ public class JavaFormatter {
     return properties;
   }
 
+  @SuppressWarnings("try")
   public static String formatGoogleStyle(final String content) {
     try (TelemetryUtils.ScopedSpan scope =
         TelemetryUtils.startScopedSpan("JavaFormatter.formatGoogleStyle")) {
@@ -75,6 +76,7 @@ public class JavaFormatter {
     }
   }
 
+  @SuppressWarnings("try")
   public static String formatEclipseStyle(final Properties prop, final String content) {
     try (TelemetryUtils.ScopedSpan scope =
         TelemetryUtils.startScopedSpan("JavaFormatter.formatEclipseStyle")) {

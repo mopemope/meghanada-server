@@ -43,6 +43,7 @@ public class JavaImportCompletion {
     return list;
   }
 
+  @SuppressWarnings("try")
   private static Optional<Map<String, List<String>>> searchFieldAndMethods(
       Source source, Integer line, Integer column, String name) {
 
@@ -76,6 +77,7 @@ public class JavaImportCompletion {
     }
   }
 
+  @SuppressWarnings("try")
   private static Optional<Map<String, List<String>>> searchMethodCall(
       Source source, Integer line, Integer column, String symbol) {
 
@@ -125,6 +127,7 @@ public class JavaImportCompletion {
     }
   }
 
+  @SuppressWarnings("try")
   private static Optional<Map<String, List<String>>> searchClassOrInterface(
       final Source source, final Integer line, final Integer column, final String symbol) {
 

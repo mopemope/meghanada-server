@@ -282,6 +282,7 @@ public class ASMReflector {
     return result;
   }
 
+  @SuppressWarnings("try")
   Map<ClassIndex, File> getClasses(File file) throws IOException {
 
     try (TelemetryUtils.ScopedSpan scope =
@@ -376,6 +377,7 @@ public class ASMReflector {
     }
   }
 
+  @SuppressWarnings("try")
   public List<MemberDescriptor> reflectAll(final InheritanceInfo info) {
     Map<String, List<MemberDescriptor>> collect;
 
@@ -444,6 +446,7 @@ public class ASMReflector {
     }
   }
 
+  @SuppressWarnings("try")
   private List<MemberDescriptor> reflectAll(File file, String topClass, List<String> classes)
       throws IOException {
 
@@ -627,6 +630,7 @@ public class ASMReflector {
     }
   }
 
+  @SuppressWarnings("try")
   private List<MemberDescriptor> reflect(File file, String name) throws IOException {
 
     try (TelemetryUtils.ScopedSpan scope = TelemetryUtils.startScopedSpan("ASMReflector.reflect")) {
@@ -695,6 +699,7 @@ public class ASMReflector {
     return getMembersFromClassFile(parent, file, fqcn, true);
   }
 
+  @SuppressWarnings("try")
   private List<MemberDescriptor> getMembersFromClassFile(
       File parent, File file, String fqcn, boolean includeSuper) throws IOException {
 
@@ -762,6 +767,7 @@ public class ASMReflector {
     return members;
   }
 
+  @SuppressWarnings("try")
   public InheritanceInfo getReflectInfo(Map<String, ClassIndex> index, String fqcn) {
 
     try (TelemetryUtils.ScopedSpan scope =
@@ -777,6 +783,7 @@ public class ASMReflector {
     }
   }
 
+  @SuppressWarnings("try")
   private InheritanceInfo searchReflectInfo(
       Map<String, ClassIndex> index, String name, InheritanceInfo info) {
 
@@ -944,6 +951,7 @@ public class ASMReflector {
     return count.get();
   }
 
+  @SuppressWarnings("try")
   private static List<String> loadFromInnerCache(
       String mainClass, List<String> targets, List<MemberDescriptor> results) {
 
@@ -969,6 +977,7 @@ public class ASMReflector {
     }
   }
 
+  @SuppressWarnings("try")
   private static List<MemberDescriptor> cacheMember(
       String key, Supplier<List<MemberDescriptor>> supplier) {
 

@@ -75,6 +75,7 @@ public class ProjectDatabaseHelper {
             });
   }
 
+  @SuppressWarnings("try")
   public static List<ClassIndex> getClassIndexes(String filePath) {
 
     try (TelemetryUtils.ScopedSpan scope =

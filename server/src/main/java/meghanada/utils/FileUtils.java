@@ -59,6 +59,7 @@ public final class FileUtils {
     return file.isFile() && file.getName().endsWith(JAVA_EXT) && file.exists();
   }
 
+  @SuppressWarnings("try")
   public static String getChecksum(final File file) throws IOException {
 
     try (TelemetryUtils.ScopedSpan scope =
@@ -109,6 +110,7 @@ public final class FileUtils {
     return list;
   }
 
+  @SuppressWarnings("try")
   public static List<File> collectFiles(final File root, final String ext) {
 
     try (TelemetryUtils.ScopedSpan scope =
@@ -142,6 +144,7 @@ public final class FileUtils {
     }
   }
 
+  @SuppressWarnings("try")
   public static Optional<File> collectFile(final File root, final String ext) throws IOException {
 
     try (TelemetryUtils.ScopedSpan scope =
@@ -189,6 +192,7 @@ public final class FileUtils {
     return true;
   }
 
+  @SuppressWarnings("try")
   public static String findProjectID(final File root, final String target) throws IOException {
     try (TelemetryUtils.ScopedSpan scope =
         TelemetryUtils.startScopedSpan("FileUtils.findProjectID")) {
@@ -245,6 +249,7 @@ public final class FileUtils {
     return properties.getProperty("version");
   }
 
+  @SuppressWarnings("try")
   public static Optional<File> getSourceFile(final String importClass, final Set<File> sourceRoots)
       throws IOException {
     try (TelemetryUtils.ScopedSpan scope =
@@ -265,6 +270,7 @@ public final class FileUtils {
     }
   }
 
+  @SuppressWarnings("try")
   private static boolean hasClassFile(
       final String path, final Set<File> sourceRoots, final File out) throws IOException {
 
@@ -289,6 +295,7 @@ public final class FileUtils {
     }
   }
 
+  @SuppressWarnings("try")
   public static Optional<File> getClassFile(
       String path, final Set<File> sourceRoots, final File out) throws IOException {
 
@@ -424,6 +431,7 @@ public final class FileUtils {
     }
   }
 
+  @SuppressWarnings("try")
   public static void formatJavaFile(final Properties properties, final String path)
       throws IOException {
     try (TelemetryUtils.ScopedSpan scope =
@@ -440,6 +448,7 @@ public final class FileUtils {
     }
   }
 
+  @SuppressWarnings("try")
   public static void formatJavaFile(final String path) throws IOException {
     try (TelemetryUtils.ScopedSpan scope =
         TelemetryUtils.startScopedSpan("FileUtils.formatJavaFile")) {
@@ -466,6 +475,7 @@ public final class FileUtils {
     }
   }
 
+  @SuppressWarnings("try")
   public static Optional<File> existsFQCN(final Set<File> roots, final String fqcn) {
     try (TelemetryUtils.ScopedSpan scope = TelemetryUtils.startScopedSpan("FileUtils.existsFQCN")) {
       TelemetryUtils.ScopedSpan.addAnnotation(
@@ -489,6 +499,7 @@ public final class FileUtils {
     }
   }
 
+  @SuppressWarnings("try")
   private static File convertFQCNToFile(final File root, final String fqcn) {
     try (TelemetryUtils.ScopedSpan scope =
         TelemetryUtils.startScopedSpan("FileUtils.convertFQCNToFile")) {
@@ -500,6 +511,7 @@ public final class FileUtils {
     }
   }
 
+  @SuppressWarnings("try")
   public static Optional<Source> getSource(final File file) throws IOException, ExecutionException {
     try (TelemetryUtils.ScopedSpan scope = TelemetryUtils.startScopedSpan("FileUtils.getSource")) {
 
@@ -511,6 +523,7 @@ public final class FileUtils {
     }
   }
 
+  @SuppressWarnings("try")
   public static Optional<String> convertPathToClass(final Set<File> roots, final File file)
       throws IOException {
 
@@ -533,6 +546,7 @@ public final class FileUtils {
     }
   }
 
+  @SuppressWarnings("try")
   private static Optional<String> convertPathToClass(final File root, final File file)
       throws IOException {
 

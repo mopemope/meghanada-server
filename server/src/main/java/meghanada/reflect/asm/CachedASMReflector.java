@@ -427,6 +427,7 @@ public class CachedASMReflector {
     return this.getSuperClass(className).stream();
   }
 
+  @SuppressWarnings("try")
   private Collection<String> getSuperClassInternal(String className) {
     try (TelemetryUtils.ScopedSpan ss =
         TelemetryUtils.startScopedSpan("CachedASMReflector.getSuperClassInternal")) {

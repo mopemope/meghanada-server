@@ -72,6 +72,7 @@ public class JavaCompletion {
   }
 
   @Nonnull
+  @SuppressWarnings("try")
   private static Collection<? extends CandidateUnit> annotationCompletion(
       final Source source, final int line, final int column, final String prefix) {
 
@@ -206,6 +207,7 @@ public class JavaCompletion {
     return doReflect(fqcn).stream().filter(pre);
   }
 
+  @SuppressWarnings("try")
   private static Collection<? extends CandidateUnit> completionSuper(
       final Source source, final int line, final String prefix) {
 
@@ -271,6 +273,7 @@ public class JavaCompletion {
     }
   }
 
+  @SuppressWarnings("try")
   private static Collection<? extends CandidateUnit> completionNewKeyword(final Source source) {
 
     try (TelemetryUtils.ScopedSpan scope =
@@ -289,6 +292,7 @@ public class JavaCompletion {
     }
   }
 
+  @SuppressWarnings("try")
   private static Collection<? extends CandidateUnit> completionThis(
       final Source source, final int line, final String prefix, final CompletionMatcher matcher) {
 
@@ -314,6 +318,7 @@ public class JavaCompletion {
     }
   }
 
+  @SuppressWarnings("try")
   private static Collection<? extends CandidateUnit> completionSymbols(
       final Source source, final int line, final int column, final String prefix) {
 
@@ -395,6 +400,7 @@ public class JavaCompletion {
     }
   }
 
+  @SuppressWarnings("try")
   private static Optional<List<CandidateUnit>> completionAnnotationValue(
       Source source, int line, int column, String prefix) {
 
@@ -564,6 +570,7 @@ public class JavaCompletion {
     return reflect(ownPackage, fqcn, false, false, prefix);
   }
 
+  @SuppressWarnings("try")
   private static Collection<? extends CandidateUnit> completionFieldsOrMethods(
       final Source source, final int line, final String var, final String prefix) {
 
@@ -1123,6 +1130,7 @@ public class JavaCompletion {
         });
   }
 
+  @SuppressWarnings("try")
   private static Source getSource(final File file) throws IOException, ExecutionException {
 
     try (TelemetryUtils.ScopedSpan scope =
@@ -1136,6 +1144,7 @@ public class JavaCompletion {
     }
   }
 
+  @SuppressWarnings("try")
   public synchronized Collection<? extends CandidateUnit> completionAt(
       final File file, int line, int column, String prefix) {
 
@@ -1159,6 +1168,7 @@ public class JavaCompletion {
     }
   }
 
+  @SuppressWarnings("try")
   private Collection<? extends CandidateUnit> completionAtInternal(
       final File file, int line, int column, String prefix) {
 
@@ -1199,6 +1209,7 @@ public class JavaCompletion {
     }
   }
 
+  @SuppressWarnings("try")
   private Collection<? extends CandidateUnit> specialCompletion(
       final Source source, final int line, final int column, final String searchWord) {
 
@@ -1257,6 +1268,7 @@ public class JavaCompletion {
     }
   }
 
+  @SuppressWarnings("try")
   private static Collection<? extends CandidateUnit> completionMethods(
       Source source, int line, int column, String searchWord) {
 

@@ -82,6 +82,7 @@ public class LocationSearcher {
     this.projectSupplier = supplier;
   }
 
+  @SuppressWarnings("try")
   private static Source getSource(final File file) throws IOException, ExecutionException {
 
     try (TelemetryUtils.ScopedSpan scope =
@@ -95,6 +96,7 @@ public class LocationSearcher {
     }
   }
 
+  @SuppressWarnings("try")
   private static Location searchLocationFromFile(
       final SearchContext ctx, final String fqcn, final File targetFile) throws IOException {
 
@@ -191,6 +193,7 @@ public class LocationSearcher {
     }
   }
 
+  @SuppressWarnings("try")
   private static Location getFieldLocation(
       SearchContext context, File targetFile, FieldDeclaration declaration) throws IOException {
 
@@ -304,6 +307,7 @@ public class LocationSearcher {
     return null;
   }
 
+  @SuppressWarnings("try")
   private static Optional<Variable> getMatchField(
       final ClassScope cs, final String fqcn, final String fieldName) {
 
@@ -324,6 +328,7 @@ public class LocationSearcher {
     }
   }
 
+  @SuppressWarnings("try")
   private Optional<Location> searchLocalVariable(
       final Source source, final int line, final int column, final String symbol) {
 
@@ -380,6 +385,7 @@ public class LocationSearcher {
     return Optional.ofNullable(this.getFQCNLocation(symbol));
   }
 
+  @SuppressWarnings("try")
   public Optional<Location> searchDeclarationLocation(
       final File file, final int line, final int column, final String symbol)
       throws ExecutionException, IOException {
@@ -414,6 +420,7 @@ public class LocationSearcher {
     return list;
   }
 
+  @SuppressWarnings("try")
   private Optional<Location> searchMethodCall(Source source, int line, int column, String symbol) {
 
     try (TelemetryUtils.ScopedSpan scope =
@@ -469,6 +476,7 @@ public class LocationSearcher {
     }
   }
 
+  @SuppressWarnings("try")
   private static Optional<Location> getMethodLocationFromProject(
       String methodName, List<String> arguments, File file) {
 
@@ -504,6 +512,7 @@ public class LocationSearcher {
     }
   }
 
+  @SuppressWarnings("try")
   private Optional<Location> searchClassOrInterface(
       final Source source, final int line, final int column, String symbol) {
 
@@ -567,6 +576,7 @@ public class LocationSearcher {
     }
   }
 
+  @SuppressWarnings("try")
   private Location getFQCNLocation(final String fqcn) {
 
     try (TelemetryUtils.ScopedSpan scope =
@@ -869,6 +879,7 @@ public class LocationSearcher {
     }
   }
 
+  @SuppressWarnings("try")
   private Optional<Location> searchFieldAccess(Source source, int line, int column, String symbol) {
     try (TelemetryUtils.ScopedSpan scope =
         TelemetryUtils.startScopedSpan("LocationSearcher.searchFieldAccess")) {
@@ -916,6 +927,7 @@ public class LocationSearcher {
     }
   }
 
+  @SuppressWarnings("try")
   private static Optional<Location> getFieldLocationFromProject(
       final String fqcn, final String fieldName, final File file) {
 

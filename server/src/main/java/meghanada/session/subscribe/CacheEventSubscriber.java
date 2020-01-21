@@ -113,7 +113,7 @@ public class CacheEventSubscriber extends AbstractSubscriber {
     return ProjectDatabaseHelper.deleteUnunsedSource(project);
   }
 
-  @SuppressWarnings("CheckReturnValue")
+  @SuppressWarnings({"CheckReturnValue", "try"})
   private static void createStandardClassCache() {
     final CachedASMReflector reflector = CachedASMReflector.getInstance();
     final GlobalCache globalCache = GlobalCache.getInstance();
@@ -135,7 +135,7 @@ public class CacheEventSubscriber extends AbstractSubscriber {
     createClassCache("java.io.*");
   }
 
-  @SuppressWarnings("CheckReturnValue")
+  @SuppressWarnings({"CheckReturnValue", "try"})
   private static void createClassCache(String name) {
     final CachedASMReflector reflector = CachedASMReflector.getInstance();
     final GlobalCache globalCache = GlobalCache.getInstance();

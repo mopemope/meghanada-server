@@ -56,6 +56,7 @@ public class CommandHandler {
     }
   }
 
+  @SuppressWarnings("try")
   public void changeProject(long id, String path) {
     long startTime = System.nanoTime();
     String name = "Meghanada/changeProject";
@@ -77,6 +78,7 @@ public class CommandHandler {
     }
   }
 
+  @SuppressWarnings("try")
   public void diagnostics(long id, String path) {
     long startTime = System.nanoTime();
     String name = "Meghanada/diagnostics";
@@ -99,6 +101,7 @@ public class CommandHandler {
     }
   }
 
+  @SuppressWarnings("try")
   public void diagnostics(long id, String sourceFile, String tmpSourceFile) {
     long startTime = System.nanoTime();
     String name = "Meghanada/diagnostics/2";
@@ -132,6 +135,7 @@ public class CommandHandler {
     }
   }
 
+  @SuppressWarnings("try")
   public void compile(long id, String path) {
     long startTime = System.nanoTime();
     String name = "Meghanada/compile";
@@ -153,6 +157,7 @@ public class CommandHandler {
     }
   }
 
+  @SuppressWarnings("try")
   public void compileProject(long id, String path) {
     long startTime = System.nanoTime();
     String name = "Meghanada/compileProject";
@@ -173,6 +178,7 @@ public class CommandHandler {
     }
   }
 
+  @SuppressWarnings("try")
   public void autocomplete(long id, String path, String line, String column, String prefix) {
     long startTime = System.nanoTime();
     String name = "Meghanada/autocomplete";
@@ -201,6 +207,7 @@ public class CommandHandler {
     }
   }
 
+  @SuppressWarnings("try")
   public void runJUnit(long id, String path, String test, boolean debug) {
     long startTime = System.nanoTime();
     String name = "Meghanada/runJUnit";
@@ -235,6 +242,7 @@ public class CommandHandler {
     }
   }
 
+  @SuppressWarnings("try")
   public void parse(long id, String path) {
     long startTime = System.nanoTime();
     String name = "Meghanada/parse";
@@ -255,6 +263,7 @@ public class CommandHandler {
     }
   }
 
+  @SuppressWarnings("try")
   public void addImport(long id, String path, String fqcn) {
     long startTime = System.nanoTime();
     String name = "Meghanada/addImport";
@@ -275,6 +284,7 @@ public class CommandHandler {
     }
   }
 
+  @SuppressWarnings("try")
   public void optimizeImport(long id, String sourceFile, String tmpSourceFile) {
     long startTime = System.nanoTime();
     String name = "Meghanada/optimizeImport";
@@ -302,6 +312,7 @@ public class CommandHandler {
     }
   }
 
+  @SuppressWarnings("try")
   public void importAll(long id, String path) {
     long startTime = System.nanoTime();
     String name = "Meghanada/importAll";
@@ -322,6 +333,7 @@ public class CommandHandler {
     }
   }
 
+  @SuppressWarnings("try")
   public void switchTest(long id, String path) {
     long startTime = System.nanoTime();
     String name = "Meghanada/switchTest";
@@ -342,6 +354,7 @@ public class CommandHandler {
     }
   }
 
+  @SuppressWarnings("try")
   public void ping(long id) {
     long startTime = System.nanoTime();
     String name = "Meghanada/ping";
@@ -360,6 +373,7 @@ public class CommandHandler {
     }
   }
 
+  @SuppressWarnings("try")
   public void listSymbols(long id, boolean global) {
     long startTime = System.nanoTime();
     String name = "Meghanada/listSymbols";
@@ -379,6 +393,7 @@ public class CommandHandler {
     }
   }
 
+  @SuppressWarnings("try")
   public void jumpSymbol(long id, String path, String line, String column, String symbol) {
     long startTime = System.nanoTime();
     String name = "Meghanada/jumpSymbol";
@@ -404,6 +419,7 @@ public class CommandHandler {
     }
   }
 
+  @SuppressWarnings("try")
   public void jumpDeclaration(long id, String path, String line, String column, String symbol) {
     long startTime = System.nanoTime();
     String name = "Meghanada/jumpDeclaration";
@@ -433,6 +449,7 @@ public class CommandHandler {
     }
   }
 
+  @SuppressWarnings("try")
   public void backJump(long id) {
     long startTime = System.nanoTime();
     String name = "Meghanada/backJump";
@@ -452,6 +469,7 @@ public class CommandHandler {
     }
   }
 
+  @SuppressWarnings("try")
   public void runTask(long id, List<String> tasks) {
     long startTime = System.nanoTime();
     String name = "Meghanada/runTask";
@@ -481,6 +499,7 @@ public class CommandHandler {
     }
   }
 
+  @SuppressWarnings("try")
   public void clearCache(long id) {
     long startTime = System.nanoTime();
     String name = "Meghanada/clearCache";
@@ -500,6 +519,7 @@ public class CommandHandler {
     }
   }
 
+  @SuppressWarnings("try")
   public void localVariable(long id, String path, String line) {
     long startTime = System.nanoTime();
     String name = "Meghanada/localVariable";
@@ -527,6 +547,7 @@ public class CommandHandler {
     }
   }
 
+  @SuppressWarnings("try")
   public void formatCode(long id, String path) {
     long startTime = System.nanoTime();
     String name = "Meghanada/formatCode";
@@ -547,6 +568,7 @@ public class CommandHandler {
     }
   }
 
+  @SuppressWarnings("try")
   public void showDeclaration(long id, String path, String line, String column, String symbol) {
     long startTime = System.nanoTime();
     String name = "Meghanada/showDeclaration";
@@ -578,6 +600,7 @@ public class CommandHandler {
     }
   }
 
+  @SuppressWarnings("try")
   public void execMain(long id, String path, boolean debug) {
     long startTime = System.nanoTime();
     String name = "Meghanada/execMain";
@@ -635,6 +658,7 @@ public class CommandHandler {
     }
   }
 
+  @SuppressWarnings("try")
   public void reference(long id, String path, String line, String column, String symbol) {
     long startTime = System.nanoTime();
     String name = "Meghanada/reference";
@@ -663,6 +687,7 @@ public class CommandHandler {
     }
   }
 
+  @SuppressWarnings("try")
   public void typeInfo(long id, String path, String line, String column, String symbol) {
     long startTime = System.nanoTime();
     String name = "Meghanada/typeInfo";
@@ -697,6 +722,7 @@ public class CommandHandler {
     }
   }
 
+  @SuppressWarnings("try")
   public void searchEverywhere(long id, String query) {
     long startTime = System.nanoTime();
     String name = "Meghanada/searchEverywhere";
@@ -724,6 +750,7 @@ public class CommandHandler {
     }
   }
 
+  @SuppressWarnings("try")
   public void killRunningProcess(long id) {
     long startTime = System.nanoTime();
     String name = "Meghanada/killRunningProcess";
@@ -744,6 +771,7 @@ public class CommandHandler {
     }
   }
 
+  @SuppressWarnings("try")
   public void showProject(long id) {
     long startTime = System.nanoTime();
     String name = "Meghanada/showProject";
@@ -764,6 +792,7 @@ public class CommandHandler {
     }
   }
 
+  @SuppressWarnings("try")
   public void autocompleteResolve(
       long id, String path, String line, String column, String type, String item, String desc) {
     long startTime = System.nanoTime();
@@ -795,6 +824,7 @@ public class CommandHandler {
     }
   }
 
+  @SuppressWarnings("try")
   public void importAtPoint(long id, String path, String line, String column, String symbol) {
     long startTime = System.nanoTime();
     String name = "Meghanada/importAtPoint";

@@ -52,6 +52,7 @@ public class DeclarationSearcher {
     }
   }
 
+  @SuppressWarnings("try")
   private static Optional<Declaration> searchLocalVariable(
       Source source, Integer line, Integer column, String symbol) {
 
@@ -90,6 +91,7 @@ public class DeclarationSearcher {
     return list;
   }
 
+  @SuppressWarnings("try")
   private static Optional<Declaration> searchReserved(
       @SuppressWarnings("unused") Source source, Integer line, Integer column, String symbol) {
 
@@ -123,6 +125,7 @@ public class DeclarationSearcher {
     }
   }
 
+  @SuppressWarnings("try")
   private static Optional<Declaration> searchField(
       final Source source, Integer line, Integer column, String symbol) {
 
@@ -190,6 +193,7 @@ public class DeclarationSearcher {
     }
   }
 
+  @SuppressWarnings("try")
   private static Optional<Declaration> searchMethodCall(
       Source source, Integer line, Integer column, String symbol) {
 
@@ -240,6 +244,7 @@ public class DeclarationSearcher {
     }
   }
 
+  @SuppressWarnings("try")
   private static Optional<Declaration> searchClassOrInterface(
       Source source, Integer line, Integer column, String symbol) {
 

@@ -363,6 +363,7 @@ public class Source implements Serializable, Storable, SearchIndexable {
     return null;
   }
 
+  @SuppressWarnings("try")
   public Optional<MethodCall> getMethodCall(
       final int line, final int column, final boolean onlyName) {
     try (TelemetryUtils.ScopedSpan ss =
@@ -469,6 +470,7 @@ public class Source implements Serializable, Storable, SearchIndexable {
     return memberDescriptors;
   }
 
+  @SuppressWarnings("try")
   public Optional<FieldAccess> searchFieldAccess(
       final int line, final int column, final String name) {
     try (TelemetryUtils.ScopedSpan ss =

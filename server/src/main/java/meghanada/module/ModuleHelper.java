@@ -114,6 +114,7 @@ public class ModuleHelper {
     return Optional.empty();
   }
 
+  @SuppressWarnings("try")
   public static Optional<ClassData> pathToClassData(Path p) {
     try (TelemetryUtils.ScopedSpan scope =
         TelemetryUtils.startScopedSpan("ModuleHelper.pathToClassData")) {

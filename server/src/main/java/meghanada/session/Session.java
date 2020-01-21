@@ -95,6 +95,7 @@ public class Session {
     this.currentProject = currentProject;
   }
 
+  @SuppressWarnings("try")
   public static Session createSession(String root) throws IOException {
     try (TelemetryUtils.ScopedSpan scope =
         TelemetryUtils.startScopedSpan("Session.createSession")) {
@@ -158,6 +159,7 @@ public class Session {
     }
   }
 
+  @SuppressWarnings("try")
   private static Optional<Project> loadProject(File projectRoot, String targetFile, File current)
       throws IOException {
 
@@ -255,6 +257,7 @@ public class Session {
     }
   }
 
+  @SuppressWarnings("try")
   private static File findProjectRoot(File base) {
 
     try (TelemetryUtils.ScopedSpan scope =
@@ -310,6 +313,7 @@ public class Session {
     return true;
   }
 
+  @SuppressWarnings("try")
   private boolean searchAndChangeProject(final File base) throws IOException {
 
     try (TelemetryUtils.ScopedSpan scope =
@@ -466,6 +470,7 @@ public class Session {
     return getCompletion().completionAt(file, line, column, prefix);
   }
 
+  @SuppressWarnings("try")
   public synchronized boolean changeProject(final String path) {
 
     try (TelemetryUtils.ScopedSpan scope =
@@ -616,6 +621,7 @@ public class Session {
     return parseJavaSource(file).map(Source::searchMissingImport).orElse(Collections.emptyMap());
   }
 
+  @SuppressWarnings("try")
   private static Optional<Source> parseJavaSource(final File file) throws ExecutionException {
 
     try (TelemetryUtils.ScopedSpan scope =
@@ -987,6 +993,7 @@ public class Session {
         .orElse(Collections.emptyMap());
   }
 
+  @SuppressWarnings("try")
   private static Optional<Project> loadDefaultProject(File root) throws IOException {
 
     try (TelemetryUtils.ScopedSpan scope =

@@ -142,6 +142,7 @@ public abstract class Project implements Serializable, Storable {
         .collect(Collectors.toList());
   }
 
+  @SuppressWarnings("try")
   public static Project loadProject(final String projectRoot) throws Exception {
     try (TelemetryUtils.ScopedSpan scope = TelemetryUtils.startScopedSpan("Project.loadProject")) {
       TelemetryUtils.ScopedSpan.addAnnotation(

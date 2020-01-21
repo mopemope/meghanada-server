@@ -82,6 +82,7 @@ public class GlobalCache {
             .build(memberCacheLoader);
   }
 
+  @SuppressWarnings("try")
   public List<MemberDescriptor> getMemberDescriptors(final String fqcn) throws ExecutionException {
 
     try (TelemetryUtils.ScopedSpan scope =
@@ -96,6 +97,7 @@ public class GlobalCache {
     }
   }
 
+  @SuppressWarnings("try")
   public void loadMemberDescriptors(final String fqcn) throws IOException, ExecutionException {
 
     try (TelemetryUtils.ScopedSpan scope =
@@ -155,6 +157,7 @@ public class GlobalCache {
     }
   }
 
+  @SuppressWarnings("try")
   public Source getSource(final File file) throws ExecutionException {
 
     try (TelemetryUtils.ScopedSpan scope =
@@ -168,6 +171,7 @@ public class GlobalCache {
     }
   }
 
+  @SuppressWarnings("try")
   public void loadSource(final File file) throws IOException {
 
     try (TelemetryUtils.ScopedSpan scope =
@@ -207,6 +211,7 @@ public class GlobalCache {
     }
   }
 
+  @SuppressWarnings("try")
   public Optional<String> getSourceMap(final String fqcn) throws ExecutionException {
 
     try (TelemetryUtils.ScopedSpan scope =

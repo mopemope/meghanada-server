@@ -37,6 +37,7 @@ class MemberCacheLoader extends CacheLoader<String, List<MemberDescriptor>>
 
   MemberCacheLoader() {}
 
+  @SuppressWarnings("try")
   private static Optional<List<MemberDescriptor>> getCachedMemberDescriptors(String fqcn) {
     try (TelemetryUtils.ScopedSpan scope =
         TelemetryUtils.startScopedSpan("MemberCacheLoader.getCachedMemberDescriptors")) {
@@ -60,6 +61,7 @@ class MemberCacheLoader extends CacheLoader<String, List<MemberDescriptor>>
     return null;
   }
 
+  @SuppressWarnings("try")
   private static void storeMembers(final String fqcn, final List<MemberDescriptor> list) {
 
     try (TelemetryUtils.ScopedSpan scope =
@@ -96,6 +98,7 @@ class MemberCacheLoader extends CacheLoader<String, List<MemberDescriptor>>
   }
 
   @Override
+  @SuppressWarnings("try")
   public List<MemberDescriptor> load(final String className) throws IOException {
 
     try (TelemetryUtils.ScopedSpan scope =
@@ -141,6 +144,7 @@ class MemberCacheLoader extends CacheLoader<String, List<MemberDescriptor>>
     }
   }
 
+  @SuppressWarnings("try")
   private static List<MemberDescriptor> loadFromReflector(String fqcn) {
 
     try (TelemetryUtils.ScopedSpan scope =

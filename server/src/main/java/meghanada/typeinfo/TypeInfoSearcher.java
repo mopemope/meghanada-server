@@ -39,6 +39,7 @@ public class TypeInfoSearcher {
     this.projectSupplier = supplier;
   }
 
+  @SuppressWarnings("try")
   private static List<MemberDescriptor> getMembers(String fqcn, String clsName) {
 
     try (TelemetryUtils.ScopedSpan ss =
@@ -74,6 +75,7 @@ public class TypeInfoSearcher {
     }
   }
 
+  @SuppressWarnings("try")
   private static TypeInfo createTypeInfo(String fqcn, String clsName) {
 
     try (TelemetryUtils.ScopedSpan ss =
@@ -132,6 +134,7 @@ public class TypeInfoSearcher {
     return typeInfo.orElse(new TypeInfo(fqcn));
   }
 
+  @SuppressWarnings("try")
   private static Optional<TypeInfo> searchClass(
       Source source, int line, int column, String symbol) {
 
@@ -182,6 +185,7 @@ public class TypeInfoSearcher {
     }
   }
 
+  @SuppressWarnings("try")
   private static Optional<String> searchClassCondition(
       Source source, int line, int column, String symbol) {
 
@@ -237,6 +241,7 @@ public class TypeInfoSearcher {
     }
   }
 
+  @SuppressWarnings("try")
   public static Optional<TypeInfo> search(File file, int line, int column, String symbol)
       throws ExecutionException, IOException {
 
