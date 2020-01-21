@@ -204,4 +204,26 @@ public abstract class Scope implements Serializable {
     result.addAll(this.methodCalls);
     return result;
   }
+
+  public Optional<List<Variable>> getLocalVariables(final int line) {
+    if (this.contains(line)) {
+      List<Variable> variables =
+          this.variables.stream()
+              .sorted(
+                  (v1, v2) -> {
+                    Long line1 = v1.range.begin.line;
+                    Long line2 = v2.range.begin.line;
+                    int compareTo1 = line1.compareTo(line2);
+                    if (compareTo1 == 0) {
+                      Long col1 = v1.range.begin.column;
+                      Long col2 = v2.range.begin.column;
+                      return col1.compareTo(col2);
+                    }
+                    return compareTo1;
+                  })
+              .collect(Collectors.toList());
+      return variables.isEmpty() ? Optional.empty() : Optional.of(variables);
+    }
+    return Optional.empty();
+  }
 }

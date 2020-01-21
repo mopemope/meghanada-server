@@ -1672,7 +1672,7 @@ public class TreeAnalyzer {
       Type type = sym.asType();
       String name = ident.getName().toString();
 
-      if (nonNull(owner) && nonNull(owner.type)) {
+      if (nonNull(owner) && nonNull(owner.type) && !(owner.type instanceof Type.MethodType)) {
 
         FieldAccess fa = new FieldAccess(name, preferredPos, range);
         // this
@@ -1692,6 +1692,7 @@ public class TreeAnalyzer {
 
       } else {
         Variable variable = new Variable(name, preferredPos, range);
+        boolean isTypeVar = type instanceof Type.TypeVar;
 
         getTypeString(src, type)
             .ifPresent(
