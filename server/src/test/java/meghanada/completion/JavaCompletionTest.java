@@ -47,7 +47,7 @@ public class JavaCompletionTest extends GradleTestBase {
     assertTrue(file.exists());
     final Collection<? extends CandidateUnit> units =
         timeIt(() -> completion.completionAt(file, 8, 9, "*this"));
-    units.forEach(a -> System.out.println(a.getDeclaration()));
+    units.forEach(a -> log.info(a.getDeclaration()));
     assertEquals(15, units.size());
   }
 
@@ -60,7 +60,7 @@ public class JavaCompletionTest extends GradleTestBase {
     assertTrue(file.exists());
     final Collection<? extends CandidateUnit> units =
         timeIt(() -> completion.completionAt(file, 14, 9, "*this"));
-    units.forEach(a -> System.out.println(a.getDeclaration()));
+    units.forEach(a -> log.info(a.getDeclaration()));
     assertEquals(14, units.size());
   }
 
@@ -74,7 +74,7 @@ public class JavaCompletionTest extends GradleTestBase {
 
     final Collection<? extends CandidateUnit> units =
         timeIt(() -> completion.completionAt(file, 8, 9, "fo"));
-    units.forEach(a -> System.out.println(a.getDeclaration()));
+    units.forEach(a -> log.info(a.getDeclaration()));
     assertEquals(1, units.size());
   }
 
@@ -88,7 +88,7 @@ public class JavaCompletionTest extends GradleTestBase {
 
     final Collection<? extends CandidateUnit> units =
         timeIt(() -> completion.completionAt(file, 8, 9, "@Test"));
-    units.forEach(a -> System.out.println(a.getDeclaration()));
+    units.forEach(a -> log.info(a.getDeclaration()));
     assertEquals(9, units.size());
     // assertEquals(6, units.size());
   }
@@ -104,12 +104,12 @@ public class JavaCompletionTest extends GradleTestBase {
     assertTrue(file.exists());
     final Collection<? extends CandidateUnit> staticLog =
         timeIt(() -> completion.completionAt(file, 15, 4, "lo"));
-    staticLog.forEach(a -> System.out.println(a.getDeclaration()));
+    staticLog.forEach(a -> log.info(a.getDeclaration()));
     assertEquals(1, staticLog.size());
 
     final Collection<? extends CandidateUnit> pos =
         timeIt(() -> completion.completionAt(file, 25, 8, "po"));
-    pos.forEach(a -> System.out.println(a.getDeclaration()));
+    pos.forEach(a -> log.info(a.getDeclaration()));
     assertEquals(1, pos.size());
   }
 
@@ -124,7 +124,7 @@ public class JavaCompletionTest extends GradleTestBase {
     assertTrue(file.exists());
     final Collection<? extends CandidateUnit> logMethod =
         timeIt(() -> completion.completionAt(file, 18, 4, "*log#"));
-    logMethod.forEach(a -> System.out.println(a.getDisplayDeclaration()));
+    logMethod.forEach(a -> log.info(a.getDisplayDeclaration()));
     assertEquals(371, logMethod.size());
   }
 
@@ -140,7 +140,7 @@ public class JavaCompletionTest extends GradleTestBase {
 
     final Collection<? extends CandidateUnit> logMethod =
         timeIt(() -> completion.completionAt(file, 17, 4, "*method:java.lang.System#"));
-    // logMethod.forEach(a -> System.out.println(a.getDeclaration()));
+    // logMethod.forEach(a -> log.info(a.getDeclaration()));
     Config config = Config.load();
     if (config.isJava8()) {
       assertEquals(39, logMethod.size());
@@ -166,7 +166,7 @@ public class JavaCompletionTest extends GradleTestBase {
                     79,
                     35,
                     "*method:java.util.Iterator<capture of ? extends com.sun.source.tree.CompilationUnitTree>#"));
-    // units.forEach(a -> System.out.println(a.getDisplayDeclaration()));
+    // units.forEach(a -> log.info(a.getDisplayDeclaration()));
     assertEquals(13, units.size());
     for (CandidateUnit unit : units) {
       if (unit.getName().equals("next")) {
@@ -192,7 +192,7 @@ public class JavaCompletionTest extends GradleTestBase {
                     79,
                     35,
                     "*method:capture of ? extends com.sun.source.tree.CompilationUnitTree#"));
-    // units.forEach(a -> System.out.println(a.getDisplayDeclaration()));
+    // units.forEach(a -> log.info(a.getDisplayDeclaration()));
     Config config = Config.load();
     if (config.isJava8()) {
       assertEquals(17, units.size());
@@ -212,7 +212,7 @@ public class JavaCompletionTest extends GradleTestBase {
     assertTrue(file.exists());
     final Collection<? extends CandidateUnit> units =
         timeIt(() -> completion.completionAt(file, 79, 35, "Dia"));
-    units.forEach(a -> System.out.println(a.getDisplayDeclaration()));
+    units.forEach(a -> log.info(a.getDisplayDeclaration()));
     assertEquals(2329, units.size());
   }
 
@@ -227,7 +227,7 @@ public class JavaCompletionTest extends GradleTestBase {
     assertTrue(file.exists());
     final Collection<? extends CandidateUnit> units =
         timeIt(() -> completion.completionAt(file, 65, 0, "*JavaCompletion#"));
-    units.forEach(a -> System.out.println(a.getDeclaration()));
+    units.forEach(a -> log.info(a.getDeclaration()));
     assertEquals(40, units.size());
   }
 
@@ -241,7 +241,7 @@ public class JavaCompletionTest extends GradleTestBase {
     assertTrue(file.exists());
     final Collection<? extends CandidateUnit> units =
         timeIt(() -> completion.completionAt(file, 356, 0, "an"));
-    units.forEach(a -> System.out.println(a.getDeclaration()));
+    units.forEach(a -> log.info(a.getDeclaration()));
     assertEquals(3, units.size());
   }
 
@@ -255,8 +255,8 @@ public class JavaCompletionTest extends GradleTestBase {
             .getCanonicalFile();
     assertTrue(file.exists());
     final Collection<? extends CandidateUnit> units =
-        timeIt(() -> completion.completionAt(file, 223, 10, "*map#"));
-    units.forEach(a -> System.out.println(a.getDeclaration()));
+        timeIt(() -> completion.completionAt(file, 225, 10, "*map#"));
+    units.forEach(a -> log.info(a.getDeclaration()));
     assertEquals(18, units.size());
   }
 
@@ -269,7 +269,7 @@ public class JavaCompletionTest extends GradleTestBase {
     assertTrue(file.exists());
     final Collection<? extends CandidateUnit> units =
         timeIt(() -> completion.completionAt(file, 3, 21, "va"));
-    units.forEach(a -> System.out.println(a.getDeclaration()));
+    units.forEach(a -> log.info(a.getDeclaration()));
     assertEquals(1, units.size());
   }
 
@@ -284,7 +284,7 @@ public class JavaCompletionTest extends GradleTestBase {
         timeIt(() -> completion.completionAt(file, 43, 13, "*version*version#"));
     units.forEach(
         a -> {
-          System.out.println(a.getDeclaration());
+          log.info(a.getDeclaration());
         });
     assertEquals(59, units.size());
   }
@@ -300,7 +300,7 @@ public class JavaCompletionTest extends GradleTestBase {
         timeIt(() -> completion.completionAt(file, 72, 10, "*args*Options#"));
     units.forEach(
         a -> {
-          System.out.println(a.getDeclaration());
+          log.info(a.getDeclaration());
         });
     assertEquals(11, units.size());
   }
@@ -315,7 +315,7 @@ public class JavaCompletionTest extends GradleTestBase {
     assertTrue(file.exists());
     final Collection<? extends CandidateUnit> units =
         timeIt(() -> completion.completionAt(file, 59, 6, "*diagnostic*fileObject#"));
-    units.forEach(a -> System.out.println(a.getDisplayDeclaration()));
+    units.forEach(a -> log.info(a.getDisplayDeclaration()));
     CandidateUnit unit = (CandidateUnit) units.toArray()[0];
     assertEquals("equals", unit.getName());
   }
@@ -330,7 +330,7 @@ public class JavaCompletionTest extends GradleTestBase {
     assertTrue(file.exists());
     final Collection<? extends CandidateUnit> units =
         timeIt(() -> completion.completionAt(file, 59, 6, "*kind*String#"));
-    units.forEach(a -> System.out.println(a.getDisplayDeclaration()));
+    units.forEach(a -> log.info(a.getDisplayDeclaration()));
     Object[] objs = (units.toArray());
     CandidateUnit unit1 = (CandidateUnit) objs[0];
     CandidateUnit unit2 = (CandidateUnit) objs[1];
@@ -348,7 +348,7 @@ public class JavaCompletionTest extends GradleTestBase {
     assertTrue(file.exists());
     final Collection<? extends CandidateUnit> units =
         timeIt(() -> completion.completionAt(file, 340, 4, "*code*int#"));
-    units.forEach(a -> System.out.println(a.getDisplayDeclaration()));
+    units.forEach(a -> log.info(a.getDisplayDeclaration()));
     Object[] objs = (units.toArray());
     CandidateUnit unit1 = (CandidateUnit) objs[0];
     CandidateUnit unit2 = (CandidateUnit) objs[1];
@@ -370,7 +370,7 @@ public class JavaCompletionTest extends GradleTestBase {
     assertTrue(file.exists());
     final Collection<? extends CandidateUnit> units =
         timeIt(() -> completion.completionAt(file, 192, 22, "a"));
-    units.forEach(a -> System.out.println(a.getDisplayDeclaration()));
+    units.forEach(a -> log.info(a.getDisplayDeclaration()));
     Object[] objs = (units.toArray());
     CandidateUnit unit1 = (CandidateUnit) objs[0];
     assertEquals("analyze", unit1.getName());
