@@ -1,6 +1,6 @@
 plugins {
     // id("com.gradle.build-scan") version "3.0"
-    id("com.github.ben-manes.versions") version "0.27.0"
+    id("com.github.ben-manes.versions") version "0.28.0"
     id("org.ajoberstar.grgit") version "4.0.1"
     id("com.github.sherter.google-java-format") version "0.8"
     id("net.ltgt.errorprone") version "1.1.1"
@@ -8,9 +8,9 @@ plugins {
 
 repositories {
     mavenCentral()
-    maven(url = "http://repo.gradle.org/gradle/libs-releases-local")
-    maven(url = "https://maven.google.com")
     jcenter()
+    maven { url = uri("https://maven.google.com") }
+    maven { url = uri("https://repo.gradle.org/gradle/libs-releases") }
 }
 
 googleJavaFormat {
@@ -29,8 +29,8 @@ dependencies {
 allprojects {
     repositories {
         mavenCentral()
-        maven(url = "http://repo.gradle.org/gradle/libs-releases-local")
-        maven(url = "https://maven.google.com")
         jcenter()
+        maven { url = uri("https://maven.google.com") }
+        maven { url = uri("https://repo.gradle.org/gradle/libs-releases") }
     }
 }

@@ -34,11 +34,11 @@ val longVersion = "$serverVersion-$buildVersion"
 val date: String = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss"))
 val applicationName = "meghanada"
 
-val junitVersion = "5.5.2"
-val gradleVersion = "6.0.1"
-val log4jVersion = "2.13.0"
+val junitVersion = "5.6.0"
+val gradleVersion = "6.2.1"
+val log4jVersion = "2.13.1"
 val xodusVersion = "1.3.124"
-val opencensusVersion = "0.24.0"
+val opencensusVersion = "0.25.0"
 
 base {
     archivesBaseName = applicationName
@@ -58,7 +58,7 @@ dependencies {
     implementation("org.apache.maven:maven-model-builder:3.6.3")
     implementation("com.leacox.motif:motif:0.1")
     implementation("com.leacox.motif:motif-hamcrest:0.1")
-    implementation("com.github.javaparser:javaparser-core:3.15.9")
+    implementation("com.github.javaparser:javaparser-core:3.15.14")
     implementation("org.apache.logging.log4j:log4j-core:$log4jVersion")
     implementation("org.apache.logging.log4j:log4j-api:$log4jVersion")
     implementation("org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion")
@@ -73,7 +73,7 @@ dependencies {
     implementation("org.junit.jupiter:junit-jupiter-params:$junitVersion")
     implementation("org.junit.jupiter:junit-jupiter-engine:$junitVersion")
     implementation("org.junit.vintage:junit-vintage-engine:$junitVersion")
-    implementation("org.junit.platform:junit-platform-launcher:1.5.2")
+    implementation("org.junit.platform:junit-platform-launcher:1.6.0")
 
     implementation("com.android.tools.build:builder-model:3.4.0")
     implementation("io.takari.junit:takari-cpsuite:1.2.7")
