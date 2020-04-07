@@ -34,11 +34,11 @@ val longVersion = "$serverVersion-$buildVersion"
 val date: String = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss"))
 val applicationName = "meghanada"
 
-val junitVersion = "5.6.0"
-val gradleVersion = "6.2.1"
+val junitVersion = "5.6.1"
+val gradleVersion = "6.3"
 val log4jVersion = "2.13.1"
 val xodusVersion = "1.3.124"
-val opencensusVersion = "0.25.0"
+val opencensusVersion = "0.26.0"
 
 base {
     archivesBaseName = applicationName
@@ -65,7 +65,7 @@ dependencies {
     implementation("commons-cli:commons-cli:1.4")
     implementation("org.gradle:gradle-tooling-api:$gradleVersion")
     implementation("com.google.guava:guava:28.2-jre")
-    implementation("org.ow2.asm:asm:7.3.1")
+    implementation("org.ow2.asm:asm:8.0.1")
     implementation("com.typesafe:config:1.4.0")
     implementation("org.atteo:evo-inflector:1.2.2")
 
@@ -73,7 +73,7 @@ dependencies {
     implementation("org.junit.jupiter:junit-jupiter-params:$junitVersion")
     implementation("org.junit.jupiter:junit-jupiter-engine:$junitVersion")
     implementation("org.junit.vintage:junit-vintage-engine:$junitVersion")
-    implementation("org.junit.platform:junit-platform-launcher:1.6.0")
+    implementation("org.junit.platform:junit-platform-launcher:1.6.1")
 
     implementation("com.android.tools.build:builder-model:3.4.0")
     implementation("io.takari.junit:takari-cpsuite:1.2.7")
