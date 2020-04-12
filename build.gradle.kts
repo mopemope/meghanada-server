@@ -8,7 +8,7 @@ plugins {
 
 repositories {
     mavenCentral()
-    maven(url = "http://repo.gradle.org/gradle/libs-releases-local")
+    maven(url = "https://repo.gradle.org/gradle/libs-releases-local")
     maven(url = "https://maven.google.com")
     jcenter()
 }
@@ -29,7 +29,7 @@ dependencies {
 allprojects {
     repositories {
         mavenCentral()
-        maven(url = "http://repo.gradle.org/gradle/libs-releases-local")
+        maven(url = "https://repo.gradle.org/gradle/libs-releases-local")
         maven(url = "https://maven.google.com")
         jcenter()
     }
