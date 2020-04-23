@@ -6,12 +6,14 @@ import static java.util.Objects.nonNull;
 import com.google.common.base.Throwables;
 import com.google.common.eventbus.AsyncEventBus;
 import com.google.common.eventbus.EventBus;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -25,12 +27,10 @@ public class Executor {
 
   private static Executor executor;
   private final ExecutorService executorService;
-  private final ExecutorService fixedThreadPool;
   private final EventBus eventBus;
 
   private Executor() {
-    this.executorService = Executors.newCachedThreadPool();
-    this.fixedThreadPool = Executors.newFixedThreadPool(getThreadPoolSize());
+    this.executorService = getExecutorService();
     this.eventBus =
         new AsyncEventBus(
             executorService,
@@ -58,8 +58,15 @@ public class Executor {
     return executor;
   }
 
-  public static int getThreadPoolSize() {
-    return Runtime.getRuntime().availableProcessors() * 8;
+  private static ExecutorService getExecutorService() {
+    int processors = Runtime.getRuntime().availableProcessors();
+    return new ThreadPoolExecutor(
+        processors + 2,
+        processors * 50,
+        60L,
+        TimeUnit.SECONDS,
+        new ArrayBlockingQueue<>(16),
+        new ThreadFactoryBuilder().setNameFormat("Meghanada Thread Pool %d").build());
   }
 
   public ExecutorService getCachedExecutorService() {
@@ -71,34 +78,25 @@ public class Executor {
   }
 
   public <U> CompletableFuture<U> runIOAction(Supplier<U> supplier) {
-    return CompletableFuture.supplyAsync(supplier, fixedThreadPool);
+    return CompletableFuture.supplyAsync(supplier, executorService);
   }
 
   public CompletableFuture<Void> runIOAction(Runnable runnable) {
-    return CompletableFuture.runAsync(runnable, fixedThreadPool);
+    return CompletableFuture.runAsync(runnable, executorService);
   }
 
   private void shutdown(int timeout) {
     if (executorService.isShutdown()) {
       return;
     }
-    if (fixedThreadPool.isShutdown()) {
-      return;
-    }
     try {
       executorService.shutdown();
-      fixedThreadPool.shutdown();
       if (!executorService.awaitTermination(timeout, TimeUnit.SECONDS)) {
         executorService.shutdownNow();
         executorService.awaitTermination(timeout, TimeUnit.SECONDS);
       }
-      if (!fixedThreadPool.awaitTermination(timeout, TimeUnit.SECONDS)) {
-        fixedThreadPool.shutdownNow();
-        fixedThreadPool.awaitTermination(timeout, TimeUnit.SECONDS);
-      }
     } catch (InterruptedException e) {
       executorService.shutdownNow();
-      fixedThreadPool.shutdownNow();
       try {
         Thread.currentThread().interrupt();
       } catch (Exception ex) {
@@ -131,7 +129,7 @@ public class Executor {
 
     public void runIOAction(Supplier<T> supplier) {
       CompletableFuture<T> f =
-          CompletableFuture.supplyAsync(supplier, Executor.getInstance().fixedThreadPool);
+          CompletableFuture.supplyAsync(supplier, Executor.getInstance().executorService);
       this.cfs.add(f);
     }
 
