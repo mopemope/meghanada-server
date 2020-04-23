@@ -64,7 +64,7 @@ dependencies {
     implementation("org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion")
     implementation("commons-cli:commons-cli:1.4")
     implementation("org.gradle:gradle-tooling-api:$gradleVersion")
-    implementation("com.google.guava:guava:28.2-jre")
+    implementation("com.google.guava:guava:29.0-jre")
     implementation("org.ow2.asm:asm:8.0.1")
     implementation("com.typesafe:config:1.4.0")
     implementation("org.atteo:evo-inflector:1.2.2")

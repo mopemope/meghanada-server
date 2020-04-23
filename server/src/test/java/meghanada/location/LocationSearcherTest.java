@@ -136,7 +136,7 @@ public class LocationSearcherTest extends GradleTestBase {
         searcher.searchDeclarationLocation(f, 621, 46, "searchMissingImport").orElse(null);
     assertNotNull(result);
     assertTrue(result.getPath().contains("Source.java"));
-    assertEquals(500, result.getLine());
+    assertEquals(508, result.getLine());
     assertEquals(36, result.getColumn());
   }
 

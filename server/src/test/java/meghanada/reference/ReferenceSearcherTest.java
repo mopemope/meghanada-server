@@ -106,6 +106,34 @@ public class ReferenceSearcherTest extends GradleTestBase {
   }
 
   @Test
+  public void testSearchMethod02() throws Exception {
+    File f =
+        new File(project.getProjectRootPath(), "./src/main/java/meghanada/analyze/BlockScope.java")
+            .getCanonicalFile();
+    assertTrue(f.exists());
+
+    final ReferenceSearcher searcher = getSearcher();
+    final List<Reference> result =
+        timeIt(() -> searcher.searchReference(f, 77, 41, "getCurrentBlock"));
+    assertNotNull(result);
+    assertEquals(3, result.size());
+  }
+
+  @Test
+  public void testSearchMethod03() throws Exception {
+    File f =
+        new File(project.getProjectRootPath(), "./src/main/java/meghanada/analyze/Variable.java")
+            .getCanonicalFile();
+    assertTrue(f.exists());
+
+    final ReferenceSearcher searcher = getSearcher();
+    final List<Reference> result =
+        timeIt(() -> searcher.searchReference(f, 40, 24, "toStringHelper"));
+    assertNotNull(result);
+    assertEquals(39, result.size());
+  }
+
+  @Test
   public void testSearchConstructor01() throws Exception {
     File f =
         new File(
@@ -133,7 +161,7 @@ public class ReferenceSearcherTest extends GradleTestBase {
     final ReferenceSearcher searcher = getSearcher();
     final List<Reference> result = timeIt(() -> searcher.searchReference(f, 45, 20, "FileUtils"));
     assertNotNull(result);
-    assertEquals(64, result.size());
+    assertEquals(65, result.size());
     //    for (Reference reference : result) {
     //      System.out.println(reference.getCode());
     //    }
@@ -150,5 +178,20 @@ public class ReferenceSearcherTest extends GradleTestBase {
     final List<Reference> result = timeIt(() -> searcher.searchReference(f, 86, 47, "toString"));
     assertNotNull(result);
     assertEquals(44, result.size());
+  }
+
+  @Test
+  public void testLocalVariable01() throws Exception {
+    File f =
+        new File(project.getProjectRootPath(), "./src/main/java/meghanada/analyze/Scope.java")
+            .getCanonicalFile();
+    assertTrue(f.exists());
+
+    final ReferenceSearcher searcher = getSearcher();
+    final List<Reference> result = timeIt(() -> searcher.searchReference(f, 61, 16, "scope"));
+    assertNotNull(result);
+    assertEquals(7, result.size());
+    Reference reference = result.get(0);
+    assertEquals(45, reference.getLine());
   }
 }

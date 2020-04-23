@@ -581,15 +581,13 @@ public class JavaAnalyzerTest extends GradleTestBase {
   }
 
   @Test
-  public void analyze23() throws Exception {
+  public void analyze24() throws Exception {
     final JavaAnalyzer analyzer = getAnalyzer();
     final String cp = getClasspath();
 
-    List<File> files = new ArrayList<>();
+    List<File> files = new ArrayList<>(1);
     final File file =
-        new File(
-            project.getProjectRootPath(),
-            "./src/main/java/meghanada/reference/ReferenceSearcher.java");
+        new File(project.getProjectRootPath(), "./src/main/java/meghanada/analyze/TypeScope.java");
     assertTrue(file.exists());
     files.add(file);
 

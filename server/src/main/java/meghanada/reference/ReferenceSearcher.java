@@ -8,14 +8,7 @@ import com.google.common.base.MoreObjects;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -66,7 +59,7 @@ public class ReferenceSearcher {
           if (pos.line == line && name.equals(symbol)) {
             String clazz = classScope.getFQCN();
             SearchCondition condition =
-                new SearchCondition(clazz, name, SearchCondition.Type.FIELD);
+                new SearchCondition(clazz, name, SearchCondition.Type.FIELD, line, source.filePath);
             return Optional.of(condition);
           }
         }
@@ -81,7 +74,13 @@ public class ReferenceSearcher {
             String clazz = classScope.getFQCN();
             SearchCondition condition =
                 new SearchCondition(
-                    clazz, name, SearchCondition.Type.METHOD, ms.getParameters(), ms.vararg);
+                    clazz,
+                    name,
+                    SearchCondition.Type.METHOD,
+                    ms.getParameters(),
+                    ms.vararg,
+                    line,
+                    source.filePath);
             return Optional.of(condition);
           }
         }
@@ -99,7 +98,14 @@ public class ReferenceSearcher {
     Optional<SearchCondition> result =
         source
             .searchFieldAccess(line, col, symbol)
-            .map(fa -> new SearchCondition(fa.declaringClass, fa.name, SearchCondition.Type.FIELD));
+            .map(
+                fa ->
+                    new SearchCondition(
+                        fa.declaringClass,
+                        fa.name,
+                        SearchCondition.Type.FIELD,
+                        line,
+                        source.filePath));
     log.traceExit(msg);
     return result;
   }
@@ -156,22 +162,27 @@ public class ReferenceSearcher {
                     mc.declaringClass,
                     mc.name,
                     SearchCondition.Type.CONSTRUCTOR,
-                    mc.getArguments(),
-                    md.hasVarargs);
+                    md.getParameters(),
+                    md.hasVarargs,
+                    line,
+                    source.filePath);
               }
               return new SearchCondition(
                   mc.declaringClass,
                   mc.name,
                   SearchCondition.Type.METHOD,
-                  mc.getArguments(),
-                  md.hasVarargs);
+                  md.getParameters(),
+                  md.hasVarargs,
+                  line,
+                  source.filePath);
             });
     log.traceExit(msg);
     return result;
   }
 
   private static List<SearchFunction> getSearchFunctions() {
-    List<SearchFunction> list = new ArrayList<>(3);
+    List<SearchFunction> list = new ArrayList<>(5);
+    list.add(ReferenceSearcher::createLocalVariableCondition);
     list.add(ReferenceSearcher::createMemberCondition);
     list.add(ReferenceSearcher::createFieldAccessCondition);
     list.add(ReferenceSearcher::createMethodCallCondition);
@@ -197,7 +208,9 @@ public class ReferenceSearcher {
                           new SearchCondition(
                               index.getRawDeclaration(),
                               index.getName(),
-                              SearchCondition.Type.CLASS);
+                              SearchCondition.Type.CLASS,
+                              line,
+                              source.filePath);
                       return Optional.of(sc);
                     })
                 .orElseGet(
@@ -216,7 +229,9 @@ public class ReferenceSearcher {
                               new SearchCondition(
                                   index.getRawDeclaration(),
                                   index.getName(),
-                                  SearchCondition.Type.CLASS);
+                                  SearchCondition.Type.CLASS,
+                                  line,
+                                  source.filePath);
                           return Optional.of(sc);
                         }
                       }
@@ -227,7 +242,12 @@ public class ReferenceSearcher {
       }
     } else {
       SearchCondition sc =
-          new SearchCondition(fqcn, ClassNameUtils.getSimpleName(fqcn), SearchCondition.Type.CLASS);
+          new SearchCondition(
+              fqcn,
+              ClassNameUtils.getSimpleName(fqcn),
+              SearchCondition.Type.CLASS,
+              line,
+              source.filePath);
       result = Optional.of(sc);
     }
     log.traceExit(entryMessage);
@@ -269,10 +289,10 @@ public class ReferenceSearcher {
     return result;
   }
 
-  private static List<Reference> searchMethodCallReferences(Source src, SearchCondition sc)
+  private static List<Reference> searchMethodCallReferences(Source src, SearchCondition condition)
       throws IOException {
 
-    if (!src.mightContainMethodCall(sc.declaringClass + "#" + sc.name)) {
+    if (!src.mightContainMethodCall(condition.declaringClass + "#" + condition.name)) {
       return Collections.emptyList();
     }
 
@@ -280,13 +300,26 @@ public class ReferenceSearcher {
     int size = lines.size();
     List<Reference> result = new ArrayList<>(size);
     Collection<MethodCall> methodCalls = src.getMethodCalls();
+    final Map<String, ClassIndex> globalClassIndex =
+        CachedASMReflector.getInstance().getGlobalClassIndex();
     for (MethodCall mc : methodCalls) {
-      String declaringClass = mc.declaringClass;
       String methodName = mc.name;
-
+      if (!condition.name.equals(methodName) || isNull(condition.declaringClass)) {
+        continue;
+      }
+      String declaringClass = mc.declaringClass;
       boolean compare =
-          ClassNameUtils.compareArgumentType(mc.getArguments(), sc.arguments, sc.varargs);
-      if (compare && sc.declaringClass.equals(declaringClass) && sc.name.equals(methodName)) {
+          ClassNameUtils.compareArgumentType(
+              mc.getArguments(), condition.arguments, condition.varargs);
+      ClassIndex classIndex = globalClassIndex.get(declaringClass);
+
+      boolean containsClass =
+          condition.declaringClass.equals(declaringClass)
+              || (nonNull(classIndex)
+                  && nonNull(classIndex.supers)
+                  && classIndex.supers.contains(condition.declaringClass));
+
+      if (compare && containsClass) {
         Range range = mc.nameRange;
         long line = range.begin.line;
         long column = range.begin.column;
@@ -344,6 +377,10 @@ public class ReferenceSearcher {
 
   private static List<Reference> searchReferenceFromSource(Source src, SearchCondition sc)
       throws IOException {
+
+    if (sc.type.equals(SearchCondition.Type.VAR)) {
+      return ReferenceSearcher.searchVarReferences(src, sc);
+    }
 
     if (sc.type.equals(SearchCondition.Type.CLASS)) {
       return ReferenceSearcher.searchClassReferences(src, sc);
@@ -417,6 +454,61 @@ public class ReferenceSearcher {
     return Collections.emptyList();
   }
 
+  private static Optional<SearchCondition> createLocalVariableCondition(
+      Source source, int line, int col, String symbol) {
+
+    Set<Variable> variables = source.getVariables(line);
+    for (Variable v : variables) {
+      if (v.range.begin.line == line
+          && v.range.end.line == line
+          && v.range.begin.column <= col
+          && col <= v.range.end.column
+          && v.name.equals(symbol)
+          && !v.isField) {
+        SearchCondition condition =
+            new SearchCondition(v.fqcn, symbol, SearchCondition.Type.VAR, line, source.filePath);
+        return Optional.of(condition);
+      }
+    }
+
+    return Optional.empty();
+  }
+
+  private static List<Reference> searchVarReferences(final Source src, final SearchCondition sc)
+      throws IOException {
+    if (!src.filePath.equals(sc.filePath)) {
+      return Collections.emptyList();
+    }
+    List<String> lines = FileUtils.readLines(src.getFile());
+    int size = lines.size();
+    List<Reference> result = new ArrayList<>(8);
+    Set<Variable> variables = src.getVariables(sc.line);
+    return variables.stream()
+        .filter(
+            variable -> variable.name.equals(sc.name) && variable.fqcn.equals(sc.declaringClass))
+        .map(
+            variable -> {
+              Range range = variable.range;
+              long line = range.begin.line;
+              long column = range.begin.column;
+              String code = StringUtils.escapeJava(lines.get((int) line - 1));
+              return new Reference(src.filePath, line, column, code);
+            })
+        .sorted(
+            (v1, v2) -> {
+              Long line1 = v1.getLine();
+              Long line2 = v2.getLine();
+              int compareTo1 = line1.compareTo(line2);
+              if (compareTo1 == 0) {
+                Long col1 = v1.getColumn();
+                Long col2 = v2.getColumn();
+                return col1.compareTo(col2);
+              }
+              return compareTo1;
+            })
+        .collect(Collectors.toList());
+  }
+
   @FunctionalInterface
   interface SearchFunction {
     Optional<SearchCondition> apply(Source javaSource, Integer line, Integer column, String symbol);
@@ -428,18 +520,28 @@ public class ReferenceSearcher {
     final Type type;
     final List<String> arguments;
     final boolean varargs;
+    final int line;
+    final String filePath;
 
     SearchCondition(
-        String declaringClass, String name, Type type, List<String> arguments, boolean varargs) {
+        String declaringClass,
+        String name,
+        Type type,
+        List<String> arguments,
+        boolean varargs,
+        int line,
+        String filePath) {
       this.declaringClass = declaringClass;
       this.name = name;
       this.type = type;
       this.arguments = arguments;
       this.varargs = varargs;
+      this.line = line;
+      this.filePath = filePath;
     }
 
-    SearchCondition(String declaringClass, String name, Type type) {
-      this(declaringClass, name, type, Collections.emptyList(), false);
+    SearchCondition(String declaringClass, String name, Type type, int line, String filePath) {
+      this(declaringClass, name, type, Collections.emptyList(), false, line, filePath);
     }
 
     @Override
@@ -448,6 +550,7 @@ public class ReferenceSearcher {
           .add("declaringClass", declaringClass)
           .add("name", name)
           .add("type", type)
+          .add("line", line)
           .toString();
     }
 

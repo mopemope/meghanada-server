@@ -3,6 +3,7 @@ package meghanada.analyze;
 import static java.util.Objects.nonNull;
 
 import com.google.common.base.MoreObjects;
+import com.google.common.base.Objects;
 import java.io.Serializable;
 import java.util.Collections;
 import java.util.Optional;
@@ -69,5 +70,20 @@ public class Variable implements Serializable, Symbol {
   @Override
   public String getFQCN() {
     return this.fqcn;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    Variable variable = (Variable) o;
+    return pos == variable.pos
+        && Objects.equal(name, variable.name)
+        && Objects.equal(fqcn, variable.fqcn);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hashCode(name, pos, fqcn);
   }
 }

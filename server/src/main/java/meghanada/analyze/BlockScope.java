@@ -248,7 +248,7 @@ public class BlockScope extends Scope {
   @Override
   public Collection<AccessSymbol> getAccessSymbols() {
 
-    List<AccessSymbol> result = new ArrayList<>(this.getAccessSymbols());
+    List<AccessSymbol> result = new ArrayList<>(super.getAccessSymbols());
     for (ExpressionScope e : this.expressions) {
       result.addAll(e.getAccessSymbols());
     }

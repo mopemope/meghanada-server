@@ -87,7 +87,7 @@ public class Source implements Serializable, Storable, SearchIndexable {
   private long classStartLine;
   private long pkgStartLine;
   private Map<String, String> importMap;
-  private BloomFilter<String> methodCallsBF;
+  private final BloomFilter<String> methodCallsBF;
 
   private transient List<LineRange> lineRange;
   private transient LineMap lineMap;
@@ -95,7 +95,7 @@ public class Source implements Serializable, Storable, SearchIndexable {
   public Source(String filePath) {
     this.filePath = filePath;
     this.methodCallsBF =
-        BloomFilter.create(Funnels.stringFunnel(StandardCharsets.UTF_8), 100000, 0.01);
+        BloomFilter.create(Funnels.stringFunnel(StandardCharsets.UTF_8), 10000, 0.01);
   }
 
   public Source(String filePath, LineMap lineMap) {
@@ -446,6 +446,14 @@ public class Source implements Serializable, Storable, SearchIndexable {
       return scope.getVariableMap();
     }
     return Collections.emptyMap();
+  }
+
+  public Set<Variable> getVariables(final int line) {
+    Scope scope = Scope.getInnerScope(line, this.classScopes);
+    if (nonNull(scope)) {
+      return scope.getVariables();
+    }
+    return Collections.emptySet();
   }
 
   public Optional<Variable> getVariable(final int line, final int col) {
@@ -810,10 +818,23 @@ public class Source implements Serializable, Storable, SearchIndexable {
   }
 
   public void buildMethodCallsBF() {
+    final Map<String, ClassIndex> globalClassIndex =
+        CachedASMReflector.getInstance().getGlobalClassIndex();
     for (ClassScope c : this.classScopes) {
       for (MethodCall call : c.getMethodCalls()) {
         String declaringClass = call.declaringClass;
+        if (isNull(declaringClass)) {
+          continue;
+        }
         this.methodCallsBF.put(declaringClass + "#" + call.name);
+        if (globalClassIndex.containsKey(declaringClass)) {
+          ClassIndex classIndex = globalClassIndex.get(declaringClass);
+          if (nonNull(classIndex.supers)) {
+            for (String clazz : classIndex.supers) {
+              this.methodCallsBF.put(clazz + "#" + call.name);
+            }
+          }
+        }
       }
     }
   }

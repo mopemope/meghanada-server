@@ -28,16 +28,16 @@ public class SourceTest extends GradleTestBase {
   @BeforeClass
   public static void setup() throws Exception {
     GradleTestBase.setupReflector(false);
-    Thread.sleep(1000 * 1);
+    Thread.sleep(1000);
   }
 
   @AfterClass
   public static void shutdown() throws Exception {
-    Thread.sleep(1000 * 1);
+    Thread.sleep(1000);
     GradleTestBase.shutdown();
   }
 
-  private JavaAnalyzer getAnalyzer() {
+  private static JavaAnalyzer getAnalyzer() {
     JavaAnalyzer analyzer = new JavaAnalyzer("1.8", "1.8");
     if (Config.load().isJava9()) {
       analyzer = new JavaAnalyzer("9", "9");
@@ -50,7 +50,7 @@ public class SourceTest extends GradleTestBase {
     final JavaAnalyzer analyzer = getAnalyzer();
     final String cp = getClasspath();
 
-    List<File> files = new ArrayList<>();
+    List<File> files = new ArrayList<>(1);
     final File file =
         new File(project.getProjectRootPath(), "./src/test/java/meghanada/Opt.java")
             .getCanonicalFile();
