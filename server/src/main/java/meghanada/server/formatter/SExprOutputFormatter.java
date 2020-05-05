@@ -334,7 +334,22 @@ public class SExprOutputFormatter implements OutputFormatter {
     references.forEach(
         r -> {
           String s = r.getPath() + ':' + r.getLine() + ':' + r.getCode();
+
+          sb.append(LPAREN);
           sb.append(doubleQuote(s));
+          sb.append(LIST_SEP);
+          {
+            sb.append(LPAREN);
+            sb.append(doubleQuote(r.getCode()));
+            sb.append(LIST_SEP);
+            sb.append(doubleQuote(r.getPath()));
+            sb.append(LIST_SEP);
+            sb.append(r.getLine());
+            sb.append(LIST_SEP);
+            sb.append(r.getColumn());
+            sb.append(RPAREN);
+          }
+          sb.append(RPAREN);
           sb.append(LIST_SEP);
         });
     sb.append(RPAREN);
