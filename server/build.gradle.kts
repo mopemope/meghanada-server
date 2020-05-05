@@ -12,7 +12,7 @@ plugins {
     `maven-publish`
     application
     id("com.github.johnrengelman.shadow") version "5.2.0"
-    id("com.jfrog.bintray") version "1.8.4"
+    id("com.jfrog.bintray") version "1.8.5"
 }
 
 val group = "io.github.mopemope"
@@ -36,8 +36,8 @@ val applicationName = "meghanada"
 
 val junitVersion = "5.6.1"
 val gradleVersion = "6.3"
-val log4jVersion = "2.13.1"
-val xodusVersion = "1.3.124"
+val log4jVersion = "2.13.2"
+val xodusVersion = "1.3.232"
 val opencensusVersion = "0.26.0"
 
 base {
@@ -80,7 +80,7 @@ dependencies {
     implementation("org.jboss.windup.decompiler:decompiler-api:4.2.1.Final")
     implementation("org.jboss.windup.decompiler:decompiler-fernflower:4.2.1.Final")
     implementation("com.google.code.findbugs:jsr305:3.0.2")
-    implementation("org.eclipse.jdt:org.eclipse.jdt.core:3.20.0")
+    implementation("org.eclipse.jdt:org.eclipse.jdt.core:3.21.0")
     implementation("de.ruedigermoeller:fst:2.56")
 
     implementation("org.jetbrains.xodus:xodus-query:$xodusVersion")

@@ -12,7 +12,7 @@ plugins {
     `maven-publish`
     application
     id("com.github.johnrengelman.shadow") version "5.2.0"
-    id("com.jfrog.bintray") version "1.8.4"
+    id("com.jfrog.bintray") version "1.8.5"
 }
 
 val group = "meghanada"

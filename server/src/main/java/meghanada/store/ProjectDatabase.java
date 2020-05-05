@@ -39,6 +39,7 @@ import jetbrains.exodus.entitystore.PersistentEntityStore;
 import jetbrains.exodus.entitystore.PersistentEntityStores;
 import jetbrains.exodus.entitystore.StoreTransaction;
 import jetbrains.exodus.env.Environment;
+import jetbrains.exodus.env.EnvironmentConfig;
 import jetbrains.exodus.env.EnvironmentImpl;
 import jetbrains.exodus.env.Environments;
 import meghanada.Main;
@@ -380,11 +381,17 @@ public class ProjectDatabase {
         }
 
         try {
-          this.environment = Environments.newInstance(new File(base, "project"));
+          this.environment =
+              Environments.newInstance(
+                  new File(base, "project"),
+                  new EnvironmentConfig().setLogCacheUseSoftReferences(true));
         } catch (ExodusException ex) {
           // try re-create
           org.apache.commons.io.FileUtils.deleteDirectory(new File(base, "project"));
-          this.environment = Environments.newInstance(new File(base, "project"));
+          this.environment =
+              Environments.newInstance(
+                  new File(base, "project"),
+                  new EnvironmentConfig().setLogCacheUseSoftReferences(true));
         }
         this.entityStore = PersistentEntityStores.newInstance(environment, STORE_NAME);
         String location = this.environment.getLocation();
