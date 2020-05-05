@@ -120,7 +120,7 @@ public class TypeInfoSearcher {
       List<MemberDescriptor> ms = new ArrayList<>(members.values());
       for (MemberDescriptor md : ms) {
         String desc = md.getDeclaration();
-        ti.addMember(desc);
+        ti.addMember(md.name, desc.trim());
       }
       return ti;
     }

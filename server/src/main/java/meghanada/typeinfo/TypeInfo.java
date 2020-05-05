@@ -4,13 +4,14 @@ import com.google.common.base.MoreObjects;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import org.apache.commons.lang3.tuple.Pair;
 
 public class TypeInfo {
 
   private final String fqcn;
   private final List<String> hierarchy;
   private final List<String> interfaces;
-  private final List<String> members = new ArrayList<>(1);
+  private final List<Pair<String, String>> members = new ArrayList<>(1);
 
   public TypeInfo(String fqcn, List<String> hierarchy, List<String> interfaces) {
     this.fqcn = fqcn;
@@ -47,11 +48,11 @@ public class TypeInfo {
     return this.interfaces;
   }
 
-  public List<String> getMembers() {
+  public List<Pair<String, String>> getMembers() {
     return this.members;
   }
 
-  public void addMember(String member) {
-    this.members.add(member);
+  public void addMember(String name, String member) {
+    this.members.add(Pair.of(name, member));
   }
 }

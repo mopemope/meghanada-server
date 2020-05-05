@@ -379,7 +379,11 @@ public class SExprOutputFormatter implements OutputFormatter {
         .getMembers()
         .forEach(
             c -> {
-              sb.append(doubleQuote(c));
+              sb.append(LPAREN);
+              sb.append(doubleQuote(c.getLeft()));
+              sb.append(LIST_SEP);
+              sb.append(doubleQuote(c.getRight()));
+              sb.append(RPAREN);
               sb.append(LIST_SEP);
             });
     sb.append(RPAREN);
