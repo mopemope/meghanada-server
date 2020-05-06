@@ -258,8 +258,8 @@ public class Config {
     }
   }
 
-  public String getHomeDir() {
-    return c.getString("home");
+  public String getEmacsMeghanadaDir() {
+    return c.getString("emacs-meghanada");
   }
 
   public String getUserHomeDir() {

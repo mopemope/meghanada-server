@@ -164,18 +164,34 @@ public abstract class Project implements Serializable, Storable {
 
   protected void initialize() throws IOException {
     Config.setProjectRoot(this.projectRootPath);
-    final File file = new File(projectRoot, FORMATTER_FILE);
+    final Config config = Config.load();
+    File file = new File(projectRoot, FORMATTER_FILE);
+    boolean findFormatFile = false;
     if (file.exists()) {
       System.setProperty(FORMATTER_FILE_KEY, file.getCanonicalPath());
+      findFormatFile = true;
     } else {
-      final File xml = new File(projectRoot, FORMATTER_FILE_XML);
+      File xml = new File(projectRoot, FORMATTER_FILE_XML);
       if (xml.exists()) {
         System.setProperty(FORMATTER_FILE_KEY, xml.getCanonicalPath());
+        findFormatFile = true;
+      }
+    }
+    if (!findFormatFile) {
+      // load global code formatter
+      String dir = config.getEmacsMeghanadaDir();
+      file = new File(dir, FORMATTER_FILE);
+      if (file.exists()) {
+        System.setProperty(FORMATTER_FILE_KEY, file.getCanonicalPath());
+      } else {
+        File xml = new File(dir, FORMATTER_FILE_XML);
+        if (xml.exists()) {
+          System.setProperty(FORMATTER_FILE_KEY, xml.getCanonicalPath());
+        }
       }
     }
     loadCaller();
-    final Config config = Config.load();
-    final boolean clearCacheOnStart = config.clearCacheOnStart();
+    boolean clearCacheOnStart = config.clearCacheOnStart();
     if (clearCacheOnStart) {
       this.clearCache();
     }
@@ -1199,7 +1215,7 @@ public abstract class Project implements Serializable, Storable {
       sb.append(String.format("meghanadaPath: %s\n", Config.getInstalledPath()));
       sb.append(
           String.format("meghanadaServerPort: %s\n", System.getProperty("meghanada.server.port")));
-      sb.append(String.format("home: %s\n", config.getHomeDir()));
+      sb.append(String.format("emacsMeghanada: %s\n", config.getEmacsMeghanadaDir()));
       sb.append(String.format("userHome: %s\n", config.getUserHomeDir()));
       sb.append(String.format("useFastBoot: %s\n", config.useFastBoot()));
       sb.append(

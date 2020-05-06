@@ -315,10 +315,10 @@ public class LocationSearcherTest extends GradleTestBase {
     LocationSearcher searcher = getSearcher();
     GlobalCache.getInstance().invalidateSource(f);
     Location result =
-        timeIt(() -> searcher.searchDeclarationLocation(f, 603, 14, "runUnitTest").orElse(null));
+        timeIt(() -> searcher.searchDeclarationLocation(f, 619, 14, "runUnitTest").orElse(null));
     assertNotNull(result);
     assertTrue(result.getPath().contains("Project.java"));
-    assertEquals(609, result.getLine());
+    assertEquals(625, result.getLine());
     assertEquals(23, result.getColumn());
   }
 
