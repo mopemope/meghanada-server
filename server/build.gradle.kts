@@ -75,7 +75,7 @@ dependencies {
     implementation("org.junit.vintage:junit-vintage-engine:$junitVersion")
     implementation("org.junit.platform:junit-platform-launcher:1.6.1")
 
-    implementation("com.android.tools.build:builder-model:3.4.0")
+    implementation("com.android.tools.build:builder-model:3.6.3")
     implementation("io.takari.junit:takari-cpsuite:1.2.7")
     implementation("org.jboss.windup.decompiler:decompiler-api:4.2.1.Final")
     implementation("org.jboss.windup.decompiler:decompiler-fernflower:4.2.1.Final")
