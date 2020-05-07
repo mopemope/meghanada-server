@@ -1,3 +1,13 @@
+# Next Release
+
+## Added
+
+## Changed
+
+- update gradle to 6.4.
+
+## Fixed
+
 # 1.3.0 (2020-05-07)
 
 ## Added
