@@ -1,0 +1,307 @@
+/*
+ * Copyright (C) 2017-2019 HERE Europe B.V.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ * License-Filename: LICENSE
+ */
+import groovy.transform.ToString
+import groovy.transform.TupleConstructor
+
+import javax.inject.Inject
+
+import org.gradle.api.internal.artifacts.repositories.DefaultFlatDirArtifactRepository
+import org.gradle.api.internal.artifacts.repositories.DefaultIvyArtifactRepository
+import org.gradle.api.internal.artifacts.repositories.DefaultMavenArtifactRepository
+import org.gradle.tooling.provider.model.ToolingModelBuilder
+import org.gradle.tooling.provider.model.ToolingModelBuilderRegistry
+
+String.metaClass.isAtLeastVersion = { Integer major, Integer minor ->
+    def digits = delegate.split('\\.')
+    digits[0].toInteger() > major || (digits[0].toInteger() == major && digits[1].toInteger() >= minor)
+}
+
+// Apply one of the plugins defined below to register a custom model for the Tooling API. The plugin is required to get
+// an instance of ToolingModelBuilderRegistry by dependency injection. Prior to Gradle version 2.14 (see [1]), the
+// ToolingModelBuilderRegistry was project-scoped.
+//
+// [1] https://github.com/gradle/gradle/commit/e9e1b6029a056a5323311f7ee56b216cba6ede63
+if (gradle.gradleVersion.isAtLeastVersion(2, 14)) {
+    apply plugin: DependencyTreeGradlePlugin
+} else {
+    apply plugin: DependencyTreeProjectPlugin
+}
+
+// The following three interfaces have to match the interfaces defined in "analyzer/src/main/kotlin/GradleSupport.kt"
+// because they are used to deserialize the model consumed there.
+
+interface DependencyTreeModel {
+    String getGroup()
+    String getName()
+    String getVersion()
+    List<Configuration> getConfigurations()
+    List<String> getRepositories()
+    List<String> getErrors()
+    List<String> getWarnings()
+}
+
+interface Configuration {
+    String getName()
+    List<Dependency> getDependencies()
+}
+
+interface Dependency {
+    String getGroupId()
+    String getArtifactId()
+    String getVersion()
+    String getClassifier()
+    String getExtension()
+    List<Dependency> getDependencies()
+    String getError()
+    String getWarning()
+    String getPomFile()
+    String getLocalPath()
+}
+
+@ToString(includeNames = true)
+@TupleConstructor
+class DependencyTreeModelImpl implements DependencyTreeModel, Serializable {
+    String group
+    String name
+    String version
+    List<Configuration> configurations
+    List<String> repositories
+    List<String> errors
+    List<String> warnings
+}
+
+@ToString(includeNames = true)
+@TupleConstructor
+class ConfigurationImpl implements Configuration, Serializable {
+    String name
+    List<Dependency> dependencies
+}
+
+@ToString(includeNames = true)
+@TupleConstructor
+class DependencyImpl implements Dependency, Serializable {
+    String groupId = ''
+    String artifactId = ''
+    String version = ''
+    String classifier = ''
+    String extension = ''
+    List<Dependency> dependencies = []
+    String error
+    String warning
+    String pomFile
+    String localPath
+}
+
+class DependencyTreeGradlePlugin extends AbstractDependencyTreePlugin<Gradle> {
+    @Inject
+    DependencyTreeGradlePlugin(ToolingModelBuilderRegistry registry) {
+        super(registry)
+    }
+}
+
+class DependencyTreeProjectPlugin extends AbstractDependencyTreePlugin<Project> {
+    @Inject
+    DependencyTreeProjectPlugin(ToolingModelBuilderRegistry registry) {
+        super(registry)
+    }
+}
+
+class AbstractDependencyTreePlugin<T> implements Plugin<T> {
+    private final ToolingModelBuilderRegistry registry
+
+    AbstractDependencyTreePlugin(ToolingModelBuilderRegistry registry) {
+        this.registry = registry
+    }
+
+    void apply(T t) {
+        registry.register(new DependencyTreeModelBuilder())
+    }
+
+    private static class DependencyTreeModelBuilder implements ToolingModelBuilder {
+        static DependencyImpl dependencyFromDisplayName(String displayName, List<Dependency> dependencies,
+                                                        String error, String warning) {
+            if (displayName.startsWith('project :')) {
+                def coordinates = displayName.split(':', 2)
+                return new DependencyImpl(groupId: '<project>', artifactId: coordinates[1], dependencies: dependencies,
+                        error: error?.toString(), warning: warning?.toString())
+            }
+
+            def coordinates = displayName.split(':')
+
+            if (coordinates.length == 3) {
+                return new DependencyImpl(groupId: coordinates[0], artifactId: coordinates[1], version: coordinates[2],
+                        dependencies: dependencies, error: error?.toString(), warning: warning?.toString())
+            }
+
+            return new DependencyImpl(groupId: '<unknown>', artifactId: displayName.replace(':', '_'),
+                    dependencies: dependencies, error: error?.toString(), warning: warning?.toString())
+        }
+
+        @Override
+        boolean canBuild(String modelName) {
+            return modelName == 'meghanada.project.gradle.DependencyTreeModel'
+        }
+
+        @Override
+        Object buildAll(String modelName, Project project) {
+            List<String> errors = []
+            List<String> warnings = []
+            def gradleVersion = project.gradle.gradleVersion
+            if (!gradleVersion.isAtLeastVersion(2, 14)) {
+                def error = ("This project uses the unsupported Gradle version $gradleVersion. At least Gradle 2.14 " +
+                        'is required.').toString()
+                return new DependencyTreeModelImpl(project.group.toString(), project.name, project.version.toString(),
+                        [], [], [error], [])
+            }
+
+            List<Configuration> configurations = project.configurations.findResults { configuration ->
+                // For versions of Gradle before the "canBeResolved" property was introduced, consider any
+                // configuration to be resolvable.
+                System.err.println("configuration: '${configuration.name}'")
+                if (!configuration.hasProperty('canBeResolved') || configuration.canBeResolved) {
+                    ResolutionResult result = configuration.getIncoming().getResolutionResult()
+                    Set<ResolvedArtifact> resolvedArtifacts = []
+                    try {
+                        resolvedArtifacts = configuration.resolvedConfiguration.lenientConfiguration
+                                .getArtifacts(Specs.<org.gradle.api.artifacts.Dependency> satisfyAll())
+                    } catch (ResolveException e) {
+                        project.logger.info("Artifacts for configuration '${configuration.name}' could not be " +
+                                "resolved, therefore no information about artifact classifiers and extensions is " +
+                                "available: ${e.message}")
+                    }
+
+                    List<Dependency> dependencies = result.getRoot().getDependencies().collect {
+                        parseDependency(it, project, resolvedArtifacts, [])
+                    }
+
+                    new ConfigurationImpl(configuration.name, dependencies)
+                } else {
+                    project.logger.info("meghanada.project.gradle.Configuration '${configuration.name}' cannot be resolved.")
+                    null
+                }
+            }
+
+            List<String> repositories = project.repositories.findResults {
+                if (it instanceof DefaultMavenArtifactRepository) {
+                    it.url.toString()
+                } else if (it instanceof DefaultFlatDirArtifactRepository) {
+                    warnings.add('Project uses a flat dir repository which is not supported by the analyzer. ' +
+                            "Dependencies from this repository will be ignored: ${it.dirs}".toString())
+                    null
+                } else if (it instanceof DefaultIvyArtifactRepository) {
+                    warnings.add('Project uses an Ivy repository which is not supported by the analyzer. ' +
+                            "Dependencies from this repository will be ignored: ${it.url}".toString())
+                    null
+                } else {
+                    errors.add("Unknown repository type: ${it.getClass().name}".toString())
+                    null
+                }
+            }
+
+            def version = project.version.toString()
+            if (version == 'unspecified') version = ''
+            return new DependencyTreeModelImpl(project.group.toString(), project.name, version, configurations,
+                    repositories, errors.unique(), warnings.unique())
+        }
+
+        Dependency parseDependency(DependencyResult dependencyResult, Project project,
+                                   Set<ResolvedArtifact> resolvedArtifacts, List<String> parents) {
+            if (dependencyResult instanceof ResolvedDependencyResult) {
+                List<Dependency> dependencies = dependencyResult.selected.dependencies.findResults { dependency ->
+                    // Do not follow circular dependencies, these can exist for project dependencies.
+                    if (!(dependencyResult.requested.displayName in parents)) {
+                        parseDependency(dependency, project, resolvedArtifacts,
+                                [*parents, dependencyResult.requested.displayName])
+                    } else {
+                        null
+                    }
+                }
+
+                ComponentIdentifier id = dependencyResult.selected.id
+                if (id instanceof ModuleComponentIdentifier) {
+                    def resolvedComponents = project.dependencies.createArtifactResolutionQuery()
+                            .forComponents(id)
+                            .withArtifacts(MavenModule, MavenPomArtifact)
+                            .execute()
+                            .resolvedComponents
+
+                    // Imitate Kotlin's "firstOrNull()".
+                    def result = resolvedComponents?.find { true }?.getArtifacts(MavenPomArtifact)?.find { true }
+
+                    String error = null
+                    String warning = null
+                    String pomFile = null
+
+                    if (result instanceof ResolvedArtifactResult) {
+                        pomFile = result.file.absolutePath
+                    } else if (result instanceof UnresolvedArtifactResult) {
+                        error = collectCauses(result.failure).toString()
+                    } else if (result == null) {
+                        error = 'Resolution did not return any artifacts'
+                    } else {
+                        error = "Unknown ArtifactResult type: ${result.getClass().name}".toString()
+                    }
+
+                    def artifact = resolvedArtifacts.find {
+                        // Cannot use instanceof because the classes below do not exist in all Gradle versions.
+                        if (it.owner.getClass().name == 'org.gradle.api.internal.artifacts.DefaultModuleVersionIdentifier') {
+                            id.group == it.owner.id.group && id.module == it.owner.id.name && id.version == it.owner.version
+                        } else if (it.owner.getClass().name == 'org.gradle.api.internal.artifacts.ivyservice.dynamicversions.DefaultResolvedModuleVersion') {
+                            id.group == it.owner.id.group && id.module == it.owner.id.name && id.version == it.owner.id.version
+                        } else {
+                            error = "Unknown artifact owner type: ${it.owner.getClass().name}".toString()
+                            false
+                        }
+                    }
+
+                    def classifier = artifact?.classifier ?: ''
+                    def extension = artifact?.extension ?: ''
+
+                    return new DependencyImpl(id.group, id.module, id.version, classifier, extension, dependencies,
+                            error, warning, pomFile, null)
+                } else if (id instanceof ProjectComponentIdentifier) {
+                    def dependencyProject = project.rootProject.findProject(id.projectPath)
+                    return new DependencyImpl(groupId: dependencyProject.group.toString(),
+                            artifactId: dependencyProject.name, version: dependencyProject.version.toString(),
+                            dependencies: dependencies, localPath: dependencyProject.projectDir.absolutePath)
+                } else {
+                    return dependencyFromDisplayName(id.displayName, dependencies,
+                            "Unknown id type: ${id.getClass().simpleName}", null)
+                }
+            } else if (dependencyResult instanceof UnresolvedDependencyResult) {
+                return dependencyFromDisplayName(dependencyResult.attempted.displayName, [],
+                        "Unresolved: ${collectCauses(dependencyResult.failure)}", null)
+            } else {
+                return dependencyFromDisplayName(dependencyResult.requested.displayName, [],
+                        "Unknown result type: ${dependencyResult.getClass().simpleName}", null)
+            }
+        }
+
+        private String collectCauses(Throwable throwable) {
+            def result = "${throwable.getClass().simpleName}: ${throwable.message}"
+            def cause = throwable.cause
+            while (cause != null) {
+                result += "\nCaused by: ${cause.getClass().simpleName}: ${cause.message}"
+                cause = cause.cause
+            }
+            return result
+        }
+    }
+
+}

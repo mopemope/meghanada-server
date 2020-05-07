@@ -7,6 +7,7 @@
 - update gradle to 6.4.
 - fix to use the latest library.
 - improve compile error logs.
+- improve detection of dependent libraries in gradle projects.
 
 ## Fixed
 

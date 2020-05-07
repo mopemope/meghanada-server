@@ -9,13 +9,18 @@ import com.android.builder.model.AndroidProject;
 import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
 import com.google.common.io.Files;
+import com.google.common.io.Resources;
 import com.typesafe.config.ConfigFactory;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
+import java.net.URL;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -26,6 +31,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import meghanada.analyze.CompileResult;
 import meghanada.config.Config;
 import meghanada.project.Project;
@@ -62,6 +68,10 @@ public class GradleProject extends Project {
   private static final Logger log = LogManager.getLogger(GradleProject.class);
   public static final String[] STRINGS = new String[0];
   private static String tempPath;
+  private static Set<String> validConfiguration =
+      new HashSet<>(Arrays.asList("annotationProcessor", "optional", "compileClasspath"));
+  private static Set<String> validTestConfiguration =
+      new HashSet<>(Arrays.asList("testCompileClasspath", "testRuntimeClasspath"));
   transient Map<String, File> allModules;
   private File rootProject;
   private boolean kts;
@@ -69,11 +79,11 @@ public class GradleProject extends Project {
   private transient List<String> prepareTestCompileTask;
   private transient ComparableVersion gradleVersion = null;
 
-  public GradleProject(final File projectRoot) throws IOException {
+  public GradleProject(File projectRoot) throws IOException {
     this(projectRoot, false);
   }
 
-  public GradleProject(final File projectRoot, final boolean kts) throws IOException {
+  public GradleProject(File projectRoot, boolean kts) throws IOException {
     super(projectRoot);
     this.kts = kts;
     this.initialize();
@@ -83,9 +93,9 @@ public class GradleProject extends Project {
     if (nonNull(tempPath)) {
       return tempPath;
     }
-    final File tempDir = Files.createTempDir();
+    File tempDir = Files.createTempDir();
     tempDir.deleteOnExit();
-    final String path = tempDir.getCanonicalPath();
+    String path = tempDir.getCanonicalPath();
     System.setProperty("java.io.tmpdir", path);
     tempPath = path;
     return tempPath;
@@ -118,8 +128,8 @@ public class GradleProject extends Project {
     return result;
   }
 
-  private static String convertName(final String path) {
-    final String replaced = meghanada.utils.StringUtils.replace(path, ":", "-");
+  private static String convertName(String path) {
+    String replaced = meghanada.utils.StringUtils.replace(path, ":", "-");
     if (replaced.startsWith("-")) {
       return replaced.substring(1);
     }
@@ -149,7 +159,7 @@ public class GradleProject extends Project {
   public Project parseProject(File projectRoot, File current) throws ProjectParseException {
     try (TelemetryUtils.ScopedSpan scope =
             TelemetryUtils.startScopedSpan("GradleProject.parseProject");
-        ProjectConnection connection = getProjectConnection()) {
+        final ProjectConnection connection = getProjectConnection()) {
 
       TelemetryUtils.ScopedSpan.addAnnotation(
           TelemetryUtils.annotationBuilder()
@@ -168,28 +178,31 @@ public class GradleProject extends Project {
       }
       this.gradleVersion = new ComparableVersion(version);
 
-      final IdeaProject ideaProject =
+      IdeaProject ideaProject =
           debugTimeItF(
               "get idea project model elapsed={}", () -> connection.getModel(IdeaProject.class));
       this.setCompileTarget(ideaProject);
       log.trace("load root project path:{}", this.rootProject);
-      final DomainObjectSet<? extends IdeaModule> modules = ideaProject.getModules();
-      final List<? extends IdeaModule> mainModules =
+      DomainObjectSet<? extends IdeaModule> modules = ideaProject.getModules();
+      List<? extends IdeaModule> mainModules =
           modules
               .parallelStream()
               .filter(
                   ideaModule -> {
-                    final org.gradle.tooling.model.GradleProject gradleProject =
+                    org.gradle.tooling.model.GradleProject gradleProject =
                         ideaModule.getGradleProject();
-                    final File moduleProjectRoot = gradleProject.getProjectDirectory();
-                    final String name = ideaModule.getName();
+                    File moduleProjectRoot = gradleProject.getProjectDirectory();
+                    String name = ideaModule.getName();
                     log.trace("find sub-module name {} path {} ", name, moduleProjectRoot);
                     this.allModules.putIfAbsent(name, moduleProjectRoot);
                     return moduleProjectRoot.equals(this.getProjectRoot());
                   })
               .collect(Collectors.toList());
-      mainModules.forEach(wrapIOConsumer(this::parseIdeaModule));
-
+      mainModules.forEach(
+          wrapIOConsumer(
+              p -> {
+                this.parseIdeaModule(connection, p);
+              }));
       // set default output
       if (isNull(super.output)) {
 
@@ -228,16 +241,17 @@ public class GradleProject extends Project {
     return e;
   }
 
-  private void parseIdeaModule(final IdeaModule ideaModule) throws IOException {
-    final org.gradle.tooling.model.GradleProject gradleProject = ideaModule.getGradleProject();
+  private void parseIdeaModule(ProjectConnection connection, IdeaModule ideaModule)
+      throws IOException {
+    org.gradle.tooling.model.GradleProject gradleProject = ideaModule.getGradleProject();
     String name = convertName(gradleProject.getPath());
     if (nonNull(name) && !name.isEmpty()) {
       this.name = name;
     }
-    final AndroidProject androidProject =
+    AndroidProject androidProject =
         AndroidSupport.getAndroidProject(this.rootProject, gradleProject);
     if (nonNull(androidProject)) {
-      Set<ProjectDependency> projectDependencies = analyzeDependencies(ideaModule);
+      Set<ProjectDependency> projectDependencies = analyzeDependencies(connection, ideaModule);
       this.dependencies.addAll(projectDependencies);
       // parse android
       this.isAndroidProject = true;
@@ -250,19 +264,19 @@ public class GradleProject extends Project {
           androidModelVersion);
       System.setProperty("meghanada.android.project", "true");
       System.setProperty("meghanada.android.project.name", name);
-      final AndroidSupport androidSupport = new AndroidSupport(this);
+      AndroidSupport androidSupport = new AndroidSupport(this);
       androidSupport.parseAndroidProject(androidProject);
     } else {
       // normal
-      this.parseIdeaModule(gradleProject, ideaModule);
+      this.parseIdeaModule(connection, gradleProject, ideaModule);
     }
   }
 
-  private void setCompileTarget(final IdeaProject ideaProject) {
-    final IdeaJavaLanguageSettings javaLanguageSettings = ideaProject.getJavaLanguageSettings();
+  private void setCompileTarget(IdeaProject ideaProject) {
+    IdeaJavaLanguageSettings javaLanguageSettings = ideaProject.getJavaLanguageSettings();
     try {
-      final String srcLevel = javaLanguageSettings.getLanguageLevel().toString();
-      final String targetLevel = javaLanguageSettings.getTargetBytecodeVersion().toString();
+      String srcLevel = javaLanguageSettings.getLanguageLevel().toString();
+      String targetLevel = javaLanguageSettings.getTargetBytecodeVersion().toString();
       super.compileSource = srcLevel;
       super.compileTarget = targetLevel;
     } catch (UnsupportedMethodException e) {
@@ -271,11 +285,13 @@ public class GradleProject extends Project {
   }
 
   private void parseIdeaModule(
-      final org.gradle.tooling.model.GradleProject gradleProject, final IdeaModule ideaModule)
+      ProjectConnection connection,
+      org.gradle.tooling.model.GradleProject gradleProject,
+      IdeaModule ideaModule)
       throws IOException {
 
     if (isNull(this.output)) {
-      final String buildDir = gradleProject.getBuildDirectory().getCanonicalPath();
+      String buildDir = gradleProject.getBuildDirectory().getCanonicalPath();
       String build = Joiner.on(File.separator).join(buildDir, "classes", "main");
       if (nonNull(gradleVersion) && gradleVersion.compareTo(new ComparableVersion("4.0")) >= 0) {
         build = Joiner.on(File.separator).join(buildDir, "classes", "java", "main");
@@ -284,15 +300,15 @@ public class GradleProject extends Project {
     }
 
     if (isNull(this.testOutput)) {
-      final String buildDir = gradleProject.getBuildDirectory().getCanonicalPath();
+      String buildDir = gradleProject.getBuildDirectory().getCanonicalPath();
       String build = Joiner.on(File.separator).join(buildDir, "classes", "test");
       if (nonNull(gradleVersion) && gradleVersion.compareTo(new ComparableVersion("4.0")) >= 0) {
         build = Joiner.on(File.separator).join(buildDir, "classes", "java", "test");
       }
       this.testOutput = this.normalize(build);
     }
-    final Set<ProjectDependency> dependencies = this.analyzeDependencies(ideaModule);
-    final Map<String, Set<File>> sources = this.searchProjectSources(ideaModule);
+    Set<ProjectDependency> dependencies = this.analyzeDependencies(connection, ideaModule);
+    Map<String, Set<File>> sources = this.searchProjectSources(ideaModule);
 
     this.sources.addAll(sources.get("sources"));
     this.resources.addAll(sources.get("resources"));
@@ -302,18 +318,18 @@ public class GradleProject extends Project {
 
     // merge other project
     if (this.sources.isEmpty()) {
-      final File file =
+      File file =
           new File(Joiner.on(File.separator).join("src", "main", "java")).getCanonicalFile();
       this.sources.add(file);
     }
     if (this.testSources.isEmpty()) {
-      final File file =
+      File file =
           new File(Joiner.on(File.separator).join("src", "test", "java")).getCanonicalFile();
       this.testSources.add(file);
     }
 
     if (isNull(this.output)) {
-      final String buildDir = new File(this.getProjectRoot(), "build").getCanonicalPath();
+      String buildDir = new File(this.getProjectRoot(), "build").getCanonicalPath();
       String build = Joiner.on(File.separator).join(buildDir, "classes", "main");
       if (nonNull(gradleVersion) && gradleVersion.compareTo(new ComparableVersion("4.0")) >= 0) {
         build = Joiner.on(File.separator).join(buildDir, "classes", "java", "main");
@@ -321,7 +337,7 @@ public class GradleProject extends Project {
       this.output = this.normalize(build);
     }
     if (isNull(this.testOutput)) {
-      final String buildDir = new File(this.getProjectRoot(), "build").getCanonicalPath();
+      String buildDir = new File(this.getProjectRoot(), "build").getCanonicalPath();
       String build = Joiner.on(File.separator).join(buildDir, "classes", "test");
       if (nonNull(gradleVersion) && gradleVersion.compareTo(new ComparableVersion("4.0")) >= 0) {
         build = Joiner.on(File.separator).join(buildDir, "classes", "java", "test");
@@ -336,7 +352,7 @@ public class GradleProject extends Project {
     log.debug("test resources {}", this.testResources);
     log.debug("test output {}", this.testOutput);
 
-    for (final ProjectDependency projectDependency : this.getDependencies()) {
+    for (ProjectDependency projectDependency : this.getDependencies()) {
       log.debug(
           "Scope:{} Type:{} {} ",
           projectDependency.getScope(),
@@ -346,7 +362,7 @@ public class GradleProject extends Project {
   }
 
   ProjectConnection getProjectConnection() {
-    final String gradleVersion = Config.load().getGradleVersion();
+    String gradleVersion = Config.load().getGradleVersion();
     GradleConnector connector;
     if (gradleVersion.isEmpty()) {
       connector = GradleConnector.newConnector().forProjectDirectory(this.rootProject);
@@ -359,19 +375,19 @@ public class GradleProject extends Project {
     }
 
     if (connector instanceof DefaultGradleConnector) {
-      final DefaultGradleConnector defaultGradleConnector = (DefaultGradleConnector) connector;
+      DefaultGradleConnector defaultGradleConnector = (DefaultGradleConnector) connector;
       defaultGradleConnector.daemonMaxIdleTime(1, TimeUnit.HOURS);
     }
     return connector.connect();
   }
 
   @Override
-  public InputStream runTask(final List<String> args) throws IOException {
+  public InputStream runTask(List<String> args) throws IOException {
     try {
-      final List<String> tasks = new ArrayList<>(4);
-      final List<String> taskArgs = new ArrayList<>(4);
-      for (final String temp : args) {
-        for (final String arg : Splitter.on(" ").split(temp)) {
+      List<String> tasks = new ArrayList<>(4);
+      List<String> taskArgs = new ArrayList<>(4);
+      for (String temp : args) {
+        for (String arg : Splitter.on(" ").split(temp)) {
           if (arg.startsWith("-")) {
             taskArgs.add(arg.trim());
           } else {
@@ -382,19 +398,19 @@ public class GradleProject extends Project {
 
       log.debug("task:{}:{} args:{}:{}", tasks, tasks.size(), taskArgs, taskArgs.size());
 
-      final ProjectConnection projectConnection = getProjectConnection();
-      final BuildLauncher build = projectConnection.newBuild();
+      ProjectConnection projectConnection = getProjectConnection();
+      BuildLauncher build = projectConnection.newBuild();
       GradleProject.setBuildJVMArgs(build);
       build.forTasks(tasks.toArray(STRINGS));
       if (taskArgs.size() > 0) {
         build.withArguments(taskArgs.toArray(STRINGS));
       }
 
-      final PipedOutputStream outputStream = new PipedOutputStream();
+      PipedOutputStream outputStream = new PipedOutputStream();
       PipedInputStream inputStream = new PipedInputStream(outputStream);
       build.setStandardError(outputStream);
       build.setStandardOutput(outputStream);
-      final VoidResultHandler handler =
+      VoidResultHandler handler =
           new VoidResultHandler(outputStream, inputStream, projectConnection);
       build.run(handler);
       return inputStream;
@@ -403,33 +419,30 @@ public class GradleProject extends Project {
     }
   }
 
-  private static void setBuildJVMArgs(final BuildLauncher build) throws IOException {
+  private static void setBuildJVMArgs(BuildLauncher build) throws IOException {
     build.setJvmArguments("-Djava.io.tmpdir=" + getTmpDir());
   }
 
-  private Map<String, Set<File>> searchProjectSources(final IdeaModule ideaModule)
-      throws IOException {
-    final Map<String, Set<File>> result = new HashMap<>(8);
+  private Map<String, Set<File>> searchProjectSources(IdeaModule ideaModule) throws IOException {
+    Map<String, Set<File>> result = new HashMap<>(8);
     result.put("sources", new HashSet<>(2));
     result.put("resources", new HashSet<>(2));
     result.put("testSources", new HashSet<>(2));
     result.put("testResources", new HashSet<>(2));
 
-    for (final IdeaContentRoot ideaContentRoot : ideaModule.getContentRoots().getAll()) {
-      for (final IdeaSourceDirectory sourceDirectory :
-          ideaContentRoot.getSourceDirectories().getAll()) {
-        final File file = normalizeFile(sourceDirectory.getDirectory());
-        final String path = file.getCanonicalPath();
+    for (IdeaContentRoot ideaContentRoot : ideaModule.getContentRoots().getAll()) {
+      for (IdeaSourceDirectory sourceDirectory : ideaContentRoot.getSourceDirectories().getAll()) {
+        File file = normalizeFile(sourceDirectory.getDirectory());
+        String path = file.getCanonicalPath();
         if (path.contains("resources")) {
           result.get("resources").add(file);
         } else {
           result.get("sources").add(file);
         }
       }
-      for (final IdeaSourceDirectory sourceDirectory :
-          ideaContentRoot.getTestDirectories().getAll()) {
-        final File file = normalizeFile(sourceDirectory.getDirectory());
-        final String path = file.getCanonicalPath();
+      for (IdeaSourceDirectory sourceDirectory : ideaContentRoot.getTestDirectories().getAll()) {
+        File file = normalizeFile(sourceDirectory.getDirectory());
+        String path = file.getCanonicalPath();
         if (path.contains("resources")) {
           result.get("testResources").add(file);
         } else {
@@ -440,16 +453,16 @@ public class GradleProject extends Project {
     return result;
   }
 
-  private Set<ProjectDependency> analyzeDependencies(final IdeaModule ideaModule) {
-    final Set<ProjectDependency> dependencies = new HashSet<>(16);
-
-    for (final IdeaDependency dependency : ideaModule.getDependencies().getAll()) {
+  private Set<ProjectDependency> analyzeDependencies(
+      ProjectConnection connection, IdeaModule ideaModule) throws IOException {
+    Set<ProjectDependency> dependencies = new HashSet<>(32);
+    for (IdeaDependency dependency : ideaModule.getDependencies().getAll()) {
       if (dependency instanceof IdeaSingleEntryLibraryDependency) {
-        final IdeaSingleEntryLibraryDependency libraryDependency =
+        IdeaSingleEntryLibraryDependency libraryDependency =
             (IdeaSingleEntryLibraryDependency) dependency;
 
-        final File file = libraryDependency.getFile();
-        final GradleModuleVersion gradleModuleVersion = libraryDependency.getGradleModuleVersion();
+        File file = libraryDependency.getFile();
+        GradleModuleVersion gradleModuleVersion = libraryDependency.getGradleModuleVersion();
         String scope = libraryDependency.getScope().getScope();
         String id;
         String version;
@@ -470,18 +483,17 @@ public class GradleProject extends Project {
           scope = "COMPILE";
         }
 
-        final ProjectDependency.Type type = ProjectDependency.getFileType(file);
-        final ProjectDependency projectDependency =
-            new ProjectDependency(id, scope, version, file, type);
+        ProjectDependency.Type type = ProjectDependency.getFileType(file);
+        ProjectDependency projectDependency = new ProjectDependency(id, scope, version, file, type);
         dependencies.add(projectDependency);
       } else if (dependency instanceof IdeaModuleDependency) {
-        final IdeaModuleDependency moduleDependency = (IdeaModuleDependency) dependency;
-        final String scope = moduleDependency.getScope().getScope();
-        final String moduleName = moduleDependency.getTargetModuleName();
+        IdeaModuleDependency moduleDependency = (IdeaModuleDependency) dependency;
+        String scope = moduleDependency.getScope().getScope();
+        String moduleName = moduleDependency.getTargetModuleName();
         this.allModules.computeIfPresent(
             moduleName,
             (key, projectRoot) -> {
-              final ProjectDependency projectDependency =
+              ProjectDependency projectDependency =
                   new ProjectDependency(
                       key, scope, "1.0.0", projectRoot, ProjectDependency.Type.PROJECT);
               dependencies.add(projectDependency);
@@ -496,7 +508,7 @@ public class GradleProject extends Project {
         log.warn("dep ??? class={}", dependency.getClass());
       }
     }
-
+    analyzeFromDependencyTree(connection);
     return dependencies;
   }
 
@@ -517,8 +529,8 @@ public class GradleProject extends Project {
   private void runPrepareCompileTask() throws IOException {
     if (!this.prepareCompileTask.isEmpty()) {
       try (ProjectConnection connection = this.getProjectConnection()) {
-        final String[] tasks = prepareCompileTask.toArray(STRINGS);
-        final BuildLauncher buildLauncher = connection.newBuild();
+        String[] tasks = prepareCompileTask.toArray(STRINGS);
+        BuildLauncher buildLauncher = connection.newBuild();
         log.info("project {} run tasks:{}", this.name, tasks);
         GradleProject.setBuildJVMArgs(buildLauncher);
         buildLauncher.forTasks(tasks).run();
@@ -545,8 +557,8 @@ public class GradleProject extends Project {
   private void runPrepareTestCompileTask() throws IOException {
     if (!this.prepareTestCompileTask.isEmpty()) {
       try (ProjectConnection connection = this.getProjectConnection()) {
-        final String[] tasks = prepareTestCompileTask.toArray(STRINGS);
-        final BuildLauncher buildLauncher = connection.newBuild();
+        String[] tasks = prepareTestCompileTask.toArray(STRINGS);
+        BuildLauncher buildLauncher = connection.newBuild();
         log.info("project {} run tasks:{}", this.name, tasks);
         GradleProject.setBuildJVMArgs(buildLauncher);
         buildLauncher.forTasks(tasks).run();
@@ -556,23 +568,23 @@ public class GradleProject extends Project {
 
   @Override
   public Project mergeFromProjectConfig() throws IOException {
-    final Config config1 = Config.load();
+    Config config1 = Config.load();
     this.prepareCompileTask.addAll(config1.gradlePrepareCompileTask());
     this.prepareTestCompileTask.addAll(config1.gradlePrepareTestCompileTask());
 
-    final File configFile = new File(this.projectRoot, Config.MEGHANADA_CONF_FILE);
+    File configFile = new File(this.projectRoot, Config.MEGHANADA_CONF_FILE);
     if (configFile.exists()) {
-      final com.typesafe.config.Config config = ConfigFactory.parseFile(configFile);
+      com.typesafe.config.Config config = ConfigFactory.parseFile(configFile);
       if (config.hasPath(Config.GRADLE_PREPARE_COMPILE_TASK)) {
-        final String taskConfig = config.getString(Config.GRADLE_PREPARE_COMPILE_TASK);
-        final String[] tasks = StringUtils.split(taskConfig, ",");
+        String taskConfig = config.getString(Config.GRADLE_PREPARE_COMPILE_TASK);
+        String[] tasks = StringUtils.split(taskConfig, ",");
         if (nonNull(tasks)) {
           Collections.addAll(this.prepareCompileTask, tasks);
         }
       }
       if (config.hasPath(Config.GRADLE_PREPARE_TEST_COMPILE_TASK)) {
-        final String taskConfig = config.getString(Config.GRADLE_PREPARE_TEST_COMPILE_TASK);
-        final String[] tasks = StringUtils.split(taskConfig, ",");
+        String taskConfig = config.getString(Config.GRADLE_PREPARE_TEST_COMPILE_TASK);
+        String[] tasks = StringUtils.split(taskConfig, ",");
         if (nonNull(tasks)) {
           Collections.addAll(this.prepareTestCompileTask, tasks);
         }
@@ -587,21 +599,21 @@ public class GradleProject extends Project {
   }
 
   private static class VoidResultHandler implements ResultHandler<Void> {
-    private final PipedOutputStream outputStream;
-    private final PipedInputStream inputStream;
-    private final ProjectConnection projectConnection;
+    private PipedOutputStream outputStream;
+    private PipedInputStream inputStream;
+    private ProjectConnection projectConnection;
 
     VoidResultHandler(
-        final PipedOutputStream outputStream,
-        final PipedInputStream inputStream,
-        final ProjectConnection projectConnection) {
+        PipedOutputStream outputStream,
+        PipedInputStream inputStream,
+        ProjectConnection projectConnection) {
       this.outputStream = outputStream;
       this.inputStream = inputStream;
       this.projectConnection = projectConnection;
     }
 
     @Override
-    public void onComplete(final Void result) {
+    public void onComplete(Void result) {
       try {
         outputStream.close();
         inputStream.close();
@@ -613,7 +625,7 @@ public class GradleProject extends Project {
     }
 
     @Override
-    public void onFailure(final GradleConnectionException failure) {
+    public void onFailure(GradleConnectionException failure) {
       try {
         log.catching(failure.getCause());
         outputStream.close();
@@ -644,5 +656,115 @@ public class GradleProject extends Project {
       }
     }
     return Optional.empty();
+  }
+
+  private void analyzeFromDependencyTree(ProjectConnection connection) throws IOException {
+    File initScriptFile = File.createTempFile("init", ".gradle");
+    URL url = Resources.getResource("init.gradle");
+    byte[] a = Resources.toByteArray(url);
+    Files.write(a, initScriptFile);
+
+    DependencyTreeModel dependencyTreeModel =
+        connection
+            .model(DependencyTreeModel.class)
+            .withArguments("-I", initScriptFile.getCanonicalPath())
+            .get();
+
+    List<Configuration> configurations = dependencyTreeModel.getConfigurations();
+    Set<Dependency> dependencySet = new HashSet<>(16);
+    Set<Dependency> testDependencySet = new HashSet<>(16);
+    for (Configuration config : configurations) {
+      String name = config.getName();
+      if (validConfiguration.contains(name)) {
+        List<Dependency> dependencies = config.getDependencies();
+        for (Dependency d1 : dependencies) {
+          dependencySet.add(d1);
+          for (Dependency d2 : d1.getDependencies()) {
+            dependencySet.add(d2);
+            for (Dependency d3 : d2.getDependencies()) {
+              dependencySet.add(d3);
+              for (Dependency d4 : d3.getDependencies()) {
+                dependencySet.add(d4);
+              }
+            }
+          }
+        }
+      } else if (validTestConfiguration.contains(name)) {
+        List<Dependency> dependencies = config.getDependencies();
+        for (Dependency d1 : dependencies) {
+          testDependencySet.add(d1);
+          for (Dependency d2 : d1.getDependencies()) {
+            testDependencySet.add(d2);
+            for (Dependency d3 : d2.getDependencies()) {
+              testDependencySet.add(d3);
+              for (Dependency d4 : d3.getDependencies()) {
+                testDependencySet.add(d4);
+              }
+            }
+          }
+        }
+      }
+    }
+    Path cacheRoot =
+        new File(Config.load().getUserHomeDir(), ".gradle/caches/modules-2/files-2.1").toPath();
+    try (final Stream<Path> stream = java.nio.file.Files.walk(cacheRoot)) {
+      stream.forEach(
+          path -> {
+            String pathStr = path.normalize().toString();
+            if (!pathStr.endsWith(".jar")) {
+              return;
+            }
+            for (Dependency dependency : dependencySet) {
+              if (isNull(dependency.getLocalPath())) {
+                Path p =
+                    Paths.get(
+                        dependency.getGroupId(),
+                        dependency.getArtifactId(),
+                        dependency.getVersion());
+                if (pathStr.contains(p.normalize().toString())) {
+                  String id =
+                      String.join(
+                          ":",
+                          dependency.getGroupId(),
+                          dependency.getArtifactId(),
+                          dependency.getVersion());
+                  ProjectDependency projectDependency =
+                      new ProjectDependency(
+                          id,
+                          "COMPILE",
+                          dependency.getVersion(),
+                          path.toFile(),
+                          ProjectDependency.Type.JAR);
+                  dependencies.add(projectDependency);
+                }
+              }
+            }
+            for (Dependency dependency : testDependencySet) {
+              if (isNull(dependency.getLocalPath())) {
+                Path p =
+                    Paths.get(
+                        dependency.getGroupId(),
+                        dependency.getArtifactId(),
+                        dependency.getVersion());
+                if (pathStr.contains(p.normalize().toString())) {
+                  String id =
+                      String.join(
+                          ":",
+                          dependency.getGroupId(),
+                          dependency.getArtifactId(),
+                          dependency.getVersion());
+                  ProjectDependency projectDependency =
+                      new ProjectDependency(
+                          id,
+                          "TEST",
+                          dependency.getVersion(),
+                          path.toFile(),
+                          ProjectDependency.Type.JAR);
+                  dependencies.add(projectDependency);
+                }
+              }
+            }
+          });
+    }
   }
 }

@@ -69,16 +69,12 @@ public class ProjectDependency implements Serializable {
     if (this == o) return true;
     if (!(o instanceof ProjectDependency)) return false;
     ProjectDependency that = (ProjectDependency) o;
-    return Objects.equal(id, that.id)
-        && Objects.equal(scope, that.scope)
-        && Objects.equal(version, that.version)
-        && Objects.equal(file, that.file)
-        && type == that.type;
+    return Objects.equal(id, that.id) && Objects.equal(version, that.version);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hashCode(id, scope, version, file, type);
+    return Objects.hashCode(id, version);
   }
 
   @Override
