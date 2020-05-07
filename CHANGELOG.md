@@ -5,6 +5,8 @@
 ## Changed
 
 - update gradle to 6.4.
+- fix to use the latest library.
+- improve compile error logs.
 
 ## Fixed
 

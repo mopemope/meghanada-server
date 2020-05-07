@@ -73,20 +73,10 @@ public class CacheEventSubscriber extends AbstractSubscriber {
         () -> {
           try {
             final CompileResult compileResult = project.compileJava();
+            compileResult.displayDiagnosticsSummary();
             if (compileResult.isSuccess()) {
-              if (compileResult.hasDiagnostics()) {
-                log.warn("compile message: {}", compileResult.getDiagnosticsSummary());
-              }
               final CompileResult testCompileResult = project.compileTestJava();
-              if (testCompileResult.isSuccess()) {
-                if (testCompileResult.hasDiagnostics()) {
-                  log.warn("compile(test) message: {}", testCompileResult.getDiagnosticsSummary());
-                }
-              } else {
-                log.warn("compile(test) error: {}", testCompileResult.getDiagnosticsSummary());
-              }
-            } else {
-              log.warn("compile message  {}", compileResult.getDiagnosticsSummary());
+              testCompileResult.displayDiagnosticsSummary();
             }
           } catch (Exception e) {
             log.catching(e);
