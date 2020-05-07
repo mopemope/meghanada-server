@@ -34,7 +34,7 @@ val longVersion = "$serverVersion-$buildVersion"
 val date: String = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss"))
 val applicationName = "meghanada"
 
-val junitVersion = "5.6.1"
+val junitVersion = "5.6.2"
 val gradleVersion = "6.3"
 val log4jVersion = "2.13.2"
 val xodusVersion = "1.3.232"
