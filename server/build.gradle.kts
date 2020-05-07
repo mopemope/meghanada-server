@@ -98,7 +98,7 @@ dependencies {
     implementation("io.opencensus:opencensus-exporter-trace-stackdriver:$opencensusVersion")
     implementation("io.opencensus:opencensus-exporter-stats-stackdriver:$opencensusVersion")
 
-    implementation("com.github.oshi:oshi-core:3.13.3")
+    implementation("com.github.oshi:oshi-core:3.13.5")
 }
 
 application {
