@@ -95,7 +95,11 @@ public class CompileResult implements Storable {
     if (hasDiagnostics()) {
       diagnostics.forEach(
           diagnostic -> {
-            log.warn("{} {}", msg, diagnostic.toString());
+            if (diagnostic.getKind() == Diagnostic.Kind.ERROR) {
+              log.error("{} {}", msg, diagnostic.toString());
+            } else {
+              log.warn("{} {}", msg, diagnostic.toString());
+            }
           });
     }
   }
@@ -104,7 +108,11 @@ public class CompileResult implements Storable {
     if (hasDiagnostics()) {
       diagnostics.forEach(
           diagnostic -> {
-            log.warn("{}", diagnostic.toString());
+            if (diagnostic.getKind() == Diagnostic.Kind.ERROR) {
+              log.error("{}", diagnostic.toString());
+            } else {
+              log.warn("{}", diagnostic.toString());
+            }
           });
     }
   }
