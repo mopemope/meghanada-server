@@ -340,7 +340,7 @@ public class Session {
       }
 
       if (currentProject instanceof GradleProject) {
-        File buildFile = new File(projectRoot, GradleProject.isGradleProject(base).get());
+        File buildFile = new File(projectRoot, GradleProject.isGradleProject(projectRoot).get());
         return loadProject(projectRoot, buildFile.getName(), base)
             .map(project -> setProject(projectRoot, project))
             .orElse(false);
