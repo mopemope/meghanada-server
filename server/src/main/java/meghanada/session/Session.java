@@ -332,7 +332,7 @@ public class Session {
       if (this.projects.containsKey(projectRoot)) {
         // loaded project
         Project project = this.projects.get(projectRoot);
-        log.info("change project {}", project.getName());
+        log.info("changed project [{}]", project.getName());
         String projectRootPath = project.getProjectRootPath();
         Config.setProjectRoot(projectRootPath);
         this.currentProject = project;
@@ -360,7 +360,7 @@ public class Session {
   }
 
   private boolean setProject(final File projectRoot, final Project project) {
-    log.info("change project {}", project.getName());
+    log.info("changed project [{}]", project.getName());
     String projectRootPath = project.getProjectRootPath();
     Config.setProjectRoot(projectRootPath);
     this.projects.put(projectRoot, project);
@@ -487,6 +487,7 @@ public class Session {
           }
           final boolean changed = this.searchAndChangeProject(file);
           if (changed) {
+            CachedASMReflector.getInstance().addClasspath(getSystemJars());
             this.sessionEventBus.requestCreateCache();
             return true;
           }

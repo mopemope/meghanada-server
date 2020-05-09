@@ -50,7 +50,7 @@ public class CachedASMReflector {
   private static final Logger log = LogManager.getLogger(CachedASMReflector.class);
 
   private static final Pattern PACKAGE_RE = Pattern.compile("\\.\\*");
-  private static CachedASMReflector cachedASMReflector;
+  private static Map<String, CachedASMReflector> reflectors = new ConcurrentHashMap<>(4);
 
   private final Map<String, ClassIndex> globalClassIndex = new ConcurrentHashMap<>(CACHE_SIZE);
 
@@ -64,10 +64,12 @@ public class CachedASMReflector {
   }
 
   public static CachedASMReflector getInstance() {
-    if (cachedASMReflector == null) {
-      cachedASMReflector = new CachedASMReflector();
+    String key = System.getProperty("project.root");
+    if (!reflectors.containsKey(key)) {
+      CachedASMReflector cachedASMReflector = new CachedASMReflector();
+      reflectors.put(key, cachedASMReflector);
     }
-    return cachedASMReflector;
+    return reflectors.get(key);
   }
 
   public static boolean containsKeyword(

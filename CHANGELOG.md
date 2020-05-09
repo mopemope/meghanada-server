@@ -8,6 +8,7 @@
 - fix to use the latest library.
 - improve compile error logs.
 - improve detection of dependent libraries in gradle projects.
+- fix to keep a class cache for each project.
 
 ## Fixed
 
