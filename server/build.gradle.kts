@@ -58,7 +58,7 @@ dependencies {
     implementation("org.apache.maven:maven-model-builder:3.6.3")
     implementation("com.leacox.motif:motif:0.1")
     implementation("com.leacox.motif:motif-hamcrest:0.1")
-    implementation("com.github.javaparser:javaparser-core:3.15.14")
+    implementation("com.github.javaparser:javaparser-core:3.16.1")
     implementation("org.apache.logging.log4j:log4j-core:$log4jVersion")
     implementation("org.apache.logging.log4j:log4j-api:$log4jVersion")
     implementation("org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion")
