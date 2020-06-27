@@ -18,6 +18,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import meghanada.telemetry.ErrorReporter;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -139,6 +140,7 @@ public class Executor {
               (res, ex) -> {
                 if (nonNull(ex)) {
                   log.catching(ex);
+                  ErrorReporter.report(ex);
                   Throwables.throwIfUnchecked(ex);
                   throw new RuntimeException(ex);
                 } else {

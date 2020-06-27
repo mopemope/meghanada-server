@@ -96,7 +96,7 @@ public class SourceTest extends GradleTestBase {
 
     List<String> optimizeImports = timeIt(source::optimizeImports);
     optimizeImports.forEach(System.out::println);
-    assertEquals(24, optimizeImports.size());
+    assertEquals(25, optimizeImports.size());
   }
 
   @Test

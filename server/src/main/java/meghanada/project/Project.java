@@ -41,6 +41,7 @@ import meghanada.config.Config;
 import meghanada.formatter.JavaFormatter;
 import meghanada.store.ProjectDatabaseHelper;
 import meghanada.store.Storable;
+import meghanada.telemetry.ErrorReporter;
 import meghanada.telemetry.TelemetryUtils;
 import meghanada.utils.ClassNameUtils;
 import meghanada.utils.FileUtils;
@@ -349,6 +350,7 @@ public abstract class Project implements Serializable, Storable {
       return new CompileResult(true);
     } catch (Throwable t) {
       log.catching(t);
+      ErrorReporter.report(t);
       final CompileResult result = new CompileResult(false);
       final Diagnostic<? extends JavaFileObject> diagnostic =
           CompileResult.getDiagnosticFromThrowable(t);
@@ -413,6 +415,7 @@ public abstract class Project implements Serializable, Storable {
       return new CompileResult(true);
     } catch (Throwable t) {
       log.catching(t);
+      ErrorReporter.report(t);
       final CompileResult result = new CompileResult(false);
       final Diagnostic<? extends JavaFileObject> diagnostic =
           CompileResult.getDiagnosticFromThrowable(t);
@@ -608,6 +611,7 @@ public abstract class Project implements Serializable, Storable {
       }
     } catch (Exception e) {
       log.catching(e);
+      ErrorReporter.report(e);
     }
     return pid;
   }
@@ -1002,6 +1006,7 @@ public abstract class Project implements Serializable, Storable {
           return Optional.ofNullable(prop);
         } catch (IOException e) {
           log.catching(e);
+          ErrorReporter.report(e);
         }
       }
     }
@@ -1211,6 +1216,7 @@ public abstract class Project implements Serializable, Storable {
         sb.append(String.format("meghanadaVersion: %s\n", meghanada.Main.getVersion()));
       } catch (IOException e) {
         log.catching(e);
+        ErrorReporter.report(e);
       }
       sb.append(String.format("meghanadaPath: %s\n", Config.getInstalledPath()));
       sb.append(

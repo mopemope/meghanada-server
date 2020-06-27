@@ -2,13 +2,15 @@
 
 ## Added
 
+- Add the function of sending an error report.
+
 ## Changed
 
-- update gradle to 6.4.
-- fix to use the latest library.
-- improve compile error logs.
-- improve detection of dependent libraries in gradle projects.
-- fix to keep a class cache for each project.
+- Update gradle to 6.4.
+- Fix to use the latest library.
+- Improve compile error logs.
+- Improve detection of dependent libraries in gradle projects.
+- Fix to keep a class cache for each project.
 
 ## Fixed
 

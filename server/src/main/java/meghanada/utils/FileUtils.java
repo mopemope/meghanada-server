@@ -40,6 +40,7 @@ import meghanada.cache.GlobalCache;
 import meghanada.config.Config;
 import meghanada.formatter.JavaFormatter;
 import meghanada.store.ProjectDatabaseHelper;
+import meghanada.telemetry.ErrorReporter;
 import meghanada.telemetry.TelemetryUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -495,6 +496,7 @@ public final class FileUtils {
     } catch (Throwable t) {
       TelemetryUtils.setStatusINTERNAL(t.getMessage());
       log.catching(t);
+      ErrorReporter.report(t);
       return Optional.empty();
     }
   }

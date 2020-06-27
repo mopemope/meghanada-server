@@ -51,6 +51,7 @@ import meghanada.reflect.MemberDescriptor;
 import meghanada.reflect.MethodDescriptor;
 import meghanada.reflect.asm.CachedASMReflector;
 import meghanada.system.Executor;
+import meghanada.telemetry.ErrorReporter;
 import meghanada.telemetry.TelemetryUtils;
 import meghanada.utils.ClassNameUtils;
 import meghanada.utils.FileUtils;
@@ -198,6 +199,7 @@ public class JavaCompletion {
               GlobalCache.getInstance().loadMemberDescriptors(name);
             } catch (IOException | ExecutionException e) {
               log.catching(e);
+              ErrorReporter.report(e);
             }
           });
     }
@@ -1033,8 +1035,9 @@ public class JavaCompletion {
             return fa.returnType;
           }
         }
-      } catch (Exception ex) {
-        log.catching(ex);
+      } catch (Exception e) {
+        log.catching(e);
+        ErrorReporter.report(e);
       }
     }
     return typeOrMember;

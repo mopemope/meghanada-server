@@ -13,6 +13,7 @@ import meghanada.index.IndexDatabase;
 import meghanada.index.SearchIndexable;
 import meghanada.project.Project;
 import meghanada.store.ProjectDatabaseHelper;
+import meghanada.telemetry.ErrorReporter;
 import meghanada.telemetry.TelemetryUtils;
 import meghanada.utils.FileUtils;
 import org.apache.logging.log4j.LogManager;
@@ -63,6 +64,7 @@ public class IndexSubscriber {
                       return !oldChecksum.equals(md5sum);
                     } catch (Exception e) {
                       log.catching(e);
+                      ErrorReporter.report(e);
                     }
                     return false;
                   })

@@ -31,6 +31,7 @@ import meghanada.server.formatter.SExprOutputFormatter;
 import meghanada.session.Session;
 import meghanada.session.SessionEventBus;
 import meghanada.system.Executor;
+import meghanada.telemetry.ErrorReporter;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -372,6 +373,7 @@ public class EmacsServer implements Server {
       this.accept();
     } catch (Throwable e) {
       log.catching(e);
+      ErrorReporter.report(e);
     } finally {
       try {
         this.serverSocket.close();

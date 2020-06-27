@@ -36,6 +36,7 @@ import javax.lang.model.element.Name;
 import meghanada.index.IndexableWord;
 import meghanada.reflect.ClassIndex;
 import meghanada.reflect.asm.CachedASMReflector;
+import meghanada.telemetry.ErrorReporter;
 import meghanada.telemetry.TelemetryUtils;
 import meghanada.utils.ClassName;
 import meghanada.utils.ClassNameUtils;
@@ -457,6 +458,7 @@ public class TreeAnalyzer {
       }
     } catch (IOException e) {
       log.catching(e);
+      ErrorReporter.report(e);
       throw new UncheckedIOException(e);
     }
   }

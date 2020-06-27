@@ -15,6 +15,7 @@ import meghanada.reflect.asm.CachedASMReflector;
 import meghanada.session.Session;
 import meghanada.session.SessionEventBus;
 import meghanada.store.ProjectDatabaseHelper;
+import meghanada.telemetry.ErrorReporter;
 import meghanada.telemetry.TelemetryUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -80,6 +81,7 @@ public class CacheEventSubscriber extends AbstractSubscriber {
             }
           } catch (Exception e) {
             log.catching(e);
+            ErrorReporter.report(e);
           }
         });
 
@@ -120,6 +122,7 @@ public class CacheEventSubscriber extends AbstractSubscriber {
                 globalCache.loadMemberDescriptors(fqcn);
               } catch (Exception e) {
                 log.catching(e);
+                ErrorReporter.report(e);
               }
             });
     createClassCache("java.util.*");
@@ -142,6 +145,7 @@ public class CacheEventSubscriber extends AbstractSubscriber {
                 globalCache.loadMemberDescriptors(fqcn);
               } catch (Exception e) {
                 log.catching(e);
+                ErrorReporter.report(e);
               }
             });
   }

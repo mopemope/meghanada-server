@@ -23,6 +23,7 @@ import meghanada.reflect.MemberDescriptor;
 import meghanada.store.ProjectDatabase;
 import meghanada.store.Serializer;
 import meghanada.system.Executor;
+import meghanada.telemetry.ErrorReporter;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.lucene.document.Document;
@@ -105,6 +106,7 @@ public class IndexDatabase {
             log.debug("indexed :{} elapsed:{}", id, stopwatch.stop());
           } catch (Throwable e) {
             log.catching(e);
+            ErrorReporter.report(e);
           }
         });
   }
@@ -125,6 +127,7 @@ public class IndexDatabase {
             }
           } catch (Throwable e) {
             log.catching(e);
+            ErrorReporter.report(e);
           }
         });
   }

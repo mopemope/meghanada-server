@@ -23,6 +23,7 @@ import meghanada.location.Location;
 import meghanada.reference.Reference;
 import meghanada.reflect.CandidateUnit;
 import meghanada.session.Session;
+import meghanada.telemetry.ErrorReporter;
 import meghanada.telemetry.TelemetryUtils;
 import meghanada.typeinfo.TypeInfo;
 import meghanada.utils.ClassNameUtils;
@@ -46,12 +47,14 @@ public class CommandHandler {
 
   private void writeError(long id, Throwable t) {
     log.catching(t);
+    ErrorReporter.report(t);
     try {
       String out = outputFormatter.error(id, t);
       writer.write(out);
       writer.newLine();
     } catch (IOException e) {
       log.catching(e);
+      ErrorReporter.report(e);
       throw new CommandException(e);
     }
   }

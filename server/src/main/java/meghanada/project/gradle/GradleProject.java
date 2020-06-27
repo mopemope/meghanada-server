@@ -37,6 +37,7 @@ import meghanada.config.Config;
 import meghanada.project.Project;
 import meghanada.project.ProjectDependency;
 import meghanada.project.ProjectParseException;
+import meghanada.telemetry.ErrorReporter;
 import meghanada.telemetry.TelemetryUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
@@ -628,6 +629,7 @@ public class GradleProject extends Project {
     public void onFailure(GradleConnectionException failure) {
       try {
         log.catching(failure.getCause());
+        ErrorReporter.report(failure.getCause());
         outputStream.close();
         inputStream.close();
       } catch (IOException e) {

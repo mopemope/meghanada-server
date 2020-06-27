@@ -62,6 +62,7 @@ import meghanada.reference.ReferenceSearcher;
 import meghanada.reflect.CandidateUnit;
 import meghanada.reflect.asm.CachedASMReflector;
 import meghanada.system.Executor;
+import meghanada.telemetry.ErrorReporter;
 import meghanada.telemetry.TelemetryUtils;
 import meghanada.typeinfo.TypeInfo;
 import meghanada.typeinfo.TypeInfoSearcher;
@@ -197,8 +198,9 @@ public class Session {
               log.info("load project from cache. projectRoot:{}", tempProject.getProjectRoot());
               return Optional.of(tempProject.mergeFromProjectConfig());
             }
-          } catch (Exception ex) {
-            log.catching(ex);
+          } catch (Exception e) {
+            log.catching(e);
+            ErrorReporter.report(e);
           }
         }
 
@@ -494,6 +496,7 @@ public class Session {
           return false;
         } catch (Exception e) {
           log.catching(e);
+          ErrorReporter.report(e);
           return false;
         }
       }
