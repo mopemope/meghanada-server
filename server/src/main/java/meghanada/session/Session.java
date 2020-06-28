@@ -179,7 +179,11 @@ public class Session {
       try {
         Config config = Config.load();
 
-        String id = FileUtils.findProjectID(projectRoot, targetFile);
+        Optional<String> projectID = FileUtils.findProjectID(projectRoot, targetFile);
+        if (!projectID.isPresent()) {
+          return Optional.empty();
+        }
+        String id = projectID.get();
         if (Project.loadedProject.containsKey(id)) {
           // loaded skip
           Project project = Project.loadedProject.get(id);

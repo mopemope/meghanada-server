@@ -194,7 +194,8 @@ public final class FileUtils {
   }
 
   @SuppressWarnings("try")
-  public static String findProjectID(final File root, final String target) throws IOException {
+  public static Optional<String> findProjectID(final File root, final String target)
+      throws IOException {
     try (TelemetryUtils.ScopedSpan scope =
         TelemetryUtils.startScopedSpan("FileUtils.findProjectID")) {
       TelemetryUtils.ScopedSpan.addAnnotation(
@@ -209,37 +210,42 @@ public final class FileUtils {
         throw new RuntimeException(e);
       }
 
-      Files.walkFileTree(
-          root.toPath(),
-          new SimpleFileVisitor<Path>() {
-            @Override
-            public FileVisitResult visitFile(Path path, BasicFileAttributes attrs)
-                throws IOException {
-              final File file = path.toFile();
-              if (file.getName().equals(target)) {
-                byte[] buf = new byte[8192];
-                int readByte;
-                try (FileInputStream in = new FileInputStream(file)) {
-                  while ((readByte = in.read(buf)) != -1) {
-                    md.update(buf, 0, readByte);
+      try {
+        Files.walkFileTree(
+            root.toPath(),
+            new SimpleFileVisitor<Path>() {
+              @Override
+              public FileVisitResult visitFile(Path path, BasicFileAttributes attrs)
+                  throws IOException {
+                final File file = path.toFile();
+                if (file.getName().equals(target)) {
+                  byte[] buf = new byte[8192];
+                  int readByte;
+                  try (FileInputStream in = new FileInputStream(file)) {
+                    while ((readByte = in.read(buf)) != -1) {
+                      md.update(buf, 0, readByte);
+                    }
                   }
                 }
+                return FileVisitResult.SKIP_SUBTREE;
               }
-              return FileVisitResult.SKIP_SUBTREE;
-            }
 
-            @Override
-            public FileVisitResult postVisitDirectory(Path dir, IOException exc) {
-              return FileVisitResult.CONTINUE;
-            }
-          });
+              @Override
+              public FileVisitResult postVisitDirectory(Path dir, IOException exc) {
+                return FileVisitResult.CONTINUE;
+              }
+            });
+      } catch (AccessDeniedException ex) {
+        log.warn("access denied. skip {}", root.toString());
+        return Optional.empty();
+      }
       byte[] digest = md.digest();
       StringBuilder sb = new StringBuilder(128);
       for (final int b : digest) {
         sb.append(Character.forDigit(b >> 4 & 0xF, 16));
         sb.append(Character.forDigit(b & 0xF, 16));
       }
-      return sb.toString();
+      return Optional.of(sb.toString());
     }
   }
 
