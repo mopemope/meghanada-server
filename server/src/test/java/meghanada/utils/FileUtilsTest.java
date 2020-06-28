@@ -1,6 +1,7 @@
 package meghanada.utils;
 
 import static meghanada.config.Config.timeIt;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
@@ -82,6 +83,12 @@ public class FileUtilsTest extends GradleTestBase {
     } catch (IOException e) {
       log.catching(e);
     }
+  }
+
+  @Test
+  public void testShortenPath() throws Exception {
+    String s = FileUtils.shortenPath("/foo/bar/Test.java");
+    assertEquals("/f/b/Test.java", s);
   }
 
   //  @Test

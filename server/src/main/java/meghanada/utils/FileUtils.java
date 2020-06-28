@@ -2,6 +2,7 @@ package meghanada.utils;
 
 import static java.util.Objects.isNull;
 
+import com.google.common.base.Splitter;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -583,5 +584,20 @@ public final class FileUtils {
       }
       return Optional.empty();
     }
+  }
+
+  public static String shortenPath(String path) {
+    File f = new File(path);
+    String name = f.getName();
+    return Splitter.on(File.separator)
+        .splitToStream(path)
+        .map(
+            s -> {
+              if (s.isEmpty() || s.equals(name)) {
+                return s;
+              }
+              return s.substring(0, 1);
+            })
+        .collect(Collectors.joining(File.separator));
   }
 }

@@ -11,6 +11,7 @@
 - Improve compile error logs.
 - Improve detection of dependent libraries in gradle projects.
 - Fix to keep a class cache for each project.
+- Shorten the File path in the log
 
 ## Fixed
 
