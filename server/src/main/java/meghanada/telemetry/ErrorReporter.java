@@ -8,8 +8,10 @@ import com.google.common.io.Resources;
 import com.google.devtools.clouderrorreporting.v1beta1.ErrorContext;
 import com.google.devtools.clouderrorreporting.v1beta1.ProjectName;
 import com.google.devtools.clouderrorreporting.v1beta1.ReportedErrorEvent;
+import com.google.devtools.clouderrorreporting.v1beta1.ServiceContext;
 import java.io.IOException;
 import java.net.URL;
+import meghanada.Main;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -19,6 +21,8 @@ public class ErrorReporter {
   private static final Logger log = LogManager.getLogger(TelemetryUtils.class);
   private static ProjectName projectName = ProjectName.of(TelemetryUtils.PROJECT_ID);
   private static ReportErrorsServiceSettings reportErrorsServiceSettings = null;
+  private static ServiceContext serviceContext =
+      ServiceContext.newBuilder().setService("meghanada").setVersion(Main.VERSION).build();
 
   public static void report(Throwable throwable) {
     try {
@@ -33,6 +37,7 @@ public class ErrorReporter {
               ReportedErrorEvent.getDefaultInstance()
                   .toBuilder()
                   .setContext(context)
+                  .setServiceContext(serviceContext)
                   .setMessage(message)
                   .build();
           reportErrorsServiceClient.reportErrorEvent(projectName, errorEvent);
