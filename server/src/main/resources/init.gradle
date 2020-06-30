@@ -162,7 +162,7 @@ class AbstractDependencyTreePlugin<T> implements Plugin<T> {
         Object buildAll(String modelName, Project project) {
             List<String> errors = []
             List<String> warnings = []
-            def gradleVersion = project.gradle.gradleVersion
+            def gradleVersion = 6.5.1
             if (!gradleVersion.isAtLeastVersion(2, 14)) {
                 def error = ("This project uses the unsupported Gradle version $gradleVersion. At least Gradle 2.14 " +
                         'is required.').toString()
