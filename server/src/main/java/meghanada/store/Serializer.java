@@ -25,6 +25,7 @@ import meghanada.reflect.MemberDescriptor;
 import meghanada.reflect.MethodParameter;
 import meghanada.reflect.names.MethodParameterNames;
 import meghanada.reflect.names.ParameterName;
+import meghanada.telemetry.ErrorReporter;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.nustaq.serialization.FSTConfiguration;
@@ -92,6 +93,7 @@ public class Serializer {
       writeObject(out, obj);
     } catch (Exception e) {
       log.catching(e);
+      ErrorReporter.report(e);
       if (!file.delete()) {
         log.warn("{} delete fail", file);
       }
@@ -111,6 +113,7 @@ public class Serializer {
       }
     } catch (Exception e) {
       log.catching(e);
+      ErrorReporter.report(e);
       if (file.exists() && !file.delete()) {
         log.warn("{} delete fail", file);
       }

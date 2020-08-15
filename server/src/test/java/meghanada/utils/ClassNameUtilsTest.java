@@ -8,9 +8,23 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import meghanada.GradleTestBase;
+import org.checkerframework.checker.units.qual.s;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
-public class ClassNameUtilsTest {
+public class ClassNameUtilsTest extends GradleTestBase {
+
+  @BeforeClass
+  public static void setup() throws Exception {
+    GradleTestBase.setupReflector(true);
+  }
+
+  @AfterClass
+  public static void shutdown() throws Exception {
+    GradleTestBase.shutdown();
+  }
 
   @Test
   public void parseTypeParameter1() throws Exception {

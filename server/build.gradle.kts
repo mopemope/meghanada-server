@@ -11,12 +11,12 @@ plugins {
     maven
     `maven-publish`
     application
-    id("com.github.johnrengelman.shadow") version "5.2.0"
+    id("com.github.johnrengelman.shadow") version "6.0.0"
     id("com.jfrog.bintray") version "1.8.5"
 }
 
 val group = "io.github.mopemope"
-var serverVersion = "1.3.0"
+var serverVersion = "1.3.1"
 var buildVersion = "release"
 
 val gitFile = File("./.git")
@@ -35,10 +35,10 @@ val date: String = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-
 val applicationName = "meghanada"
 
 val junitVersion = "5.6.2"
-val gradleVersion = "6.3"
-val log4jVersion = "2.13.2"
+val gradleVersion = "6.6"
+val log4jVersion = "2.13.3"
 val xodusVersion = "1.3.232"
-val opencensusVersion = "0.26.0"
+val opencensusVersion = "0.27.0"
 
 base {
     archivesBaseName = applicationName
@@ -73,14 +73,14 @@ dependencies {
     implementation("org.junit.jupiter:junit-jupiter-params:$junitVersion")
     implementation("org.junit.jupiter:junit-jupiter-engine:$junitVersion")
     implementation("org.junit.vintage:junit-vintage-engine:$junitVersion")
-    implementation("org.junit.platform:junit-platform-launcher:1.6.1")
+    implementation("org.junit.platform:junit-platform-launcher:1.6.2")
 
-    implementation("com.android.tools.build:builder-model:3.4.0")
+    implementation("com.android.tools.build:builder-model:4.0.0")
     implementation("io.takari.junit:takari-cpsuite:1.2.7")
     implementation("org.jboss.windup.decompiler:decompiler-api:4.2.1.Final")
-    implementation("org.jboss.windup.decompiler:decompiler-fernflower:4.2.1.Final")
+    implementation("org.jboss.windup.decompiler:decompiler-fernflower:4.3.1.Final")
     implementation("com.google.code.findbugs:jsr305:3.0.2")
-    implementation("org.eclipse.jdt:org.eclipse.jdt.core:3.21.0")
+    implementation("org.eclipse.jdt:org.eclipse.jdt.core:3.22.0")
     implementation("de.ruedigermoeller:fst:2.56")
 
     implementation("org.jetbrains.xodus:xodus-query:$xodusVersion")
@@ -97,8 +97,8 @@ dependencies {
     implementation("io.opencensus:opencensus-contrib-zpages:$opencensusVersion")
     implementation("io.opencensus:opencensus-exporter-trace-stackdriver:$opencensusVersion")
     implementation("io.opencensus:opencensus-exporter-stats-stackdriver:$opencensusVersion")
-
-    implementation("com.github.oshi:oshi-core:3.13.3")
+    implementation("com.google.cloud:google-cloud-errorreporting:0.120.0-beta")
+    implementation("com.github.oshi:oshi-core:3.13.5")
 }
 
 application {

@@ -44,6 +44,7 @@ import jetbrains.exodus.env.EnvironmentImpl;
 import jetbrains.exodus.env.Environments;
 import meghanada.Main;
 import meghanada.config.Config;
+import meghanada.telemetry.ErrorReporter;
 import meghanada.telemetry.TelemetryUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -128,6 +129,7 @@ public class ProjectDatabase {
             Thread.sleep(1000);
           } catch (InterruptedException e1) {
             log.catching(e1);
+            ErrorReporter.report(e1);
           }
           projectDatabase.entityStore.close();
         }
@@ -181,6 +183,7 @@ public class ProjectDatabase {
           setSerializeBlobData(entity, SERIALIZE_KEY, s);
         } catch (IOException e) {
           log.catching(e);
+          ErrorReporter.report(e);
           txn.abort();
           return -1;
         }
@@ -255,6 +258,7 @@ public class ProjectDatabase {
                 }
               } catch (Exception e) {
                 log.catching(e);
+                ErrorReporter.report(e);
               }
             }
           });
@@ -447,6 +451,7 @@ public class ProjectDatabase {
       this.runWorker();
     } catch (InterruptedException e) {
       log.catching(e);
+      ErrorReporter.report(e);
     }
   }
 
@@ -484,6 +489,7 @@ public class ProjectDatabase {
                 }
               } catch (Exception e) {
                 log.catching(e);
+                ErrorReporter.report(e);
               }
             }
             extraWorkers.decrementAndGet();

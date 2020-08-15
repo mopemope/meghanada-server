@@ -22,12 +22,14 @@ import javax.tools.SimpleJavaFileObject;
 import jetbrains.exodus.entitystore.Entity;
 import jetbrains.exodus.entitystore.StoreTransaction;
 import meghanada.store.Storable;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class CompileResult implements Storable {
 
   public static final String DIAGNOSTIC_ENTITY_TYPE = "Diagnostic";
   public static final String ENTITY_TYPE = "CompileResult";
-
+  private static final Logger log = LogManager.getLogger(CompileResult.class);
   private final boolean success;
   private final Map<File, Source> sources;
   private List<Diagnostic<? extends JavaFileObject>> diagnostics = new ArrayList<>(0);
@@ -86,6 +88,32 @@ public class CompileResult implements Storable {
       return diagnostics.stream().map(Object::toString).collect(Collectors.joining("\n"));
     } else {
       return "not compiled.";
+    }
+  }
+
+  public void displayDiagnosticsSummary(String msg) {
+    if (hasDiagnostics()) {
+      diagnostics.forEach(
+          diagnostic -> {
+            if (diagnostic.getKind() == Diagnostic.Kind.ERROR) {
+              log.error("{} {}", msg, diagnostic.toString());
+            } else {
+              log.warn("{} {}", msg, diagnostic.toString());
+            }
+          });
+    }
+  }
+
+  public void displayDiagnosticsSummary() {
+    if (hasDiagnostics()) {
+      diagnostics.forEach(
+          diagnostic -> {
+            if (diagnostic.getKind() == Diagnostic.Kind.ERROR) {
+              log.error("{}", diagnostic.toString());
+            } else {
+              log.warn("{}", diagnostic.toString());
+            }
+          });
     }
   }
 

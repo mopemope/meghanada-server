@@ -1,9 +1,9 @@
 plugins {
     // id("com.gradle.build-scan") version "3.0"
     id("com.github.ben-manes.versions") version "0.28.0"
-    id("org.ajoberstar.grgit") version "4.0.1"
-    id("com.github.sherter.google-java-format") version "0.8"
-    id("net.ltgt.errorprone") version "1.1.1"
+    id("org.ajoberstar.grgit") version "4.0.2"
+    id("com.github.sherter.google-java-format") version "0.9"
+    id("net.ltgt.errorprone") version "1.2.1"
 }
 
 repositories {
@@ -22,7 +22,7 @@ googleJavaFormat {
 }
 
 dependencies {
-    errorprone("com.google.errorprone:error_prone_core:2.3.4")
+    errorprone("com.google.errorprone:error_prone_core:2.4.0")
     errorproneJavac("com.google.errorprone:javac:9+181-r4173-1")
 }
 

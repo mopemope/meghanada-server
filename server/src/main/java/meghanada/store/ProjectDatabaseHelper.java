@@ -28,6 +28,7 @@ import meghanada.project.Project;
 import meghanada.reflect.ClassIndex;
 import meghanada.reflect.MemberDescriptor;
 import meghanada.reflect.asm.CachedASMReflector;
+import meghanada.telemetry.ErrorReporter;
 import meghanada.telemetry.TelemetryUtils;
 import meghanada.utils.FileUtils;
 import org.apache.logging.log4j.LogManager;
@@ -155,6 +156,7 @@ public class ProjectDatabaseHelper {
             ProjectDatabase.setSerializeBlobData(entity, BLOB_PROP_MEMBERS, members);
           } catch (IOException e) {
             log.catching(e);
+            ErrorReporter.report(e);
             txn.abort();
             return false;
           }
@@ -184,6 +186,7 @@ public class ProjectDatabaseHelper {
             return Optional.ofNullable(res);
           } catch (Exception e) {
             log.catching(e);
+            ErrorReporter.report(e);
             return Optional.empty();
           }
         });
@@ -282,6 +285,7 @@ public class ProjectDatabaseHelper {
                 return Optional.ofNullable(Serializer.readObject(in, ConcurrentHashMap.class));
               } catch (Exception e) {
                 log.catching(e);
+                ErrorReporter.report(e);
                 return Optional.empty();
               }
             });
@@ -307,6 +311,7 @@ public class ProjectDatabaseHelper {
               ProjectDatabase.setSerializeBlobData(entity, BLOB_PROP_CHECKSUM, map);
             } catch (IOException e) {
               log.catching(e);
+              ErrorReporter.report(e);
               txn.abort();
               return false;
             }
@@ -361,6 +366,7 @@ public class ProjectDatabaseHelper {
               ProjectDatabase.setSerializeBlobData(entity, BLOB_PROP_CALLER, map);
             } catch (IOException e) {
               log.catching(e);
+              ErrorReporter.report(e);
               txn.abort();
               return false;
             }
@@ -406,6 +412,7 @@ public class ProjectDatabaseHelper {
                 ProjectDatabase.setSerializeBlobData(entity, BLOB_PROP_SOURCEMAP, map);
               } catch (IOException e) {
                 log.catching(e);
+                ErrorReporter.report(e);
                 txn.abort();
                 return false;
               }
@@ -436,6 +443,7 @@ public class ProjectDatabaseHelper {
 
               } catch (IOException e) {
                 log.catching(e);
+                ErrorReporter.report(e);
               }
               result = true;
             }

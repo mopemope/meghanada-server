@@ -15,6 +15,7 @@ import meghanada.reflect.asm.CachedASMReflector;
 import meghanada.session.Session;
 import meghanada.session.SessionEventBus;
 import meghanada.store.ProjectDatabaseHelper;
+import meghanada.telemetry.ErrorReporter;
 import meghanada.telemetry.TelemetryUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -73,23 +74,14 @@ public class CacheEventSubscriber extends AbstractSubscriber {
         () -> {
           try {
             final CompileResult compileResult = project.compileJava();
+            compileResult.displayDiagnosticsSummary();
             if (compileResult.isSuccess()) {
-              if (compileResult.hasDiagnostics()) {
-                log.warn("compile message: {}", compileResult.getDiagnosticsSummary());
-              }
               final CompileResult testCompileResult = project.compileTestJava();
-              if (testCompileResult.isSuccess()) {
-                if (testCompileResult.hasDiagnostics()) {
-                  log.warn("compile(test) message: {}", testCompileResult.getDiagnosticsSummary());
-                }
-              } else {
-                log.warn("compile(test) error: {}", testCompileResult.getDiagnosticsSummary());
-              }
-            } else {
-              log.warn("compile message  {}", compileResult.getDiagnosticsSummary());
+              testCompileResult.displayDiagnosticsSummary();
             }
           } catch (Exception e) {
             log.catching(e);
+            ErrorReporter.report(e);
           }
         });
 
@@ -97,7 +89,7 @@ public class CacheEventSubscriber extends AbstractSubscriber {
         "class index size:{} total elapsed:{}",
         reflector.getGlobalClassIndex().size(),
         stopwatch.stop());
-    System.gc();
+    // System.gc();
     Config.showMemory();
     log.info("Ready");
     reflector.scanAllStaticMembers();
@@ -130,6 +122,7 @@ public class CacheEventSubscriber extends AbstractSubscriber {
                 globalCache.loadMemberDescriptors(fqcn);
               } catch (Exception e) {
                 log.catching(e);
+                ErrorReporter.report(e);
               }
             });
     createClassCache("java.util.*");
@@ -152,6 +145,7 @@ public class CacheEventSubscriber extends AbstractSubscriber {
                 globalCache.loadMemberDescriptors(fqcn);
               } catch (Exception e) {
                 log.catching(e);
+                ErrorReporter.report(e);
               }
             });
   }

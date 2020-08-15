@@ -62,6 +62,7 @@ import meghanada.reference.ReferenceSearcher;
 import meghanada.reflect.CandidateUnit;
 import meghanada.reflect.asm.CachedASMReflector;
 import meghanada.system.Executor;
+import meghanada.telemetry.ErrorReporter;
 import meghanada.telemetry.TelemetryUtils;
 import meghanada.typeinfo.TypeInfo;
 import meghanada.typeinfo.TypeInfoSearcher;
@@ -178,7 +179,11 @@ public class Session {
       try {
         Config config = Config.load();
 
-        String id = FileUtils.findProjectID(projectRoot, targetFile);
+        Optional<String> projectID = FileUtils.findProjectID(projectRoot, targetFile);
+        if (!projectID.isPresent()) {
+          return Optional.empty();
+        }
+        String id = projectID.get();
         if (Project.loadedProject.containsKey(id)) {
           // loaded skip
           Project project = Project.loadedProject.get(id);
@@ -197,8 +202,9 @@ public class Session {
               log.info("load project from cache. projectRoot:{}", tempProject.getProjectRoot());
               return Optional.of(tempProject.mergeFromProjectConfig());
             }
-          } catch (Exception ex) {
-            log.catching(ex);
+          } catch (Exception e) {
+            log.catching(e);
+            ErrorReporter.report(e);
           }
         }
 
@@ -332,7 +338,7 @@ public class Session {
       if (this.projects.containsKey(projectRoot)) {
         // loaded project
         Project project = this.projects.get(projectRoot);
-        log.info("change project {}", project.getName());
+        log.info("changed project [{}]", project.getName());
         String projectRootPath = project.getProjectRootPath();
         Config.setProjectRoot(projectRootPath);
         this.currentProject = project;
@@ -340,7 +346,7 @@ public class Session {
       }
 
       if (currentProject instanceof GradleProject) {
-        File buildFile = new File(projectRoot, GradleProject.isGradleProject(base).get());
+        File buildFile = new File(projectRoot, GradleProject.isGradleProject(projectRoot).get());
         return loadProject(projectRoot, buildFile.getName(), base)
             .map(project -> setProject(projectRoot, project))
             .orElse(false);
@@ -360,7 +366,7 @@ public class Session {
   }
 
   private boolean setProject(final File projectRoot, final Project project) {
-    log.info("change project {}", project.getName());
+    log.info("changed project [{}]", project.getName());
     String projectRootPath = project.getProjectRootPath();
     Config.setProjectRoot(projectRootPath);
     this.projects.put(projectRoot, project);
@@ -487,12 +493,14 @@ public class Session {
           }
           final boolean changed = this.searchAndChangeProject(file);
           if (changed) {
+            CachedASMReflector.getInstance().addClasspath(getSystemJars());
             this.sessionEventBus.requestCreateCache();
             return true;
           }
           return false;
         } catch (Exception e) {
           log.catching(e);
+          ErrorReporter.report(e);
           return false;
         }
       }

@@ -18,6 +18,7 @@ import meghanada.project.Project;
 import meghanada.session.SessionEventBus;
 import meghanada.store.ProjectDatabaseHelper;
 import meghanada.system.Executor;
+import meghanada.telemetry.ErrorReporter;
 import meghanada.telemetry.TelemetryUtils;
 import meghanada.utils.FileUtils;
 import org.apache.logging.log4j.LogManager;
@@ -139,6 +140,7 @@ public class SourceCacheSubscriber {
                     this.analyzed(source, event.diagnostics);
                   } catch (Exception ex) {
                     log.catching(ex);
+                    ErrorReporter.report(ex);
                   }
                 });
       }
@@ -149,6 +151,7 @@ public class SourceCacheSubscriber {
       span.setStatusOK();
     } catch (Exception ex) {
       log.catching(ex);
+      ErrorReporter.report(ex);
     }
   }
 }

@@ -34,7 +34,6 @@ public class SetupMain {
     if (version != null) {
       return version;
     }
-
     final String v = getVersionInfo();
     if (v != null) {
       version = v;

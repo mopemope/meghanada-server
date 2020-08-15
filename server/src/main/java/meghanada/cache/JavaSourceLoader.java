@@ -14,6 +14,7 @@ import meghanada.analyze.Source;
 import meghanada.config.Config;
 import meghanada.project.Project;
 import meghanada.store.ProjectDatabaseHelper;
+import meghanada.telemetry.ErrorReporter;
 import meghanada.utils.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -69,6 +70,7 @@ class JavaSourceLoader extends CacheLoader<File, Source> implements RemovalListe
           }
         } catch (Exception e) {
           log.catching(e);
+          ErrorReporter.report(e);
         }
       }
     }
@@ -88,6 +90,7 @@ class JavaSourceLoader extends CacheLoader<File, Source> implements RemovalListe
         deleteSource(source);
       } catch (Exception e) {
         log.catching(e);
+        ErrorReporter.report(e);
       }
     }
   }

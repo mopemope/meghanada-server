@@ -10,6 +10,7 @@ import meghanada.config.Config;
 import meghanada.project.Project;
 import meghanada.session.SessionEventBus;
 import meghanada.store.ProjectDatabaseHelper;
+import meghanada.telemetry.ErrorReporter;
 import meghanada.utils.FileUtils;
 import meghanada.watcher.FileSystemWatcher;
 import org.apache.logging.log4j.LogManager;
@@ -44,6 +45,7 @@ public class FileWatchEventSubscriber extends AbstractSubscriber {
 
     } catch (Throwable e) {
       log.catching(e);
+      ErrorReporter.report(e);
     }
   }
 
@@ -63,6 +65,7 @@ public class FileWatchEventSubscriber extends AbstractSubscriber {
         this.sessionEventBus.getSession().reloadProject();
       } catch (Exception e) {
         log.catching(e);
+        ErrorReporter.report(e);
       }
     } else {
       // parse

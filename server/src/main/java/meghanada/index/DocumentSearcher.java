@@ -12,6 +12,7 @@ import jetbrains.exodus.env.Environment;
 import jetbrains.exodus.env.StoreConfig;
 import jetbrains.exodus.lucene.ExodusDirectory;
 import jetbrains.exodus.lucene.codecs.Lucene70CodecWithNoFieldCompression;
+import meghanada.telemetry.ErrorReporter;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.lucene.analysis.Analyzer;
@@ -93,6 +94,7 @@ public class DocumentSearcher implements AutoCloseable {
         this.indexWriter.close();
       } catch (IOException e) {
         log.catching(e);
+        ErrorReporter.report(e);
       }
     }
     this.indexWriter = null;

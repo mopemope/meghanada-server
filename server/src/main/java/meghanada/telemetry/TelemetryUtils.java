@@ -55,7 +55,6 @@ public class TelemetryUtils {
   private static final StatsRecorder statsRecorder = Stats.getStatsRecorder();
   private static final EndSpanOptions END_SPAN_OPTIONS =
       EndSpanOptions.builder().setSampleToLocalSpanStore(true).build();
-  private static final String CREDENTIALS_JSON = "credentials.json";
   private static final Tracer tracer = Tracing.getTracer();
   private static final Sampler PROBABILITY_SAMPLER_HIGH = Samplers.probabilitySampler(1 / 5.0);
   private static final Sampler PROBABILITY_SAMPLER_MIDDLE = Samplers.probabilitySampler(1 / 10.0);
@@ -81,13 +80,15 @@ public class TelemetryUtils {
   private static final TagKey KEY_COMMAND = TagKey.create("command");
   private static final TagKey KEY_DESCRIPTION = TagKey.create("description");
   private static final TagKey KEY_UID = TagKey.create("uid");
-  private static final String PROJECT_ID = "meghanada-240122";
 
   private static boolean enabledExporter;
   private static Map<String, AttributeValue> javaAttributeMap;
   private static Map<String, AttributeValue> osAttributeMap;
   private static Annotation meghanadaAnnotation;
   private static String uid;
+
+  static final String CREDENTIALS_JSON = "credentials.json";
+  static final String PROJECT_ID = "meghanada-240122";
 
   static {
     Map<String, AttributeValue> javaMap = new HashMap<>(16);

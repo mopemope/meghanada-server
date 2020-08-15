@@ -2,6 +2,7 @@ package meghanada.utils;
 
 import static java.util.Objects.isNull;
 
+import com.google.common.base.Splitter;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -40,6 +41,7 @@ import meghanada.cache.GlobalCache;
 import meghanada.config.Config;
 import meghanada.formatter.JavaFormatter;
 import meghanada.store.ProjectDatabaseHelper;
+import meghanada.telemetry.ErrorReporter;
 import meghanada.telemetry.TelemetryUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -193,7 +195,8 @@ public final class FileUtils {
   }
 
   @SuppressWarnings("try")
-  public static String findProjectID(final File root, final String target) throws IOException {
+  public static Optional<String> findProjectID(final File root, final String target)
+      throws IOException {
     try (TelemetryUtils.ScopedSpan scope =
         TelemetryUtils.startScopedSpan("FileUtils.findProjectID")) {
       TelemetryUtils.ScopedSpan.addAnnotation(
@@ -208,37 +211,42 @@ public final class FileUtils {
         throw new RuntimeException(e);
       }
 
-      Files.walkFileTree(
-          root.toPath(),
-          new SimpleFileVisitor<Path>() {
-            @Override
-            public FileVisitResult visitFile(Path path, BasicFileAttributes attrs)
-                throws IOException {
-              final File file = path.toFile();
-              if (file.getName().equals(target)) {
-                byte[] buf = new byte[8192];
-                int readByte;
-                try (FileInputStream in = new FileInputStream(file)) {
-                  while ((readByte = in.read(buf)) != -1) {
-                    md.update(buf, 0, readByte);
+      try {
+        Files.walkFileTree(
+            root.toPath(),
+            new SimpleFileVisitor<Path>() {
+              @Override
+              public FileVisitResult visitFile(Path path, BasicFileAttributes attrs)
+                  throws IOException {
+                final File file = path.toFile();
+                if (file.getName().equals(target)) {
+                  byte[] buf = new byte[8192];
+                  int readByte;
+                  try (FileInputStream in = new FileInputStream(file)) {
+                    while ((readByte = in.read(buf)) != -1) {
+                      md.update(buf, 0, readByte);
+                    }
                   }
                 }
+                return FileVisitResult.SKIP_SUBTREE;
               }
-              return FileVisitResult.SKIP_SUBTREE;
-            }
 
-            @Override
-            public FileVisitResult postVisitDirectory(Path dir, IOException exc) {
-              return FileVisitResult.CONTINUE;
-            }
-          });
+              @Override
+              public FileVisitResult postVisitDirectory(Path dir, IOException exc) {
+                return FileVisitResult.CONTINUE;
+              }
+            });
+      } catch (AccessDeniedException ex) {
+        log.warn("access denied. skip {}", root.toString());
+        return Optional.empty();
+      }
       byte[] digest = md.digest();
       StringBuilder sb = new StringBuilder(128);
       for (final int b : digest) {
         sb.append(Character.forDigit(b >> 4 & 0xF, 16));
         sb.append(Character.forDigit(b & 0xF, 16));
       }
-      return sb.toString();
+      return Optional.of(sb.toString());
     }
   }
 
@@ -495,6 +503,7 @@ public final class FileUtils {
     } catch (Throwable t) {
       TelemetryUtils.setStatusINTERNAL(t.getMessage());
       log.catching(t);
+      ErrorReporter.report(t);
       return Optional.empty();
     }
   }
@@ -575,5 +584,20 @@ public final class FileUtils {
       }
       return Optional.empty();
     }
+  }
+
+  public static String shortenPath(String path) {
+    File f = new File(path);
+    String name = f.getName();
+    return Splitter.on(File.separator)
+        .splitToStream(path)
+        .map(
+            s -> {
+              if (s.isEmpty() || s.equals(name)) {
+                return s;
+              }
+              return s.substring(0, 1);
+            })
+        .collect(Collectors.joining(File.separator));
   }
 }
