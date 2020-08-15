@@ -25,8 +25,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 import meghanada.server.CommandHandler;
+import meghanada.server.Launcher;
 import meghanada.server.OutputFormatter;
-import meghanada.server.Server;
 import meghanada.server.formatter.SExprOutputFormatter;
 import meghanada.session.Session;
 import meghanada.session.SessionEventBus;
@@ -36,9 +36,9 @@ import meghanada.utils.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class EmacsServer implements Server {
+public class Server implements Launcher {
 
-  private static final Logger log = LogManager.getLogger(EmacsServer.class);
+  private static final Logger log = LogManager.getLogger(Server.class);
   private static final String EOT = ";;EOT";
   private final ServerSocket serverSocket;
   private final OUTPUT outputFormat;
@@ -51,8 +51,7 @@ public class EmacsServer implements Server {
   private Session session;
   private long id;
 
-  public EmacsServer(final String host, final int port, final String projectRoot)
-      throws IOException {
+  public Server(final String host, final int port, final String projectRoot) throws IOException {
     final InetAddress address = InetAddress.getByName(host);
     this.host = host;
     this.port = port;
@@ -441,7 +440,7 @@ public class EmacsServer implements Server {
                     log.info("stop client ... args:{}", args);
                   }
                   if (this.outputEOT) {
-                    writer.write(EmacsServer.EOT);
+                    writer.write(Server.EOT);
                     writer.newLine();
                   }
 

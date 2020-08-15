@@ -16,7 +16,7 @@ plugins {
 }
 
 val group = "io.github.mopemope"
-var serverVersion = "1.3.1"
+var serverVersion = "2.0.0"
 var buildVersion = "release"
 
 val gitFile = File("./.git")
@@ -99,6 +99,8 @@ dependencies {
     implementation("io.opencensus:opencensus-exporter-stats-stackdriver:$opencensusVersion")
     implementation("com.google.cloud:google-cloud-errorreporting:0.120.0-beta")
     implementation("com.github.oshi:oshi-core:3.13.5")
+
+    implementation("org.eclipse.lsp4j:org.eclipse.lsp4j:0.9.0")
 }
 
 application {

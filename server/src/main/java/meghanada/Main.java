@@ -11,8 +11,8 @@ import java.io.IOException;
 import java.net.Socket;
 import java.util.Objects;
 import meghanada.config.Config;
-import meghanada.server.Server;
-import meghanada.server.emacs.EmacsServer;
+import meghanada.server.Launcher;
+import meghanada.server.emacs.Server;
 import meghanada.telemetry.TelemetryUtils;
 import meghanada.utils.ClassPathUtils;
 import meghanada.utils.FileUtils;
@@ -33,7 +33,7 @@ import org.apache.logging.log4j.core.layout.PatternLayout;
 
 public class Main {
 
-  public static final String VERSION = "1.3.1";
+  public static final String VERSION = "2.0.0";
   private static final Logger log = LogManager.getLogger(Main.class);
   private static String version;
 
@@ -135,6 +135,7 @@ public class Main {
     String port = "0";
     String projectRoot = "./";
     String fmt = "sexp";
+    boolean lspMode = cmd.hasOption("lsp");
 
     if (cmd.hasOption("p")) {
       port = cmd.getOptionValue("p", port);
@@ -149,7 +150,7 @@ public class Main {
     final int portInt = Integer.parseInt(port);
 
     log.info("Meghanada-Server Version:{}", version);
-    final Server server = createServer("localhost", portInt, projectRoot, fmt);
+    final Launcher server = createServer("localhost", portInt, projectRoot, fmt, lspMode);
     server.startServer();
   }
 
@@ -200,10 +201,17 @@ public class Main {
     }
   }
 
-  private static Server createServer(
-      final String host, final int port, final String projectRoot, final String fmt)
+  private static Launcher createServer(
+      final String host,
+      final int port,
+      final String projectRoot,
+      final String fmt,
+      boolean lspMode)
       throws IOException {
-    return new EmacsServer(host, port, projectRoot);
+    if (lspMode) {
+      return new meghanada.server.lsp.Server(projectRoot);
+    }
+    return new Server(host, port, projectRoot);
   }
 
   private static Options buildOptions() {
@@ -219,6 +227,8 @@ public class Main {
     options.addOption(project);
     final Option verbose = new Option("v", "verbose", false, "show verbose message (DEBUG)");
     options.addOption(verbose);
+    final Option lsp = new Option("", "lsp", false, "start in lsp mode");
+    options.addOption(lsp);
     final Option traceVerbose =
         new Option("vv", "traceVerbose", false, "show verbose message (TRACE)");
     options.addOption(traceVerbose);

@@ -2,7 +2,7 @@ package meghanada.server;
 
 import java.io.IOException;
 
-public interface Server {
+public interface Launcher {
 
   void startServer() throws IOException;
 }
