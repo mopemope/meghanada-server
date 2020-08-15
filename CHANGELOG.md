@@ -1,12 +1,14 @@
 # Next Release
 
+# 1.3.1 (2020-08-15)
+
 ## Added
 
 - Add the function of sending an error report.
 
 ## Changed
 
-- Update gradle to 6.4.
+- Update gradle to 6.6.
 - Fix to use the latest library.
 - Improve compile error logs.
 - Improve detection of dependent libraries in gradle projects.
