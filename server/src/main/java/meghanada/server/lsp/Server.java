@@ -14,16 +14,12 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.eclipse.lsp4j.CompletionOptions;
 import org.eclipse.lsp4j.InitializeParams;
 import org.eclipse.lsp4j.InitializeResult;
 import org.eclipse.lsp4j.MessageParams;
 import org.eclipse.lsp4j.MessageType;
 import org.eclipse.lsp4j.ServerCapabilities;
-import org.eclipse.lsp4j.TextDocumentSyncKind;
 import org.eclipse.lsp4j.WorkspaceFolder;
-import org.eclipse.lsp4j.WorkspaceFoldersOptions;
-import org.eclipse.lsp4j.WorkspaceServerCapabilities;
 import org.eclipse.lsp4j.jsonrpc.Launcher;
 import org.eclipse.lsp4j.launch.LSPLauncher;
 import org.eclipse.lsp4j.services.LanguageClient;
@@ -61,11 +57,12 @@ public final class Server
   @Override
   public void connect(LanguageClient client) {
     this.client = client;
+    this.client.logMessage(new MessageParams(MessageType.Info, "connect meghanada server"));
   }
 
   @Override
   public CompletableFuture<InitializeResult> initialize(InitializeParams params) {
-    client.logMessage(new MessageParams(MessageType.Info, "hello, meghanada server"));
+    this.client.logMessage(new MessageParams(MessageType.Info, "hello, meghanada server"));
 
     List<WorkspaceFolder> workspaceFolders = getWorkspaceFolders(params);
     if (!workspaceFolders.isEmpty()) {
@@ -74,18 +71,18 @@ public final class Server
     }
 
     ServerCapabilities capabilities = new ServerCapabilities();
-    capabilities.setTextDocumentSync(TextDocumentSyncKind.Incremental);
+    // capabilities.setTextDocumentSync(TextDocumentSyncKind.Incremental);
 
-    WorkspaceServerCapabilities workspaceServerCapabilities = new WorkspaceServerCapabilities();
-    WorkspaceFoldersOptions foldersOptions = new WorkspaceFoldersOptions();
-    foldersOptions.setSupported(true);
-    foldersOptions.setChangeNotifications(WORKSPACE_FOLDERS_CAPABILITY_ID);
-    workspaceServerCapabilities.setWorkspaceFolders(foldersOptions);
-    capabilities.setWorkspace(workspaceServerCapabilities);
+    // WorkspaceServerCapabilities workspaceServerCapabilities = new WorkspaceServerCapabilities();
+    // WorkspaceFoldersOptions foldersOptions = new WorkspaceFoldersOptions();
+    // foldersOptions.setSupported(true);
+    // foldersOptions.setChangeNotifications(WORKSPACE_FOLDERS_CAPABILITY_ID);
+    // workspaceServerCapabilities.setWorkspaceFolders(foldersOptions);
+    // capabilities.setWorkspace(workspaceServerCapabilities);
 
-    CompletionOptions completionOptions = new CompletionOptions();
-    completionOptions.setResolveProvider(true);
-    capabilities.setCompletionProvider(completionOptions);
+    // CompletionOptions completionOptions = new CompletionOptions();
+    // completionOptions.setResolveProvider(true);
+    // capabilities.setCompletionProvider(completionOptions);
 
     InitializeResult result = new InitializeResult(capabilities);
     return CompletableFuture.completedFuture(result);

@@ -51,15 +51,7 @@ public class Main {
   }
 
   public static void main(String[] args) throws Exception {
-    log.info("use java home: {}", System.getProperty("java.home"));
-    log.info(
-        "use java runtime: {} {}",
-        System.getProperty("java.runtime.name"),
-        System.getProperty("java.runtime.version"));
-    log.info(
-        "use java vm: {} {}",
-        System.getProperty("java.vm.name"),
-        System.getProperty("java.vm.version"));
+
     ClassPathUtils.addToolsJar();
     final String version = getVersion();
     System.setProperty("meghanada-server.version", version);
@@ -69,6 +61,18 @@ public class Main {
 
     final CommandLineParser parser = new DefaultParser();
     final CommandLine cmd = parser.parse(options, args);
+
+    addFileAppender(
+        cmd.getOptionValue("log", System.getProperty("java.io.tmpdir") + "/meghanada_server.log"));
+    log.info("use java home: {}", System.getProperty("java.home"));
+    log.info(
+        "use java runtime: {} {}",
+        System.getProperty("java.runtime.name"),
+        System.getProperty("java.runtime.version"));
+    log.info(
+        "use java vm: {} {}",
+        System.getProperty("java.vm.name"),
+        System.getProperty("java.vm.version"));
 
     if (cmd.hasOption("h")) {
       HelpFormatter formatter = new HelpFormatter();
@@ -89,9 +93,6 @@ public class Main {
                 }));
 
     System.setProperty("home", Config.getInstalledPath().getParentFile().getCanonicalPath());
-
-    addFileAppender(
-        cmd.getOptionValue("log", System.getProperty("java.io.tmpdir") + "/meghanada_server.log"));
 
     if (cmd.hasOption("v")) {
       Object ctx = LogManager.getContext(false);
@@ -227,7 +228,7 @@ public class Main {
     options.addOption(project);
     final Option verbose = new Option("v", "verbose", false, "show verbose message (DEBUG)");
     options.addOption(verbose);
-    final Option lsp = new Option("", "lsp", false, "start in lsp mode");
+    final Option lsp = new Option(null, "lsp", false, "start in lsp mode");
     options.addOption(lsp);
     final Option traceVerbose =
         new Option("vv", "traceVerbose", false, "show verbose message (TRACE)");

@@ -23,7 +23,7 @@ public class ClassPathUtils {
       Method method = URLClassLoader.class.getDeclaredMethod("addURL", URL.class);
       method.setAccessible(true);
       method.invoke(ClassLoader.getSystemClassLoader(), file.toURI().toURL());
-      log.info("add tools.jar path:{}", path.toFile().getCanonicalPath());
+      // log.info("add tools.jar path:{}", path.toFile().getCanonicalPath());
     } else {
       if (isJava8()) {
         log.error("missing tools.jar path:{}", path.toFile().getCanonicalPath());
