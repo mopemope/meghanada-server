@@ -19,7 +19,7 @@ val group = "meghanada"
 val setupVersion = "0.0.2"
 var buildVersion = "release"
 
-val gitFile = File("./.git")
+val gitFile = File("../.git")
 if (gitFile.exists()) {
     val grgit = Grgit.open()
     buildVersion = grgit.head().abbreviatedId
