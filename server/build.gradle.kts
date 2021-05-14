@@ -8,7 +8,7 @@ import java.time.format.DateTimeFormatter
 
 plugins {
     java
-    maven
+    //maven
     `maven-publish`
     application
     id("com.github.johnrengelman.shadow") version "6.0.0"
@@ -35,10 +35,10 @@ val date: String = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-
 val applicationName = "meghanada"
 
 val junitVersion = "5.6.2"
-val gradleVersion = "6.6"
-val log4jVersion = "2.13.3"
+val gradleVersion = "7.0.1"
+val log4jVersion = "2.14.1"
 val xodusVersion = "1.3.232"
-val opencensusVersion = "0.27.0"
+val opencensusVersion = "0.28.3"
 
 base {
     archivesBaseName = applicationName
@@ -55,18 +55,18 @@ dependencies {
     val toolsJar = files("$javaHome/../lib/tools.jar")
     implementation(toolsJar)
     implementation("com.google.googlejavaformat:google-java-format:1.7")
-    implementation("org.apache.maven:maven-model-builder:3.6.3")
+    implementation("org.apache.maven:maven-model-builder:3.8.1")
     implementation("com.leacox.motif:motif:0.1")
     implementation("com.leacox.motif:motif-hamcrest:0.1")
-    implementation("com.github.javaparser:javaparser-core:3.16.1")
+    implementation("com.github.javaparser:javaparser-core:3.22.0")
     implementation("org.apache.logging.log4j:log4j-core:$log4jVersion")
     implementation("org.apache.logging.log4j:log4j-api:$log4jVersion")
     implementation("org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion")
     implementation("commons-cli:commons-cli:1.4")
     implementation("org.gradle:gradle-tooling-api:$gradleVersion")
-    implementation("com.google.guava:guava:29.0-jre")
-    implementation("org.ow2.asm:asm:8.0.1")
-    implementation("com.typesafe:config:1.4.0")
+    implementation("com.google.guava:guava:30.1.1-jre")
+    implementation("org.ow2.asm:asm:9.1")
+    implementation("com.typesafe:config:1.4.1")
     implementation("org.atteo:evo-inflector:1.2.2")
 
     implementation("org.junit.jupiter:junit-jupiter-api:$junitVersion")
@@ -80,7 +80,7 @@ dependencies {
     implementation("org.jboss.windup.decompiler:decompiler-api:4.2.1.Final")
     implementation("org.jboss.windup.decompiler:decompiler-fernflower:4.3.1.Final")
     implementation("com.google.code.findbugs:jsr305:3.0.2")
-    implementation("org.eclipse.jdt:org.eclipse.jdt.core:3.22.0")
+    implementation("org.eclipse.jdt:org.eclipse.jdt.core:3.25.0")
     implementation("de.ruedigermoeller:fst:2.56")
 
     implementation("org.jetbrains.xodus:xodus-query:$xodusVersion")

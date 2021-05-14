@@ -8,7 +8,7 @@ import java.time.format.DateTimeFormatter
 
 plugins {
     java
-    maven
+//    maven
     `maven-publish`
     application
     id("com.github.johnrengelman.shadow") version "6.0.0"
