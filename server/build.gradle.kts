@@ -98,7 +98,7 @@ dependencies {
     implementation("io.opencensus:opencensus-exporter-trace-stackdriver:$opencensusVersion")
     implementation("io.opencensus:opencensus-exporter-stats-stackdriver:$opencensusVersion")
     implementation("com.google.cloud:google-cloud-errorreporting:0.120.0-beta")
-    implementation("com.github.oshi:oshi-core:3.13.5")
+    implementation("com.github.oshi:oshi-core:3.13.6")
 }
 
 application {
