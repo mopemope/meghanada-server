@@ -22,7 +22,7 @@ googleJavaFormat {
 }
 
 dependencies {
-    errorprone("com.google.errorprone:error_prone_core:2.4.0")
+    errorprone("com.google.errorprone:error_prone_core:2.7.1")
     errorproneJavac("com.google.errorprone:javac:9+181-r4173-1")
 }
 
