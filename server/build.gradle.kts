@@ -78,7 +78,7 @@ dependencies {
     implementation("com.android.tools.build:builder-model:4.0.0")
     implementation("io.takari.junit:takari-cpsuite:1.2.7")
     implementation("org.jboss.windup.decompiler:decompiler-api:4.2.1.Final")
-    implementation("org.jboss.windup.decompiler:decompiler-fernflower:4.3.1.Final")
+    implementation("org.jboss.windup.decompiler:decompiler-fernflower:5.1.4.Final")
     implementation("com.google.code.findbugs:jsr305:3.0.2")
     implementation("org.eclipse.jdt:org.eclipse.jdt.core:3.25.0")
     implementation("de.ruedigermoeller:fst:2.56")
