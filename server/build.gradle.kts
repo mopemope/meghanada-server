@@ -54,7 +54,7 @@ dependencies {
     val javaHome: String = System.getProperty("java.home")
     val toolsJar = files("$javaHome/../lib/tools.jar")
     implementation(toolsJar)
-    implementation("com.google.googlejavaformat:google-java-format:1.7")
+    implementation("com.google.googlejavaformat:google-java-format:1.10.0")
     implementation("org.apache.maven:maven-model-builder:3.8.1")
     implementation("com.leacox.motif:motif:0.1")
     implementation("com.leacox.motif:motif-hamcrest:0.1")
