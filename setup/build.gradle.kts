@@ -11,7 +11,7 @@ plugins {
 //    maven
     `maven-publish`
     application
-    id("com.github.johnrengelman.shadow") version "6.0.0"
+    id("com.github.johnrengelman.shadow") version "7.0.0"
     id("com.jfrog.bintray") version "1.8.5"
 }
 
