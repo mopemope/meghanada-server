@@ -19,7 +19,7 @@ val group = "io.github.mopemope"
 var serverVersion = "1.3.1"
 var buildVersion = "release"
 
-val gitFile = File("./.git")
+val gitFile = File("../.git")
 if (gitFile.exists()) {
     val grgit = Grgit.open()
     val branch = grgit.branch.current().name
