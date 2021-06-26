@@ -65,7 +65,7 @@ dependencies {
     implementation("commons-cli:commons-cli:1.4")
     implementation("org.gradle:gradle-tooling-api:$gradleVersion")
     implementation("com.google.guava:guava:30.1.1-jre")
-    implementation("org.ow2.asm:asm:9.1")
+    implementation("org.ow2.asm:asm:9.2")
     implementation("com.typesafe:config:1.4.1")
     implementation("org.atteo:evo-inflector:1.2.2")
 
