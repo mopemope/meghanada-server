@@ -67,7 +67,7 @@ dependencies {
     implementation("com.google.guava:guava:30.1.1-jre")
     implementation("org.ow2.asm:asm:9.1")
     implementation("com.typesafe:config:1.4.1")
-    implementation("org.atteo:evo-inflector:1.2.2")
+    implementation("org.atteo:evo-inflector:1.3")
 
     implementation("org.junit.jupiter:junit-jupiter-api:$junitVersion")
     implementation("org.junit.jupiter:junit-jupiter-params:$junitVersion")
