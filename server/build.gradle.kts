@@ -35,7 +35,7 @@ val date: String = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-
 val applicationName = "meghanada"
 
 val junitVersion = "5.6.2"
-val gradleVersion = "7.0.1"
+val gradleVersion = "7.1.1"
 val log4jVersion = "2.14.1"
 val xodusVersion = "1.3.232"
 val opencensusVersion = "0.28.3"
