@@ -35,8 +35,8 @@ val date: String = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-
 val applicationName = "meghanada"
 
 val junitVersion = "5.6.2"
-val gradleVersion = "7.0.1"
-val log4jVersion = "2.14.1"
+val gradleVersion = "7.3.1"
+val log4jVersion = "2.15.0"
 val xodusVersion = "1.3.232"
 val opencensusVersion = "0.28.3"
 
@@ -67,7 +67,7 @@ dependencies {
     implementation("com.google.guava:guava:30.1.1-jre")
     implementation("org.ow2.asm:asm:9.1")
     implementation("com.typesafe:config:1.4.1")
-    implementation("org.atteo:evo-inflector:1.2.2")
+    implementation("org.atteo:evo-inflector:1.3")
 
     implementation("org.junit.jupiter:junit-jupiter-api:$junitVersion")
     implementation("org.junit.jupiter:junit-jupiter-params:$junitVersion")
@@ -80,6 +80,7 @@ dependencies {
     implementation("org.jboss.windup.decompiler:decompiler-api:4.2.1.Final")
     implementation("org.jboss.windup.decompiler:decompiler-fernflower:4.3.1.Final")
     implementation("com.google.code.findbugs:jsr305:3.0.2")
+    implementation("org.eclipse.platform:org.eclipse.text:3.11.0")
     implementation("org.eclipse.jdt:org.eclipse.jdt.core:3.25.0")
     implementation("de.ruedigermoeller:fst:2.56")
 
