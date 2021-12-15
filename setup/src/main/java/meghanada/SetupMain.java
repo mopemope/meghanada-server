@@ -78,27 +78,13 @@ public class SetupMain {
   }
 
   private static void run(String destRoot, String version) throws IOException {
-    try {
-      downloadFromGithub(destRoot, version);
-    } catch (IOException e) {
-      downloadFromBintray(destRoot, version);
-    }
-  }
-
-  private static void downloadFromBintray(String destRoot, String version) throws IOException {
-    String downloadURL = getBintrayURL(version);
-    Path dest = copyDest(destRoot, version);
-    downloadJar(downloadURL, dest);
+    downloadFromGithub(destRoot, version);
   }
 
   private static void downloadFromGithub(String destRoot, String version) throws IOException {
     String downloadURL = getGithubURL(version);
     Path dest = copyDest(destRoot, version);
     downloadJar(downloadURL, dest);
-  }
-
-  private static String getBintrayURL(String version) throws IOException {
-    return String.format("https://dl.bintray.com/mopemope/meghanada/meghanada-%s.jar", version);
   }
 
   private static String getGithubURL(String version) throws IOException {
