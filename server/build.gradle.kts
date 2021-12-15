@@ -34,11 +34,11 @@ val longVersion = "$serverVersion-$buildVersion"
 val date: String = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss"))
 val applicationName = "meghanada"
 
-val junitVersion = "5.6.2"
+val junitVersion = "5.8.2"
 val gradleVersion = "7.3.1"
-val log4jVersion = "2.15.0"
+val log4jVersion = "2.16.0"
 val xodusVersion = "1.3.232"
-val opencensusVersion = "0.28.3"
+val opencensusVersion = "0.29.0"
 
 base {
     archivesBaseName = applicationName
@@ -55,7 +55,7 @@ dependencies {
     val toolsJar = files("$javaHome/../lib/tools.jar")
     implementation(toolsJar)
     implementation("com.google.googlejavaformat:google-java-format:1.7")
-    implementation("org.apache.maven:maven-model-builder:3.8.1")
+    implementation("org.apache.maven:maven-model-builder:3.8.4")
     implementation("com.leacox.motif:motif:0.1")
     implementation("com.leacox.motif:motif-hamcrest:0.1")
     implementation("com.github.javaparser:javaparser-core:3.22.0")
@@ -73,7 +73,7 @@ dependencies {
     implementation("org.junit.jupiter:junit-jupiter-params:$junitVersion")
     implementation("org.junit.jupiter:junit-jupiter-engine:$junitVersion")
     implementation("org.junit.vintage:junit-vintage-engine:$junitVersion")
-    implementation("org.junit.platform:junit-platform-launcher:1.6.2")
+    implementation("org.junit.platform:junit-platform-launcher:1.8.2")
 
     implementation("com.android.tools.build:builder-model:4.0.0")
     implementation("io.takari.junit:takari-cpsuite:1.2.7")
