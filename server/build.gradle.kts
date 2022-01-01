@@ -1,6 +1,4 @@
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
-import com.jfrog.bintray.gradle.BintrayExtension
-import com.jfrog.bintray.gradle.tasks.RecordingCopyTask
 import org.ajoberstar.grgit.Grgit
 
 import java.time.LocalDateTime
@@ -8,18 +6,17 @@ import java.time.format.DateTimeFormatter
 
 plugins {
     java
-    maven
+    //maven
     `maven-publish`
     application
     id("com.github.johnrengelman.shadow") version "6.0.0"
-    id("com.jfrog.bintray") version "1.8.5"
 }
 
 val group = "io.github.mopemope"
-var serverVersion = "1.3.1"
+var serverVersion = "1.3.2"
 var buildVersion = "release"
 
-val gitFile = File("./.git")
+val gitFile = File("../.git")
 if (gitFile.exists()) {
     val grgit = Grgit.open()
     val branch = grgit.branch.current().name
@@ -34,11 +31,11 @@ val longVersion = "$serverVersion-$buildVersion"
 val date: String = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss"))
 val applicationName = "meghanada"
 
-val junitVersion = "5.6.2"
-val gradleVersion = "6.6"
-val log4jVersion = "2.13.3"
+val junitVersion = "5.8.2"
+val gradleVersion = "7.3.3"
+val log4jVersion = "2.17.1"
 val xodusVersion = "1.3.232"
-val opencensusVersion = "0.27.0"
+val opencensusVersion = "0.30.0"
 
 base {
     archivesBaseName = applicationName
@@ -55,32 +52,33 @@ dependencies {
     val toolsJar = files("$javaHome/../lib/tools.jar")
     implementation(toolsJar)
     implementation("com.google.googlejavaformat:google-java-format:1.7")
-    implementation("org.apache.maven:maven-model-builder:3.6.3")
+    implementation("org.apache.maven:maven-model-builder:3.8.4")
     implementation("com.leacox.motif:motif:0.1")
     implementation("com.leacox.motif:motif-hamcrest:0.1")
-    implementation("com.github.javaparser:javaparser-core:3.16.1")
+    implementation("com.github.javaparser:javaparser-core:3.22.0")
     implementation("org.apache.logging.log4j:log4j-core:$log4jVersion")
     implementation("org.apache.logging.log4j:log4j-api:$log4jVersion")
     implementation("org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion")
     implementation("commons-cli:commons-cli:1.4")
     implementation("org.gradle:gradle-tooling-api:$gradleVersion")
-    implementation("com.google.guava:guava:29.0-jre")
-    implementation("org.ow2.asm:asm:8.0.1")
-    implementation("com.typesafe:config:1.4.0")
-    implementation("org.atteo:evo-inflector:1.2.2")
+    implementation("com.google.guava:guava:31.0.1-jre")
+    implementation("org.ow2.asm:asm:9.2")
+    implementation("com.typesafe:config:1.4.1")
+    implementation("org.atteo:evo-inflector:1.3")
 
     implementation("org.junit.jupiter:junit-jupiter-api:$junitVersion")
     implementation("org.junit.jupiter:junit-jupiter-params:$junitVersion")
     implementation("org.junit.jupiter:junit-jupiter-engine:$junitVersion")
     implementation("org.junit.vintage:junit-vintage-engine:$junitVersion")
-    implementation("org.junit.platform:junit-platform-launcher:1.6.2")
+    implementation("org.junit.platform:junit-platform-launcher:1.8.2")
 
     implementation("com.android.tools.build:builder-model:4.0.0")
     implementation("io.takari.junit:takari-cpsuite:1.2.7")
     implementation("org.jboss.windup.decompiler:decompiler-api:4.2.1.Final")
     implementation("org.jboss.windup.decompiler:decompiler-fernflower:4.3.1.Final")
     implementation("com.google.code.findbugs:jsr305:3.0.2")
-    implementation("org.eclipse.jdt:org.eclipse.jdt.core:3.22.0")
+    implementation("org.eclipse.platform:org.eclipse.text:3.11.0")
+    implementation("org.eclipse.jdt:org.eclipse.jdt.core:3.25.0")
     implementation("de.ruedigermoeller:fst:2.56")
 
     implementation("org.jetbrains.xodus:xodus-query:$xodusVersion")
@@ -103,34 +101,6 @@ dependencies {
 
 application {
     mainClassName = "meghanada.Main"
-}
-
-bintray {
-    user = System.getenv("BINTRAY_USER")
-    key = System.getenv("BINTRAY_KEY")
-
-    publish = true
-
-    filesSpec(delegateClosureOf<RecordingCopyTask> {
-        from("build/libs")
-        into(".")
-    })
-
-    pkg(delegateClosureOf<BintrayExtension.PackageConfig> {
-        repo = "meghanada"
-        name = "meghanada"
-        vcsUrl = "https://github.com/mopemope/meghanada-server.git"
-        githubRepo = "mopemope/meghanada-server"
-        githubReleaseNotesFile = "README.md"
-        setLicenses("GPL-3.0")
-        setLabels("java", "emacs")
-
-        version(delegateClosureOf<BintrayExtension.VersionConfig> {
-            name = serverVersion
-            desc = "Meghanada Server $serverVersion"
-        })
-
-    })
 }
 
 publishing {

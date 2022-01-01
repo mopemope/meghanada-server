@@ -1,6 +1,4 @@
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
-import com.jfrog.bintray.gradle.BintrayExtension
-import com.jfrog.bintray.gradle.tasks.RecordingCopyTask
 import org.ajoberstar.grgit.Grgit
 
 import java.time.LocalDateTime
@@ -8,18 +6,17 @@ import java.time.format.DateTimeFormatter
 
 plugins {
     java
-    maven
+//    maven
     `maven-publish`
     application
     id("com.github.johnrengelman.shadow") version "6.0.0"
-    id("com.jfrog.bintray") version "1.8.5"
 }
 
 val group = "meghanada"
 val setupVersion = "0.0.2"
 var buildVersion = "release"
 
-val gitFile = File("./.git")
+val gitFile = File("../.git")
 if (gitFile.exists()) {
     val grgit = Grgit.open()
     buildVersion = grgit.head().abbreviatedId
@@ -44,34 +41,6 @@ dependencies {
 
 application {
     mainClassName = "meghanada.SetupMain"
-}
-
-bintray {
-    user = System.getenv("BINTRAY_USER")
-    key = System.getenv("BINTRAY_KEY")
-
-    publish = true
-
-    filesSpec(delegateClosureOf<RecordingCopyTask> {
-        from("build/libs")
-        into(".")
-    })
-
-    pkg(delegateClosureOf<BintrayExtension.PackageConfig> {
-        repo = "meghanada"
-        name = "meghanada-setup"
-        vcsUrl = "https://github.com/mopemope/meghanada-server.git"
-        githubRepo = "mopemope/meghanada-server"
-        githubReleaseNotesFile = "README.md"
-        setLicenses("GPL-3.0")
-        setLabels("java", "emacs")
-
-        version(delegateClosureOf<BintrayExtension.VersionConfig> {
-            name = setupVersion
-            desc = "Meghanada Server setup $setupVersion"
-        })
-
-    })
 }
 
 publishing {

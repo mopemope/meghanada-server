@@ -89,7 +89,7 @@ public class JavaCompletionTest extends GradleTestBase {
     final Collection<? extends CandidateUnit> units =
         timeIt(() -> completion.completionAt(file, 8, 9, "@Test"));
     units.forEach(a -> log.info(a.getDeclaration()));
-    assertEquals(9, units.size());
+    assertEquals(10, units.size());
     // assertEquals(6, units.size());
   }
 

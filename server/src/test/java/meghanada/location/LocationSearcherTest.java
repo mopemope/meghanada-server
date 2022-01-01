@@ -392,7 +392,7 @@ public class LocationSearcherTest extends GradleTestBase {
     Location result = searcher.searchDeclarationLocation(f, 57, 40, "LogManager").orElse(null);
     assertNotNull(result);
     assertTrue(result.getPath().contains(".java"));
-    assertEquals(21, result.getLine());
+    assertEquals(22, result.getLine());
     assertEquals(14, result.getColumn());
   }
 
