@@ -1,12 +1,18 @@
 # Next Release
 
+# 1.3.2 (2021-01-01)
+
+## Fixed
+
+- Fix CVE-2021-44228
+
 # 1.3.1 (2020-08-15)
 
 ## Added
 
 - Add the function of sending an error report.
 
-## Changed
+## changed
 
 - Update gradle to 6.6.
 - Fix to use the latest library.

@@ -13,7 +13,7 @@ plugins {
 }
 
 val group = "io.github.mopemope"
-var serverVersion = "1.3.1"
+var serverVersion = "1.3.2"
 var buildVersion = "release"
 
 val gitFile = File("../.git")
@@ -35,7 +35,7 @@ val junitVersion = "5.8.2"
 val gradleVersion = "7.3.3"
 val log4jVersion = "2.17.1"
 val xodusVersion = "1.3.232"
-val opencensusVersion = "0.29.0"
+val opencensusVersion = "0.30.0"
 
 base {
     archivesBaseName = applicationName
@@ -61,8 +61,8 @@ dependencies {
     implementation("org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion")
     implementation("commons-cli:commons-cli:1.4")
     implementation("org.gradle:gradle-tooling-api:$gradleVersion")
-    implementation("com.google.guava:guava:30.1.1-jre")
-    implementation("org.ow2.asm:asm:9.1")
+    implementation("com.google.guava:guava:31.0.1-jre")
+    implementation("org.ow2.asm:asm:9.2")
     implementation("com.typesafe:config:1.4.1")
     implementation("org.atteo:evo-inflector:1.3")
 
