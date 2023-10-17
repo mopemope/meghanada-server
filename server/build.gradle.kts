@@ -63,7 +63,7 @@ dependencies {
     implementation("org.gradle:gradle-tooling-api:$gradleVersion")
     implementation("com.google.guava:guava:31.0.1-jre")
     implementation("org.ow2.asm:asm:9.2")
-    implementation("com.typesafe:config:1.4.1")
+    implementation("com.typesafe:config:1.4.3")
     implementation("org.atteo:evo-inflector:1.3")
 
     implementation("org.junit.jupiter:junit-jupiter-api:$junitVersion")
