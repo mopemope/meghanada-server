@@ -78,7 +78,7 @@ dependencies {
     implementation("org.jboss.windup.decompiler:decompiler-fernflower:4.3.1.Final")
     implementation("com.google.code.findbugs:jsr305:3.0.2")
     implementation("org.eclipse.platform:org.eclipse.text:3.11.0")
-    implementation("org.eclipse.jdt:org.eclipse.jdt.core:3.25.0")
+    implementation("org.eclipse.jdt:org.eclipse.jdt.core:3.39.0")
     implementation("de.ruedigermoeller:fst:2.56")
 
     implementation("org.jetbrains.xodus:xodus-query:$xodusVersion")
